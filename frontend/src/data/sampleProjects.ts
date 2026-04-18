@@ -1,7 +1,12 @@
 import type { Project } from '@/types';
 
-// 샘플 프로젝트 카테고리
-export type SampleCategory = 'combat' | 'economy' | 'progression' | 'gacha';
+// 샘플 프로젝트 카테고리 — 밸런싱 + 팀 PM
+export type SampleCategory =
+  | 'combat'
+  | 'economy'
+  | 'progression'
+  | 'gacha'
+  | 'team-pm'; // Track PM (Codecks meets Airtable)
 
 // 샘플 프로젝트 메타데이터
 export interface SampleProjectMeta {
@@ -400,6 +405,210 @@ const createGachaProject = (t: TranslateFunction): Project => {
 };
 
 // ============================================
+// 팀 PM — 스프린트 보드 (Codecks / Jira 스타일)
+// ============================================
+const createSprintBoardProject = (_t: TranslateFunction): Project => {
+  const now = Date.now();
+  const sheetId = generateId();
+
+  return {
+    id: generateId(),
+    name: '',
+    description: '',
+    createdAt: now,
+    updatedAt: now,
+    sheets: [
+      {
+        id: sheetId,
+        name: 'Sprint Board',
+        createdAt: now,
+        updatedAt: now,
+        activeView: 'kanban',
+        columns: [
+          { id: 'c-id', name: 'ID', type: 'general', width: 80 },
+          { id: 'c-title', name: 'Title', type: 'general', width: 220 },
+          {
+            id: 'c-status',
+            name: 'Status',
+            type: 'select',
+            width: 120,
+            selectOptions: [
+              { id: 'backlog', label: 'Backlog', color: '#94a3b8' },
+              { id: 'todo', label: 'Todo', color: '#3b82f6' },
+              { id: 'doing', label: 'Doing', color: '#f59e0b' },
+              { id: 'review', label: 'Review', color: '#8b5cf6' },
+              { id: 'done', label: 'Done', color: '#10b981' },
+            ],
+          },
+          {
+            id: 'c-priority',
+            name: 'Priority',
+            type: 'select',
+            width: 100,
+            selectOptions: [
+              { id: 'p0', label: 'P0 Critical', color: '#ef4444' },
+              { id: 'p1', label: 'P1 High', color: '#f59e0b' },
+              { id: 'p2', label: 'P2 Normal', color: '#3b82f6' },
+              { id: 'p3', label: 'P3 Low', color: '#94a3b8' },
+            ],
+          },
+          {
+            id: 'c-role',
+            name: 'Role',
+            type: 'select',
+            width: 110,
+            selectOptions: [
+              { id: 'design', label: 'Design', color: '#ec4899' },
+              { id: 'art', label: 'Art', color: '#8b5cf6' },
+              { id: 'code', label: 'Code', color: '#3b82f6' },
+              { id: 'qa', label: 'QA', color: '#10b981' },
+              { id: 'audio', label: 'Audio', color: '#f59e0b' },
+            ],
+          },
+          { id: 'c-assignee', name: 'Assignee', type: 'general', width: 110 },
+          { id: 'c-points', name: 'Points', type: 'general', width: 80 },
+          { id: 'c-due', name: 'Due', type: 'date', width: 120 },
+        ],
+        viewGroupColumnId: 'c-status',
+        rows: [
+          { id: 'r1', cells: { 'c-id': 'GAME-101', 'c-title': '보스 밸런스 재조정', 'c-status': 'doing', 'c-priority': 'p1', 'c-role': 'design', 'c-assignee': 'Daisy', 'c-points': 5, 'c-due': '2026-04-25' } },
+          { id: 'r2', cells: { 'c-id': 'GAME-102', 'c-title': '스킬 아이콘 리뷰', 'c-status': 'review', 'c-priority': 'p2', 'c-role': 'art', 'c-assignee': 'Mike', 'c-points': 3, 'c-due': '2026-04-22' } },
+          { id: 'r3', cells: { 'c-id': 'GAME-103', 'c-title': 'Gacha 확률 시뮬 PR', 'c-status': 'review', 'c-priority': 'p1', 'c-role': 'code', 'c-assignee': 'Jin', 'c-points': 8, 'c-due': '2026-04-23' } },
+          { id: 'r4', cells: { 'c-id': 'GAME-104', 'c-title': '튜토리얼 QA 통과', 'c-status': 'todo', 'c-priority': 'p2', 'c-role': 'qa', 'c-assignee': 'Sara', 'c-points': 3 } },
+          { id: 'r5', cells: { 'c-id': 'GAME-105', 'c-title': '크래시 리포트 수집 개선', 'c-status': 'backlog', 'c-priority': 'p0', 'c-role': 'code' } },
+          { id: 'r6', cells: { 'c-id': 'GAME-106', 'c-title': 'BGM 루프 교체', 'c-status': 'done', 'c-priority': 'p3', 'c-role': 'audio', 'c-assignee': 'Neo', 'c-points': 2 } },
+        ],
+      },
+    ],
+  };
+};
+
+// ============================================
+// 팀 PM — 버그 트래커
+// ============================================
+const createBugTrackerProject = (_t: TranslateFunction): Project => {
+  const now = Date.now();
+  const sheetId = generateId();
+
+  return {
+    id: generateId(),
+    name: '',
+    description: '',
+    createdAt: now,
+    updatedAt: now,
+    sheets: [
+      {
+        id: sheetId,
+        name: 'Bugs',
+        createdAt: now,
+        updatedAt: now,
+        activeView: 'grid',
+        columns: [
+          { id: 'c-id', name: 'ID', type: 'general', width: 80 },
+          { id: 'c-title', name: 'Title', type: 'general', width: 260 },
+          {
+            id: 'c-severity',
+            name: 'Severity',
+            type: 'select',
+            width: 110,
+            selectOptions: [
+              { id: 's1', label: 'S1 Blocker', color: '#ef4444' },
+              { id: 's2', label: 'S2 Critical', color: '#f59e0b' },
+              { id: 's3', label: 'S3 Major', color: '#3b82f6' },
+              { id: 's4', label: 'S4 Minor', color: '#94a3b8' },
+            ],
+          },
+          {
+            id: 'c-status',
+            name: 'Status',
+            type: 'select',
+            width: 110,
+            selectOptions: [
+              { id: 'open', label: 'Open', color: '#ef4444' },
+              { id: 'in-progress', label: 'In Progress', color: '#f59e0b' },
+              { id: 'fixed', label: 'Fixed', color: '#10b981' },
+              { id: 'wontfix', label: 'Won\'t Fix', color: '#94a3b8' },
+            ],
+          },
+          {
+            id: 'c-platform',
+            name: 'Platform',
+            type: 'multiSelect',
+            width: 140,
+            selectOptions: [
+              { id: 'pc', label: 'PC', color: '#3b82f6' },
+              { id: 'console', label: 'Console', color: '#8b5cf6' },
+              { id: 'mobile', label: 'Mobile', color: '#10b981' },
+            ],
+          },
+          { id: 'c-reporter', name: 'Reporter', type: 'general', width: 110 },
+          { id: 'c-assignee', name: 'Assignee', type: 'general', width: 110 },
+          { id: 'c-created', name: 'Created', type: 'date', width: 110 },
+        ],
+        viewGroupColumnId: 'c-severity',
+        rows: [
+          { id: 'r1', cells: { 'c-id': 'BUG-001', 'c-title': '보스 2페이즈에서 무적 상태', 'c-severity': 's1', 'c-status': 'open', 'c-platform': 'pc,console', 'c-reporter': 'QA1', 'c-created': '2026-04-18' } },
+          { id: 'r2', cells: { 'c-id': 'BUG-002', 'c-title': '인벤토리 정렬 후 골드 UI 깨짐', 'c-severity': 's3', 'c-status': 'in-progress', 'c-platform': 'mobile', 'c-reporter': 'Player', 'c-assignee': 'Jin', 'c-created': '2026-04-17' } },
+          { id: 'r3', cells: { 'c-id': 'BUG-003', 'c-title': '튜토리얼 자막 번역 오타', 'c-severity': 's4', 'c-status': 'fixed', 'c-platform': 'pc', 'c-reporter': 'Daisy', 'c-assignee': 'Sara', 'c-created': '2026-04-15' } },
+          { id: 'r4', cells: { 'c-id': 'BUG-004', 'c-title': '세이브 파일 로드 시 크래시', 'c-severity': 's1', 'c-status': 'in-progress', 'c-platform': 'console', 'c-reporter': 'QA2', 'c-assignee': 'Jin', 'c-created': '2026-04-19' } },
+        ],
+      },
+    ],
+  };
+};
+
+// ============================================
+// 팀 PM — 에픽 로드맵 (Gantt)
+// ============================================
+const createEpicRoadmapProject = (_t: TranslateFunction): Project => {
+  const now = Date.now();
+  const sheetId = generateId();
+
+  return {
+    id: generateId(),
+    name: '',
+    description: '',
+    createdAt: now,
+    updatedAt: now,
+    sheets: [
+      {
+        id: sheetId,
+        name: 'Epics',
+        createdAt: now,
+        updatedAt: now,
+        activeView: 'gantt',
+        columns: [
+          { id: 'c-id', name: 'ID', type: 'general', width: 80 },
+          { id: 'c-title', name: 'Epic', type: 'general', width: 240 },
+          {
+            id: 'c-phase',
+            name: 'Phase',
+            type: 'select',
+            width: 120,
+            selectOptions: [
+              { id: 'pre-prod', label: 'Pre-production', color: '#94a3b8' },
+              { id: 'prod', label: 'Production', color: '#3b82f6' },
+              { id: 'beta', label: 'Beta', color: '#f59e0b' },
+              { id: 'launch', label: 'Launch', color: '#10b981' },
+            ],
+          },
+          { id: 'c-start', name: 'Start', type: 'date', width: 120 },
+          { id: 'c-end', name: 'End', type: 'date', width: 120 },
+          { id: 'c-owner', name: 'Owner', type: 'general', width: 120 },
+        ],
+        viewGroupColumnId: 'c-start',
+        rows: [
+          { id: 'r1', cells: { 'c-id': 'EP-01', 'c-title': '코어 전투 시스템', 'c-phase': 'prod', 'c-start': '2026-04-01', 'c-end': '2026-05-15', 'c-owner': 'Lead Design' } },
+          { id: 'r2', cells: { 'c-id': 'EP-02', 'c-title': '스테이지 1~3 콘텐츠', 'c-phase': 'prod', 'c-start': '2026-04-15', 'c-end': '2026-06-01', 'c-owner': 'Content' } },
+          { id: 'r3', cells: { 'c-id': 'EP-03', 'c-title': '멀티플레이 베타', 'c-phase': 'beta', 'c-start': '2026-05-20', 'c-end': '2026-07-01', 'c-owner': 'Network' } },
+          { id: 'r4', cells: { 'c-id': 'EP-04', 'c-title': '런칭 마케팅', 'c-phase': 'launch', 'c-start': '2026-06-15', 'c-end': '2026-08-01', 'c-owner': 'Marketing' } },
+        ],
+      },
+    ],
+  };
+};
+
+// ============================================
 // 샘플 프로젝트 목록
 // ============================================
 export const SAMPLE_PROJECTS: SampleProject[] = [
@@ -434,6 +643,31 @@ export const SAMPLE_PROJECTS: SampleProject[] = [
     icon: 'Sparkles',
     category: 'gacha',
     createProject: createGachaProject,
+  },
+  // 팀 PM 샘플 (B2B 전환, 2026-04-19)
+  {
+    id: 'sprint-board',
+    nameKey: 'samples.sprintBoard.name',
+    descriptionKey: 'samples.sprintBoard.description',
+    icon: 'Kanban',
+    category: 'team-pm',
+    createProject: createSprintBoardProject,
+  },
+  {
+    id: 'bug-tracker',
+    nameKey: 'samples.bugTracker.name',
+    descriptionKey: 'samples.bugTracker.description',
+    icon: 'Bug',
+    category: 'team-pm',
+    createProject: createBugTrackerProject,
+  },
+  {
+    id: 'epic-roadmap',
+    nameKey: 'samples.epicRoadmap.name',
+    descriptionKey: 'samples.epicRoadmap.description',
+    icon: 'GanttChart',
+    category: 'team-pm',
+    createProject: createEpicRoadmapProject,
   },
 ];
 
