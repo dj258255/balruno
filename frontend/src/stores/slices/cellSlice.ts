@@ -83,7 +83,28 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
       }
     }
 
-    addColumnInDoc(doc, sheetId, { ...column, id });
+    const fullColumn = { ...column, id };
+    addColumnInDoc(doc, sheetId, fullColumn);
+
+    // Track 1 fix: formula 타입 컬럼 추가 시 기존 행들에 formula 값 prefill
+    // (addRow 에서는 이미 처리됨, addColumn 경로에서는 누락되어 있었음)
+    if (fullColumn.type === 'formula' && fullColumn.formula) {
+      const state = get();
+      const project = state.projects.find((p) => p.id === projectId);
+      const sheet = project?.sheets.find((s) => s.id === sheetId);
+      if (sheet && sheet.rows.length > 0) {
+        doc.transact(() => {
+          for (const row of sheet.rows) {
+            const existing = row.cells[id];
+            // 빈 셀에만 prefill — 기존 값 덮어쓰기 방지
+            if (existing === undefined || existing === null || existing === '') {
+              updateCellInDoc(doc, sheetId, row.id, id, fullColumn.formula!);
+            }
+          }
+        });
+      }
+    }
+
     return id;
   },
 
