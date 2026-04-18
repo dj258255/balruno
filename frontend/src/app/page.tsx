@@ -4,8 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
-import { useHistoryStore } from '@/stores/historyStore';
-import { usePanelManager, useProjectHistory, useTour } from '@/hooks';
+import { usePanelManager, useProjectHistory, useTour, useYDocSync } from '@/hooks';
 import { getTourByProjectId } from '@/data/tourSteps';
 import {
   loadProjects,
@@ -98,10 +97,13 @@ export default function Home() {
     updateCell,
   } = useProjectStore();
 
+  // Track 0 Phase 2: Y.Doc ↔ Zustand 양방향 브릿지 (모든 편집이 Y.Doc 경유)
+  useYDocSync();
+
   // Tour hook
   const { startTour } = useTour();
 
-  // History
+  // History — Y.UndoManager delegate
   const {
     handleUndo,
     handleRedo,
@@ -109,11 +111,7 @@ export default function Home() {
     canUndo,
     canRedo,
     getHistory,
-    saveToHistory,
-    isUndoRedoAction,
-    prevProjectsRef,
   } = useProjectHistory();
-  const { pushState } = useHistoryStore();
 
   // Panel manager
   const {
@@ -198,14 +196,13 @@ export default function Home() {
   // Track projects that have shown tour (using project creation time as marker)
   const shownToursRef = useRef<Set<string>>(new Set());
 
-  // Initial data load
+  // Initial data load — Y.Doc hydrate 는 useYDocSync 가 projects 변경에 반응해 자동 처리
   useEffect(() => {
     const init = async () => {
       try {
         const savedProjects = await loadProjects();
         if (savedProjects.length > 0) {
           setProjects(savedProjects);
-          pushState(savedProjects, t('history.initialLoad'));
         }
       } catch (error) {
         console.error('Failed to load projects:', error);
@@ -214,7 +211,7 @@ export default function Home() {
       }
     };
     init();
-  }, [setProjects, pushState, t]);
+  }, [setProjects]);
 
   // Auto save setup
   useEffect(() => {
@@ -246,16 +243,6 @@ export default function Home() {
       return () => clearTimeout(timeout);
     }
   }, [projects, isLoading, setLastSaved]);
-
-  // Save to history on project change
-  useEffect(() => {
-    if (!isLoading && projects.length > 0 && !isUndoRedoAction.current) {
-      const timeout = setTimeout(() => {
-        saveToHistory(projects);
-      }, 500);
-      return () => clearTimeout(timeout);
-    }
-  }, [projects, isLoading, saveToHistory]);
 
   // History panel outside click
   useEffect(() => {

@@ -1,181 +1,165 @@
+/**
+ * Track 0 Phase 3 — Y.UndoManager delegate.
+ *
+ * 이전에는 매 편집마다 `JSON.parse(JSON.stringify(projects))` 로 스냅샷을 쌓았다.
+ * 이제는 활성 프로젝트의 Y.UndoManager 가 CRDT 트랜잭션 단위로 자동 추적하므로
+ * 이 스토어는 UndoManager 에 위임하는 얇은 어댑터.
+ *
+ * 호환성 유지: 기존 call site (pushState / canUndo / getHistory / jumpTo 등) 의
+ * 시그니처를 동일하게 노출. pushState / jumpTo / deleteEntry 는 no-op.
+ *
+ * reactivity: Y.UndoManager 이벤트는 Zustand 밖에서 발생하므로, `tick` 카운터를
+ * 올려 Zustand selector 들이 재평가되도록 유도.
+ */
+
 import { create } from 'zustand';
 import type { Project } from '@/types';
+import { useProjectStore } from './projectStore';
+import { getUndoManager } from '@/lib/ydoc';
 
-const MAX_HISTORY_SIZE = 50; // 최대 히스토리 개수
-
-// 히스토리 항목 (라벨 포함)
 export interface HistoryEntry {
-  state: Project[];
+  state: unknown; // 하위호환 필드 (실제로는 사용 안 함)
   label: string;
   timestamp: number;
 }
 
 interface HistoryState {
-  // 히스토리 스택
-  past: HistoryEntry[];      // 이전 상태들
-  future: HistoryEntry[];    // redo를 위한 미래 상태들
-  currentIndex: number;      // 현재 위치 (UI 표시용)
+  /** 내부 — UndoManager 이벤트마다 증가. selector 재평가 유도. */
+  tick: number;
 
-  // 액션
-  pushState: (projects: Project[], label?: string) => void;  // 새 상태 저장
-  undo: () => Project[] | null;              // 실행 취소
-  redo: () => Project[] | null;              // 다시 실행
-  clear: () => void;                         // 히스토리 초기화
-  jumpTo: (index: number) => Project[] | null; // 특정 시점으로 이동
-  deleteEntry: (type: 'past' | 'future', index: number) => void; // 개별 항목 삭제
+  /** no-op (Y.UndoManager 자동 추적) — 하위호환. */
+  pushState: (projects: Project[], label?: string) => void;
 
-  // 상태 확인
+  /** 활성 프로젝트에 undo 적용. Y.Doc 이 되돌아가면 observer 가 Zustand 반사. */
+  undo: () => Project[] | null;
+  /** 활성 프로젝트에 redo 적용. */
+  redo: () => Project[] | null;
+
+  clear: () => void;
+
+  /** Y.UndoManager 는 임의 index 점프를 바로 지원하지 않음. N 회 undo/redo 로 구현. */
+  jumpTo: (index: number) => Project[] | null;
+
+  deleteEntry: (type: 'past' | 'future', index: number) => void;
+
   canUndo: () => boolean;
   canRedo: () => boolean;
   getHistory: () => { past: HistoryEntry[]; future: HistoryEntry[]; currentIndex: number };
 }
 
+function getActiveManager() {
+  const pid = useProjectStore.getState().currentProjectId;
+  if (!pid) return null;
+  return getUndoManager(pid);
+}
+
+type StackItem = {
+  meta: Map<string, unknown>;
+};
+
+function stackToEntries(stack: readonly StackItem[]): HistoryEntry[] {
+  return stack.map((item) => ({
+    state: null,
+    label: (item.meta.get('label') as string | undefined) ?? 'common.change',
+    timestamp: (item.meta.get('timestamp') as number | undefined) ?? Date.now(),
+  }));
+}
+
+// 활성 프로젝트 변경 시 리스너 재부착
+let subscribedProjectId: string | null = null;
+
+function subscribeActiveManager() {
+  const pid = useProjectStore.getState().currentProjectId;
+  if (pid === subscribedProjectId) return;
+  subscribedProjectId = pid;
+  if (!pid) return;
+
+  const um = getUndoManager(pid);
+  const onChange = () => {
+    useHistoryStore.setState((s) => ({ tick: s.tick + 1 }));
+  };
+  um.on('stack-item-added', onChange);
+  um.on('stack-item-popped', onChange);
+  um.on('stack-cleared', onChange);
+}
+
+// projectStore 구독 — currentProjectId 변경 시 리스너 재설정.
+// 모듈 로드 시 1회만 구독 (HMR 대비 이중 구독 방지는 별도 처리 불필요 — 각 UndoManager
+// 는 자신의 destroy 로 리스너가 정리됨).
+if (typeof window !== 'undefined') {
+  useProjectStore.subscribe((state, prev) => {
+    if (state.currentProjectId !== prev.currentProjectId) {
+      subscribeActiveManager();
+    }
+  });
+  queueMicrotask(subscribeActiveManager);
+}
+
 export const useHistoryStore = create<HistoryState>((set, get) => ({
-  past: [],
-  future: [],
-  currentIndex: -1,
+  tick: 0,
 
-  pushState: (projects, label = '변경') => {
-    set((state) => {
-      // 깊은 복사로 스냅샷 저장
-      const snapshot = JSON.parse(JSON.stringify(projects));
-
-      // 이전 상태와 동일하면 저장하지 않음
-      const lastEntry = state.past[state.past.length - 1];
-      if (lastEntry && JSON.stringify(lastEntry.state) === JSON.stringify(snapshot)) {
-        return state;
-      }
-
-      const entry: HistoryEntry = {
-        state: snapshot,
-        label,
-        timestamp: Date.now(),
-      };
-
-      const newPast = [...state.past, entry];
-
-      // 최대 크기 초과 시 오래된 것 제거
-      if (newPast.length > MAX_HISTORY_SIZE) {
-        newPast.shift();
-      }
-
-      return {
-        past: newPast,
-        future: [], // 새 액션 시 future 초기화
-        currentIndex: newPast.length - 1,
-      };
-    });
+  pushState: () => {
+    // no-op: Y.UndoManager 가 Y.Doc 의 transaction 을 자동 추적
   },
 
   undo: () => {
-    const { past, future } = get();
-
-    if (past.length <= 1) return null; // 최소 1개는 유지 (현재 상태)
-
-    const newPast = [...past];
-    const current = newPast.pop()!; // 현재 상태
-    const previous = newPast[newPast.length - 1]; // 이전 상태
-
-    set({
-      past: newPast,
-      future: [current, ...future],
-      currentIndex: newPast.length - 1,
-    });
-
-    return JSON.parse(JSON.stringify(previous.state));
+    const um = getActiveManager();
+    if (!um || !um.canUndo()) return null;
+    um.undo();
+    return null;
   },
 
   redo: () => {
-    const { past, future } = get();
-
-    if (future.length === 0) return null;
-
-    const newFuture = [...future];
-    const next = newFuture.shift()!;
-
-    set({
-      past: [...past, next],
-      future: newFuture,
-      currentIndex: past.length,
-    });
-
-    return JSON.parse(JSON.stringify(next.state));
-  },
-
-  jumpTo: (index: number) => {
-    const { past, future } = get();
-    const allEntries = [...past, ...future];
-
-    if (index < 0 || index >= allEntries.length) return null;
-
-    const currentPastIndex = past.length - 1;
-
-    if (index === currentPastIndex) return null; // 이미 현재 위치
-
-    if (index < currentPastIndex) {
-      // 과거로 이동
-      const newPast = past.slice(0, index + 1);
-      const newFuture = [...past.slice(index + 1), ...future];
-
-      set({
-        past: newPast,
-        future: newFuture,
-        currentIndex: index,
-      });
-
-      return JSON.parse(JSON.stringify(newPast[index].state));
-    } else {
-      // 미래로 이동
-      const futureIndex = index - past.length;
-      const newPast = [...past, ...future.slice(0, futureIndex + 1)];
-      const newFuture = future.slice(futureIndex + 1);
-
-      set({
-        past: newPast,
-        future: newFuture,
-        currentIndex: index,
-      });
-
-      return JSON.parse(JSON.stringify(newPast[newPast.length - 1].state));
-    }
+    const um = getActiveManager();
+    if (!um || !um.canRedo()) return null;
+    um.redo();
+    return null;
   },
 
   clear: () => {
-    set({ past: [], future: [], currentIndex: -1 });
+    getActiveManager()?.clear();
   },
 
-  deleteEntry: (type, index) => {
-    set((state) => {
-      if (type === 'past') {
-        // Don't delete if it would leave no history or if it's the current state
-        if (state.past.length <= 1 || index === state.past.length - 1) return state;
-        const newPast = state.past.filter((_, i) => i !== index);
-        return {
-          past: newPast,
-          future: state.future,
-          currentIndex: newPast.length - 1,
-        };
-      } else {
-        const newFuture = state.future.filter((_, i) => i !== index);
-        return {
-          past: state.past,
-          future: newFuture,
-          currentIndex: state.currentIndex,
-        };
-      }
-    });
+  jumpTo: (index: number) => {
+    const um = getActiveManager();
+    if (!um) return null;
+    const pastLen = um.undoStack.length;
+    const totalLen = pastLen + um.redoStack.length;
+    if (index < 0 || index >= totalLen) return null;
+
+    const currentIdx = pastLen - 1;
+    const delta = index - currentIdx;
+    if (delta === 0) return null;
+
+    if (delta < 0) {
+      for (let i = 0; i < -delta; i++) um.undo();
+    } else {
+      for (let i = 0; i < delta; i++) um.redo();
+    }
+    return null;
+  },
+
+  deleteEntry: () => {
+    // Y.UndoManager 는 임의 stack item 삭제 미지원.
+    // HistoryPanel UI 에서 호출되지만 Phase 3 에선 no-op — 추후 StackItem 필터로 재구현 가능.
   },
 
   canUndo: () => {
-    return get().past.length > 1;
+    void get().tick; // tick 의존 — selector 재평가 트리거
+    return getActiveManager()?.canUndo() ?? false;
   },
 
   canRedo: () => {
-    return get().future.length > 0;
+    void get().tick;
+    return getActiveManager()?.canRedo() ?? false;
   },
 
   getHistory: () => {
-    const { past, future, currentIndex } = get();
-    return { past, future, currentIndex };
+    void get().tick;
+    const um = getActiveManager();
+    if (!um) return { past: [], future: [], currentIndex: -1 };
+    const past = stackToEntries(um.undoStack);
+    const future = stackToEntries(um.redoStack);
+    return { past, future, currentIndex: past.length - 1 };
   },
 }));

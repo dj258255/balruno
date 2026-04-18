@@ -15,6 +15,7 @@ import type { Project, Sheet, Column, Row, CellValue, CellStyle, Sticker, Folder
 /** 프로젝트별 Y.Doc 캐시 (메모리 중복 방지) */
 const docCache = new Map<string, Y.Doc>();
 const providerCache = new Map<string, IndexeddbPersistence>();
+const undoManagerCache = new Map<string, Y.UndoManager>();
 
 /**
  * 프로젝트 ID 기반 Y.Doc 인스턴스 획득 (캐시됨).
@@ -45,6 +46,11 @@ export async function persistDoc(projectId: string): Promise<void> {
 
 /** 프로젝트 Y.Doc 에서 provider 분리 (메모리 해제). */
 export function detachDoc(projectId: string): void {
+  const um = undoManagerCache.get(projectId);
+  if (um) {
+    um.destroy();
+    undoManagerCache.delete(projectId);
+  }
   const provider = providerCache.get(projectId);
   if (provider) {
     provider.destroy();
@@ -55,6 +61,27 @@ export function detachDoc(projectId: string): void {
     doc.destroy();
     docCache.delete(projectId);
   }
+}
+
+/**
+ * 프로젝트별 Y.UndoManager. sheets/folders Y.Array 와 meta Y.Map 을 추적.
+ * captureTimeout 500ms 이내 편집은 한 undo 스텝으로 병합.
+ * stack-item-added 시 `timestamp` 를 meta 에 기록 (HistoryPanel 표시용).
+ */
+export function getUndoManager(projectId: string): Y.UndoManager {
+  let um = undoManagerCache.get(projectId);
+  if (!um) {
+    const doc = getProjectDoc(projectId);
+    um = new Y.UndoManager(
+      [doc.getArray('sheets'), doc.getArray('folders'), doc.getMap('meta')],
+      { captureTimeout: 500 }
+    );
+    um.on('stack-item-added', ({ stackItem }) => {
+      stackItem.meta.set('timestamp', Date.now());
+    });
+    undoManagerCache.set(projectId, um);
+  }
+  return um;
 }
 
 // ============================================================================
@@ -370,4 +397,684 @@ export async function initializeProjectDoc(project: Project): Promise<Project> {
   }
 
   return docToProject(doc);
+}
+
+// ============================================================================
+// Phase 2 편집 연산 — 모든 slice write 액션이 이 helper 로 수렴.
+// 각 함수는 doc.transact 로 원자적 업데이트 보장.
+// observer 는 transact 종료 시 1회 fire.
+// ============================================================================
+
+/** 특정 시트의 Y.Map 과 인덱스를 반환 (내부 헬퍼). */
+function findSheetMap(
+  doc: Y.Doc,
+  sheetId: string
+): { sheet: Y.Map<unknown>; index: number } | null {
+  const sheets = doc.getArray<Y.Map<unknown>>('sheets');
+  for (let i = 0; i < sheets.length; i++) {
+    const sheet = sheets.get(i);
+    if (sheet.get('id') === sheetId) return { sheet, index: i };
+  }
+  return null;
+}
+
+/** 시트 내 Row Y.Map 과 인덱스 반환. */
+function findRowMap(
+  sheet: Y.Map<unknown>,
+  rowId: string
+): { row: Y.Map<unknown>; index: number } | null {
+  const rows = sheet.get('rows') as Y.Array<Y.Map<unknown>>;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows.get(i);
+    if (row.get('id') === rowId) return { row, index: i };
+  }
+  return null;
+}
+
+/** 시트 내 Column Y.Map 과 인덱스 반환. */
+function findColumnMap(
+  sheet: Y.Map<unknown>,
+  columnId: string
+): { column: Y.Map<unknown>; index: number } | null {
+  const columns = sheet.get('columns') as Y.Array<Y.Map<unknown>>;
+  for (let i = 0; i < columns.length; i++) {
+    const column = columns.get(i);
+    if (column.get('id') === columnId) return { column, index: i };
+  }
+  return null;
+}
+
+/** 폴더 Y.Array 내 인덱스 반환. */
+function findFolderMap(
+  doc: Y.Doc,
+  folderId: string
+): { folder: Y.Map<unknown>; index: number } | null {
+  const folders = doc.getArray<Y.Map<unknown>>('folders');
+  for (let i = 0; i < folders.length; i++) {
+    const folder = folders.get(i);
+    if (folder.get('id') === folderId) return { folder, index: i };
+  }
+  return null;
+}
+
+function touchSheet(sheet: Y.Map<unknown>): void {
+  sheet.set('updatedAt', Date.now());
+}
+
+// ---- Sheet 레벨 ----
+
+export function addSheetInDoc(doc: Y.Doc, sheet: Sheet): void {
+  doc.transact(() => {
+    const sheets = doc.getArray<Y.Map<unknown>>('sheets');
+    sheets.push([sheetToYMap(sheet)]);
+  });
+}
+
+export function updateSheetInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  updates: Partial<Pick<Sheet, 'name' | 'exportClassName' | 'folderId'>>
+): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    for (const [k, v] of Object.entries(updates)) {
+      if (v === undefined) {
+        found.sheet.delete(k);
+      } else {
+        found.sheet.set(k, v);
+      }
+    }
+    touchSheet(found.sheet);
+  });
+}
+
+export function deleteSheetInDoc(doc: Y.Doc, sheetId: string): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    doc.getArray<Y.Map<unknown>>('sheets').delete(found.index, 1);
+  });
+}
+
+export function duplicateSheetInDoc(doc: Y.Doc, newSheet: Sheet, atIndex?: number): void {
+  doc.transact(() => {
+    const sheets = doc.getArray<Y.Map<unknown>>('sheets');
+    const ymap = sheetToYMap(newSheet);
+    if (atIndex !== undefined && atIndex <= sheets.length) {
+      sheets.insert(atIndex, [ymap]);
+    } else {
+      sheets.push([ymap]);
+    }
+  });
+}
+
+export function reorderSheetsInDoc(doc: Y.Doc, fromIndex: number, toIndex: number): void {
+  doc.transact(() => {
+    const sheets = doc.getArray<Y.Map<unknown>>('sheets');
+    if (fromIndex < 0 || fromIndex >= sheets.length) return;
+    const snapshot = sheets.get(fromIndex).toJSON();
+    // Y.Array 는 move 가 없어 재구성이 필요 — 전체 시트를 JSON 으로 복사 후 재생성.
+    // 동시 편집 시 행/컬럼 변경이 덮일 수 있으니 reorder 는 되도록 idle 에서만 호출.
+    sheets.delete(fromIndex, 1);
+    const rebuilt = rebuildSheetYMapFromJSON(snapshot);
+    const clamped = Math.max(0, Math.min(toIndex, sheets.length));
+    sheets.insert(clamped, [rebuilt]);
+  });
+}
+
+// ---- Column 레벨 ----
+
+export function addColumnInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  column: Column
+): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    const columns = found.sheet.get('columns') as Y.Array<Y.Map<unknown>>;
+    columns.push([columnToYMap(column)]);
+    touchSheet(found.sheet);
+  });
+}
+
+export function insertColumnInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  column: Column,
+  atIndex: number
+): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    const columns = found.sheet.get('columns') as Y.Array<Y.Map<unknown>>;
+    const clamped = Math.max(0, Math.min(atIndex, columns.length));
+    columns.insert(clamped, [columnToYMap(column)]);
+    touchSheet(found.sheet);
+  });
+}
+
+export function updateColumnInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  columnId: string,
+  updates: Partial<Column>
+): void {
+  doc.transact(() => {
+    const sheetFound = findSheetMap(doc, sheetId);
+    if (!sheetFound) return;
+    const colFound = findColumnMap(sheetFound.sheet, columnId);
+    if (!colFound) return;
+    for (const [k, v] of Object.entries(updates)) {
+      if (v === undefined) {
+        colFound.column.delete(k);
+      } else {
+        colFound.column.set(k, v);
+      }
+    }
+    touchSheet(sheetFound.sheet);
+  });
+}
+
+export function deleteColumnInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  columnId: string
+): void {
+  doc.transact(() => {
+    const sheetFound = findSheetMap(doc, sheetId);
+    if (!sheetFound) return;
+    const colFound = findColumnMap(sheetFound.sheet, columnId);
+    if (!colFound) return;
+
+    (sheetFound.sheet.get('columns') as Y.Array<Y.Map<unknown>>).delete(colFound.index, 1);
+
+    // 각 row.cells 에서 columnId 제거 (관련 스타일/메모도)
+    const rows = sheetFound.sheet.get('rows') as Y.Array<Y.Map<unknown>>;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows.get(i);
+      (row.get('cells') as Y.Map<CellValue>).delete(columnId);
+      const styles = row.get('cellStyles') as Y.Map<CellStyle> | undefined;
+      if (styles) styles.delete(columnId);
+      const memos = row.get('cellMemos') as Y.Map<string> | undefined;
+      if (memos) memos.delete(columnId);
+    }
+    touchSheet(sheetFound.sheet);
+  });
+}
+
+export function reorderColumnsInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  columnIds: string[]
+): void {
+  doc.transact(() => {
+    const sheetFound = findSheetMap(doc, sheetId);
+    if (!sheetFound) return;
+    const columns = sheetFound.sheet.get('columns') as Y.Array<Y.Map<unknown>>;
+
+    const jsonByCol = new Map<string, unknown>();
+    for (let i = 0; i < columns.length; i++) {
+      const col = columns.get(i);
+      jsonByCol.set(col.get('id') as string, col.toJSON());
+    }
+
+    columns.delete(0, columns.length);
+    for (const id of columnIds) {
+      const json = jsonByCol.get(id);
+      if (json) columns.push([rebuildColumnYMapFromJSON(json)]);
+    }
+    touchSheet(sheetFound.sheet);
+  });
+}
+
+// ---- Row 레벨 ----
+
+export function addRowInDoc(doc: Y.Doc, sheetId: string, row: Row): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    (found.sheet.get('rows') as Y.Array<Y.Map<unknown>>).push([rowToYMap(row)]);
+    touchSheet(found.sheet);
+  });
+}
+
+export function insertRowInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  row: Row,
+  atIndex: number
+): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    const rows = found.sheet.get('rows') as Y.Array<Y.Map<unknown>>;
+    const clamped = Math.max(0, Math.min(atIndex, rows.length));
+    rows.insert(clamped, [rowToYMap(row)]);
+    touchSheet(found.sheet);
+  });
+}
+
+export function updateRowInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  rowId: string,
+  updates: Partial<Row>
+): void {
+  doc.transact(() => {
+    const sheetFound = findSheetMap(doc, sheetId);
+    if (!sheetFound) return;
+    const rowFound = findRowMap(sheetFound.sheet, rowId);
+    if (!rowFound) return;
+
+    for (const [k, v] of Object.entries(updates)) {
+      // cells/cellStyles/cellMemos 는 Y.Map 이라 replace 대신 key merge
+      if (k === 'cells' && v && typeof v === 'object') {
+        const target = rowFound.row.get('cells') as Y.Map<CellValue>;
+        for (const [colId, value] of Object.entries(v as Record<string, CellValue>)) {
+          target.set(colId, value);
+        }
+        continue;
+      }
+      if (k === 'cellStyles' && v && typeof v === 'object') {
+        let target = rowFound.row.get('cellStyles') as Y.Map<CellStyle> | undefined;
+        if (!target) {
+          target = new Y.Map<CellStyle>();
+          rowFound.row.set('cellStyles', target);
+        }
+        for (const [colId, style] of Object.entries(v as Record<string, CellStyle>)) {
+          target.set(colId, style);
+        }
+        continue;
+      }
+      if (k === 'cellMemos' && v && typeof v === 'object') {
+        let target = rowFound.row.get('cellMemos') as Y.Map<string> | undefined;
+        if (!target) {
+          target = new Y.Map<string>();
+          rowFound.row.set('cellMemos', target);
+        }
+        for (const [colId, memo] of Object.entries(v as Record<string, string>)) {
+          target.set(colId, memo);
+        }
+        continue;
+      }
+      if (v === undefined) {
+        rowFound.row.delete(k);
+      } else {
+        rowFound.row.set(k, v);
+      }
+    }
+    touchSheet(sheetFound.sheet);
+  });
+}
+
+export function deleteRowInDoc(doc: Y.Doc, sheetId: string, rowId: string): void {
+  doc.transact(() => {
+    const sheetFound = findSheetMap(doc, sheetId);
+    if (!sheetFound) return;
+    const rowFound = findRowMap(sheetFound.sheet, rowId);
+    if (!rowFound) return;
+    (sheetFound.sheet.get('rows') as Y.Array<Y.Map<unknown>>).delete(rowFound.index, 1);
+    touchSheet(sheetFound.sheet);
+  });
+}
+
+export function addMultipleRowsInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  rows: Row[]
+): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    const rowsArr = found.sheet.get('rows') as Y.Array<Y.Map<unknown>>;
+    const mapped = rows.map((r) => rowToYMap(r));
+    rowsArr.push(mapped);
+    touchSheet(found.sheet);
+  });
+}
+
+// ---- Cell 스타일 ----
+
+export function updateCellStyleInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  rowId: string,
+  columnId: string,
+  style: CellStyle
+): void {
+  doc.transact(() => {
+    const sheetFound = findSheetMap(doc, sheetId);
+    if (!sheetFound) return;
+    const rowFound = findRowMap(sheetFound.sheet, rowId);
+    if (!rowFound) return;
+    let styles = rowFound.row.get('cellStyles') as Y.Map<CellStyle> | undefined;
+    if (!styles) {
+      styles = new Y.Map<CellStyle>();
+      rowFound.row.set('cellStyles', styles);
+    }
+    styles.set(columnId, style);
+    touchSheet(sheetFound.sheet);
+  });
+}
+
+export function updateCellsStyleInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  targets: Array<{ rowId: string; columnId: string; style: CellStyle }>
+): void {
+  doc.transact(() => {
+    const sheetFound = findSheetMap(doc, sheetId);
+    if (!sheetFound) return;
+    for (const { rowId, columnId, style } of targets) {
+      const rowFound = findRowMap(sheetFound.sheet, rowId);
+      if (!rowFound) continue;
+      let styles = rowFound.row.get('cellStyles') as Y.Map<CellStyle> | undefined;
+      if (!styles) {
+        styles = new Y.Map<CellStyle>();
+        rowFound.row.set('cellStyles', styles);
+      }
+      styles.set(columnId, style);
+    }
+    touchSheet(sheetFound.sheet);
+  });
+}
+
+export function updateCellMemoInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  rowId: string,
+  columnId: string,
+  memo: string | undefined
+): void {
+  doc.transact(() => {
+    const sheetFound = findSheetMap(doc, sheetId);
+    if (!sheetFound) return;
+    const rowFound = findRowMap(sheetFound.sheet, rowId);
+    if (!rowFound) return;
+    let memos = rowFound.row.get('cellMemos') as Y.Map<string> | undefined;
+    if (memo === undefined || memo === '') {
+      memos?.delete(columnId);
+      return;
+    }
+    if (!memos) {
+      memos = new Y.Map<string>();
+      rowFound.row.set('cellMemos', memos);
+    }
+    memos.set(columnId, memo);
+    touchSheet(sheetFound.sheet);
+  });
+}
+
+// ---- Sticker ----
+
+export function addStickerInDoc(doc: Y.Doc, sheetId: string, sticker: Sticker): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    let stickers = found.sheet.get('stickers') as Y.Array<Y.Map<unknown>> | undefined;
+    if (!stickers) {
+      stickers = new Y.Array<Y.Map<unknown>>();
+      found.sheet.set('stickers', stickers);
+    }
+    stickers.push([stickerToYMap(sticker)]);
+    touchSheet(found.sheet);
+  });
+}
+
+export function updateStickerInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  stickerId: string,
+  updates: Partial<Sticker>
+): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    const stickers = found.sheet.get('stickers') as Y.Array<Y.Map<unknown>> | undefined;
+    if (!stickers) return;
+    for (let i = 0; i < stickers.length; i++) {
+      const st = stickers.get(i);
+      if (st.get('id') !== stickerId) continue;
+      for (const [k, v] of Object.entries(updates)) {
+        if (v === undefined) st.delete(k);
+        else st.set(k, v);
+      }
+      touchSheet(found.sheet);
+      return;
+    }
+  });
+}
+
+export function deleteStickerInDoc(doc: Y.Doc, sheetId: string, stickerId: string): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    const stickers = found.sheet.get('stickers') as Y.Array<Y.Map<unknown>> | undefined;
+    if (!stickers) return;
+    for (let i = 0; i < stickers.length; i++) {
+      if ((stickers.get(i).get('id') as string) === stickerId) {
+        stickers.delete(i, 1);
+        touchSheet(found.sheet);
+        return;
+      }
+    }
+  });
+}
+
+// ---- Folder ----
+
+export function addFolderInDoc(doc: Y.Doc, folder: Folder): void {
+  doc.transact(() => {
+    const folders = doc.getArray<Y.Map<unknown>>('folders');
+    folders.push([folderToYMap(folder)]);
+  });
+}
+
+export function updateFolderInDoc(
+  doc: Y.Doc,
+  folderId: string,
+  updates: Partial<Folder>
+): void {
+  doc.transact(() => {
+    const found = findFolderMap(doc, folderId);
+    if (!found) return;
+    for (const [k, v] of Object.entries(updates)) {
+      if (v === undefined) found.folder.delete(k);
+      else found.folder.set(k, v);
+    }
+  });
+}
+
+/**
+ * 폴더 삭제. deleteContents = true 면 폴더 내 시트도 함께 삭제,
+ * false 면 시트의 folderId 만 제거 (루트로 이동).
+ * 하위 폴더는 재귀적으로 함께 처리.
+ */
+export function deleteFolderInDoc(
+  doc: Y.Doc,
+  folderId: string,
+  deleteContents: boolean
+): void {
+  doc.transact(() => {
+    const folders = doc.getArray<Y.Map<unknown>>('folders');
+    const sheets = doc.getArray<Y.Map<unknown>>('sheets');
+
+    const toDelete = new Set<string>();
+    const collect = (id: string) => {
+      toDelete.add(id);
+      for (let i = 0; i < folders.length; i++) {
+        const f = folders.get(i);
+        if ((f.get('parentId') as string | undefined) === id) {
+          collect(f.get('id') as string);
+        }
+      }
+    };
+    collect(folderId);
+
+    // 시트 처리
+    for (let i = sheets.length - 1; i >= 0; i--) {
+      const sheet = sheets.get(i);
+      const fid = sheet.get('folderId') as string | undefined;
+      if (!fid || !toDelete.has(fid)) continue;
+      if (deleteContents) {
+        sheets.delete(i, 1);
+      } else {
+        sheet.delete('folderId');
+        touchSheet(sheet);
+      }
+    }
+
+    // 폴더 삭제 (높은 인덱스부터)
+    for (let i = folders.length - 1; i >= 0; i--) {
+      const f = folders.get(i);
+      if (toDelete.has(f.get('id') as string)) {
+        folders.delete(i, 1);
+      }
+    }
+  });
+}
+
+export function toggleFolderExpandedInDoc(doc: Y.Doc, folderId: string): void {
+  doc.transact(() => {
+    const found = findFolderMap(doc, folderId);
+    if (!found) return;
+    const current = (found.folder.get('isExpanded') as boolean | undefined) ?? true;
+    found.folder.set('isExpanded', !current);
+    found.folder.set('updatedAt', Date.now());
+  });
+}
+
+export function moveSheetToFolderInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  folderId: string | null
+): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    if (folderId) found.sheet.set('folderId', folderId);
+    else found.sheet.delete('folderId');
+    touchSheet(found.sheet);
+  });
+}
+
+export function moveFolderToFolderInDoc(
+  doc: Y.Doc,
+  folderId: string,
+  parentId: string | null
+): void {
+  doc.transact(() => {
+    const found = findFolderMap(doc, folderId);
+    if (!found) return;
+
+    // 순환 참조 방지: parentId 가 folderId 의 자손이면 이동 금지
+    if (parentId) {
+      const isDescendant = (checkId: string | undefined, ancestorId: string): boolean => {
+        if (!checkId) return false;
+        if (checkId === ancestorId) return true;
+        const parent = findFolderMap(doc, checkId);
+        return parent
+          ? isDescendant(parent.folder.get('parentId') as string | undefined, ancestorId)
+          : false;
+      };
+      if (isDescendant(parentId, folderId)) return;
+      found.folder.set('parentId', parentId);
+    } else {
+      found.folder.delete('parentId');
+    }
+    found.folder.set('updatedAt', Date.now());
+  });
+}
+
+export function reorderFoldersInDoc(
+  doc: Y.Doc,
+  parentId: string | null,
+  fromIndex: number,
+  toIndex: number
+): void {
+  doc.transact(() => {
+    const folders = doc.getArray<Y.Map<unknown>>('folders');
+    // 같은 parentId 를 가진 폴더만 대상
+    const sameLevelIndices: number[] = [];
+    for (let i = 0; i < folders.length; i++) {
+      const f = folders.get(i);
+      const fp = (f.get('parentId') as string | undefined) ?? null;
+      if (fp === parentId) sameLevelIndices.push(i);
+    }
+    if (fromIndex < 0 || fromIndex >= sameLevelIndices.length) return;
+    const srcIdx = sameLevelIndices[fromIndex];
+    const snapshot = folders.get(srcIdx).toJSON();
+    folders.delete(srcIdx, 1);
+
+    // toIndex 재계산 — 삭제 후 같은 레벨의 인덱스 재수집
+    const recomputed: number[] = [];
+    for (let i = 0; i < folders.length; i++) {
+      const f = folders.get(i);
+      const fp = (f.get('parentId') as string | undefined) ?? null;
+      if (fp === parentId) recomputed.push(i);
+    }
+    const clamped = Math.max(0, Math.min(toIndex, recomputed.length));
+    const insertAt = clamped < recomputed.length ? recomputed[clamped] : folders.length;
+    folders.insert(insertAt, [rebuildFolderYMapFromJSON(snapshot)]);
+  });
+}
+
+// ---- 내부: JSON 스냅샷 → Y.Map 재생성 (reorder 전용) ----
+
+function rebuildSheetYMapFromJSON(json: unknown): Y.Map<unknown> {
+  const obj = json as Record<string, unknown>;
+  const map = new Y.Map();
+  for (const [k, v] of Object.entries(obj)) {
+    if (k === 'columns' && Array.isArray(v)) {
+      const arr = new Y.Array<Y.Map<unknown>>();
+      for (const c of v) arr.push([rebuildColumnYMapFromJSON(c)]);
+      map.set('columns', arr);
+    } else if (k === 'rows' && Array.isArray(v)) {
+      const arr = new Y.Array<Y.Map<unknown>>();
+      for (const r of v) arr.push([rebuildRowYMapFromJSON(r)]);
+      map.set('rows', arr);
+    } else if (k === 'stickers' && Array.isArray(v)) {
+      const arr = new Y.Array<Y.Map<unknown>>();
+      for (const s of v) arr.push([rebuildGenericYMap(s as Record<string, unknown>)]);
+      map.set('stickers', arr);
+    } else {
+      map.set(k, v);
+    }
+  }
+  return map;
+}
+
+function rebuildColumnYMapFromJSON(json: unknown): Y.Map<unknown> {
+  return rebuildGenericYMap(json as Record<string, unknown>);
+}
+
+function rebuildRowYMapFromJSON(json: unknown): Y.Map<unknown> {
+  const obj = json as Record<string, unknown>;
+  const map = new Y.Map();
+  for (const [k, v] of Object.entries(obj)) {
+    if ((k === 'cells' || k === 'cellStyles' || k === 'cellMemos') && v && typeof v === 'object') {
+      const ymap = new Y.Map();
+      for (const [kk, vv] of Object.entries(v as Record<string, unknown>)) {
+        ymap.set(kk, vv);
+      }
+      map.set(k, ymap);
+    } else {
+      map.set(k, v);
+    }
+  }
+  return map;
+}
+
+function rebuildFolderYMapFromJSON(json: unknown): Y.Map<unknown> {
+  return rebuildGenericYMap(json as Record<string, unknown>);
+}
+
+function rebuildGenericYMap(obj: Record<string, unknown>): Y.Map<unknown> {
+  const map = new Y.Map();
+  for (const [k, v] of Object.entries(obj)) {
+    map.set(k, v);
+  }
+  return map;
 }
