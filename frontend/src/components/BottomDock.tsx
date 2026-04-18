@@ -94,10 +94,19 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
     if (!group) return;
     const anyOpen = group.tools.some((tid) => panels[tid].show);
     if (anyOpen) {
+      // 현재 그룹이 활성 → 전부 닫기 (독바 토글 off)
       group.tools.forEach((tid) => {
         if (panels[tid].show) panels[tid].setShow(false);
       });
     } else {
+      // 다른 그룹이 열려있으면 먼저 닫기 — 한 번에 하나의 그룹만 활성
+      TOOL_GROUPS.forEach((otherGroup) => {
+        if (otherGroup.id === groupId) return;
+        otherGroup.tools.forEach((tid) => {
+          if (panels[tid].show) panels[tid].setShow(false);
+        });
+      });
+      // 선택된 그룹의 첫 도구 열기
       panels[group.tools[0]].setShow(true);
     }
   };
