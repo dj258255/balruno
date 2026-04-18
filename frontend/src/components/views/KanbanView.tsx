@@ -140,13 +140,20 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                       draggable
                       onDragStart={(e) => e.dataTransfer.setData('text/plain', row.id)}
                       onClick={() => setSelectedRowId(row.id)}
-                      className="p-3 rounded-lg cursor-pointer hover:ring-2 hover:ring-[var(--accent)]/30 transition-all"
+                      className="p-3 rounded-lg cursor-pointer hover:ring-2 hover:ring-[var(--accent)]/30 transition-all relative overflow-hidden"
                       style={{
                         background: 'var(--bg-primary)',
                         border: '1px solid var(--border-primary)',
                         outline: selectedRowId === row.id ? '2px solid var(--accent)' : 'none',
                       }}
                     >
+                      {/* 좌측 색상 바 — select option color 반영 */}
+                      {col.color && (
+                        <div
+                          className="absolute left-0 top-0 bottom-0 w-1"
+                          style={{ background: col.color }}
+                        />
+                      )}
                       {cardColumns.map((c) => (
                         <div key={c.id} className="mb-1 last:mb-0">
                           <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>

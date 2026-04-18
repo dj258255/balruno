@@ -7,7 +7,9 @@
  */
 
 import { useState } from 'react';
+import { ImageIcon, Plus } from 'lucide-react';
 import { formatDisplayValue } from '@/components/sheet/utils';
+import { useProjectStore } from '@/stores/projectStore';
 import type { Sheet } from '@/types';
 import RecordEditor from './RecordEditor';
 
@@ -19,6 +21,12 @@ interface GalleryViewProps {
 export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const selectedRow = selectedRowId ? sheet.rows.find((r) => r.id === selectedRowId) : null;
+  const addRow = useProjectStore((s) => s.addRow);
+
+  const handleAddRow = () => {
+    const rowId = addRow(projectId, sheet.id);
+    setSelectedRowId(rowId);
+  };
   const titleCol = sheet.columns.find(
     (c) => c.type === 'general' || c.type === 'formula'
   );
@@ -101,8 +109,24 @@ export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
         })}
       </div>
       {sheet.rows.length === 0 && (
-        <div className="text-center py-16" style={{ color: 'var(--text-tertiary)' }}>
-          표시할 레코드가 없습니다.
+        <div className="flex flex-col items-center py-16 gap-3">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center"
+            style={{ background: 'var(--bg-tertiary)' }}
+          >
+            <ImageIcon className="w-7 h-7" style={{ color: 'var(--text-tertiary)' }} />
+          </div>
+          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+            표시할 레코드가 없습니다
+          </p>
+          <button
+            type="button"
+            onClick={handleAddRow}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            style={{ background: 'var(--accent)', color: 'white' }}
+          >
+            <Plus className="w-4 h-4" /> 첫 레코드 추가
+          </button>
         </div>
       )}
     </div>
