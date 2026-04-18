@@ -10,7 +10,7 @@
  */
 
 import React, { forwardRef, useEffect, useRef } from 'react';
-import type { CellStyle, ColumnType, SelectOption } from '@/types';
+import type { CellStyle, ColumnType, SelectOption, Sheet } from '@/types';
 
 interface CellEditorProps {
   value: string;
@@ -29,10 +29,14 @@ interface CellEditorProps {
   columnType?: ColumnType;
   /** Track 1: select / multiSelect 의 옵션 목록 */
   selectOptions?: SelectOption[];
+  /** Track 2: link 타입 — 대상 시트의 row 목록을 드롭다운으로 */
+  linkedSheet?: Sheet | null;
+  /** Track 2: link 타입 — 표시 컬럼 id (없으면 row.id) */
+  linkedDisplayColumnId?: string;
 }
 
 export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
-  ({ value, onChange, onKeyDown, onBlur, isFormula = false, position, cellStyle, columnType, selectOptions }, ref) => {
+  ({ value, onChange, onKeyDown, onBlur, isFormula = false, position, cellStyle, columnType, selectOptions, linkedSheet, linkedDisplayColumnId }, ref) => {
     const internalInputRef = useRef<HTMLInputElement>(null);
 
     // 값이 변경될 때마다 커서가 보이도록 스크롤
@@ -111,6 +115,37 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
               {opt.label}
             </option>
           ))}
+        </select>
+      );
+    }
+
+    // Track 2: link 는 대상 시트 row 목록 드롭다운 (단일 선택 MVP)
+    if (columnType === 'link' && linkedSheet && !isFormula) {
+      return (
+        <select
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            onBlur?.(e as unknown as React.FocusEvent<HTMLSelectElement>);
+          }}
+          onKeyDown={onKeyDown}
+          onBlur={onBlur}
+          autoFocus
+          className="absolute z-50"
+          style={baseStyle}
+        >
+          <option value="">— 선택 없음 —</option>
+          {linkedSheet.rows.map((row) => {
+            const label =
+              linkedDisplayColumnId && row.cells[linkedDisplayColumnId] !== undefined
+                ? String(row.cells[linkedDisplayColumnId])
+                : row.id.slice(0, 8);
+            return (
+              <option key={row.id} value={row.id}>
+                {label || '(빈 값)'}
+              </option>
+            );
+          })}
         </select>
       );
     }

@@ -886,6 +886,10 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           {/* 오버레이 에디터 */}
           {editingCell && editorPosition && (() => {
             const editingColumn = sheet.columns.find((c) => c.id === editingCell.columnId);
+            const linkedSheet =
+              editingColumn?.type === 'link' && editingColumn.linkedSheetId
+                ? currentProject?.sheets.find((s) => s.id === editingColumn.linkedSheetId) ?? null
+                : null;
             return (
             <>
               <CellEditor
@@ -893,6 +897,8 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                 value={editValue}
                 columnType={editingColumn?.type}
                 selectOptions={editingColumn?.selectOptions}
+                linkedSheet={linkedSheet}
+                linkedDisplayColumnId={editingColumn?.linkedDisplayColumnId}
                 onChange={(value) => {
                   setEditValue(value);
                   setFormulaBarValue(value);
