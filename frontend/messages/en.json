@@ -697,7 +697,18 @@
     "formHeading": "Add record to {name}",
     "formEmpty": "No editable columns. Add a column first.",
     "formAdd": "Add",
-    "comingSoon": "This view is coming soon."
+    "comingSoon": "This view is coming soon.",
+    "kanbanNeedSelect": "Kanban view needs a select column",
+    "kanbanNeedSelectDesc": "Add a column or change an existing column type to select",
+    "kanbanGroupBy": "Group by",
+    "kanbanUngrouped": "Ungrouped",
+    "calendarNeedDate": "Calendar view needs a date column",
+    "calendarNeedDateDesc": "Add a column or change an existing column type to date",
+    "calendarDateColumn": "Date column",
+    "calendarToday": "Today",
+    "ganttNeedDate": "Gantt view needs a date column",
+    "ganttNeedDateDesc": "Add a column or change an existing column type to date",
+    "ganttDateColumn": "Date column"
   },
   "toolGroups": {
     "formulaWorkbench": "Formula Workbench",

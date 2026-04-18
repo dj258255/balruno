@@ -1,0 +1,102 @@
+'use client';
+
+/**
+ * Track 4 MVP — Gallery 뷰.
+ * 각 행을 카드 그리드로 표시. 첫 url 컬럼 값이 있으면 이미지로 렌더(attachment 는 다음 세션).
+ * 제목 = 첫 일반 컬럼, 나머지 컬럼은 메타 데이터로.
+ */
+
+import { formatDisplayValue } from '@/components/sheet/utils';
+import type { Sheet } from '@/types';
+
+interface GalleryViewProps {
+  projectId: string;
+  sheet: Sheet;
+}
+
+export default function GalleryView({ sheet }: GalleryViewProps) {
+  const titleCol = sheet.columns.find(
+    (c) => c.type === 'general' || c.type === 'formula'
+  );
+  const urlCol = sheet.columns.find((c) => c.type === 'url');
+  const metaCols = sheet.columns
+    .filter((c) => c.id !== titleCol?.id && c.id !== urlCol?.id)
+    .slice(0, 4);
+
+  return (
+    <div className="flex-1 overflow-auto p-4">
+      <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
+        {sheet.rows.map((row) => {
+          const imgSrc = urlCol ? row.cells[urlCol.id] : null;
+          const isImage =
+            typeof imgSrc === 'string' && /\.(png|jpe?g|gif|webp|svg)$/i.test(imgSrc);
+          return (
+            <div
+              key={row.id}
+              className="rounded-lg overflow-hidden"
+              style={{
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-primary)',
+              }}
+            >
+              <div
+                className="aspect-video flex items-center justify-center"
+                style={{ background: 'var(--bg-tertiary)' }}
+              >
+                {isImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={imgSrc as string}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl" style={{ color: 'var(--text-tertiary)' }}>
+                    ◌
+                  </span>
+                )}
+              </div>
+              <div className="p-3">
+                {titleCol && (
+                  <div
+                    className="text-sm font-semibold mb-1 truncate"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {formatDisplayValue(
+                      row.cells[titleCol.id] ?? '',
+                      titleCol,
+                      { sheets: [sheet], currentSheet: sheet },
+                      row
+                    ) || '—'}
+                  </div>
+                )}
+                {metaCols.map((c) => {
+                  const v = formatDisplayValue(
+                    row.cells[c.id] ?? '',
+                    c,
+                    { sheets: [sheet], currentSheet: sheet },
+                    row
+                  );
+                  if (!v) return null;
+                  return (
+                    <div key={c.id} className="flex gap-1 text-xs">
+                      <span style={{ color: 'var(--text-tertiary)' }}>{c.name}:</span>
+                      <span className="truncate" style={{ color: 'var(--text-secondary)' }}>
+                        {v}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {sheet.rows.length === 0 && (
+        <div className="text-center py-16" style={{ color: 'var(--text-tertiary)' }}>
+          표시할 레코드가 없습니다.
+        </div>
+      )}
+    </div>
+  );
+}

@@ -697,7 +697,18 @@
     "formHeading": "{name} 레코드 추가",
     "formEmpty": "편집 가능한 컬럼이 없습니다. 먼저 컬럼을 추가하세요.",
     "formAdd": "추가",
-    "comingSoon": "이 뷰는 곧 구현됩니다."
+    "comingSoon": "이 뷰는 곧 구현됩니다.",
+    "kanbanNeedSelect": "Kanban 뷰는 select 타입 컬럼이 필요합니다",
+    "kanbanNeedSelectDesc": "컬럼을 추가하거나 기존 컬럼 타입을 select 로 바꾸세요",
+    "kanbanGroupBy": "그룹 기준",
+    "kanbanUngrouped": "미지정",
+    "calendarNeedDate": "Calendar 뷰는 date 타입 컬럼이 필요합니다",
+    "calendarNeedDateDesc": "컬럼을 추가하거나 기존 컬럼 타입을 date 로 바꾸세요",
+    "calendarDateColumn": "날짜 컬럼",
+    "calendarToday": "오늘",
+    "ganttNeedDate": "Gantt 뷰는 date 타입 컬럼이 필요합니다",
+    "ganttNeedDateDesc": "컬럼을 추가하거나 기존 컬럼 타입을 date 로 바꾸세요",
+    "ganttDateColumn": "날짜 컬럼"
   },
   "toolGroups": {
     "formulaWorkbench": "수식 작업대",
