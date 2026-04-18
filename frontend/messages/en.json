@@ -681,6 +681,19 @@
     "importFromExcel": "Import from Excel",
     "importFromExcelDesc": "Paste CSV/Excel — with auto diagnostic"
   },
+  "commandPalette": {
+    "title": "Command Palette",
+    "searchPlaceholder": "Search commands or items...",
+    "noResults": "No results",
+    "navigate": "Navigate",
+    "create": "Create",
+    "tools": "Tools",
+    "functions": "Formulas",
+    "settings": "Settings",
+    "newProject": "New Project",
+    "newSheet": "New Sheet",
+    "toggleTheme": "Toggle Dark/Light Theme"
+  },
   "formulaPreset": {
     "title": "Formula Presets",
     "subtitle": "Frequently used game balancing formulas",
