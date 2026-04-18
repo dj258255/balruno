@@ -16,6 +16,8 @@ Thumbs.db
 
 # notes / docs scratch
 .obsidian/
+docs/draft/
+**/draft/
 
 # firebase
 firebase-debug.log
