@@ -191,6 +191,9 @@ function sheetToYMap(sheet: Sheet): Y.Map<unknown> {
   map.set('name', sheet.name);
   if (sheet.exportClassName) map.set('exportClassName', sheet.exportClassName);
   if (sheet.folderId) map.set('folderId', sheet.folderId);
+  // Track 4 — 뷰 스위처 상태
+  if (sheet.activeView) map.set('activeView', sheet.activeView);
+  if (sheet.viewGroupColumnId) map.set('viewGroupColumnId', sheet.viewGroupColumnId);
   map.set('createdAt', sheet.createdAt);
   map.set('updatedAt', sheet.updatedAt);
 
@@ -219,6 +222,8 @@ function yMapToSheet(map: Y.Map<unknown>): Sheet {
     name: map.get('name') as string,
     exportClassName: map.get('exportClassName') as string | undefined,
     folderId: map.get('folderId') as string | undefined,
+    activeView: map.get('activeView') as Sheet['activeView'] | undefined,
+    viewGroupColumnId: map.get('viewGroupColumnId') as string | undefined,
     createdAt: map.get('createdAt') as number,
     updatedAt: map.get('updatedAt') as number,
     columns: columns.toArray().map(yMapToColumn),

@@ -15,11 +15,16 @@
  * 기존 플로팅 상태 (`show*`) 는 그대로 유지 — 이 컴포넌트는 그 state 의 read/write 만.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { TOOL_GROUPS, type ToolGroupId, type ToolId } from '@/config/toolGroups';
+
+const WIDTH_KEY = 'balruno:docked-toolbox-width';
+const MIN_W = 280;
+const MAX_W = 800;
+const DEFAULT_W = 420;
 
 const Calculator = dynamic(() => import('@/components/panels/Calculator'), { ssr: false });
 const ComparisonChart = dynamic(() => import('@/components/panels/ComparisonChart'), { ssr: false });
@@ -108,6 +113,45 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
     g.tools.some((tid) => panels[tid].show)
   );
 
+  // 크기 조절 (좌측 가장자리 드래그). localStorage 로 유지.
+  const [width, setWidth] = useState(DEFAULT_W);
+  const resizeRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  useEffect(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem(WIDTH_KEY) : null;
+    if (stored) {
+      const n = parseInt(stored, 10);
+      if (!isNaN(n) && n >= MIN_W && n <= MAX_W) setWidth(n);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem(WIDTH_KEY, String(width));
+  }, [width]);
+
+  const handleResizeStart = (e: React.PointerEvent) => {
+    e.preventDefault();
+    resizeRef.current = { startX: e.clientX, startW: width };
+    const onMove = (ev: PointerEvent) => {
+      if (!resizeRef.current) return;
+      // 우측 패널이라 왼쪽으로 드래그 = 너비 확장
+      const dx = resizeRef.current.startX - ev.clientX;
+      const next = Math.max(MIN_W, Math.min(MAX_W, resizeRef.current.startW + dx));
+      setWidth(next);
+    };
+    const onUp = () => {
+      resizeRef.current = null;
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+
   // 현재 보이는 탭 — 그룹 내에서 show=true 인 도구 중 가장 먼저 나오는 것
   const [activeTab, setActiveTab] = useState<ToolId | null>(null);
 
@@ -139,12 +183,21 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
 
   return (
     <aside
-      className="w-[420px] flex-shrink-0 border-l hidden md:flex flex-col overflow-hidden"
+      className="flex-shrink-0 border-l hidden md:flex flex-col overflow-hidden relative"
       style={{
+        width: `${width}px`,
         background: 'var(--bg-primary)',
         borderColor: 'var(--border-primary)',
       }}
     >
+      {/* 좌측 가장자리 resize handle */}
+      <div
+        onPointerDown={handleResizeStart}
+        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-[var(--accent)] transition-colors z-10"
+        style={{ touchAction: 'none' }}
+        role="separator"
+        aria-label="Resize toolbox"
+      />
       {/* 헤더: 그룹 타이틀 + 그룹 닫기 */}
       <div
         className="flex items-center justify-between px-4 py-2 border-b"
