@@ -681,6 +681,19 @@
     "importFromExcel": "Excel 에서 가져오기",
     "importFromExcelDesc": "CSV/Excel 붙여넣기 — 자동 진단 포함"
   },
+  "commandPalette": {
+    "title": "명령 팔레트",
+    "searchPlaceholder": "명령 또는 항목 검색...",
+    "noResults": "결과 없음",
+    "navigate": "이동",
+    "create": "생성",
+    "tools": "도구",
+    "functions": "수식 함수",
+    "settings": "설정",
+    "newProject": "새 프로젝트",
+    "newSheet": "새 시트",
+    "toggleTheme": "다크/라이트 테마 전환"
+  },
   "formulaPreset": {
     "title": "수식 프리셋",
     "subtitle": "자주 사용되는 게임 밸런싱 수식",

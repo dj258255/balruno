@@ -24,6 +24,7 @@ import { SheetTable, StickerLayer } from '@/components/sheet';
 // Modal components - Dynamic imports for code splitting
 import { useOnboardingStatus } from '@/components/modals';
 
+const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ssr: false });
 const SettingsModal = dynamic(() => import('@/components/modals/SettingsModal'), { ssr: false });
 const ReferencesModal = dynamic(() => import('@/components/modals/ReferencesModal'), { ssr: false });
 const OnboardingGuide = dynamic(() => import('@/components/modals/OnboardingGuide'), { ssr: false });
@@ -158,6 +159,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   // Modal state
   const [showSettings, setShowSettings] = useState(false);
@@ -250,6 +252,51 @@ export default function Home() {
     window.addEventListener('balruno:open-import-modal', handler);
     return () => window.removeEventListener('balruno:open-import-modal', handler);
   }, []);
+
+  // Track 5: Cmd/Ctrl+K → Command Palette 토글
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        // 인풋/텍스트에서 이미 포커스된 경우에도 팔레트 우선
+        e.preventDefault();
+        setShowCommandPalette((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Track 5: CommandPalette → 각 도구 패널 열기 이벤트 라우팅
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ panel: string }>).detail;
+      if (!detail?.panel) return;
+      const panelSetters: Record<string, (v: boolean) => void> = {
+        calculator: setShowCalculator,
+        comparison: setShowComparison,
+        chart: setShowChart,
+        preset: setShowPresetComparison,
+        imbalance: setShowImbalanceDetector,
+        goal: setShowGoalSolver,
+        balance: setShowBalanceAnalysis,
+        economy: setShowEconomy,
+        dpsVariance: setShowDpsVariance,
+        curveFitting: setShowCurveFitting,
+        formulaHelper: setShowFormulaHelper,
+        balanceValidator: setShowBalanceValidator,
+        difficultyCurve: setShowDifficultyCurve,
+        simulation: setShowSimulation,
+        entityDefinition: setShowEntityDefinition,
+      };
+      const setter = panelSetters[detail.panel];
+      if (setter) {
+        resetPanelPosition(detail.panel as Parameters<typeof resetPanelPosition>[0]);
+        setter(true);
+      }
+    };
+    window.addEventListener('balruno:open-panel', handler);
+    return () => window.removeEventListener('balruno:open-panel', handler);
+  }, [resetPanelPosition]);
 
   // History panel outside click
   useEffect(() => {
@@ -749,6 +796,9 @@ export default function Home() {
         }}
         isModalOpen={isModalOpen}
       />
+
+      {/* Track 5: Command Palette (⌘K) */}
+      <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />
 
       {/* Trash Drop Zone (드래그로 패널 닫기) */}
       <TrashDropZone onClosePanel={handleCloseDraggingPanel} />
