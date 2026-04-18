@@ -4,69 +4,82 @@ import { useEffect, useRef } from 'react';
 import { useProjectStore } from '@/stores/projectStore';
 import {
   getProjectDoc,
-  hydrateDocFromProject,
+  initializeProjectDoc,
   observeProjectDoc,
+  docToProject,
   detachDoc,
 } from '@/lib/ydoc';
 
 /**
- * Y.Doc ↔ Zustand 단방향 브릿지 (Track 0 Phase 1).
+ * Y.Doc ↔ Zustand 브릿지 (Track 0 Phase 2~4).
  *
- * 동작:
- *  - `projects` 가 로드되면 각 프로젝트마다 Y.Doc hydrate (in-memory only)
- *  - Y.Doc 변경(update 이벤트) → `docToProject` → Zustand setState
- *  - 프로젝트 삭제 → observer 해제 + Y.Doc 폐기
+ * 단일 책임:
+ *  1. 새 프로젝트 → Y.Doc 초기화 (y-indexeddb persist + 조건부 hydrate)
+ *  2. Y.Doc observer 등록 → 변경 시 Zustand `projects` 에 반사
+ *  3. 제거된 프로젝트 → observer 해제 + Y.Doc/UndoManager detach
  *
- * Phase 1 특성:
- *  - y-indexeddb persist 비활성 (매 세션 storage.ts projects 로부터 rehydrate)
- *  - Y.Doc 은 "쓰기 경로용 중간 레이어" — 진실의 소스는 여전히 Zustand/storage.ts
+ * 마이그레이션 (Phase 4):
+ *  - `initializeProjectDoc` 이 y-indexeddb 에서 이전 상태 복원을 시도
+ *  - 복원된 Y.Doc 이 비어있으면 storage.ts 의 projects 로 hydrate (= 자동 마이그레이션)
+ *  - 플래그 체크 없이 매 세션 idempotent — `isDocHydrated` 가 이중 hydrate 방지
  *
- * Phase 2 (모든 write 액션 Y.Doc 이관 후):
- *  - y-indexeddb persist 활성 → Y.Doc 이 진실의 소스
- *  - storage.ts 는 백업/export 용도로만 유지
+ * 루프 방지:
+ *  - observer 는 Y.Doc → Zustand 단방향. 자기 자신을 재진입시키지 않음.
+ *  - `observersRef` 가 프로젝트별 등록 상태 추적 → 중복 observer 방지.
  */
 export function useYDocSync(): void {
   const projects = useProjectStore((s) => s.projects);
 
-  // 현재 관리중인 Y.Doc 프로젝트 ID → unobserve 함수
   const observersRef = useRef<Map<string, () => void>>(new Map());
-  const hydratedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    let cancelled = false;
     const currentIds = new Set(projects.map((p) => p.id));
 
-    // 제거된 프로젝트: observer 해제 + Y.Doc 폐기
+    // 제거된 프로젝트 정리
     for (const [id, unobserve] of observersRef.current.entries()) {
       if (!currentIds.has(id)) {
         unobserve();
         observersRef.current.delete(id);
-        hydratedRef.current.delete(id);
         detachDoc(id);
       }
     }
 
-    // 신규 프로젝트: hydrate 후 observer 등록 순서 중요 —
-    // observer 를 hydrate 전에 걸면 초기 hydrate 전체가 observer 이벤트로 돌아와
-    // setState 루프를 유발함.
-    for (const project of projects) {
-      if (hydratedRef.current.has(project.id)) continue;
+    // 새 프로젝트: y-indexeddb persist → hydrate(필요 시) → observer → 초기 sync
+    (async () => {
+      for (const project of projects) {
+        if (observersRef.current.has(project.id)) continue;
 
-      const doc = getProjectDoc(project.id);
-      hydrateDocFromProject(doc, project);
-      hydratedRef.current.add(project.id);
+        await initializeProjectDoc(project);
+        if (cancelled) return;
 
-      const unobserve = observeProjectDoc(doc, (updated) => {
+        const doc = getProjectDoc(project.id);
+
+        const unobserve = observeProjectDoc(doc, (updated) => {
+          useProjectStore.setState((state) => ({
+            projects: state.projects.map((p) =>
+              p.id === updated.id ? updated : p
+            ),
+          }));
+        });
+        observersRef.current.set(project.id, unobserve);
+
+        // observer 등록 전에 발생한 write (+ y-indexeddb 에서 복원된 최신 상태)
+        // 를 Zustand 에 한 번 반사.
+        const current = docToProject(doc);
         useProjectStore.setState((state) => ({
           projects: state.projects.map((p) =>
-            p.id === updated.id ? updated : p
+            p.id === current.id ? current : p
           ),
         }));
-      });
-      observersRef.current.set(project.id, unobserve);
-    }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [projects]);
 
-  // 언마운트 시 모든 observer 해제
   useEffect(() => {
     const observers = observersRef.current;
     return () => {

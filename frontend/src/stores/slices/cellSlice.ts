@@ -1,19 +1,39 @@
 /**
  * Column + Row + Cell + Sticker actions slice.
  *
- * 시트 내부의 스키마(Column)와 데이터(Row, Cell), 서식(CellStyle),
- * 시각 보조(Sticker) 수준의 모든 변경 액션을 담당.
+ * Track 0 Phase 2 — 모든 write 가 Y.Doc helper 로 수렴.
+ * Zustand 의 `projects` 배열은 Y.Doc observer 가 자동 동기화하므로 이 slice 는
+ * `set()` 을 호출하지 않는다 (UI state 만 필요하면 예외).
  */
 
 import { v4 as uuidv4 } from 'uuid';
 import type { StoreApi } from 'zustand';
 import type { Column, Row, CellValue, CellStyle, Sticker } from '@/types';
 import type { ProjectState } from '../projectStore';
+import {
+  getProjectDoc,
+  addColumnInDoc,
+  insertColumnInDoc,
+  updateColumnInDoc,
+  deleteColumnInDoc,
+  reorderColumnsInDoc,
+  addRowInDoc,
+  insertRowInDoc,
+  updateRowInDoc,
+  updateCellInDoc,
+  updateCellStyleInDoc,
+  updateCellsStyleInDoc,
+  deleteRowInDoc,
+  addMultipleRowsInDoc,
+  addStickerInDoc,
+  updateStickerInDoc,
+  deleteStickerInDoc,
+} from '@/lib/ydoc';
 
 type SetFn = StoreApi<ProjectState>['setState'];
 type GetFn = StoreApi<ProjectState>['getState'];
 
-// 기본 셀 스타일 — 스타일이 없는 셀에 적용되는 디폴트
+// 기본 셀 스타일 — 스타일이 없는 셀에 기본값 적용
 const DEFAULT_CELL_STYLE: CellStyle = {
   fontSize: 15,
   bold: false,
@@ -25,33 +45,12 @@ const DEFAULT_CELL_STYLE: CellStyle = {
   textRotation: 0,
 };
 
-export const createCellActions = (set: SetFn, get: GetFn) => ({
+export const createCellActions = (_set: SetFn, get: GetFn) => ({
   // ==== 컬럼 ====
 
   addColumn: (projectId: string, sheetId: string, column: Omit<Column, 'id'>): string => {
     const id = uuidv4();
-    const now = Date.now();
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      columns: [...s.columns, { ...column, id }],
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-
+    addColumnInDoc(getProjectDoc(projectId), sheetId, { ...column, id });
     return id;
   },
 
@@ -62,32 +61,7 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     atIndex: number
   ): string => {
     const id = uuidv4();
-    const now = Date.now();
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      columns: [
-                        ...s.columns.slice(0, atIndex),
-                        { ...column, id },
-                        ...s.columns.slice(atIndex),
-                      ],
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-
+    insertColumnInDoc(getProjectDoc(projectId), sheetId, { ...column, id }, atIndex);
     return id;
   },
 
@@ -97,78 +71,15 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     columnId: string,
     updates: Partial<Column>
   ) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      columns: s.columns.map((c) =>
-                        c.id === columnId ? { ...c, ...updates } : c
-                      ),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
+    updateColumnInDoc(getProjectDoc(projectId), sheetId, columnId, updates);
   },
 
   deleteColumn: (projectId: string, sheetId: string, columnId: string) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      columns: s.columns.filter((c) => c.id !== columnId),
-                      rows: s.rows.map((r) => {
-                        const newCells = { ...r.cells };
-                        delete newCells[columnId];
-                        return { ...r, cells: newCells };
-                      }),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
+    deleteColumnInDoc(getProjectDoc(projectId), sheetId, columnId);
   },
 
   reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) => {
-                if (s.id !== sheetId) return s;
-                const columnMap = new Map(s.columns.map((c) => [c.id, c]));
-                const reorderedColumns = columnIds
-                  .map((id) => columnMap.get(id))
-                  .filter((c): c is Column => c !== undefined);
-                return { ...s, columns: reorderedColumns, updatedAt: now };
-              }),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
+    reorderColumnsInDoc(getProjectDoc(projectId), sheetId, columnIds);
   },
 
   // ==== 행 ====
@@ -179,36 +90,20 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     cells: Record<string, CellValue> = {}
   ): string => {
     const id = uuidv4();
-    const now = Date.now();
+    const sheet = get().getSheet(projectId, sheetId);
 
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== projectId) return p;
+    // 수식 컬럼의 formula 를 새 행에 자동 prefill
+    const formulaCells: Record<string, CellValue> = {};
+    sheet?.columns.forEach((col) => {
+      if (col.type === 'formula' && col.formula) {
+        formulaCells[col.id] = col.formula;
+      }
+    });
 
-        return {
-          ...p,
-          sheets: p.sheets.map((s) => {
-            if (s.id !== sheetId) return s;
-
-            // 수식 컬럼의 formula 자동 prefill
-            const formulaCells: Record<string, CellValue> = {};
-            s.columns.forEach((col) => {
-              if (col.type === 'formula' && col.formula) {
-                formulaCells[col.id] = col.formula;
-              }
-            });
-
-            return {
-              ...s,
-              rows: [...s.rows, { id, cells: { ...formulaCells, ...cells } }],
-              updatedAt: now,
-            };
-          }),
-          updatedAt: now,
-        };
-      }),
-    }));
-
+    addRowInDoc(getProjectDoc(projectId), sheetId, {
+      id,
+      cells: { ...formulaCells, ...cells },
+    });
     return id;
   },
 
@@ -219,39 +114,21 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     cells: Record<string, CellValue> = {}
   ): string => {
     const id = uuidv4();
-    const now = Date.now();
+    const sheet = get().getSheet(projectId, sheetId);
 
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== projectId) return p;
+    const formulaCells: Record<string, CellValue> = {};
+    sheet?.columns.forEach((col) => {
+      if (col.type === 'formula' && col.formula) {
+        formulaCells[col.id] = col.formula;
+      }
+    });
 
-        return {
-          ...p,
-          sheets: p.sheets.map((s) => {
-            if (s.id !== sheetId) return s;
-
-            const formulaCells: Record<string, CellValue> = {};
-            s.columns.forEach((col) => {
-              if (col.type === 'formula' && col.formula) {
-                formulaCells[col.id] = col.formula;
-              }
-            });
-
-            return {
-              ...s,
-              rows: [
-                ...s.rows.slice(0, atIndex),
-                { id, cells: { ...formulaCells, ...cells } },
-                ...s.rows.slice(atIndex),
-              ],
-              updatedAt: now,
-            };
-          }),
-          updatedAt: now,
-        };
-      }),
-    }));
-
+    insertRowInDoc(
+      getProjectDoc(projectId),
+      sheetId,
+      { id, cells: { ...formulaCells, ...cells } },
+      atIndex
+    );
     return id;
   },
 
@@ -261,28 +138,7 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     rowId: string,
     updates: Partial<Row>
   ) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: s.rows.map((r) =>
-                        r.id === rowId ? { ...r, ...updates } : r
-                      ),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
+    updateRowInDoc(getProjectDoc(projectId), sheetId, rowId, updates);
   },
 
   updateCell: (
@@ -292,30 +148,7 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     columnId: string,
     value: CellValue
   ) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: s.rows.map((r) =>
-                        r.id === rowId
-                          ? { ...r, cells: { ...r.cells, [columnId]: value } }
-                          : r
-                      ),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
+    updateCellInDoc(getProjectDoc(projectId), sheetId, rowId, columnId, value);
   },
 
   updateCellStyle: (
@@ -325,41 +158,11 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     columnId: string,
     style: Partial<CellStyle>
   ) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: s.rows.map((r) =>
-                        r.id === rowId
-                          ? {
-                              ...r,
-                              cellStyles: {
-                                ...r.cellStyles,
-                                // 기존 스타일이 없으면 기본값과 병합
-                                [columnId]: {
-                                  ...DEFAULT_CELL_STYLE,
-                                  ...r.cellStyles?.[columnId],
-                                  ...style,
-                                },
-                              },
-                            }
-                          : r
-                      ),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
+    // 기존 스타일과 기본값을 머지한 최종 스타일을 한 번에 Y.Doc 에 설정
+    const existing =
+      get().getCellStyle(projectId, sheetId, rowId, columnId) ?? {};
+    const merged: CellStyle = { ...DEFAULT_CELL_STYLE, ...existing, ...style };
+    updateCellStyleInDoc(getProjectDoc(projectId), sheetId, rowId, columnId, merged);
   },
 
   updateCellsStyle: (
@@ -368,45 +171,13 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     cells: Array<{ rowId: string; columnId: string }>,
     style: Partial<CellStyle>
   ) => {
-    const now = Date.now();
-    const cellMap = new Map<string, Set<string>>();
-    cells.forEach(({ rowId, columnId }) => {
-      if (!cellMap.has(rowId)) cellMap.set(rowId, new Set());
-      cellMap.get(rowId)!.add(columnId);
+    const targets = cells.map(({ rowId, columnId }) => {
+      const existing =
+        get().getCellStyle(projectId, sheetId, rowId, columnId) ?? {};
+      const merged: CellStyle = { ...DEFAULT_CELL_STYLE, ...existing, ...style };
+      return { rowId, columnId, style: merged };
     });
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: s.rows.map((r) => {
-                        const columnIds = cellMap.get(r.id);
-                        if (!columnIds) return r;
-                        const newCellStyles = { ...r.cellStyles };
-                        columnIds.forEach((colId) => {
-                          const existingStyle = newCellStyles[colId] || {};
-                          newCellStyles[colId] = {
-                            ...DEFAULT_CELL_STYLE,
-                            ...existingStyle,
-                            ...style,
-                          };
-                        });
-                        return { ...r, cellStyles: newCellStyles };
-                      }),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
+    updateCellsStyleInDoc(getProjectDoc(projectId), sheetId, targets);
   },
 
   getCellStyle: (
@@ -415,73 +186,31 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     rowId: string,
     columnId: string
   ): CellStyle | undefined => {
-    const state = get();
-    const project = state.projects.find((p) => p.id === projectId);
-    if (!project) return undefined;
-    const sheet = project.sheets.find((s) => s.id === sheetId);
-    if (!sheet) return undefined;
-    const row = sheet.rows.find((r) => r.id === rowId);
-    if (!row) return undefined;
-    return row.cellStyles?.[columnId];
+    const project = get().projects.find((p) => p.id === projectId);
+    const sheet = project?.sheets.find((s) => s.id === sheetId);
+    const row = sheet?.rows.find((r) => r.id === rowId);
+    return row?.cellStyles?.[columnId];
   },
 
   deleteRow: (projectId: string, sheetId: string, rowId: string) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: s.rows.filter((r) => r.id !== rowId),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
+    deleteRowInDoc(getProjectDoc(projectId), sheetId, rowId);
   },
 
   addMultipleRows: (projectId: string, sheetId: string, count: number) => {
-    const now = Date.now();
+    const sheet = get().getSheet(projectId, sheetId);
+    const formulaCells: Record<string, CellValue> = {};
+    sheet?.columns.forEach((col) => {
+      if (col.type === 'formula' && col.formula) {
+        formulaCells[col.id] = col.formula;
+      }
+    });
 
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== projectId) return p;
-
-        return {
-          ...p,
-          sheets: p.sheets.map((s) => {
-            if (s.id !== sheetId) return s;
-
-            const formulaCells: Record<string, CellValue> = {};
-            s.columns.forEach((col) => {
-              if (col.type === 'formula' && col.formula) {
-                formulaCells[col.id] = col.formula;
-              }
-            });
-
-            const newRows: Row[] = Array.from({ length: count }, () => ({
-              id: uuidv4(),
-              cells: { ...formulaCells },
-            }));
-
-            return {
-              ...s,
-              rows: [...s.rows, ...newRows],
-              updatedAt: now,
-            };
-          }),
-          updatedAt: now,
-        };
-      }),
+    const newRows: Row[] = Array.from({ length: count }, () => ({
+      id: uuidv4(),
+      cells: { ...formulaCells },
     }));
+
+    addMultipleRowsInDoc(getProjectDoc(projectId), sheetId, newRows);
   },
 
   // ==== 스티커 ====
@@ -492,29 +221,11 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     sticker: Omit<Sticker, 'id' | 'createdAt'>
   ): string => {
     const id = uuidv4();
-    const now = Date.now();
-    const newSticker = { ...sticker, id, createdAt: now };
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      stickers: [...(s.stickers || []), newSticker],
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-
+    addStickerInDoc(getProjectDoc(projectId), sheetId, {
+      ...sticker,
+      id,
+      createdAt: Date.now(),
+    });
     return id;
   },
 
@@ -524,50 +235,10 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     stickerId: string,
     updates: Partial<Sticker>
   ) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      stickers: (s.stickers || []).map((st) =>
-                        st.id === stickerId ? { ...st, ...updates } : st
-                      ),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
+    updateStickerInDoc(getProjectDoc(projectId), sheetId, stickerId, updates);
   },
 
   deleteSticker: (projectId: string, sheetId: string, stickerId: string) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      stickers: (s.stickers || []).filter((st) => st.id !== stickerId),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
+    deleteStickerInDoc(getProjectDoc(projectId), sheetId, stickerId);
   },
 });

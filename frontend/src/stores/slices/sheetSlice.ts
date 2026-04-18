@@ -1,14 +1,22 @@
 /**
  * Sheet actions slice.
  *
- * currentSheetId / openSheetTabs 상태와 시트 수준 액션(create/update/delete/duplicate/reorder)
- * 및 탭 관리(openTab/closeTab/reorderOpenTabs) 를 담당.
+ * 시트 수준 CRUD 는 Y.Doc 에 직접 기록. UI state (currentSheetId, openSheetTabs)
+ * 는 Zustand 에 유지.
  */
 
 import { v4 as uuidv4 } from 'uuid';
 import type { StoreApi } from 'zustand';
 import type { Sheet, Column, Row, CellValue } from '@/types';
 import type { ProjectState } from '../projectStore';
+import {
+  getProjectDoc,
+  addSheetInDoc,
+  updateSheetInDoc,
+  deleteSheetInDoc,
+  duplicateSheetInDoc,
+  reorderSheetsInDoc,
+} from '@/lib/ydoc';
 
 type SetFn = StoreApi<ProjectState>['setState'];
 type GetFn = StoreApi<ProjectState>['getState'];
@@ -18,33 +26,28 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     const id = uuidv4();
     const now = Date.now();
 
-    // 기본 2열 × 2행
-    const defaultColumns = [
-      { id: uuidv4(), name: 'Column1', type: 'general' as const, width: 120 },
-      { id: uuidv4(), name: 'Column2', type: 'general' as const, width: 120 },
-    ];
-
-    const defaultRows = [
-      { id: uuidv4(), cells: { [defaultColumns[0].id]: '', [defaultColumns[1].id]: '' } },
-      { id: uuidv4(), cells: { [defaultColumns[0].id]: '', [defaultColumns[1].id]: '' } },
-    ];
-
+    const col1 = uuidv4();
+    const col2 = uuidv4();
     const newSheet: Sheet = {
       id,
       name,
-      columns: defaultColumns,
-      rows: defaultRows,
+      columns: [
+        { id: col1, name: 'Column1', type: 'general', width: 120 },
+        { id: col2, name: 'Column2', type: 'general', width: 120 },
+      ],
+      rows: [
+        { id: uuidv4(), cells: { [col1]: '', [col2]: '' } },
+        { id: uuidv4(), cells: { [col1]: '', [col2]: '' } },
+      ],
       exportClassName: exportClassName || undefined,
       createdAt: now,
       updatedAt: now,
     };
 
+    addSheetInDoc(getProjectDoc(projectId), newSheet);
+
+    // UI 상태는 Zustand
     set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? { ...p, sheets: [...p.sheets, newSheet], updatedAt: now }
-          : p
-      ),
       currentSheetId: id,
       openSheetTabs: [...state.openSheetTabs, id],
     }));
@@ -57,37 +60,15 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     sheetId: string,
     updates: Partial<Pick<Sheet, 'name' | 'exportClassName'>>
   ) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId ? { ...s, ...updates, updatedAt: now } : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
+    updateSheetInDoc(getProjectDoc(projectId), sheetId, updates);
   },
 
   deleteSheet: (projectId: string, sheetId: string) => {
-    const now = Date.now();
+    deleteSheetInDoc(getProjectDoc(projectId), sheetId);
 
     set((state) => {
       const newOpenTabs = state.openSheetTabs.filter((id) => id !== sheetId);
       return {
-        projects: state.projects.map((p) =>
-          p.id === projectId
-            ? {
-                ...p,
-                sheets: p.sheets.filter((s) => s.id !== sheetId),
-                updatedAt: now,
-              }
-            : p
-        ),
         openSheetTabs: newOpenTabs,
         currentSheetId:
           state.currentSheetId === sheetId
@@ -157,38 +138,38 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
 
     const newId = uuidv4();
     const now = Date.now();
-    const newSheet: Sheet = {
-      ...JSON.parse(JSON.stringify(sheet)),
-      id: newId,
-      name: `${sheet.name} (복사본)`,
-      createdAt: now,
-      updatedAt: now,
-    };
 
+    // 컬럼 ID 재생성 + cells 매핑 갱신
     const columnIdMap: Record<string, string> = {};
-    newSheet.columns = newSheet.columns.map((col: Column) => {
+    const newColumns: Column[] = sheet.columns.map((col) => {
       const newColId = uuidv4();
       columnIdMap[col.id] = newColId;
       return { ...col, id: newColId };
     });
 
-    newSheet.rows = newSheet.rows.map((row: Row) => {
+    const newRows: Row[] = sheet.rows.map((row) => {
       const newCells: Record<string, CellValue> = {};
       Object.entries(row.cells).forEach(([oldColId, value]) => {
         const newColId = columnIdMap[oldColId];
-        if (newColId) {
-          newCells[newColId] = value;
-        }
+        if (newColId) newCells[newColId] = value;
       });
       return { ...row, id: uuidv4(), cells: newCells };
     });
 
+    const newSheet: Sheet = {
+      ...sheet,
+      id: newId,
+      name: `${sheet.name} (복사본)`,
+      columns: newColumns,
+      rows: newRows,
+      stickers: sheet.stickers?.map((st) => ({ ...st, id: uuidv4(), createdAt: now })),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    duplicateSheetInDoc(getProjectDoc(projectId), newSheet);
+
     set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? { ...p, sheets: [...p.sheets, newSheet], updatedAt: now }
-          : p
-      ),
       openSheetTabs: [...state.openSheetTabs, newId],
       currentSheetId: newId,
     }));
@@ -197,45 +178,23 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
   },
 
   reorderSheets: (projectId: string, fromIndex: number, toIndex: number) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== projectId) return p;
-        const sheets = [...p.sheets];
-        const [removed] = sheets.splice(fromIndex, 1);
-        sheets.splice(toIndex, 0, removed);
-        return { ...p, sheets, updatedAt: now };
-      }),
-    }));
+    reorderSheetsInDoc(getProjectDoc(projectId), fromIndex, toIndex);
   },
 
   moveSheetToProject: (fromProjectId: string, toProjectId: string, sheetId: string) => {
-    const now = Date.now();
+    // 2개 Y.Doc 사이 이동: source 에서 snapshot 후 destination 에 push, source 삭제
     const state = get();
     const fromProject = state.projects.find((p) => p.id === fromProjectId);
     const sheet = fromProject?.sheets.find((s) => s.id === sheetId);
     if (!sheet) return;
 
+    const now = Date.now();
+    addSheetInDoc(getProjectDoc(toProjectId), { ...sheet, updatedAt: now });
+    deleteSheetInDoc(getProjectDoc(fromProjectId), sheetId);
+
     set((state) => {
       const newOpenTabs = state.openSheetTabs.filter((id) => id !== sheetId);
       return {
-        projects: state.projects.map((p) => {
-          if (p.id === fromProjectId) {
-            return {
-              ...p,
-              sheets: p.sheets.filter((s) => s.id !== sheetId),
-              updatedAt: now,
-            };
-          }
-          if (p.id === toProjectId) {
-            return {
-              ...p,
-              sheets: [...p.sheets, { ...sheet, updatedAt: now }],
-              updatedAt: now,
-            };
-          }
-          return p;
-        }),
         currentProjectId: toProjectId,
         currentSheetId: sheetId,
         openSheetTabs: [...newOpenTabs, sheetId],
