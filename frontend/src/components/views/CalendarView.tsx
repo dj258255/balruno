@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import CustomSelect from '@/components/ui/CustomSelect';
 import type { Sheet, Row } from '@/types';
+import RecordEditor from './RecordEditor';
 
 interface CalendarViewProps {
   projectId: string;
@@ -38,7 +39,10 @@ function iso(d: Date): string {
 export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
   const t = useTranslations();
   const updateSheet = useProjectStore((s) => s.updateSheet);
+  const addRow = useProjectStore((s) => s.addRow);
   const [cursor, setCursor] = useState<Date>(startOfMonth(new Date()));
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const selectedRow = selectedRowId ? sheet.rows.find((r) => r.id === selectedRowId) : null;
 
   const dateColumns = sheet.columns.filter((c) => c.type === 'date');
   const dateColId =
@@ -91,8 +95,15 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
   }
   while (cells.length % 7 !== 0) cells.push({ date: null, rows: [] });
 
+  const createOnDate = (date: Date) => {
+    if (!dateCol) return;
+    const rowId = addRow(projectId, sheet.id, { [dateCol.id]: iso(date) });
+    setSelectedRowId(rowId);
+  };
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
       <div
         className="px-4 py-2 border-b flex items-center gap-3"
         style={{ borderColor: 'var(--border-primary)' }}
@@ -150,20 +161,33 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
           {cells.map((cell, i) => (
             <div
               key={i}
-              className="min-h-[80px] p-1"
+              className="min-h-[80px] p-1 relative group"
               style={{
                 background: cell.date ? 'var(--bg-primary)' : 'var(--bg-secondary)',
               }}
             >
               {cell.date && (
                 <>
-                  <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
-                    {cell.date.getDate()}
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                      {cell.date.getDate()}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => cell.date && createOnDate(cell.date)}
+                      className="opacity-0 group-hover:opacity-100 text-xs w-4 h-4 rounded-full flex items-center justify-center transition-opacity"
+                      style={{ background: 'var(--accent)', color: 'white' }}
+                      aria-label="추가"
+                    >
+                      +
+                    </button>
                   </div>
                   {cell.rows.slice(0, 3).map((row) => (
-                    <div
+                    <button
                       key={row.id}
-                      className="text-xs px-1.5 py-0.5 rounded truncate mb-0.5"
+                      type="button"
+                      onClick={() => setSelectedRowId(row.id)}
+                      className="w-full text-left text-xs px-1.5 py-0.5 rounded truncate mb-0.5 hover:ring-1 hover:ring-[var(--accent)]"
                       style={{
                         background: 'var(--accent-light)',
                         color: 'var(--accent)',
@@ -171,7 +195,7 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
                       title={String(row.cells[titleCol?.id ?? ''] ?? row.id)}
                     >
                       {titleCol ? String(row.cells[titleCol.id] ?? '·') : row.id.slice(0, 6)}
-                    </div>
+                    </button>
                   ))}
                   {cell.rows.length > 3 && (
                     <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
@@ -184,6 +208,15 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
           ))}
         </div>
       </div>
+      </div>
+      {selectedRow && (
+        <RecordEditor
+          projectId={projectId}
+          sheet={sheet}
+          row={selectedRow}
+          onClose={() => setSelectedRowId(null)}
+        />
+      )}
     </div>
   );
 }

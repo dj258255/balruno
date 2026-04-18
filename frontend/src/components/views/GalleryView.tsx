@@ -6,15 +6,19 @@
  * 제목 = 첫 일반 컬럼, 나머지 컬럼은 메타 데이터로.
  */
 
+import { useState } from 'react';
 import { formatDisplayValue } from '@/components/sheet/utils';
 import type { Sheet } from '@/types';
+import RecordEditor from './RecordEditor';
 
 interface GalleryViewProps {
   projectId: string;
   sheet: Sheet;
 }
 
-export default function GalleryView({ sheet }: GalleryViewProps) {
+export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const selectedRow = selectedRowId ? sheet.rows.find((r) => r.id === selectedRowId) : null;
   const titleCol = sheet.columns.find(
     (c) => c.type === 'general' || c.type === 'formula'
   );
@@ -24,6 +28,7 @@ export default function GalleryView({ sheet }: GalleryViewProps) {
     .slice(0, 4);
 
   return (
+    <div className="flex-1 flex overflow-hidden">
     <div className="flex-1 overflow-auto p-4">
       <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
         {sheet.rows.map((row) => {
@@ -31,12 +36,15 @@ export default function GalleryView({ sheet }: GalleryViewProps) {
           const isImage =
             typeof imgSrc === 'string' && /\.(png|jpe?g|gif|webp|svg)$/i.test(imgSrc);
           return (
-            <div
+            <button
+              type="button"
               key={row.id}
-              className="rounded-lg overflow-hidden"
+              onClick={() => setSelectedRowId(row.id)}
+              className="rounded-lg overflow-hidden text-left hover:ring-2 hover:ring-[var(--accent)]/40 transition-all"
               style={{
                 background: 'var(--bg-primary)',
                 border: '1px solid var(--border-primary)',
+                outline: selectedRowId === row.id ? '2px solid var(--accent)' : 'none',
               }}
             >
               <div
@@ -88,7 +96,7 @@ export default function GalleryView({ sheet }: GalleryViewProps) {
                   );
                 })}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -97,6 +105,15 @@ export default function GalleryView({ sheet }: GalleryViewProps) {
           표시할 레코드가 없습니다.
         </div>
       )}
+    </div>
+    {selectedRow && (
+      <RecordEditor
+        projectId={projectId}
+        sheet={sheet}
+        row={selectedRow}
+        onClose={() => setSelectedRowId(null)}
+      />
+    )}
     </div>
   );
 }
