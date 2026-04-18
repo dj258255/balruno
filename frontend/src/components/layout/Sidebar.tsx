@@ -312,20 +312,7 @@ export default function Sidebar({
           handleToolsResizeStart={handleToolsResizeStart}
         />
 
-        <ToolsSection
-          sidebarTools={sidebarTools}
-          activeTools={activeTools}
-          toolClickHandlers={toolClickHandlers}
-          selectedRowsCount={projectStore.selectedRows.length}
-          effectiveToolsHeight={effectiveToolsHeight}
-          toolsContainerRef={toolsContainerRef}
-          dragState={dragState}
-          onDragOver={handleToolsSectionDragOver}
-          onDragLeave={handleToolsSectionDragLeave}
-          onDrop={handleToolsDrop}
-          onToolDragStart={handleToolDragStart}
-          getToolTransformY={getToolTransformY}
-        />
+        {/* Track 6 후속: 도구는 하단 BottomDock 으로 일원화. 사이드바에서는 제거. */}
 
         <DataButtons
           onShowExportModal={onShowExportModal}
