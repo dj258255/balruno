@@ -90,6 +90,54 @@
 
 ---
 
+## 2.4. 비관적 현황 분석 (2026-04-19)
+
+**낙관적 평가만 하면 자기기만**. 반대 관점에서 본 Balruno 상태:
+
+### 기능 완성도 (실사용 가능한가?)
+| 영역 | 실제 상태 | 실사용 가능? |
+|---|---|---|
+| Grid 뷰 | 완성 (기존 자산) | ✅ 가능 |
+| 70+ 게임 수식 | 완성 | ✅ 가능 |
+| 엔진 Export | 완성 | ✅ 가능 |
+| Field 타입 (Track 1) | 표시 포맷 + 전용 CellEditor | 🟡 **select 는 드롭다운 O, date picker O, checkbox/rating 토글 O — 실사용 가능** |
+| Linked Records (Track 2) | 양방향 미러링 구현 | ❌ **레코드 피커 UI 없음 → 사용자가 rowId 직접 입력해야 함 = 비현실적** |
+| Lookup/Rollup (Track 3) | 집계 O | ✅ 가능 (Track 2 가능 조건 하에) |
+| Kanban 카드 편집 | 사이드 패널 O | ✅ 가능 |
+| Calendar 월 뷰 | O, 이벤트 클릭 편집 O | 🟡 주/일 뷰 없음, 드래그로 날짜 변경 없음 — 간단한 일정에만 |
+| Gallery | 카드 그리드 O | 🟡 attachment 없음, url 기반 이미지만 |
+| Gantt | 단일 막대 | 🟡 range/의존성 없음 → **실무 Gantt 기능 아님, 사실상 placeholder** |
+| Y.Doc 실시간 sync | 로컬 IndexedDB | 🟡 WebRTC infra 있지만 UI 미통합 |
+| AI Auto-Balancer (Track 11) | API stub (501) | ❌ **동작 안 함** |
+| Interface Designer (Track 9) | 타입 정의만 | ❌ **UI 없음** |
+| Automations (Track 10) | 타입 정의만 | ❌ **UI 없음** |
+
+### 경쟁 대비 냉정한 비교
+| 지표 | Balruno (현재) | Airtable | Helika | PlayFab |
+|---|---|---|---|---|
+| 개발 기간 | 약 2-3 주 | 10+ 년 | 2+ 년 | 10+ 년 |
+| 팀 사이즈 | 1인 | 수백 명 | 30+ 명 ($8M) | MS 인수 (수백 명) |
+| 유료 사용자 | 0 | 10만+ | 스튜디오 수십 | 10만+ 개발자 |
+| 기능 완성도 | MVP (약 25%) | 완성형 | 완성형 | 완성형 |
+| 마케팅 예산 | 0 | $수백M | $수백만 | MS 백업 |
+
+**현실**: Balruno 는 **경쟁 제품의 프로덕션 수준 대비 25-35% 완성도**. "Airtable 처럼 보이지만 Airtable 은 아님".
+
+### 구조적 리스크
+1. **1인 개발 한계**: 게임사 파트너십/세일즈 인프라 없음 → B2B 영업 불가
+2. **출시 전 상태**: 실사용자 0명 → PMF 검증 전
+3. **AI 경쟁사 속도**: Helika $8M 투자받음, Xsolla 이미 LiveOps 출시 → **"블루오션" 이 이미 닫히는 중**
+4. **게임사 도입 장벽**: 엔터프라이즈 영업 = 보통 6-12개월 사이클
+5. **브라우저 검증 부족**: 21+ 커밋이 실사용 검증 없이 main 에 올라감 — 숨은 버그 다수 존재 가능성
+6. **테스트 범위**: 42 테스트 중 대부분 formulaEngine/ydoc.ts unit. 통합 테스트 / E2E 없음
+
+### 이 비관 분석이 의미하는 것
+- **"다 만들면 된다"는 판타지** — 경쟁 제품 완성도 = 10년 + 수십억 투자 결과
+- **실제 전략**: 게임 기획자 **니치 3-5명 얼리 어답터** 확보 → 피드백 기반 개선 → B2B 파트너십 →...
+- **지금 우선순위**: 기능 70% 완성보다 **10명 사용자 찾기** 가 더 중요
+
+---
+
 ## 2.5. 현재 MVP 상태 매트릭스 (Airtable/경쟁 제품 대비)
 
 | 트랙 / 뷰 | MVP 포함 | **남은 고급 기능** | 경쟁 제품 기준 |
@@ -107,6 +155,150 @@
 | Track 9 | 타입만 | 위젯 11종 + react-grid-layout + 편집기 | Airtable Interface Designer |
 | Track 10 | 타입만 | 노드 그래프 에디터 + 런타임 엔진 + 실행 로그 | Zapier/n8n |
 | Track 11 | API stub | 5단계 validator 파이프라인, 실제 LLM 호출, NL→수식/쿼리/대시보드 | ChatGPT Advanced + Airtable Omni |
+
+---
+
+## 2.45. UX/UI 전면 재설계 필요한가? (2026-04-19)
+
+**결론: 전면 재설계 ❌, 부분 "첫인상 폴리시" ⭕**
+
+### 현재 UI 상태 진단
+✅ **기본 뼈대 OK**:
+- CSS 변수 기반 디자인 시스템 (light/dark 모드)
+- Tailwind + 반응형 (단 우측 도킹은 모바일 숨김)
+- 모바일 터치 타겟 44px (Apple HIG 준수)
+- 좌 Sidebar / 중 Sheet / 우 DockedToolbox / 하 BottomDock 4-zone 레이아웃
+- macOS-style 독바 (hover scale, accent indicator)
+- 일관된 border/shadow 토큰
+
+🟡 **완성도 부족 (MVP 수준)**:
+- 각 뷰 empty state 디자인 기본 ("표시할 레코드가 없습니다" 단순 텍스트)
+- 온보딩 부족 → 새 사용자가 "어디서 뭐부터?" 불명확
+- 애니메이션 최소 (scaleIn 정도만, 마이크로 인터랙션 부족)
+- 에러 메시지 UI 기본 (inline 빨간 텍스트)
+- 비게임 기획자에게 도메인 난해 (수식 목록 70개 = 압도적)
+- Kanban 카드/Calendar 이벤트 등 **"비어 보임"** (게임 기획자가 느끼는 첫인상: "뭔가 허전")
+
+❌ **구조적 약점**:
+- 각 뷰가 내부 상태 독립 → 뷰 전환 시 검색/필터/선택 리셋
+- 키보드 단축키 문서화 부족 (Cmd+K 외)
+- 다국어 지원되지만 한국 게임 용어 정확도 미검증
+- 접근성 (a11y) aria-label 31개 → 부족 (Airtable 은 수백 개)
+
+### 전면 재설계 불필요 이유
+1. **기능이 먼저 안정화되어야** — UI 재설계 2번 손대면 작업 2배
+2. **현재 뼈대가 올바른 방향** — Airtable/Linear/Notion 패턴 따름
+3. **사용자 피드백 전** — 뭐가 진짜 문제인지 모름. 가정 기반 재설계 = 낭비
+
+### 최소 "첫인상 개선" 권장 (UX 리프레시)
+**목표**: 테스트 유저 5-10명이 "계속 써볼 만하다" 느끼게 만들기
+
+| 작업 | 효과 | 규모 |
+|---|---|---|
+| **온보딩 투어 개선** — 샘플 프로젝트 자동 열기 → 주요 기능 3-5 스텝 가이드 | 첫 경험 극대화 | 1-2일 |
+| **Empty state 일러스트/CTA** — 각 뷰 빈 상태에 "샘플 채우기" 버튼 | 빈 화면 공포 해소 | 1일 |
+| **Kanban 카드 visual polish** — 색상 바, 우선순위 아이콘, 더 풍성 | Airtable 수준 근접 | 1일 |
+| **게임 도메인 온보딩** — RPG/FPS/MOBA/Idle 4 프리셋 + 용어 해설 팝오버 | 도메인 이해도 | 1일 |
+| **마이크로 애니메이션** — 셀 편집 확정 시 체크마크, 성공 토스트 | 피드백 명확 | ½일 |
+| **키보드 단축키 치트시트** (Cmd+/) | 파워유저 초기 정착 | ½일 |
+
+**합계 5-6일 분량 → 1 세션 (방치 가능)**. **Phase B (AI Auto-Balancer 등) 와 병렬 진행 가능**.
+
+### 본격 재설계가 필요한 시점
+다음 조건 중 2+ 충족 시:
+- 실사용자 10명+ 인터뷰 후 "UX 자체가 혼란" 피드백 지속
+- Airtable/Linear 수준 완성도 영업 필수인 엔터프라이즈 고객 대기
+- 디자이너 영입 (1인 개발 한계)
+- 시드 투자 유치 후 (자금 생기면 재설계 가능)
+
+**현재 단계**: 위 조건 미충족. 재설계 불필요. 기능 완성 + 첫인상 폴리시가 우선.
+
+---
+
+## 2.65. 포지셔닝 진화 — "Kubernetes for Game Data" (2026-04-19)
+
+**백엔드고수 + 팝콘도팝(현직) 피드백 + 2차 심화 리서치 결과**:
+
+### 시장 빈 자리 발견
+```
+기존 제품 카테고리:
+  Excel / Airtable          = 도커 (단일 컨테이너 = 시트 하나)
+  PlayFab / AccelByte       = 게임 인프라 (BaaS)
+  Balancy / Metaplay / Xsolla = LiveOps 운영 (OTA 업데이트, 세그먼트)
+  Machinations              = 이코노미 시뮬 (노드 그래프)
+  Helika                    = AI 플레이어 분석 (운영 측)
+  Modl:play                 = AI 밸런스 분석 (사후)
+
+❌ 빠진 것: 게임 데이터 "오케스트레이션" 레이어
+   - 여러 시트 + 버전 + 배포 + A/B + AI 추천 + 시뮬 통합
+   - kubectl apply 처럼 "원하는 밸런스 선언 → 자동 적용"
+```
+
+### 포지셔닝 이중 구조
+- **Phase 1 (현재)**: "Airtable for Game Designers" — 게임 기획자용 스프레드시트
+- **Phase 2 (목표)**: "Kubernetes for Game Data" — 게임 데이터 오케스트레이션 플랫폼
+
+시장 신호:
+- **Xsolla LiveOps Management Suite** 2025-08 출시 (D2C 경제 운영)
+- **Helika $8M 투자** 유치 (AI 게임 관리)
+- **GDC 2025: 47% 개발자 AI 밸런싱 사용 중**
+- **AccelByte vs PlayFab** 평가 재검토 흐름
+
+→ **자본 몰리는 중**. "기획자 네이티브 오케스트레이션" 은 **진짜 빈 자리**.
+
+### Phase 2 에 추가될 핵심 기능
+1. **Balance Version Control** (Git-like) — 버전 태그, 롤백, diff, merge
+2. **Canary 배포** — 일부 유저에게만 새 밸런스 (A/B 테스트)
+3. **AI 요구사항 → 추천 설정** (아래 2.66 참조)
+4. **비즈니스 효과 시뮬** — DAU/LTV/이탈률 예측 (게임사 백오피스 니즈)
+5. **Live Runtime Push** — Unity/Unreal/Godot 런타임 즉시 반영
+
+---
+
+## 2.66. AI 요구사항 분석 → 초기 밸런스 자동 생성 (팝콘도팝 아이디어)
+
+### 현재 경쟁 AI 기능 한계
+| 제품 | AI 기능 | 한계 |
+|---|---|---|
+| **Modl:play** | 밸런스 분석 (사후) | 초기 설계 X |
+| **Helika** | 플레이어 세그먼트 (운영) | 설계 X |
+| **Machinations AI-Balancer** | 수치 최적화 (target-seeking) | 수치 튜닝만 |
+| Balruno 현재 Track 11 계획 | NL → formula | 수식 하나씩만 |
+
+### ✨ 빈 자리: "요구사항 → 전체 밸런스 테이블 자동 생성"
+
+**입력 예시**:
+```
+"메트로이드바니아 장르, 난이도 중상, 플레이 시간 20시간 목표,
+스킬 트리 30개 노드, F2P 가챠 없음, 콘솔+PC 타겟"
+```
+
+**AI 자동 생성 출력**:
+- 캐릭터 스탯 테이블 (HP/ATK/DEF/SPEED 초기값 + 성장 곡선)
+- 스킬 트리 30 노드 (데미지/쿨다운/소모값)
+- 적/보스 테이블 (HP/공격력/AI 패턴)
+- 아이템 드롭률 테이블
+- 레벨 테이블 (경험치 곡선)
+- **지역별 난이도 커브** (중상 목표에 맞춤)
+
+### 구현 스택 (LangChain + Vercel AI SDK)
+```
+사용자 텍스트 → LangChain Agent
+                  ↓
+                  [Tool 1: 장르 템플릿 매칭] (우리 40 템플릿)
+                  [Tool 2: 게임 수식 적용] (우리 70 수식)
+                  [Tool 3: imbalanceDetector] (사후 검증)
+                  [Tool 4: Monte Carlo] (시뮬)
+                  ↓
+LangChain Agent → 초기 밸런스 제안
+                  ↓
+사용자 확인 → Y.Doc 에 적용
+```
+
+### 왜 이게 차별화인가
+- **Notion/Confluence 에서 요구사항 작성** → Balruno 에 URL 붙여넣기 → **초기 시트 전체 자동 생성**
+- 게임 기획자의 **"설계 → 수치화"** 단계 단축 (현재 수백 시간 → AI 초안 + 수정)
+- Modl:play (사후 분석) + Machinations (수치 튜닝) 모두 커버 못 하는 **"설계 초기"** 영역
 
 ---
 
@@ -462,6 +654,24 @@ BE-1 완료 후:
 - **shadcn-data-views** — 2026-01 신규, JSON 스키마 → 5개 뷰 자동 생성
 - **Yjs** — IndexedDB + WebRTC/WebSocket. Tiptap, Excalidraw 검증
 - **cmdk** — Linear/Raycast 백본. React 18, 2000-3000 아이템까지 성능 OK
+
+### 2026-04-19 심화 리서치 — 오케스트레이션 / LiveOps / AI 트렌드
+
+**LiveOps 플랫폼 경쟁**:
+- **Metaplay**: 게임 config 오케스트레이션 (OTA 업데이트). Unity 특화
+- **PlayFab** (MS): Full Stack LiveOps, 경제/이벤트/CMS
+- **AccelByte**: PlayFab 대체로 부상, 80% 서비스 + 20% 커스텀
+- **Xsolla LiveOps Management Suite** (2025-08 출시, D2C 특화)
+- **Helika**: AI 게임 관리, $8M 투자. Web3 + 전통 게임
+- **Balancy**: Unity 데이터 관리 + 런타임 배포 + Virtual Economy
+
+**게임 BaaS**:
+- Nakama (오픈소스), Beamable, LootLocker, Namazu
+
+**AI 트렌드**:
+- LangChain + Vercel AI SDK 가 표준 agent 프레임워크
+- Modl:play = AI 밸런스 분석
+- **빈 자리: "요구사항 → 전체 시트 생성"** 아직 없음
 
 ### 2026-04-19 리서치 (게임 밸런싱 도메인 심화)
 - **Balancy** (balancy.co, Unity Asset Store) — 데이터 템플릿 + Virtual Economy 도구 (Hard Currency 환율 자동 계산) + 태그 시스템 + **런타임 배포**
