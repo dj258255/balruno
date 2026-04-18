@@ -1,9 +1,19 @@
+/**
+ * Column + Row + Cell + Sticker actions slice.
+ *
+ * 시트 내부의 스키마(Column)와 데이터(Row, Cell), 서식(CellStyle),
+ * 시각 보조(Sticker) 수준의 모든 변경 액션을 담당.
+ */
+
 import { v4 as uuidv4 } from 'uuid';
-import type { Column, Row, CellValue, CellStyle } from '@/types';
-import type { StateCreator } from 'zustand';
+import type { StoreApi } from 'zustand';
+import type { Column, Row, CellValue, CellStyle, Sticker } from '@/types';
 import type { ProjectState } from '../projectStore';
 
-// 기본 셀 스타일
+type SetFn = StoreApi<ProjectState>['setState'];
+type GetFn = StoreApi<ProjectState>['getState'];
+
+// 기본 셀 스타일 — 스타일이 없는 셀에 적용되는 디폴트
 const DEFAULT_CELL_STYLE: CellStyle = {
   fontSize: 15,
   bold: false,
@@ -15,34 +25,10 @@ const DEFAULT_CELL_STYLE: CellStyle = {
   textRotation: 0,
 };
 
-export interface CellSlice {
-  // 컬럼 액션
-  addColumn: (projectId: string, sheetId: string, column: Omit<Column, 'id'>) => string;
-  insertColumn: (projectId: string, sheetId: string, column: Omit<Column, 'id'>, atIndex: number) => string;
-  updateColumn: (projectId: string, sheetId: string, columnId: string, updates: Partial<Column>) => void;
-  deleteColumn: (projectId: string, sheetId: string, columnId: string) => void;
-  reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => void;
+export const createCellActions = (set: SetFn, get: GetFn) => ({
+  // ==== 컬럼 ====
 
-  // 행 액션
-  addRow: (projectId: string, sheetId: string, cells?: Record<string, CellValue>) => string;
-  insertRow: (projectId: string, sheetId: string, atIndex: number, cells?: Record<string, CellValue>) => string;
-  updateRow: (projectId: string, sheetId: string, rowId: string, updates: Partial<Row>) => void;
-  updateCell: (projectId: string, sheetId: string, rowId: string, columnId: string, value: CellValue) => void;
-  updateCellStyle: (projectId: string, sheetId: string, rowId: string, columnId: string, style: Partial<CellStyle>) => void;
-  updateCellsStyle: (projectId: string, sheetId: string, cells: Array<{rowId: string; columnId: string}>, style: Partial<CellStyle>) => void;
-  getCellStyle: (projectId: string, sheetId: string, rowId: string, columnId: string) => CellStyle | undefined;
-  deleteRow: (projectId: string, sheetId: string, rowId: string) => void;
-  addMultipleRows: (projectId: string, sheetId: string, count: number) => void;
-}
-
-export const createCellSlice: StateCreator<
-  ProjectState,
-  [],
-  [],
-  CellSlice
-> = (set, get) => ({
-  // 컬럼 액션
-  addColumn: (projectId, sheetId, column) => {
+  addColumn: (projectId: string, sheetId: string, column: Omit<Column, 'id'>): string => {
     const id = uuidv4();
     const now = Date.now();
 
@@ -69,7 +55,12 @@ export const createCellSlice: StateCreator<
     return id;
   },
 
-  insertColumn: (projectId, sheetId, column, atIndex) => {
+  insertColumn: (
+    projectId: string,
+    sheetId: string,
+    column: Omit<Column, 'id'>,
+    atIndex: number
+  ): string => {
     const id = uuidv4();
     const now = Date.now();
 
@@ -100,7 +91,12 @@ export const createCellSlice: StateCreator<
     return id;
   },
 
-  updateColumn: (projectId, sheetId, columnId, updates) => {
+  updateColumn: (
+    projectId: string,
+    sheetId: string,
+    columnId: string,
+    updates: Partial<Column>
+  ) => {
     const now = Date.now();
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -125,7 +121,7 @@ export const createCellSlice: StateCreator<
     }));
   },
 
-  deleteColumn: (projectId, sheetId, columnId) => {
+  deleteColumn: (projectId: string, sheetId: string, columnId: string) => {
     const now = Date.now();
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -153,7 +149,7 @@ export const createCellSlice: StateCreator<
     }));
   },
 
-  reorderColumns: (projectId, sheetId, columnIds) => {
+  reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => {
     const now = Date.now();
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -175,66 +171,96 @@ export const createCellSlice: StateCreator<
     }));
   },
 
-  // 행 액션
-  addRow: (projectId, sheetId, cells = {}) => {
+  // ==== 행 ====
+
+  addRow: (
+    projectId: string,
+    sheetId: string,
+    cells: Record<string, CellValue> = {}
+  ): string => {
     const id = uuidv4();
     const now = Date.now();
 
     set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: [...s.rows, { id, cells }],
-                      updatedAt: now,
-                    }
-                  : s
-              ),
+      projects: state.projects.map((p) => {
+        if (p.id !== projectId) return p;
+
+        return {
+          ...p,
+          sheets: p.sheets.map((s) => {
+            if (s.id !== sheetId) return s;
+
+            // 수식 컬럼의 formula 자동 prefill
+            const formulaCells: Record<string, CellValue> = {};
+            s.columns.forEach((col) => {
+              if (col.type === 'formula' && col.formula) {
+                formulaCells[col.id] = col.formula;
+              }
+            });
+
+            return {
+              ...s,
+              rows: [...s.rows, { id, cells: { ...formulaCells, ...cells } }],
               updatedAt: now,
-            }
-          : p
-      ),
+            };
+          }),
+          updatedAt: now,
+        };
+      }),
     }));
 
     return id;
   },
 
-  insertRow: (projectId, sheetId, atIndex, cells = {}) => {
+  insertRow: (
+    projectId: string,
+    sheetId: string,
+    atIndex: number,
+    cells: Record<string, CellValue> = {}
+  ): string => {
     const id = uuidv4();
     const now = Date.now();
 
     set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: [
-                        ...s.rows.slice(0, atIndex),
-                        { id, cells },
-                        ...s.rows.slice(atIndex),
-                      ],
-                      updatedAt: now,
-                    }
-                  : s
-              ),
+      projects: state.projects.map((p) => {
+        if (p.id !== projectId) return p;
+
+        return {
+          ...p,
+          sheets: p.sheets.map((s) => {
+            if (s.id !== sheetId) return s;
+
+            const formulaCells: Record<string, CellValue> = {};
+            s.columns.forEach((col) => {
+              if (col.type === 'formula' && col.formula) {
+                formulaCells[col.id] = col.formula;
+              }
+            });
+
+            return {
+              ...s,
+              rows: [
+                ...s.rows.slice(0, atIndex),
+                { id, cells: { ...formulaCells, ...cells } },
+                ...s.rows.slice(atIndex),
+              ],
               updatedAt: now,
-            }
-          : p
-      ),
+            };
+          }),
+          updatedAt: now,
+        };
+      }),
     }));
 
     return id;
   },
 
-  updateRow: (projectId, sheetId, rowId, updates) => {
+  updateRow: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    updates: Partial<Row>
+  ) => {
     const now = Date.now();
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -259,7 +285,13 @@ export const createCellSlice: StateCreator<
     }));
   },
 
-  updateCell: (projectId, sheetId, rowId, columnId, value) => {
+  updateCell: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    columnId: string,
+    value: CellValue
+  ) => {
     const now = Date.now();
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -286,7 +318,13 @@ export const createCellSlice: StateCreator<
     }));
   },
 
-  updateCellStyle: (projectId, sheetId, rowId, columnId, style) => {
+  updateCellStyle: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    columnId: string,
+    style: Partial<CellStyle>
+  ) => {
     const now = Date.now();
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -303,7 +341,12 @@ export const createCellSlice: StateCreator<
                               ...r,
                               cellStyles: {
                                 ...r.cellStyles,
-                                [columnId]: { ...DEFAULT_CELL_STYLE, ...r.cellStyles?.[columnId], ...style },
+                                // 기존 스타일이 없으면 기본값과 병합
+                                [columnId]: {
+                                  ...DEFAULT_CELL_STYLE,
+                                  ...r.cellStyles?.[columnId],
+                                  ...style,
+                                },
                               },
                             }
                           : r
@@ -319,7 +362,12 @@ export const createCellSlice: StateCreator<
     }));
   },
 
-  updateCellsStyle: (projectId, sheetId, cells, style) => {
+  updateCellsStyle: (
+    projectId: string,
+    sheetId: string,
+    cells: Array<{ rowId: string; columnId: string }>,
+    style: Partial<CellStyle>
+  ) => {
     const now = Date.now();
     const cellMap = new Map<string, Set<string>>();
     cells.forEach(({ rowId, columnId }) => {
@@ -342,7 +390,11 @@ export const createCellSlice: StateCreator<
                         const newCellStyles = { ...r.cellStyles };
                         columnIds.forEach((colId) => {
                           const existingStyle = newCellStyles[colId] || {};
-                          newCellStyles[colId] = { ...DEFAULT_CELL_STYLE, ...existingStyle, ...style };
+                          newCellStyles[colId] = {
+                            ...DEFAULT_CELL_STYLE,
+                            ...existingStyle,
+                            ...style,
+                          };
                         });
                         return { ...r, cellStyles: newCellStyles };
                       }),
@@ -357,7 +409,12 @@ export const createCellSlice: StateCreator<
     }));
   },
 
-  getCellStyle: (projectId, sheetId, rowId, columnId) => {
+  getCellStyle: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    columnId: string
+  ): CellStyle | undefined => {
     const state = get();
     const project = state.projects.find((p) => p.id === projectId);
     if (!project) return undefined;
@@ -368,7 +425,7 @@ export const createCellSlice: StateCreator<
     return row.cellStyles?.[columnId];
   },
 
-  deleteRow: (projectId, sheetId, rowId) => {
+  deleteRow: (projectId: string, sheetId: string, rowId: string) => {
     const now = Date.now();
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -391,12 +448,52 @@ export const createCellSlice: StateCreator<
     }));
   },
 
-  addMultipleRows: (projectId, sheetId, count) => {
+  addMultipleRows: (projectId: string, sheetId: string, count: number) => {
     const now = Date.now();
-    const newRows: Row[] = Array.from({ length: count }, () => ({
-      id: uuidv4(),
-      cells: {},
+
+    set((state) => ({
+      projects: state.projects.map((p) => {
+        if (p.id !== projectId) return p;
+
+        return {
+          ...p,
+          sheets: p.sheets.map((s) => {
+            if (s.id !== sheetId) return s;
+
+            const formulaCells: Record<string, CellValue> = {};
+            s.columns.forEach((col) => {
+              if (col.type === 'formula' && col.formula) {
+                formulaCells[col.id] = col.formula;
+              }
+            });
+
+            const newRows: Row[] = Array.from({ length: count }, () => ({
+              id: uuidv4(),
+              cells: { ...formulaCells },
+            }));
+
+            return {
+              ...s,
+              rows: [...s.rows, ...newRows],
+              updatedAt: now,
+            };
+          }),
+          updatedAt: now,
+        };
+      }),
     }));
+  },
+
+  // ==== 스티커 ====
+
+  addSticker: (
+    projectId: string,
+    sheetId: string,
+    sticker: Omit<Sticker, 'id' | 'createdAt'>
+  ): string => {
+    const id = uuidv4();
+    const now = Date.now();
+    const newSticker = { ...sticker, id, createdAt: now };
 
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -407,7 +504,62 @@ export const createCellSlice: StateCreator<
                 s.id === sheetId
                   ? {
                       ...s,
-                      rows: [...s.rows, ...newRows],
+                      stickers: [...(s.stickers || []), newSticker],
+                      updatedAt: now,
+                    }
+                  : s
+              ),
+              updatedAt: now,
+            }
+          : p
+      ),
+    }));
+
+    return id;
+  },
+
+  updateSticker: (
+    projectId: string,
+    sheetId: string,
+    stickerId: string,
+    updates: Partial<Sticker>
+  ) => {
+    const now = Date.now();
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === projectId
+          ? {
+              ...p,
+              sheets: p.sheets.map((s) =>
+                s.id === sheetId
+                  ? {
+                      ...s,
+                      stickers: (s.stickers || []).map((st) =>
+                        st.id === stickerId ? { ...st, ...updates } : st
+                      ),
+                      updatedAt: now,
+                    }
+                  : s
+              ),
+              updatedAt: now,
+            }
+          : p
+      ),
+    }));
+  },
+
+  deleteSticker: (projectId: string, sheetId: string, stickerId: string) => {
+    const now = Date.now();
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === projectId
+          ? {
+              ...p,
+              sheets: p.sheets.map((s) =>
+                s.id === sheetId
+                  ? {
+                      ...s,
+                      stickers: (s.stickers || []).filter((st) => st.id !== stickerId),
                       updatedAt: now,
                     }
                   : s

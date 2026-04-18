@@ -1,41 +1,20 @@
-import { v4 as uuidv4 } from 'uuid';
-import type { Sticker } from '@/types';
-import type { StateCreator } from 'zustand';
-import type { ProjectState, SelectedRowData, CellSelectionMode } from '../projectStore';
+/**
+ * Row selection + Cell selection mode slice.
+ *
+ * 다중 행 선택(`selectedRows`)과 외부에서 셀을 "고르게 하는" 모달 셀 선택 모드
+ * (`cellSelectionMode`) 를 담당. 서로 다른 UX이지만 선택이라는 개념을 공유.
+ */
 
-export interface SelectionSlice {
-  // 상태
-  selectedRows: SelectedRowData[];
-  cellSelectionMode: CellSelectionMode;
+import type { StoreApi } from 'zustand';
+import type { SelectedRowData, CellSelectionMode, ProjectState } from '../projectStore';
 
-  // 행 선택 액션
-  selectRow: (data: SelectedRowData) => void;
-  deselectRow: (rowId: string) => void;
-  clearSelectedRows: () => void;
-  toggleRowSelection: (data: SelectedRowData) => void;
+type SetFn = StoreApi<ProjectState>['setState'];
+type GetFn = StoreApi<ProjectState>['getState'];
 
-  // 스티커 액션
-  addSticker: (projectId: string, sheetId: string, sticker: Omit<Sticker, 'id' | 'createdAt'>) => string;
-  updateSticker: (projectId: string, sheetId: string, stickerId: string, updates: Partial<Sticker>) => void;
-  deleteSticker: (projectId: string, sheetId: string, stickerId: string) => void;
+export const createSelectionActions = (set: SetFn, get: GetFn) => ({
+  // ==== 행 선택 ====
 
-  // 셀 선택 모드 액션
-  startCellSelection: (fieldLabel: string, callback: (value: number, rowId?: string, columnId?: string) => void) => void;
-  completeCellSelection: (value: number, rowId?: string, columnId?: string) => void;
-  cancelCellSelection: () => void;
-}
-
-export const createSelectionSlice: StateCreator<
-  ProjectState,
-  [],
-  [],
-  SelectionSlice
-> = (set, get) => ({
-  selectedRows: [],
-  cellSelectionMode: { active: false, fieldLabel: '', callback: null },
-
-  // 행 선택 액션
-  selectRow: (data) => {
+  selectRow: (data: SelectedRowData) => {
     set((state) => {
       if (state.selectedRows.some((r) => r.rowId === data.rowId)) {
         return state;
@@ -44,7 +23,7 @@ export const createSelectionSlice: StateCreator<
     });
   },
 
-  deselectRow: (rowId) => {
+  deselectRow: (rowId: string) => {
     set((state) => ({
       selectedRows: state.selectedRows.filter((r) => r.rowId !== rowId),
     }));
@@ -54,7 +33,7 @@ export const createSelectionSlice: StateCreator<
     set({ selectedRows: [] });
   },
 
-  toggleRowSelection: (data) => {
+  toggleRowSelection: (data: SelectedRowData) => {
     set((state) => {
       const isSelected = state.selectedRows.some((r) => r.rowId === data.rowId);
       if (isSelected) {
@@ -64,103 +43,30 @@ export const createSelectionSlice: StateCreator<
     });
   },
 
-  // 스티커 액션
-  addSticker: (projectId, sheetId, sticker) => {
-    const id = uuidv4();
-    const now = Date.now();
-    const newSticker = { ...sticker, id, createdAt: now };
+  // ==== 셀 선택 모드 (외부 피커 패턴) ====
 
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      stickers: [...(s.stickers || []), newSticker],
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-
-    return id;
-  },
-
-  updateSticker: (projectId, sheetId, stickerId, updates) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      stickers: (s.stickers || []).map((st) =>
-                        st.id === stickerId ? { ...st, ...updates } : st
-                      ),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  deleteSticker: (projectId, sheetId, stickerId) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      stickers: (s.stickers || []).filter((st) => st.id !== stickerId),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  // 셀 선택 모드 액션
-  startCellSelection: (fieldLabel, callback) => {
+  startCellSelection: (
+    fieldLabel: string,
+    callback: (value: number, rowId?: string, columnId?: string) => void
+  ) => {
     set({
-      cellSelectionMode: { active: true, fieldLabel, callback }
+      cellSelectionMode: { active: true, fieldLabel, callback },
     });
   },
 
-  completeCellSelection: (value, rowId, columnId) => {
+  completeCellSelection: (value: number, rowId?: string, columnId?: string) => {
     const { cellSelectionMode } = get();
     if (cellSelectionMode.callback) {
       cellSelectionMode.callback(value, rowId, columnId);
     }
     set({
-      cellSelectionMode: { active: false, fieldLabel: '', callback: null }
+      cellSelectionMode: { active: false, fieldLabel: '', callback: null },
     });
   },
 
   cancelCellSelection: () => {
     set({
-      cellSelectionMode: { active: false, fieldLabel: '', callback: null }
+      cellSelectionMode: { active: false, fieldLabel: '', callback: null },
     });
   },
 });

@@ -1,21 +1,22 @@
 import { create } from 'zustand';
-import { v4 as uuidv4 } from 'uuid';
-import type { Project, Sheet, Column, Row, CellValue, ColumnType, Sticker, CellStyle, Folder } from '@/types';
-import { getSampleById } from '@/data/sampleProjects';
+import type {
+  Project,
+  Sheet,
+  Column,
+  Row,
+  CellValue,
+  Sticker,
+  CellStyle,
+  Folder,
+} from '@/types';
+import { createProjectActions } from './slices/projectSlice';
+import { createSheetActions } from './slices/sheetSlice';
+import { createCellActions } from './slices/cellSlice';
+import { createSelectionActions } from './slices/selectionSlice';
 
-// 기본 셀 스타일 (스타일이 없는 셀에 적용되는 기본값)
-const DEFAULT_CELL_STYLE: CellStyle = {
-  fontSize: 15,
-  bold: false,
-  italic: false,
-  underline: false,
-  strikethrough: false,
-  hAlign: 'center',
-  vAlign: 'middle',
-  textRotation: 0,
-};
+// ==== 보조 타입 ====
 
-// 선택된 행 데이터 타입
+/** 여러 행을 동시에 선택한 상태의 표현 (비교/분석 패널에서 사용) */
 export interface SelectedRowData {
   rowId: string;
   sheetId: string;
@@ -24,28 +25,38 @@ export interface SelectedRowData {
   values: Record<string, number | string>;
 }
 
-// 셀 선택 모드 타입
+/** 외부에서 "셀을 고르게 하는" 모드 (예: 이코노미 패널에서 DPS 셀 참조 선택) */
 export interface CellSelectionMode {
   active: boolean;
-  fieldLabel: string;  // 어떤 필드를 위한 선택인지 표시
+  fieldLabel: string;
   callback: ((value: number, rowId?: string, columnId?: string) => void) | null;
 }
+
+// ==== 스토어 상태 ====
 
 export interface ProjectState {
   // 상태
   projects: Project[];
   currentProjectId: string | null;
   currentSheetId: string | null;
-  openSheetTabs: string[];  // 열린 시트 탭 목록
+  openSheetTabs: string[];
   isLoading: boolean;
   lastSaved: number | null;
-  selectedRows: SelectedRowData[];  // 선택된 행들
-  cellSelectionMode: CellSelectionMode;  // 셀 선택 모드
+  selectedRows: SelectedRowData[];
+  cellSelectionMode: CellSelectionMode;
 
   // 프로젝트 액션
   createProject: (name: string, description?: string) => string;
-  createFromSample: (sampleId: string, name: string, t: (key: string) => string, description?: string) => string | null;
-  updateProject: (id: string, updates: Partial<Pick<Project, 'name' | 'description' | 'syncMode' | 'syncRoomId'>>) => void;
+  createFromSample: (
+    sampleId: string,
+    name: string,
+    t: (key: string) => string,
+    description?: string
+  ) => string | null;
+  updateProject: (
+    id: string,
+    updates: Partial<Pick<Project, 'name' | 'description' | 'syncMode' | 'syncRoomId'>>
+  ) => void;
   deleteProject: (id: string) => void;
   duplicateProject: (id: string) => string;
   reorderProjects: (fromIndex: number, toIndex: number) => void;
@@ -54,7 +65,11 @@ export interface ProjectState {
 
   // 시트 액션
   createSheet: (projectId: string, name: string, exportClassName?: string) => string;
-  updateSheet: (projectId: string, sheetId: string, updates: Partial<Pick<Sheet, 'name' | 'exportClassName'>>) => void;
+  updateSheet: (
+    projectId: string,
+    sheetId: string,
+    updates: Partial<Pick<Sheet, 'name' | 'exportClassName'>>
+  ) => void;
   deleteSheet: (projectId: string, sheetId: string) => void;
   setCurrentSheet: (id: string | null) => void;
   duplicateSheet: (projectId: string, sheetId: string) => string;
@@ -66,19 +81,56 @@ export interface ProjectState {
 
   // 컬럼 액션
   addColumn: (projectId: string, sheetId: string, column: Omit<Column, 'id'>) => string;
-  insertColumn: (projectId: string, sheetId: string, column: Omit<Column, 'id'>, atIndex: number) => string;
-  updateColumn: (projectId: string, sheetId: string, columnId: string, updates: Partial<Column>) => void;
+  insertColumn: (
+    projectId: string,
+    sheetId: string,
+    column: Omit<Column, 'id'>,
+    atIndex: number
+  ) => string;
+  updateColumn: (
+    projectId: string,
+    sheetId: string,
+    columnId: string,
+    updates: Partial<Column>
+  ) => void;
   deleteColumn: (projectId: string, sheetId: string, columnId: string) => void;
   reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => void;
 
   // 행 액션
   addRow: (projectId: string, sheetId: string, cells?: Record<string, CellValue>) => string;
-  insertRow: (projectId: string, sheetId: string, atIndex: number, cells?: Record<string, CellValue>) => string;
+  insertRow: (
+    projectId: string,
+    sheetId: string,
+    atIndex: number,
+    cells?: Record<string, CellValue>
+  ) => string;
   updateRow: (projectId: string, sheetId: string, rowId: string, updates: Partial<Row>) => void;
-  updateCell: (projectId: string, sheetId: string, rowId: string, columnId: string, value: CellValue) => void;
-  updateCellStyle: (projectId: string, sheetId: string, rowId: string, columnId: string, style: Partial<CellStyle>) => void;
-  updateCellsStyle: (projectId: string, sheetId: string, cells: Array<{rowId: string; columnId: string}>, style: Partial<CellStyle>) => void;
-  getCellStyle: (projectId: string, sheetId: string, rowId: string, columnId: string) => CellStyle | undefined;
+  updateCell: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    columnId: string,
+    value: CellValue
+  ) => void;
+  updateCellStyle: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    columnId: string,
+    style: Partial<CellStyle>
+  ) => void;
+  updateCellsStyle: (
+    projectId: string,
+    sheetId: string,
+    cells: Array<{ rowId: string; columnId: string }>,
+    style: Partial<CellStyle>
+  ) => void;
+  getCellStyle: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    columnId: string
+  ) => CellStyle | undefined;
   deleteRow: (projectId: string, sheetId: string, rowId: string) => void;
   addMultipleRows: (projectId: string, sheetId: string, count: number) => void;
 
@@ -95,24 +147,47 @@ export interface ProjectState {
   toggleRowSelection: (data: SelectedRowData) => void;
 
   // 스티커 액션
-  addSticker: (projectId: string, sheetId: string, sticker: Omit<Sticker, 'id' | 'createdAt'>) => string;
-  updateSticker: (projectId: string, sheetId: string, stickerId: string, updates: Partial<Sticker>) => void;
+  addSticker: (
+    projectId: string,
+    sheetId: string,
+    sticker: Omit<Sticker, 'id' | 'createdAt'>
+  ) => string;
+  updateSticker: (
+    projectId: string,
+    sheetId: string,
+    stickerId: string,
+    updates: Partial<Sticker>
+  ) => void;
   deleteSticker: (projectId: string, sheetId: string, stickerId: string) => void;
 
   // 셀 선택 모드 액션
-  startCellSelection: (fieldLabel: string, callback: (value: number, rowId?: string, columnId?: string) => void) => void;
+  startCellSelection: (
+    fieldLabel: string,
+    callback: (value: number, rowId?: string, columnId?: string) => void
+  ) => void;
   completeCellSelection: (value: number, rowId?: string, columnId?: string) => void;
   cancelCellSelection: () => void;
 
   // 폴더 액션
   createFolder: (projectId: string, name: string, parentId?: string) => string;
-  updateFolder: (projectId: string, folderId: string, updates: Partial<Pick<Folder, 'name' | 'color' | 'isExpanded'>>) => void;
+  updateFolder: (
+    projectId: string,
+    folderId: string,
+    updates: Partial<Pick<Folder, 'name' | 'color' | 'isExpanded'>>
+  ) => void;
   deleteFolder: (projectId: string, folderId: string, deleteContents?: boolean) => void;
   toggleFolderExpanded: (projectId: string, folderId: string) => void;
   moveSheetToFolder: (projectId: string, sheetId: string, folderId: string | null) => void;
   moveFolderToFolder: (projectId: string, folderId: string, parentId: string | null) => void;
-  reorderFolders: (projectId: string, parentId: string | null, fromIndex: number, toIndex: number) => void;
+  reorderFolders: (
+    projectId: string,
+    parentId: string | null,
+    fromIndex: number,
+    toIndex: number
+  ) => void;
 }
+
+// ==== 스토어 구성 ====
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
   // 초기 상태
@@ -125,1135 +200,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   selectedRows: [],
   cellSelectionMode: { active: false, fieldLabel: '', callback: null },
 
-  // 프로젝트 액션
-  createProject: (name, description) => {
-    const id = uuidv4();
-    const now = Date.now();
-    const newProject: Project = {
-      id,
-      name,
-      description,
-      createdAt: now,
-      updatedAt: now,
-      sheets: [],
-    };
-
-    set((state) => ({
-      projects: [...state.projects, newProject],
-      currentProjectId: id,
-    }));
-
-    return id;
-  },
-
-  createFromSample: (sampleId, name, t, description) => {
-    const sample = getSampleById(sampleId);
-    if (!sample) return null;
-
-    const project = sample.createProject(t);
-    project.name = name;
-    project.description = description || '';
-
-    set((state) => ({
-      projects: [...state.projects, project],
-      currentProjectId: project.id,
-      currentSheetId: project.sheets.length > 0 ? project.sheets[0].id : null,
-      openSheetTabs: project.sheets.length > 0 ? [project.sheets[0].id] : [],
-    }));
-
-    return project.id;
-  },
-
-  updateProject: (id, updates) => {
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === id ? { ...p, ...updates, updatedAt: Date.now() } : p
-      ),
-    }));
-  },
-
-  deleteProject: (id) => {
-    set((state) => ({
-      projects: state.projects.filter((p) => p.id !== id),
-      currentProjectId: state.currentProjectId === id ? null : state.currentProjectId,
-      currentSheetId: state.currentProjectId === id ? null : state.currentSheetId,
-    }));
-  },
-
-  duplicateProject: (id) => {
-    const project = get().projects.find((p) => p.id === id);
-    if (!project) return '';
-
-    const newProjectId = uuidv4();
-    const now = Date.now();
-
-    // 시트를 복제하면서 컬럼 ID와 행 ID 모두 새로 생성
-    const newSheets: Sheet[] = project.sheets.map((sheet) => {
-      const newSheetId = uuidv4();
-
-      // 컬럼 ID 매핑 생성 (기존 ID -> 새 ID)
-      const columnIdMap: Record<string, string> = {};
-      const newColumns = sheet.columns.map((col) => {
-        const newColId = uuidv4();
-        columnIdMap[col.id] = newColId;
-        return { ...col, id: newColId };
-      });
-
-      // 행 복제 (셀 데이터의 키도 새 컬럼 ID로 업데이트)
-      const newRows = sheet.rows.map((row) => {
-        const newCells: Record<string, CellValue> = {};
-        const newCellStyles: Record<string, CellStyle> = {};
-        const newCellMemos: Record<string, string> = {};
-
-        Object.entries(row.cells).forEach(([oldColId, value]) => {
-          const newColId = columnIdMap[oldColId];
-          if (newColId) {
-            newCells[newColId] = value;
-          }
-        });
-
-        if (row.cellStyles) {
-          Object.entries(row.cellStyles).forEach(([oldColId, style]) => {
-            const newColId = columnIdMap[oldColId];
-            if (newColId) {
-              newCellStyles[newColId] = style;
-            }
-          });
-        }
-
-        if (row.cellMemos) {
-          Object.entries(row.cellMemos).forEach(([oldColId, memo]) => {
-            const newColId = columnIdMap[oldColId];
-            if (newColId) {
-              newCellMemos[newColId] = memo;
-            }
-          });
-        }
-
-        return {
-          ...row,
-          id: uuidv4(),
-          cells: newCells,
-          cellStyles: Object.keys(newCellStyles).length > 0 ? newCellStyles : undefined,
-          cellMemos: Object.keys(newCellMemos).length > 0 ? newCellMemos : undefined,
-        };
-      });
-
-      // 스티커 복제
-      const newStickers = (sheet.stickers || []).map((sticker) => ({
-        ...sticker,
-        id: uuidv4(),
-        createdAt: now,
-      }));
-
-      return {
-        ...sheet,
-        id: newSheetId,
-        columns: newColumns,
-        rows: newRows,
-        stickers: newStickers,
-        createdAt: now,
-        updatedAt: now,
-      };
-    });
-
-    const newProject: Project = {
-      id: newProjectId,
-      name: `${project.name} (복사본)`,
-      description: project.description,
-      createdAt: now,
-      updatedAt: now,
-      sheets: newSheets,
-    };
-
-    set((state) => ({
-      projects: [...state.projects, newProject],
-      currentProjectId: newProjectId,
-      currentSheetId: newSheets.length > 0 ? newSheets[0].id : null,
-      openSheetTabs: newSheets.length > 0 ? [newSheets[0].id] : [],
-    }));
-
-    return newProjectId;
-  },
-
-  reorderProjects: (fromIndex, toIndex) => {
-    set((state) => {
-      const projects = [...state.projects];
-      const [removed] = projects.splice(fromIndex, 1);
-      projects.splice(toIndex, 0, removed);
-      return { projects };
-    });
-  },
-
-  setCurrentProject: (id) => {
-    set({ currentProjectId: id, currentSheetId: null });
-  },
-
-  loadProjects: (projects) => {
-    set({ projects });
-  },
-
-  // 시트 액션
-  createSheet: (projectId, name, exportClassName) => {
-    const id = uuidv4();
-    const now = Date.now();
-
-    // 기본 2열 생성
-    const defaultColumns = [
-      { id: uuidv4(), name: 'Column1', type: 'general' as const, width: 120 },
-      { id: uuidv4(), name: 'Column2', type: 'general' as const, width: 120 },
-    ];
-
-    // 기본 2행 생성
-    const defaultRows = [
-      { id: uuidv4(), cells: { [defaultColumns[0].id]: '', [defaultColumns[1].id]: '' } },
-      { id: uuidv4(), cells: { [defaultColumns[0].id]: '', [defaultColumns[1].id]: '' } },
-    ];
-
-    const newSheet: Sheet = {
-      id,
-      name,
-      columns: defaultColumns,
-      rows: defaultRows,
-      exportClassName: exportClassName || undefined,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? { ...p, sheets: [...p.sheets, newSheet], updatedAt: now }
-          : p
-      ),
-      currentSheetId: id,
-      openSheetTabs: [...state.openSheetTabs, id],
-    }));
-
-    return id;
-  },
-
-  updateSheet: (projectId, sheetId, updates) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId ? { ...s, ...updates, updatedAt: now } : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  deleteSheet: (projectId, sheetId) => {
-    const now = Date.now();
-
-    set((state) => {
-      const newOpenTabs = state.openSheetTabs.filter((id) => id !== sheetId);
-      return {
-        projects: state.projects.map((p) =>
-          p.id === projectId
-            ? {
-                ...p,
-                sheets: p.sheets.filter((s) => s.id !== sheetId),
-                updatedAt: now,
-              }
-            : p
-        ),
-        openSheetTabs: newOpenTabs,
-        currentSheetId: state.currentSheetId === sheetId
-          ? (newOpenTabs.length > 0 ? newOpenTabs[newOpenTabs.length - 1] : null)
-          : state.currentSheetId,
-      };
-    });
-  },
-
-  setCurrentSheet: (id) => {
-    if (id) {
-      // 시트를 선택하면 자동으로 탭 열기 및 해당 프로젝트도 선택
-      set((state) => {
-        // 시트가 속한 프로젝트 찾기
-        const project = state.projects.find(p => p.sheets.some(s => s.id === id));
-        return {
-          currentSheetId: id,
-          currentProjectId: project?.id ?? state.currentProjectId,
-          openSheetTabs: state.openSheetTabs.includes(id)
-            ? state.openSheetTabs
-            : [...state.openSheetTabs, id],
-        };
-      });
-    } else {
-      set({ currentSheetId: id });
-    }
-  },
-
-  openSheetTab: (sheetId) => {
-    set((state) => ({
-      openSheetTabs: state.openSheetTabs.includes(sheetId)
-        ? state.openSheetTabs
-        : [...state.openSheetTabs, sheetId],
-      currentSheetId: sheetId,
-    }));
-  },
-
-  closeSheetTab: (sheetId) => {
-    set((state) => {
-      const newTabs = state.openSheetTabs.filter((id) => id !== sheetId);
-      const needNewSelection = state.currentSheetId === sheetId;
-      return {
-        openSheetTabs: newTabs,
-        currentSheetId: needNewSelection
-          ? (newTabs.length > 0 ? newTabs[newTabs.length - 1] : null)
-          : state.currentSheetId,
-      };
-    });
-  },
-
-  reorderOpenTabs: (fromIndex, toIndex) => {
-    set((state) => {
-      const tabs = [...state.openSheetTabs];
-      const [removed] = tabs.splice(fromIndex, 1);
-      tabs.splice(toIndex, 0, removed);
-      return { openSheetTabs: tabs };
-    });
-  },
-
-  duplicateSheet: (projectId, sheetId) => {
-    const project = get().projects.find((p) => p.id === projectId);
-    const sheet = project?.sheets.find((s) => s.id === sheetId);
-    if (!sheet) return '';
-
-    const newId = uuidv4();
-    const now = Date.now();
-    const newSheet: Sheet = {
-      ...JSON.parse(JSON.stringify(sheet)),
-      id: newId,
-      name: `${sheet.name} (복사본)`,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    // 컬럼 ID 매핑 생성 (기존 ID -> 새 ID)
-    const columnIdMap: Record<string, string> = {};
-    newSheet.columns = newSheet.columns.map((col: Column) => {
-      const newColId = uuidv4();
-      columnIdMap[col.id] = newColId;
-      return { ...col, id: newColId };
-    });
-
-    // 행에 새 ID 할당하고 셀 데이터의 키도 업데이트
-    newSheet.rows = newSheet.rows.map((row: Row) => {
-      const newCells: Record<string, CellValue> = {};
-      // 기존 셀 데이터를 새 컬럼 ID로 매핑
-      Object.entries(row.cells).forEach(([oldColId, value]) => {
-        const newColId = columnIdMap[oldColId];
-        if (newColId) {
-          newCells[newColId] = value;
-        }
-      });
-      return { ...row, id: uuidv4(), cells: newCells };
-    });
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? { ...p, sheets: [...p.sheets, newSheet], updatedAt: now }
-          : p
-      ),
-      openSheetTabs: [...state.openSheetTabs, newId],
-      currentSheetId: newId,
-    }));
-
-    return newId;
-  },
-
-  reorderSheets: (projectId, fromIndex, toIndex) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== projectId) return p;
-        const sheets = [...p.sheets];
-        const [removed] = sheets.splice(fromIndex, 1);
-        sheets.splice(toIndex, 0, removed);
-        return { ...p, sheets, updatedAt: now };
-      }),
-    }));
-  },
-
-  moveSheetToProject: (fromProjectId, toProjectId, sheetId) => {
-    const now = Date.now();
-    const state = get();
-    const fromProject = state.projects.find((p) => p.id === fromProjectId);
-    const sheet = fromProject?.sheets.find((s) => s.id === sheetId);
-    if (!sheet) return;
-
-    set((state) => {
-      const newOpenTabs = state.openSheetTabs.filter((id) => id !== sheetId);
-      return {
-        projects: state.projects.map((p) => {
-          if (p.id === fromProjectId) {
-            // 원본 프로젝트에서 시트 제거
-            return {
-              ...p,
-              sheets: p.sheets.filter((s) => s.id !== sheetId),
-              updatedAt: now,
-            };
-          }
-          if (p.id === toProjectId) {
-            // 대상 프로젝트에 시트 추가
-            return {
-              ...p,
-              sheets: [...p.sheets, { ...sheet, updatedAt: now }],
-              updatedAt: now,
-            };
-          }
-          return p;
-        }),
-        currentProjectId: toProjectId,
-        currentSheetId: sheetId,
-        openSheetTabs: [...newOpenTabs, sheetId],
-      };
-    });
-  },
-
-  // 컬럼 액션
-  addColumn: (projectId, sheetId, column) => {
-    const id = uuidv4();
-    const now = Date.now();
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      columns: [...s.columns, { ...column, id }],
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-
-    return id;
-  },
-
-  insertColumn: (projectId, sheetId, column, atIndex) => {
-    const id = uuidv4();
-    const now = Date.now();
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      columns: [
-                        ...s.columns.slice(0, atIndex),
-                        { ...column, id },
-                        ...s.columns.slice(atIndex),
-                      ],
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-
-    return id;
-  },
-
-  updateColumn: (projectId, sheetId, columnId, updates) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      columns: s.columns.map((c) =>
-                        c.id === columnId ? { ...c, ...updates } : c
-                      ),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  deleteColumn: (projectId, sheetId, columnId) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      columns: s.columns.filter((c) => c.id !== columnId),
-                      rows: s.rows.map((r) => {
-                        const newCells = { ...r.cells };
-                        delete newCells[columnId];
-                        return { ...r, cells: newCells };
-                      }),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  reorderColumns: (projectId, sheetId, columnIds) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) => {
-                if (s.id !== sheetId) return s;
-                const columnMap = new Map(s.columns.map((c) => [c.id, c]));
-                const reorderedColumns = columnIds
-                  .map((id) => columnMap.get(id))
-                  .filter((c): c is Column => c !== undefined);
-                return { ...s, columns: reorderedColumns, updatedAt: now };
-              }),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  // 행 액션
-  addRow: (projectId, sheetId, cells = {}) => {
-    const id = uuidv4();
-    const now = Date.now();
-
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== projectId) return p;
-
-        return {
-          ...p,
-          sheets: p.sheets.map((s) => {
-            if (s.id !== sheetId) return s;
-
-            // 수식 열의 formula를 자동으로 셀에 채워넣기
-            const formulaCells: Record<string, CellValue> = {};
-            s.columns.forEach((col) => {
-              if (col.type === 'formula' && col.formula) {
-                formulaCells[col.id] = col.formula;
-              }
-            });
-
-            return {
-              ...s,
-              rows: [...s.rows, { id, cells: { ...formulaCells, ...cells } }],
-              updatedAt: now,
-            };
-          }),
-          updatedAt: now,
-        };
-      }),
-    }));
-
-    return id;
-  },
-
-  insertRow: (projectId, sheetId, atIndex, cells = {}) => {
-    const id = uuidv4();
-    const now = Date.now();
-
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== projectId) return p;
-
-        return {
-          ...p,
-          sheets: p.sheets.map((s) => {
-            if (s.id !== sheetId) return s;
-
-            // 수식 열의 formula를 자동으로 셀에 채워넣기
-            const formulaCells: Record<string, CellValue> = {};
-            s.columns.forEach((col) => {
-              if (col.type === 'formula' && col.formula) {
-                formulaCells[col.id] = col.formula;
-              }
-            });
-
-            return {
-              ...s,
-              rows: [
-                ...s.rows.slice(0, atIndex),
-                { id, cells: { ...formulaCells, ...cells } },
-                ...s.rows.slice(atIndex),
-              ],
-              updatedAt: now,
-            };
-          }),
-          updatedAt: now,
-        };
-      }),
-    }));
-
-    return id;
-  },
-
-  updateRow: (projectId, sheetId, rowId, updates) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: s.rows.map((r) =>
-                        r.id === rowId ? { ...r, ...updates } : r
-                      ),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  updateCell: (projectId, sheetId, rowId, columnId, value) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: s.rows.map((r) =>
-                        r.id === rowId
-                          ? { ...r, cells: { ...r.cells, [columnId]: value } }
-                          : r
-                      ),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  // 단일 셀 스타일 업데이트
-  updateCellStyle: (projectId, sheetId, rowId, columnId, style) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: s.rows.map((r) =>
-                        r.id === rowId
-                          ? {
-                              ...r,
-                              cellStyles: {
-                                ...r.cellStyles,
-                                // 기존 스타일이 없으면 기본값과 병합
-                                [columnId]: { ...DEFAULT_CELL_STYLE, ...r.cellStyles?.[columnId], ...style },
-                              },
-                            }
-                          : r
-                      ),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  // 여러 셀 스타일 일괄 업데이트
-  updateCellsStyle: (projectId, sheetId, cells, style) => {
-    const now = Date.now();
-    const cellMap = new Map<string, Set<string>>();
-    cells.forEach(({ rowId, columnId }) => {
-      if (!cellMap.has(rowId)) cellMap.set(rowId, new Set());
-      cellMap.get(rowId)!.add(columnId);
-    });
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: s.rows.map((r) => {
-                        const columnIds = cellMap.get(r.id);
-                        if (!columnIds) return r;
-                        const newCellStyles = { ...r.cellStyles };
-                        columnIds.forEach((colId) => {
-                          // 기존 스타일이 없으면 기본값과 병합
-                          const existingStyle = newCellStyles[colId] || {};
-                          newCellStyles[colId] = { ...DEFAULT_CELL_STYLE, ...existingStyle, ...style };
-                        });
-                        return { ...r, cellStyles: newCellStyles };
-                      }),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  // 셀 스타일 가져오기
-  getCellStyle: (projectId, sheetId, rowId, columnId) => {
-    const state = get();
-    const project = state.projects.find((p) => p.id === projectId);
-    if (!project) return undefined;
-    const sheet = project.sheets.find((s) => s.id === sheetId);
-    if (!sheet) return undefined;
-    const row = sheet.rows.find((r) => r.id === rowId);
-    if (!row) return undefined;
-    return row.cellStyles?.[columnId];
-  },
-
-  deleteRow: (projectId, sheetId, rowId) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      rows: s.rows.filter((r) => r.id !== rowId),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  addMultipleRows: (projectId, sheetId, count) => {
-    const now = Date.now();
-
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== projectId) return p;
-
-        return {
-          ...p,
-          sheets: p.sheets.map((s) => {
-            if (s.id !== sheetId) return s;
-
-            // 수식 열의 formula를 자동으로 셀에 채워넣기
-            const formulaCells: Record<string, CellValue> = {};
-            s.columns.forEach((col) => {
-              if (col.type === 'formula' && col.formula) {
-                formulaCells[col.id] = col.formula;
-              }
-            });
-
-            const newRows: Row[] = Array.from({ length: count }, () => ({
-              id: uuidv4(),
-              cells: { ...formulaCells },
-            }));
-
-            return {
-              ...s,
-              rows: [...s.rows, ...newRows],
-              updatedAt: now,
-            };
-          }),
-          updatedAt: now,
-        };
-      }),
-    }));
-  },
-
-  // 유틸리티
-  getCurrentProject: () => {
-    const { projects, currentProjectId } = get();
-    return projects.find((p) => p.id === currentProjectId) || null;
-  },
-
-  getCurrentSheet: () => {
-    const { projects, currentProjectId, currentSheetId } = get();
-    const project = projects.find((p) => p.id === currentProjectId);
-    return project?.sheets.find((s) => s.id === currentSheetId) || null;
-  },
-
-  getSheet: (projectId, sheetId) => {
-    const { projects } = get();
-    const project = projects.find((p) => p.id === projectId);
-    return project?.sheets.find((s) => s.id === sheetId) || null;
-  },
-
-  setLastSaved: (timestamp) => {
-    set({ lastSaved: timestamp });
-  },
-
-  // 행 선택 액션
-  selectRow: (data) => {
-    set((state) => {
-      // 이미 선택된 행이면 무시
-      if (state.selectedRows.some((r) => r.rowId === data.rowId)) {
-        return state;
-      }
-      return { selectedRows: [...state.selectedRows, data] };
-    });
-  },
-
-  deselectRow: (rowId) => {
-    set((state) => ({
-      selectedRows: state.selectedRows.filter((r) => r.rowId !== rowId),
-    }));
-  },
-
-  clearSelectedRows: () => {
-    set({ selectedRows: [] });
-  },
-
-  toggleRowSelection: (data) => {
-    set((state) => {
-      const isSelected = state.selectedRows.some((r) => r.rowId === data.rowId);
-      if (isSelected) {
-        return { selectedRows: state.selectedRows.filter((r) => r.rowId !== data.rowId) };
-      }
-      return { selectedRows: [...state.selectedRows, data] };
-    });
-  },
-
-  // 스티커 액션
-  addSticker: (projectId, sheetId, sticker) => {
-    const id = uuidv4();
-    const now = Date.now();
-    const newSticker = { ...sticker, id, createdAt: now };
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      stickers: [...(s.stickers || []), newSticker],
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-
-    return id;
-  },
-
-  updateSticker: (projectId, sheetId, stickerId, updates) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      stickers: (s.stickers || []).map((st) =>
-                        st.id === stickerId ? { ...st, ...updates } : st
-                      ),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  deleteSticker: (projectId, sheetId, stickerId) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? {
-                      ...s,
-                      stickers: (s.stickers || []).filter((st) => st.id !== stickerId),
-                      updatedAt: now,
-                    }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  // 셀 선택 모드 액션
-  startCellSelection: (fieldLabel, callback) => {
-    set({
-      cellSelectionMode: { active: true, fieldLabel, callback }
-    });
-  },
-
-  completeCellSelection: (value, rowId, columnId) => {
-    const { cellSelectionMode } = get();
-    if (cellSelectionMode.callback) {
-      cellSelectionMode.callback(value, rowId, columnId);
-    }
-    set({
-      cellSelectionMode: { active: false, fieldLabel: '', callback: null }
-    });
-  },
-
-  cancelCellSelection: () => {
-    set({
-      cellSelectionMode: { active: false, fieldLabel: '', callback: null }
-    });
-  },
-
-  // 폴더 액션
-  createFolder: (projectId, name, parentId) => {
-    const id = uuidv4();
-    const now = Date.now();
-    const newFolder: Folder = {
-      id,
-      name,
-      parentId,
-      isExpanded: true,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? { ...p, folders: [...(p.folders || []), newFolder], updatedAt: now }
-          : p
-      ),
-    }));
-
-    return id;
-  },
-
-  updateFolder: (projectId, folderId, updates) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              folders: (p.folders || []).map((f) =>
-                f.id === folderId ? { ...f, ...updates, updatedAt: now } : f
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  deleteFolder: (projectId, folderId, deleteContents = false) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== projectId) return p;
-
-        // 삭제할 폴더와 모든 하위 폴더 ID 수집
-        const foldersToDelete = new Set<string>();
-        const collectFolders = (id: string) => {
-          foldersToDelete.add(id);
-          (p.folders || [])
-            .filter((f) => f.parentId === id)
-            .forEach((f) => collectFolders(f.id));
-        };
-        collectFolders(folderId);
-
-        let newSheets = p.sheets;
-        if (deleteContents) {
-          // 폴더 내 시트도 삭제
-          newSheets = p.sheets.filter((s) => !s.folderId || !foldersToDelete.has(s.folderId));
-        } else {
-          // 폴더 내 시트를 루트로 이동
-          newSheets = p.sheets.map((s) =>
-            s.folderId && foldersToDelete.has(s.folderId)
-              ? { ...s, folderId: undefined, updatedAt: now }
-              : s
-          );
-        }
-
-        return {
-          ...p,
-          folders: (p.folders || []).filter((f) => !foldersToDelete.has(f.id)),
-          sheets: newSheets,
-          updatedAt: now,
-        };
-      }),
-    }));
-  },
-
-  toggleFolderExpanded: (projectId, folderId) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              folders: (p.folders || []).map((f) =>
-                f.id === folderId ? { ...f, isExpanded: !f.isExpanded, updatedAt: now } : f
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  moveSheetToFolder: (projectId, sheetId, folderId) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sheets: p.sheets.map((s) =>
-                s.id === sheetId
-                  ? { ...s, folderId: folderId || undefined, updatedAt: now }
-                  : s
-              ),
-              updatedAt: now,
-            }
-          : p
-      ),
-    }));
-  },
-
-  moveFolderToFolder: (projectId, folderId, parentId) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== projectId) return p;
-
-        // 순환 참조 방지: parentId가 folderId의 하위 폴더인지 확인
-        const isDescendant = (checkId: string | undefined, ancestorId: string): boolean => {
-          if (!checkId) return false;
-          if (checkId === ancestorId) return true;
-          const folder = (p.folders || []).find((f) => f.id === checkId);
-          return folder ? isDescendant(folder.parentId, ancestorId) : false;
-        };
-
-        if (parentId && isDescendant(parentId, folderId)) {
-          // 순환 참조 발생 - 이동하지 않음
-          return p;
-        }
-
-        return {
-          ...p,
-          folders: (p.folders || []).map((f) =>
-            f.id === folderId
-              ? { ...f, parentId: parentId || undefined, updatedAt: now }
-              : f
-          ),
-          updatedAt: now,
-        };
-      }),
-    }));
-  },
-
-  reorderFolders: (projectId, parentId, fromIndex, toIndex) => {
-    const now = Date.now();
-    set((state) => ({
-      projects: state.projects.map((p) => {
-        if (p.id !== projectId) return p;
-
-        // 같은 부모 폴더 내의 폴더들만 추출
-        const sameLevelFolders = (p.folders || []).filter((f) =>
-          parentId ? f.parentId === parentId : !f.parentId
-        );
-        const otherFolders = (p.folders || []).filter((f) =>
-          parentId ? f.parentId !== parentId : f.parentId
-        );
-
-        // 순서 변경
-        const [removed] = sameLevelFolders.splice(fromIndex, 1);
-        sameLevelFolders.splice(toIndex, 0, removed);
-
-        return {
-          ...p,
-          folders: [...otherFolders, ...sameLevelFolders],
-          updatedAt: now,
-        };
-      }),
-    }));
-  },
+  // 액션은 슬라이스에서 주입
+  ...createProjectActions(set, get),
+  ...createSheetActions(set, get),
+  ...createCellActions(set, get),
+  ...createSelectionActions(set, get),
 }));

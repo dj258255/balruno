@@ -1,45 +1,39 @@
+/**
+ * Sheet actions slice.
+ *
+ * currentSheetId / openSheetTabs 상태와 시트 수준 액션(create/update/delete/duplicate/reorder)
+ * 및 탭 관리(openTab/closeTab/reorderOpenTabs) 를 담당.
+ */
+
 import { v4 as uuidv4 } from 'uuid';
-import type { Sheet, Column, CellValue } from '@/types';
-import type { StateCreator } from 'zustand';
+import type { StoreApi } from 'zustand';
+import type { Sheet, Column, Row, CellValue } from '@/types';
 import type { ProjectState } from '../projectStore';
 
-export interface SheetSlice {
-  // 상태
-  currentSheetId: string | null;
-  openSheetTabs: string[];
+type SetFn = StoreApi<ProjectState>['setState'];
+type GetFn = StoreApi<ProjectState>['getState'];
 
-  // 액션
-  createSheet: (projectId: string, name: string, exportClassName?: string) => string;
-  updateSheet: (projectId: string, sheetId: string, updates: Partial<Pick<Sheet, 'name' | 'exportClassName'>>) => void;
-  deleteSheet: (projectId: string, sheetId: string) => void;
-  setCurrentSheet: (id: string | null) => void;
-  duplicateSheet: (projectId: string, sheetId: string) => string;
-  reorderSheets: (projectId: string, fromIndex: number, toIndex: number) => void;
-  moveSheetToProject: (fromProjectId: string, toProjectId: string, sheetId: string) => void;
-  openSheetTab: (sheetId: string) => void;
-  closeSheetTab: (sheetId: string) => void;
-  reorderOpenTabs: (fromIndex: number, toIndex: number) => void;
-  getCurrentSheet: () => Sheet | null;
-  getSheet: (projectId: string, sheetId: string) => Sheet | null;
-}
-
-export const createSheetSlice: StateCreator<
-  ProjectState,
-  [],
-  [],
-  SheetSlice
-> = (set, get) => ({
-  currentSheetId: null,
-  openSheetTabs: [],
-
-  createSheet: (projectId, name, exportClassName) => {
+export const createSheetActions = (set: SetFn, get: GetFn) => ({
+  createSheet: (projectId: string, name: string, exportClassName?: string): string => {
     const id = uuidv4();
     const now = Date.now();
+
+    // 기본 2열 × 2행
+    const defaultColumns = [
+      { id: uuidv4(), name: 'Column1', type: 'general' as const, width: 120 },
+      { id: uuidv4(), name: 'Column2', type: 'general' as const, width: 120 },
+    ];
+
+    const defaultRows = [
+      { id: uuidv4(), cells: { [defaultColumns[0].id]: '', [defaultColumns[1].id]: '' } },
+      { id: uuidv4(), cells: { [defaultColumns[0].id]: '', [defaultColumns[1].id]: '' } },
+    ];
+
     const newSheet: Sheet = {
       id,
       name,
-      columns: [],
-      rows: [],
+      columns: defaultColumns,
+      rows: defaultRows,
       exportClassName: exportClassName || undefined,
       createdAt: now,
       updatedAt: now,
@@ -58,7 +52,11 @@ export const createSheetSlice: StateCreator<
     return id;
   },
 
-  updateSheet: (projectId, sheetId, updates) => {
+  updateSheet: (
+    projectId: string,
+    sheetId: string,
+    updates: Partial<Pick<Sheet, 'name' | 'exportClassName'>>
+  ) => {
     const now = Date.now();
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -75,7 +73,7 @@ export const createSheetSlice: StateCreator<
     }));
   },
 
-  deleteSheet: (projectId, sheetId) => {
+  deleteSheet: (projectId: string, sheetId: string) => {
     const now = Date.now();
 
     set((state) => {
@@ -91,27 +89,35 @@ export const createSheetSlice: StateCreator<
             : p
         ),
         openSheetTabs: newOpenTabs,
-        currentSheetId: state.currentSheetId === sheetId
-          ? (newOpenTabs.length > 0 ? newOpenTabs[newOpenTabs.length - 1] : null)
-          : state.currentSheetId,
+        currentSheetId:
+          state.currentSheetId === sheetId
+            ? newOpenTabs.length > 0
+              ? newOpenTabs[newOpenTabs.length - 1]
+              : null
+            : state.currentSheetId,
       };
     });
   },
 
-  setCurrentSheet: (id) => {
+  setCurrentSheet: (id: string | null) => {
     if (id) {
-      set((state) => ({
-        currentSheetId: id,
-        openSheetTabs: state.openSheetTabs.includes(id)
-          ? state.openSheetTabs
-          : [...state.openSheetTabs, id],
-      }));
+      // 시트 선택 → 탭 자동 열기 + 소속 프로젝트도 활성화
+      set((state) => {
+        const project = state.projects.find((p) => p.sheets.some((s) => s.id === id));
+        return {
+          currentSheetId: id,
+          currentProjectId: project?.id ?? state.currentProjectId,
+          openSheetTabs: state.openSheetTabs.includes(id)
+            ? state.openSheetTabs
+            : [...state.openSheetTabs, id],
+        };
+      });
     } else {
       set({ currentSheetId: id });
     }
   },
 
-  openSheetTab: (sheetId) => {
+  openSheetTab: (sheetId: string) => {
     set((state) => ({
       openSheetTabs: state.openSheetTabs.includes(sheetId)
         ? state.openSheetTabs
@@ -120,20 +126,22 @@ export const createSheetSlice: StateCreator<
     }));
   },
 
-  closeSheetTab: (sheetId) => {
+  closeSheetTab: (sheetId: string) => {
     set((state) => {
       const newTabs = state.openSheetTabs.filter((id) => id !== sheetId);
       const needNewSelection = state.currentSheetId === sheetId;
       return {
         openSheetTabs: newTabs,
         currentSheetId: needNewSelection
-          ? (newTabs.length > 0 ? newTabs[newTabs.length - 1] : null)
+          ? newTabs.length > 0
+            ? newTabs[newTabs.length - 1]
+            : null
           : state.currentSheetId,
       };
     });
   },
 
-  reorderOpenTabs: (fromIndex, toIndex) => {
+  reorderOpenTabs: (fromIndex: number, toIndex: number) => {
     set((state) => {
       const tabs = [...state.openSheetTabs];
       const [removed] = tabs.splice(fromIndex, 1);
@@ -142,7 +150,7 @@ export const createSheetSlice: StateCreator<
     });
   },
 
-  duplicateSheet: (projectId, sheetId) => {
+  duplicateSheet: (projectId: string, sheetId: string): string => {
     const project = get().projects.find((p) => p.id === projectId);
     const sheet = project?.sheets.find((s) => s.id === sheetId);
     if (!sheet) return '';
@@ -157,7 +165,6 @@ export const createSheetSlice: StateCreator<
       updatedAt: now,
     };
 
-    // 컬럼 ID 매핑 생성
     const columnIdMap: Record<string, string> = {};
     newSheet.columns = newSheet.columns.map((col: Column) => {
       const newColId = uuidv4();
@@ -165,12 +172,13 @@ export const createSheetSlice: StateCreator<
       return { ...col, id: newColId };
     });
 
-    // 행에 새 ID 할당하고 셀 데이터의 키도 업데이트
-    newSheet.rows = newSheet.rows.map((row: { id: string; cells: Record<string, CellValue> }) => {
+    newSheet.rows = newSheet.rows.map((row: Row) => {
       const newCells: Record<string, CellValue> = {};
       Object.entries(row.cells).forEach(([oldColId, value]) => {
         const newColId = columnIdMap[oldColId];
-        if (newColId) newCells[newColId] = value;
+        if (newColId) {
+          newCells[newColId] = value;
+        }
       });
       return { ...row, id: uuidv4(), cells: newCells };
     });
@@ -188,7 +196,7 @@ export const createSheetSlice: StateCreator<
     return newId;
   },
 
-  reorderSheets: (projectId, fromIndex, toIndex) => {
+  reorderSheets: (projectId: string, fromIndex: number, toIndex: number) => {
     const now = Date.now();
     set((state) => ({
       projects: state.projects.map((p) => {
@@ -201,7 +209,7 @@ export const createSheetSlice: StateCreator<
     }));
   },
 
-  moveSheetToProject: (fromProjectId, toProjectId, sheetId) => {
+  moveSheetToProject: (fromProjectId: string, toProjectId: string, sheetId: string) => {
     const now = Date.now();
     const state = get();
     const fromProject = state.projects.find((p) => p.id === fromProjectId);
@@ -235,13 +243,13 @@ export const createSheetSlice: StateCreator<
     });
   },
 
-  getCurrentSheet: () => {
+  getCurrentSheet: (): Sheet | null => {
     const { projects, currentProjectId, currentSheetId } = get();
     const project = projects.find((p) => p.id === currentProjectId);
     return project?.sheets.find((s) => s.id === currentSheetId) || null;
   },
 
-  getSheet: (projectId, sheetId) => {
+  getSheet: (projectId: string, sheetId: string): Sheet | null => {
     const { projects } = get();
     const project = projects.find((p) => p.id === projectId);
     return project?.sheets.find((s) => s.id === sheetId) || null;
