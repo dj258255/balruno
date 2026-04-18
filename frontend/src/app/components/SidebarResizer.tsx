@@ -1,51 +1,47 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+/**
+ * Sidebar 좌측 폭 리사이저. DockedToolbox 우측 리사이저와 일관된 스타일.
+ */
+
+import { useRef } from 'react';
 import { useToolLayoutStore } from '@/stores/toolLayoutStore';
 
+const MIN_W = 180;
+const MAX_W = 500;
+
 export default function SidebarResizer() {
-  const { sidebarWidth, setSidebarWidth } = useToolLayoutStore();
-  const [isResizing, setIsResizing] = useState(false);
+  const setSidebarWidth = useToolLayoutStore((s) => s.setSidebarWidth);
+  const activeRef = useRef(false);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleStart = (e: React.PointerEvent) => {
     e.preventDefault();
-    setIsResizing(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isResizing) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      setSidebarWidth(e.clientX);
+    activeRef.current = true;
+    const onMove = (ev: PointerEvent) => {
+      if (!activeRef.current) return;
+      const w = Math.max(MIN_W, Math.min(MAX_W, ev.clientX));
+      setSidebarWidth(w);
     };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
+    const onUp = () => {
+      activeRef.current = false;
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
     };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizing, setSidebarWidth]);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
 
   return (
     <div
-      className="hidden md:flex w-1 hover:w-1.5 cursor-col-resize items-center justify-center group transition-all shrink-0"
-      style={{
-        background: isResizing ? 'var(--accent)' : 'transparent',
-      }}
-      onMouseDown={handleMouseDown}
-    >
-      <div
-        className="w-0.5 h-8 rounded-full transition-all group-hover:h-16"
-        style={{
-          background: isResizing ? 'white' : 'var(--border-primary)',
-        }}
-      />
-    </div>
+      onPointerDown={handleStart}
+      className="hidden md:block w-1.5 cursor-col-resize hover:bg-[var(--accent)] transition-colors flex-shrink-0"
+      style={{ touchAction: 'none' }}
+      role="separator"
+      aria-label="Resize sidebar"
+    />
   );
 }

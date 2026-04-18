@@ -24,7 +24,10 @@ import { SheetTable, StickerLayer } from '@/components/sheet';
 // Track 4: 뷰 스위처 + 각 뷰 컴포넌트
 import ViewSwitcher from '@/components/views/ViewSwitcher';
 import FormView from '@/components/views/FormView';
-import ComingSoonView from '@/components/views/ComingSoonView';
+import KanbanView from '@/components/views/KanbanView';
+import CalendarView from '@/components/views/CalendarView';
+import GalleryView from '@/components/views/GalleryView';
+import GanttView from '@/components/views/GanttView';
 import type { ViewType } from '@/types';
 
 // Modal components - Dynamic imports for code splitting
@@ -501,13 +504,20 @@ export default function Home() {
                   <div className="flex-1 min-h-0 overflow-hidden">
                     {(() => {
                       const view: ViewType = currentSheet.activeView ?? 'grid';
-                      if (view === 'grid') {
-                        return <SheetTable projectId={currentProject.id} sheet={currentSheet} onAddMemo={handleAddMemo} />;
+                      switch (view) {
+                        case 'grid':
+                          return <SheetTable projectId={currentProject.id} sheet={currentSheet} onAddMemo={handleAddMemo} />;
+                        case 'form':
+                          return <FormView projectId={currentProject.id} sheet={currentSheet} />;
+                        case 'kanban':
+                          return <KanbanView projectId={currentProject.id} sheet={currentSheet} />;
+                        case 'calendar':
+                          return <CalendarView projectId={currentProject.id} sheet={currentSheet} />;
+                        case 'gallery':
+                          return <GalleryView projectId={currentProject.id} sheet={currentSheet} />;
+                        case 'gantt':
+                          return <GanttView projectId={currentProject.id} sheet={currentSheet} />;
                       }
-                      if (view === 'form') {
-                        return <FormView projectId={currentProject.id} sheet={currentSheet} />;
-                      }
-                      return <ComingSoonView view={view} />;
                     })()}
                   </div>
                 </div>
