@@ -54,6 +54,16 @@
     - Y.UndoManager 로 historyStore 교체 (500ms merge)
     - y-indexeddb persist + 자동 마이그레이션 (storage.ts → Y.Doc)
     - 42 테스트 통과 (13 ydoc tests + 29 formulaEngine tests)
+11. ✅ **Track 7 완료** — Import 자동 진단
+    - ImportModal preview 단계에서 자동 imbalanceDetector 실행 + 요약 카드
+    - WelcomeScreen 3번째 카드 "Excel 에서 가져오기"
+12. ✅ **Track 5 완료** — ⌘K Command Palette (cmdk)
+    - 5 카테고리 (Navigate/Create/Tools/Functions/Settings)
+    - 모든 시트 flatten + 수식 50개 + 도구 5개 + 테마 전환
+13. ✅ **Track 6 완료** — 패널 도킹 레이아웃
+    - 17 개별 도구 → 9 통합 그룹 (우측 420px 도킹)
+    - 그룹 내 탭 전환, 모바일 hidden
+    - ToolPanels / TrashDropZone / 플로팅 코드 제거
 
 ---
 
