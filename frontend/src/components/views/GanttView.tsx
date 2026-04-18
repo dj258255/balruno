@@ -6,11 +6,12 @@
  * 각 레코드 = 해당 날짜 하루짜리 막대. duration 컬럼은 다음 버전.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import CustomSelect from '@/components/ui/CustomSelect';
 import type { Sheet } from '@/types';
+import RecordEditor from './RecordEditor';
 
 interface GanttViewProps {
   projectId: string;
@@ -31,6 +32,8 @@ function daysBetween(a: Date, b: Date): number {
 export default function GanttView({ projectId, sheet }: GanttViewProps) {
   const t = useTranslations();
   const updateSheet = useProjectStore((s) => s.updateSheet);
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const selectedRow = selectedRowId ? sheet.rows.find((r) => r.id === selectedRowId) : null;
 
   const dateColumns = sheet.columns.filter((c) => c.type === 'date');
   const dateColId =
@@ -76,7 +79,8 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
   const DAY_W = 32;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
       <div
         className="px-4 py-2 border-b flex items-center gap-3"
         style={{ borderColor: 'var(--border-primary)' }}
@@ -113,15 +117,21 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
                 {titleCol?.name ?? 'ID'}
               </div>
               {rowsWithDate.map(({ row }) => (
-                <div
+                <button
+                  type="button"
                   key={row.id}
-                  className="h-10 px-3 flex items-center text-sm border-b"
-                  style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+                  onClick={() => setSelectedRowId(row.id)}
+                  className="w-full h-10 px-3 flex items-center text-sm border-b text-left hover:bg-[var(--bg-hover)]"
+                  style={{
+                    borderColor: 'var(--border-primary)',
+                    color: 'var(--text-primary)',
+                    background: selectedRowId === row.id ? 'var(--bg-hover)' : 'transparent',
+                  }}
                 >
                   <span className="truncate">
                     {titleCol ? String(row.cells[titleCol.id] ?? row.id.slice(0, 6)) : row.id.slice(0, 6)}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
 
@@ -159,12 +169,15 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
                     className="h-10 border-b relative"
                     style={{ borderColor: 'var(--border-primary)' }}
                   >
-                    <div
-                      className="absolute top-2 bottom-2 rounded"
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRowId(row.id)}
+                      className="absolute top-2 bottom-2 rounded hover:brightness-110"
                       style={{
                         left: offset * DAY_W + 2,
                         width: DAY_W - 4,
                         background: 'var(--accent)',
+                        outline: selectedRowId === row.id ? '2px solid white' : 'none',
                       }}
                       title={date.toISOString().slice(0, 10)}
                     />
@@ -175,6 +188,15 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
           </div>
         )}
       </div>
+      </div>
+      {selectedRow && (
+        <RecordEditor
+          projectId={projectId}
+          sheet={sheet}
+          row={selectedRow}
+          onClose={() => setSelectedRowId(null)}
+        />
+      )}
     </div>
   );
 }
