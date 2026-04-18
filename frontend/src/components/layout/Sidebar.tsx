@@ -6,7 +6,7 @@ import { AllToolId } from '@/stores/toolLayoutStore';
 import { useSheetUIStore } from '@/stores/sheetUIStore';
 
 // 분리된 훅과 컴포넌트들
-import { useSidebarState, useSidebarDragDrop } from './sidebar/hooks';
+import { useSidebarState } from './sidebar/hooks';
 import {
   SidebarHeader,
   NewProjectForm,
@@ -152,60 +152,8 @@ export default function Sidebar({
     handleToolsResizeStart,
   } = state;
 
-  const {
-    handleToolDragStart,
-    handleToolsSectionDragOver,
-    handleToolsSectionDragLeave,
-    handleToolsDrop,
-    getToolTransformY,
-  } = useSidebarDragDrop({
-    dragState,
-    setDragState,
-    toolsContainerRef,
-    getSidebarTools: toolLayoutStore.getSidebarTools,
-    reorderSidebarTools: toolLayoutStore.reorderSidebarTools,
-    moveToolToLocation: toolLayoutStore.moveToolToLocation,
-    isResizingToolsSection,
-    setIsResizingToolsSection,
-    toolsResizeStartY,
-    toolsResizeStartHeight,
-    setToolsSectionHeight: toolLayoutStore.setToolsSectionHeight,
-    sheetContextMenu,
-    sheetContextMenuRef,
-    setSheetContextMenu: () => setSheetContextMenu(null),
-    projectContextMenu,
-    projectContextMenuRef,
-    setProjectContextMenu: () => setProjectContextMenu(null),
-  });
-
-  // 도구 클릭 핸들러 매핑
-  const toolClickHandlers: Record<string, (() => void) | undefined> = {
-    calculator: onShowCalculator,
-    comparison: onShowComparison,
-    chart: onShowChart,
-    presetComparison: onShowPresetComparison,
-    imbalanceDetector: onShowImbalanceDetector,
-    goalSolver: onShowGoalSolver,
-    balanceAnalysis: onShowBalanceAnalysis,
-    economy: onShowEconomy,
-    dpsVariance: onShowDpsVariance,
-    curveFitting: onShowCurveFitting,
-    formulaHelper: onToggleFormulaHelper,
-    balanceValidator: onToggleBalanceValidator,
-    difficultyCurve: onToggleDifficultyCurve,
-    simulation: onToggleSimulation,
-    entityDefinition: onToggleEntityDefinition,
-  };
-
-  // 모바일에서는 모든 도구 표시
-  const sidebarTools = isMobile ? toolLayoutStore.getAllTools() : toolLayoutStore.getSidebarTools();
-
   return (
     <>
-      {/* 도구 섹션 리사이즈 중 오버레이 */}
-      {isResizingToolsSection && (
-        <div className="fixed inset-0 z-50" style={{ cursor: 'ns-resize' }} />
-      )}
 
       <div
         className="flex flex-col h-full border-r shrink-0 transition-opacity duration-150"

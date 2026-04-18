@@ -7,4 +7,3 @@ export type {
   SheetDeleteConfirmState,
   ProjectDeleteConfirmState,
 } from './useSidebarState';
-export { useSidebarDragDrop } from './useSidebarDragDrop';
