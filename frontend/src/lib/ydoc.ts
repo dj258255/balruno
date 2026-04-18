@@ -10,12 +10,14 @@
 
 import * as Y from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
+import { WebrtcProvider } from 'y-webrtc';
 import type { Project, Sheet, Column, Row, CellValue, CellStyle, Sticker, Folder } from '@/types';
 
 /** 프로젝트별 Y.Doc 캐시 (메모리 중복 방지) */
 const docCache = new Map<string, Y.Doc>();
 const providerCache = new Map<string, IndexeddbPersistence>();
 const undoManagerCache = new Map<string, Y.UndoManager>();
+const webrtcCache = new Map<string, WebrtcProvider>();
 
 /**
  * 프로젝트 ID 기반 Y.Doc 인스턴스 획득 (캐시됨).
@@ -46,6 +48,7 @@ export async function persistDoc(projectId: string): Promise<void> {
 
 /** 프로젝트 Y.Doc 에서 provider 분리 (메모리 해제). */
 export function detachDoc(projectId: string): void {
+  detachWebrtc(projectId);
   const um = undoManagerCache.get(projectId);
   if (um) {
     um.destroy();
@@ -61,6 +64,37 @@ export function detachDoc(projectId: string): void {
     doc.destroy();
     docCache.delete(projectId);
   }
+}
+
+/**
+ * Track 8 Stage B — y-webrtc P2P 협업 연결.
+ * room 은 URL hash 에서 공유되는 비밀키 (공용 신호서버 사용 시에도 데이터는 E2E).
+ * 같은 room 에 연결한 브라우저끼리 Y.Doc 자동 sync.
+ */
+export function attachWebrtc(projectId: string, roomName: string): WebrtcProvider {
+  const existing = webrtcCache.get(projectId);
+  if (existing) return existing;
+
+  const doc = getProjectDoc(projectId);
+  const provider = new WebrtcProvider(roomName, doc, {
+    // 공용 신호서버 (Yjs 공식 운영). 필요 시 자체 호스트로 교체.
+    signaling: ['wss://signaling.yjs.dev', 'wss://y-webrtc-signaling-eu.herokuapp.com'],
+  });
+  webrtcCache.set(projectId, provider);
+  return provider;
+}
+
+export function detachWebrtc(projectId: string): void {
+  const provider = webrtcCache.get(projectId);
+  if (provider) {
+    provider.destroy();
+    webrtcCache.delete(projectId);
+  }
+}
+
+/** 활성 WebRTC provider 반환 (awareness 접근용). */
+export function getWebrtc(projectId: string): WebrtcProvider | undefined {
+  return webrtcCache.get(projectId);
 }
 
 /**
