@@ -1,565 +1,18 @@
 import { create, all, MathJsInstance } from 'mathjs';
 import type { Sheet, CellValue, CurveType, FormulaResult } from '@/types';
+import { formulaBundle, SCALE } from './formulas';
 
-// mathjs 인스턴스 생성
+// 공개 API에서 재노출 (기존 import 경로 유지)
+export {
+  SCALE, DAMAGE, DPS, TTK, EHP, DROP_RATE, GACHA_PITY, COST, WAVE_POWER,
+  CLAMP, LERP, INVERSE_LERP, REMAP, CHANCE, EXPECTED_ATTEMPTS, COMPOUND,
+  DIMINISHING, ELEMENT_MULT, STAMINA_REGEN, COMBO_MULT, STAR_RATING, TIER_INDEX,
+} from './formulas';
+
+// mathjs 인스턴스 생성 + 커스텀 함수 등록
 const math: MathJsInstance = create(all);
+math.import(formulaBundle, { override: true });
 
-// 게임 밸런스 커스텀 함수들
-
-/**
- * SCALE - 레벨 스케일링 함수
- * @param base 기본값
- * @param level 레벨
- * @param rate 성장률
- * @param curveType 곡선 타입 (linear, exponential, logarithmic, quadratic, scurve)
- * @param options 추가 옵션 (S-curve용 max, mid)
- */
-function SCALE(
-  base: number,
-  level: number,
-  rate: number,
-  curveType: string = 'linear',
-  options?: { max?: number; mid?: number }
-): number {
-  switch (curveType.toLowerCase()) {
-    case 'linear':
-      return base + level * rate;
-    case 'exponential':
-      return base * Math.pow(rate, level);
-    case 'logarithmic':
-      return base + rate * Math.log(Math.max(1, level));
-    case 'quadratic':
-      return base + rate * level * level;
-    case 'scurve':
-    case 's-curve': {
-      const max = options?.max ?? 100;
-      const mid = options?.mid ?? 50;
-      return base + max / (1 + Math.exp(-rate * (level - mid)));
-    }
-    default:
-      return base + level * rate;
-  }
-}
-
-/**
- * DAMAGE - 데미지 계산 (감소율 공식)
- * @param atk 공격력
- * @param def 방어력
- * @param multiplier 배율 (기본 1)
- */
-function DAMAGE(atk: number, def: number, multiplier: number = 1): number {
-  // 일반적인 감소율 공식: ATK * (100 / (100 + DEF))
-  return atk * (100 / (100 + def)) * multiplier;
-}
-
-/**
- * DPS - 초당 데미지 계산
- * @param damage 한 번 공격의 데미지
- * @param attackSpeed 초당 공격 횟수
- * @param critRate 크리티컬 확률 (0~1)
- * @param critDamage 크리티컬 데미지 배율 (기본 2)
- */
-function DPS(
-  damage: number,
-  attackSpeed: number,
-  critRate: number = 0,
-  critDamage: number = 2
-): number {
-  const effectiveDamage = damage * (1 + critRate * (critDamage - 1));
-  return effectiveDamage * attackSpeed;
-}
-
-/**
- * TTK - Time To Kill 계산
- * @param targetHP 대상 체력
- * @param damage 한 번 공격의 데미지
- * @param attackSpeed 초당 공격 횟수
- */
-function TTK(targetHP: number, damage: number, attackSpeed: number): number {
-  if (damage <= 0 || attackSpeed <= 0) return Infinity;
-  const hitsNeeded = Math.ceil(targetHP / damage);
-  // 마지막 공격은 쿨다운이 없음
-  return (hitsNeeded - 1) / attackSpeed;
-}
-
-/**
- * EHP - 유효 체력 계산
- * @param hp 체력
- * @param def 방어력
- * @param damageReduction 추가 피해 감소율 (0~1)
- */
-function EHP(hp: number, def: number, damageReduction: number = 0): number {
-  const defMultiplier = 1 + def / 100;
-  const reductionMultiplier = 1 / (1 - Math.min(damageReduction, 0.99));
-  return hp * defMultiplier * reductionMultiplier;
-}
-
-/**
- * DROP_RATE - 드랍 확률 보정
- * @param baseRate 기본 확률 (0~1)
- * @param luck 행운 스탯
- * @param levelDiff 레벨 차이 (양수면 몬스터가 높음)
- */
-function DROP_RATE(baseRate: number, luck: number = 0, levelDiff: number = 0): number {
-  // 행운은 확률을 증가시킴 (luck 100 = 2배)
-  const luckMultiplier = 1 + luck / 100;
-  // 레벨 차이는 확률을 감소시킴 (10레벨 차이 = 50% 감소)
-  const levelMultiplier = Math.max(0.1, 1 - levelDiff * 0.05);
-  return Math.min(1, baseRate * luckMultiplier * levelMultiplier);
-}
-
-/**
- * GACHA_PITY - 가챠 천장 확률 계산
- * @param baseRate 기본 확률 (0~1)
- * @param currentPull 현재 뽑기 횟수
- * @param softPityStart 소프트 천장 시작 횟수
- * @param hardPity 하드 천장 횟수
- */
-function GACHA_PITY(
-  baseRate: number,
-  currentPull: number,
-  softPityStart: number = 74,
-  hardPity: number = 90
-): number {
-  if (currentPull >= hardPity) return 1;
-  if (currentPull < softPityStart) return baseRate;
-
-  // 소프트 천장: 점진적 확률 증가
-  const pullsIntoPity = currentPull - softPityStart;
-  const maxPityPulls = hardPity - softPityStart;
-  const pityBonus = (1 - baseRate) * (pullsIntoPity / maxPityPulls) * 0.5;
-  return Math.min(1, baseRate + pityBonus);
-}
-
-/**
- * COST - 강화/업그레이드 비용 계산
- * @param baseCost 기본 비용
- * @param level 현재 레벨
- * @param rate 증가율
- * @param curveType 곡선 타입
- */
-function COST(
-  baseCost: number,
-  level: number,
-  rate: number = 1.5,
-  curveType: string = 'exponential'
-): number {
-  return Math.floor(SCALE(baseCost, level, rate, curveType));
-}
-
-/**
- * WAVE_POWER - 웨이브/스테이지 적 파워 계산
- * @param basepower 기본 파워
- * @param wave 웨이브 번호
- * @param rate 성장률
- */
-function WAVE_POWER(basePower: number, wave: number, rate: number = 1.1): number {
-  return basePower * Math.pow(rate, wave - 1);
-}
-
-// ============ 추가 함수들 ============
-
-/**
- * CLAMP - 값 범위 제한
- * @param value 값
- * @param min 최소값
- * @param max 최대값
- */
-function CLAMP(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-/**
- * LERP - 선형 보간
- * @param start 시작값
- * @param end 끝값
- * @param t 비율 (0~1)
- */
-function LERP(start: number, end: number, t: number): number {
-  return start + (end - start) * CLAMP(t, 0, 1);
-}
-
-/**
- * INVERSE_LERP - 역 선형 보간 (값이 범위에서 어느 위치인지)
- * @param start 시작값
- * @param end 끝값
- * @param value 값
- */
-function INVERSE_LERP(start: number, end: number, value: number): number {
-  if (start === end) return 0;
-  return CLAMP((value - start) / (end - start), 0, 1);
-}
-
-/**
- * REMAP - 값을 한 범위에서 다른 범위로 매핑
- * @param value 값
- * @param inMin 입력 최소
- * @param inMax 입력 최대
- * @param outMin 출력 최소
- * @param outMax 출력 최대
- */
-function REMAP(value: number, inMin: number, inMax: number, outMin: number, outMax: number): number {
-  const t = INVERSE_LERP(inMin, inMax, value);
-  return LERP(outMin, outMax, t);
-}
-
-/**
- * CHANCE - 확률 계산 (성공 여부가 아닌 기대값)
- * @param baseChance 기본 확률 (0~1)
- * @param attempts 시도 횟수
- * @returns 최소 1회 성공 확률
- */
-function CHANCE(baseChance: number, attempts: number): number {
-  return 1 - Math.pow(1 - CLAMP(baseChance, 0, 1), attempts);
-}
-
-/**
- * EXPECTED_ATTEMPTS - 기대 시도 횟수
- * @param successRate 성공 확률 (0~1)
- * @returns 1회 성공까지 평균 시도 횟수
- */
-function EXPECTED_ATTEMPTS(successRate: number): number {
-  if (successRate <= 0) return Infinity;
-  if (successRate >= 1) return 1;
-  return 1 / successRate;
-}
-
-/**
- * COMPOUND - 복리 성장
- * @param principal 원금/기본값
- * @param rate 이율/성장률
- * @param periods 기간
- */
-function COMPOUND(principal: number, rate: number, periods: number): number {
-  return principal * Math.pow(1 + rate, periods);
-}
-
-/**
- * DIMINISHING - 체감 수익 (한계 수익 체감)
- * @param base 기본값
- * @param input 입력값
- * @param softcap 소프트캡 (이후 체감 시작)
- * @param hardcap 하드캡 (최대값)
- */
-function DIMINISHING(base: number, input: number, softcap: number, hardcap: number = Infinity): number {
-  if (input <= softcap) return base + input;
-
-  const overCap = input - softcap;
-  const diminished = softcap + overCap * (1 - overCap / (overCap + softcap));
-  const result = base + diminished;
-
-  return hardcap === Infinity ? result : Math.min(result, hardcap);
-}
-
-/**
- * ELEMENT_MULT - 속성 상성 배율
- * @param attackElement 공격 속성 인덱스
- * @param defenseElement 방어 속성 인덱스
- * @param strong 강점 배율 (기본 1.5)
- * @param weak 약점 배율 (기본 0.5)
- */
-function ELEMENT_MULT(
-  attackElement: number,
-  defenseElement: number,
-  strong: number = 1.5,
-  weak: number = 0.5
-): number {
-  // 간단한 가위바위보 상성 (0>1>2>0)
-  const diff = ((attackElement - defenseElement) % 3 + 3) % 3;
-  if (diff === 1) return strong; // 상성 우위
-  if (diff === 2) return weak;   // 상성 열세
-  return 1; // 동일 속성
-}
-
-/**
- * STAMINA_REGEN - 스태미나/에너지 재생량
- * @param maxStamina 최대 스태미나
- * @param regenTime 완충 시간 (분)
- * @param elapsed 경과 시간 (분)
- */
-function STAMINA_REGEN(maxStamina: number, regenTime: number, elapsed: number): number {
-  const regenPerMinute = maxStamina / regenTime;
-  return Math.min(maxStamina, regenPerMinute * elapsed);
-}
-
-/**
- * COMBO_MULT - 콤보 배율
- * @param comboCount 현재 콤보
- * @param baseMultiplier 기본 배율 (보통 1)
- * @param perComboBonus 콤보당 추가 배율 (보통 0.1)
- * @param maxBonus 최대 보너스 (보통 2.0)
- */
-function COMBO_MULT(
-  comboCount: number,
-  baseMultiplier: number = 1,
-  perComboBonus: number = 0.1,
-  maxBonus: number = 2.0
-): number {
-  const bonus = Math.min(comboCount * perComboBonus, maxBonus);
-  return baseMultiplier + bonus;
-}
-
-/**
- * STAR_RATING - 별점 계산 (비율을 별점으로 변환)
- * @param value 현재 값
- * @param maxValue 최대 값
- * @param maxStars 최대 별 (기본 5)
- */
-function STAR_RATING(value: number, maxValue: number, maxStars: number = 5): number {
-  if (maxValue <= 0) return 0;
-  return Math.round((value / maxValue) * maxStars * 2) / 2; // 0.5 단위
-}
-
-/**
- * TIER_INDEX - 티어/등급 인덱스 (값을 티어로 변환)
- * @param value 값
- * @param thresholds 임계값 배열 [bronze, silver, gold, platinum, diamond]
- */
-function TIER_INDEX(value: number, ...thresholds: number[]): number {
-  for (let i = thresholds.length - 1; i >= 0; i--) {
-    if (value >= thresholds[i]) return i + 1;
-  }
-  return 0;
-}
-
-// 엑셀 호환 함수들
-function POWER(base: number, exponent: number): number {
-  return Math.pow(base, exponent);
-}
-
-function ABS(value: number): number {
-  return Math.abs(value);
-}
-
-function ROUND(value: number, decimals: number = 0): number {
-  const factor = Math.pow(10, decimals);
-  return Math.round(value * factor) / factor;
-}
-
-function FLOOR(value: number, decimals: number = 0): number {
-  const factor = Math.pow(10, decimals);
-  return Math.floor(value * factor) / factor;
-}
-
-function CEIL(value: number, decimals: number = 0): number {
-  const factor = Math.pow(10, decimals);
-  return Math.ceil(value * factor) / factor;
-}
-
-function SQRT(value: number): number {
-  return Math.sqrt(value);
-}
-
-function LOG(value: number, base?: number): number {
-  if (base) return Math.log(value) / Math.log(base);
-  return Math.log(value);
-}
-
-function LOG10(value: number): number {
-  return Math.log10(value);
-}
-
-function LOG2(value: number): number {
-  return Math.log2(value);
-}
-
-function EXP(value: number): number {
-  return Math.exp(value);
-}
-
-function MOD(value: number, divisor: number): number {
-  return value % divisor;
-}
-
-function SIGN(value: number): number {
-  return Math.sign(value);
-}
-
-function TRUNC(value: number, decimals: number = 0): number {
-  const factor = Math.pow(10, decimals);
-  return Math.trunc(value * factor) / factor;
-}
-
-// 통계 함수들
-function SUM(...values: number[]): number {
-  return values.flat().reduce((a, b) => a + b, 0);
-}
-
-function AVERAGE(...values: number[]): number {
-  const flat = values.flat();
-  return flat.length > 0 ? SUM(...flat) / flat.length : 0;
-}
-
-function MIN(...values: number[]): number {
-  return Math.min(...values.flat());
-}
-
-function MAX(...values: number[]): number {
-  return Math.max(...values.flat());
-}
-
-function COUNT(...values: number[]): number {
-  return values.flat().filter(v => typeof v === 'number' && !isNaN(v)).length;
-}
-
-function MEDIAN(...values: number[]): number {
-  const sorted = values.flat().sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-function STDEV(...values: number[]): number {
-  const flat = values.flat();
-  const avg = AVERAGE(...flat);
-  const squareDiffs = flat.map(v => Math.pow(v - avg, 2));
-  return Math.sqrt(AVERAGE(...squareDiffs));
-}
-
-function VARIANCE(...values: number[]): number {
-  const flat = values.flat();
-  const avg = AVERAGE(...flat);
-  const squareDiffs = flat.map(v => Math.pow(v - avg, 2));
-  return AVERAGE(...squareDiffs);
-}
-
-// 삼각함수
-function SIN(value: number): number {
-  return Math.sin(value);
-}
-
-function COS(value: number): number {
-  return Math.cos(value);
-}
-
-function TAN(value: number): number {
-  return Math.tan(value);
-}
-
-function ASIN(value: number): number {
-  return Math.asin(value);
-}
-
-function ACOS(value: number): number {
-  return Math.acos(value);
-}
-
-function ATAN(value: number): number {
-  return Math.atan(value);
-}
-
-function ATAN2(y: number, x: number): number {
-  return Math.atan2(y, x);
-}
-
-function DEGREES(radians: number): number {
-  return radians * (180 / Math.PI);
-}
-
-function RADIANS(degrees: number): number {
-  return degrees * (Math.PI / 180);
-}
-
-// 조건/논리 함수
-function IF(condition: boolean | number, trueValue: number, falseValue: number): number {
-  return condition ? trueValue : falseValue;
-}
-
-function AND(...values: (boolean | number)[]): boolean {
-  return values.every(v => Boolean(v));
-}
-
-function OR(...values: (boolean | number)[]): boolean {
-  return values.some(v => Boolean(v));
-}
-
-function NOT(value: boolean | number): boolean {
-  return !value;
-}
-
-// 랜덤 함수 (시드 없음 - 매번 다른 값)
-function RAND(): number {
-  return Math.random();
-}
-
-function RANDBETWEEN(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-// 상수
-const PI = Math.PI;
-const E = Math.E;
-
-// mathjs에 커스텀 함수 등록
-math.import({
-  // 게임 밸런스 함수
-  SCALE,
-  DAMAGE,
-  DPS,
-  TTK,
-  EHP,
-  DROP_RATE,
-  GACHA_PITY,
-  COST,
-  WAVE_POWER,
-  // 유틸리티 함수
-  CLAMP,
-  LERP,
-  INVERSE_LERP,
-  REMAP,
-  CHANCE,
-  EXPECTED_ATTEMPTS,
-  COMPOUND,
-  DIMINISHING,
-  ELEMENT_MULT,
-  STAMINA_REGEN,
-  COMBO_MULT,
-  STAR_RATING,
-  TIER_INDEX,
-  // 엑셀 호환 수학 함수
-  POWER,
-  ABS,
-  ROUND,
-  FLOOR,
-  CEIL,
-  SQRT,
-  LOG,
-  LOG10,
-  LOG2,
-  EXP,
-  MOD,
-  SIGN,
-  TRUNC,
-  // 통계 함수
-  SUM,
-  AVERAGE,
-  MIN,
-  MAX,
-  COUNT,
-  MEDIAN,
-  STDEV,
-  VARIANCE,
-  // 삼각함수
-  SIN,
-  COS,
-  TAN,
-  ASIN,
-  ACOS,
-  ATAN,
-  ATAN2,
-  DEGREES,
-  RADIANS,
-  // 조건/논리 함수
-  IF,
-  AND,
-  OR,
-  NOT,
-  // 랜덤 함수
-  RAND,
-  RANDBETWEEN,
-  // 상수
-  PI,
-  E,
-}, { override: true });
 
 // 시트 참조 함수를 위한 컨텍스트
 interface FormulaContext {
@@ -616,6 +69,18 @@ interface SheetReferenceResult {
 }
 
 /**
+ * 성능 최적화: 시트 계산 결과를 sheets 배열 참조 기준으로 캐시.
+ *
+ * 문제: 과거에는 REF() 호출 시마다 computeCellValue가 computeSheetRows를
+ *       재호출해 O(N²) 블로우업 발생 (200행에서 30초+).
+ * 해결: WeakMap으로 동일한 sheets 배열(=동일 Zustand 스냅샷) 내에서
+ *       각 시트 결과를 한 번만 계산하고 재사용.
+ * 안전성: Zustand는 변경 시 새 배열을 만들기 때문에, 상태 변경 시 자동으로
+ *         새 WeakMap 엔트리가 생성됨 → 스테일 데이터 불가능.
+ */
+const computeCache = new WeakMap<Sheet[], Map<string, Record<string, CellValue>[]>>();
+
+/**
  * 시트의 전체 행을 계산하여 computedRows 반환
  * (외부에서도 사용 가능 - useComputedRows, useEntityDefinition 등)
  */
@@ -626,6 +91,16 @@ export function computeSheetRows(
 ): Record<string, CellValue>[] {
   if (recursionDepth >= MAX_RECURSION_DEPTH) {
     return sheet.rows.map(r => r.cells as Record<string, CellValue>);
+  }
+
+  // 캐시 조회 (sheets 배열 참조 기준)
+  let cache = computeCache.get(sheets);
+  if (cache) {
+    const cached = cache.get(sheet.id);
+    if (cached) return cached;
+  } else {
+    cache = new Map<string, Record<string, CellValue>[]>();
+    computeCache.set(sheets, cache);
   }
 
   const result: Record<string, CellValue>[] = [];
@@ -676,6 +151,9 @@ export function computeSheetRows(
 
     result.push(computedRow);
   }
+
+  // 완료된 결과 캐시에 저장 (동일한 sheets 참조 내 후속 호출은 이 결과 재사용)
+  cache.set(sheet.id, result);
 
   return result;
 }
@@ -1938,8 +1416,3 @@ export const availableFunctions = [
   },
 ];
 
-export {
-  SCALE, DAMAGE, DPS, TTK, EHP, DROP_RATE, GACHA_PITY, COST, WAVE_POWER,
-  CLAMP, LERP, INVERSE_LERP, REMAP, CHANCE, EXPECTED_ATTEMPTS, COMPOUND,
-  DIMINISHING, ELEMENT_MULT, STAMINA_REGEN, COMBO_MULT, STAR_RATING, TIER_INDEX,
-};
