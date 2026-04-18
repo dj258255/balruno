@@ -525,6 +525,16 @@ export default function BottomToolbar({
                     boxShadow: isDragging ? `0 8px 24px ${config.color}40` : undefined,
                   }}
                   draggable
+                  role="button"
+                  tabIndex={0}
+                  aria-label={t(config.labelKey)}
+                  aria-pressed={isActive}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === ' ') && !dragState.draggedToolId) {
+                      e.preventDefault();
+                      handleToolClick(toolId);
+                    }
+                  }}
                   onDragStart={(e) => handleDragStart(e, toolId)}
                   onClick={() => {
                     if (!dragState.draggedToolId) {

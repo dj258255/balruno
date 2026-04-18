@@ -102,6 +102,7 @@ export default function ConfirmDialog({
             onClick={onClose}
             className="p-1.5 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
             style={{ color: 'var(--text-tertiary)' }}
+            aria-label="대화상자 닫기"
           >
             <X className="w-4 h-4" />
           </button>

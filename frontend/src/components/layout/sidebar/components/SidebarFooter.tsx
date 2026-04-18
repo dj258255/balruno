@@ -53,6 +53,7 @@ export function SidebarFooter({
                 color: 'var(--accent)',
                 background: 'var(--bg-primary)'
               }}
+              aria-label={t('sidebar.deselect')}
             >
               {t('sidebar.deselect')}
             </button>
@@ -94,8 +95,9 @@ export function DataButtons({ onShowExportModal, onShowImportModal }: DataButton
             color: 'var(--text-secondary)',
             background: 'var(--bg-primary)'
           }}
+          aria-label={t('common.export')}
         >
-          <Download className="w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0" />
+          <Download className="w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0" aria-hidden="true" />
           <span className="truncate">{t('common.export')}</span>
         </button>
 
@@ -107,8 +109,9 @@ export function DataButtons({ onShowExportModal, onShowImportModal }: DataButton
             color: 'var(--text-secondary)',
             background: 'var(--bg-primary)'
           }}
+          aria-label={t('common.import')}
         >
-          <Upload className="w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0" />
+          <Upload className="w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0" aria-hidden="true" />
           <span className="truncate">{t('common.import')}</span>
         </button>
       </div>
@@ -135,8 +138,9 @@ export function HelpButtons({ onShowHelp, onShowReferences }: HelpButtonsProps) 
             color: 'var(--text-secondary)',
             borderColor: 'var(--border-primary)'
           }}
+          aria-label={t('sidebar.help')}
         >
-          <HelpCircle className="w-4 h-4" />
+          <HelpCircle className="w-4 h-4" aria-hidden="true" />
           {t('sidebar.help')}
         </button>
         <button
@@ -147,8 +151,9 @@ export function HelpButtons({ onShowHelp, onShowReferences }: HelpButtonsProps) 
             color: 'var(--text-secondary)',
             borderColor: 'var(--border-primary)'
           }}
+          aria-label={t('sidebar.references')}
         >
-          <BookOpen className="w-4 h-4" />
+          <BookOpen className="w-4 h-4" aria-hidden="true" />
           {t('sidebar.references')}
         </button>
       </div>
@@ -187,8 +192,9 @@ export function SaveStatus({ lastSaved, onShowSettings }: SaveStatusProps) {
             borderColor: 'var(--border-primary)'
           }}
           title={t('sidebar.settings')}
+          aria-label={t('sidebar.settings')}
         >
-          <Globe className="w-3.5 h-3.5" />
+          <Globe className="w-3.5 h-3.5" aria-hidden="true" />
           <span className="text-xs font-medium">{locale === 'ko' ? '한국어' : 'EN'}</span>
         </button>
       )}

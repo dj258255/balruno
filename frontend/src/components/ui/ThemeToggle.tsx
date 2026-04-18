@@ -6,8 +6,23 @@ import './ThemeToggle.css';
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
 
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleTheme();
+    }
+  };
+
   return (
-    <div className={`theme-toggle-switch ${theme}`} onClick={toggleTheme}>
+    <div
+      className={`theme-toggle-switch ${theme}`}
+      onClick={toggleTheme}
+      onKeyDown={handleKey}
+      role="switch"
+      tabIndex={0}
+      aria-checked={theme === 'dark'}
+      aria-label={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+    >
       <div className="toggle-track">
         {/* 구름 (라이트 모드) */}
         <div className="toggle-clouds">

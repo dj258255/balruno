@@ -95,6 +95,7 @@ export default function WelcomeScreen() {
                     background: isSelected ? colors.bg : 'var(--bg-tertiary)',
                     borderColor: isSelected ? colors.border : 'transparent',
                   }}
+                  aria-label={`${t(sample.nameKey as 'samples.rpgCharacter.name')} 샘플로 시작`}
                 >
                   <div className="flex items-start gap-3">
                     <div
@@ -137,8 +138,9 @@ export default function WelcomeScreen() {
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'transparent';
               }}
+              aria-label={t('samples.orEmpty')}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" aria-hidden="true" />
               <span className="text-sm">{t('samples.orEmpty')}</span>
             </button>
           </div>
