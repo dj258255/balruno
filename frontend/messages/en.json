@@ -671,7 +671,15 @@
     "selectFormatDesc": "Select a format on the left to upload file",
     "selectProject": "Select Project",
     "uploadFile": "Upload File",
-    "useFileName": "Use file name"
+    "useFileName": "Use file name",
+    "autoDiagnostic": "Auto Balance Diagnostic",
+    "diagCritical": "Critical: {count}",
+    "diagWarning": "Warning: {count}",
+    "diagInfo": "Info: {count}",
+    "diagDetailHint": "View details in Balance Insights after import",
+    "noIssuesDetected": "No balance issues detected",
+    "importFromExcel": "Import from Excel",
+    "importFromExcelDesc": "Paste CSV/Excel — with auto diagnostic"
   },
   "formulaPreset": {
     "title": "Formula Presets",

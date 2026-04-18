@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight, Swords, Shield, TrendingUp, Sparkles, Plus, Check } from 'lucide-react';
+import { ArrowRight, Swords, Shield, TrendingUp, Sparkles, Plus, Check, FileSpreadsheet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { SAMPLE_PROJECTS } from '@/data/sampleProjects';
 import { useProjectStore } from '@/stores/projectStore';
@@ -122,12 +122,15 @@ export default function WelcomeScreen() {
             })}
           </div>
 
-          {/* 빈 프로젝트 옵션 */}
-          <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-secondary)' }}>
+          {/* 빈 프로젝트 + Excel 가져오기 옵션 */}
+          <div
+            className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-2"
+            style={{ borderColor: 'var(--border-secondary)' }}
+          >
             <button
               onClick={handleCreateEmpty}
               disabled={isCreating}
-              className="w-full p-3 rounded-lg border border-dashed flex items-center justify-center gap-2 transition-all hover:border-solid disabled:opacity-50"
+              className="p-3 rounded-lg border border-dashed flex items-center justify-center gap-2 transition-all hover:border-solid disabled:opacity-50"
               style={{
                 borderColor: 'var(--border-secondary)',
                 color: 'var(--text-secondary)',
@@ -142,6 +145,25 @@ export default function WelcomeScreen() {
             >
               <Plus className="w-4 h-4" aria-hidden="true" />
               <span className="text-sm">{t('samples.orEmpty')}</span>
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new Event('balruno:open-import-modal'))}
+              disabled={isCreating}
+              className="p-3 rounded-lg border border-dashed flex items-center justify-center gap-2 transition-all hover:border-solid disabled:opacity-50"
+              style={{
+                borderColor: 'var(--border-secondary)',
+                color: 'var(--text-secondary)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--bg-hover)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+              aria-label={t('import.importFromExcel')}
+            >
+              <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
+              <span className="text-sm">{t('import.importFromExcel')}</span>
             </button>
           </div>
         </div>

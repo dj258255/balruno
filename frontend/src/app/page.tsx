@@ -244,6 +244,13 @@ export default function Home() {
     }
   }, [projects, isLoading, setLastSaved]);
 
+  // Track 7: WelcomeScreen → ImportModal 열기 이벤트
+  useEffect(() => {
+    const handler = () => setShowImportModal(true);
+    window.addEventListener('balruno:open-import-modal', handler);
+    return () => window.removeEventListener('balruno:open-import-modal', handler);
+  }, []);
+
   // History panel outside click
   useEffect(() => {
     if (!showHistoryPanel) return;
