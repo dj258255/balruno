@@ -1358,7 +1358,12 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                               columnId={columnId}
                               cellKey={cellKeyStr}
                               value={rawValue}
-                              displayValue={formatDisplayValue(displayValue, column)}
+                              displayValue={formatDisplayValue(
+                                displayValue,
+                                column,
+                                { sheets: currentProject?.sheets ?? [], currentSheet: sheet },
+                                rowData
+                              )}
                               cellStyle={cellStyle}
                               cellMemo={cellMemo}
                               isSelected={isSelected}

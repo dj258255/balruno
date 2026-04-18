@@ -68,6 +68,22 @@ export default function ColumnModal({
     column?.currencyFormat?.decimals ?? 0
   );
   const [ratingMax, setRatingMax] = useState(column?.ratingMax ?? 5);
+  // Track 2 — link 설정
+  const [linkedSheetId, setLinkedSheetId] = useState(column?.linkedSheetId ?? '');
+  const [linkedDisplayColumnId, setLinkedDisplayColumnId] = useState(
+    column?.linkedDisplayColumnId ?? ''
+  );
+  const [linkedMultiple, setLinkedMultiple] = useState(column?.linkedMultiple ?? false);
+  // Track 3 — lookup / rollup
+  const [lookupLinkColumnId, setLookupLinkColumnId] = useState(
+    column?.lookupLinkColumnId ?? ''
+  );
+  const [lookupTargetColumnId, setLookupTargetColumnId] = useState(
+    column?.lookupTargetColumnId ?? ''
+  );
+  const [rollupAggregate, setRollupAggregate] = useState<
+    'SUM' | 'AVG' | 'MIN' | 'MAX' | 'COUNT' | 'CONCAT'
+  >(column?.rollupAggregate ?? 'SUM');
   const inputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,6 +115,12 @@ export default function ColumnModal({
       selectOptions?: FieldOption[];
       currencyFormat?: { symbol: string; decimals: number };
       ratingMax?: number;
+      linkedSheetId?: string;
+      linkedDisplayColumnId?: string;
+      linkedMultiple?: boolean;
+      lookupLinkColumnId?: string;
+      lookupTargetColumnId?: string;
+      rollupAggregate?: 'SUM' | 'AVG' | 'MIN' | 'MAX' | 'COUNT' | 'CONCAT';
     } = {
       name: name.trim(),
       type,
@@ -123,6 +145,16 @@ export default function ColumnModal({
     }
     if (type === 'rating') {
       data.ratingMax = Math.max(1, Math.min(10, ratingMax));
+    }
+    if (type === 'link') {
+      if (linkedSheetId) data.linkedSheetId = linkedSheetId;
+      if (linkedDisplayColumnId) data.linkedDisplayColumnId = linkedDisplayColumnId;
+      data.linkedMultiple = linkedMultiple;
+    }
+    if (type === 'lookup' || type === 'rollup') {
+      if (lookupLinkColumnId) data.lookupLinkColumnId = lookupLinkColumnId;
+      if (lookupTargetColumnId) data.lookupTargetColumnId = lookupTargetColumnId;
+      if (type === 'rollup') data.rollupAggregate = rollupAggregate;
     }
 
     if (showValidation) {
@@ -223,10 +255,118 @@ export default function ColumnModal({
                 { value: 'url', label: '🔗  URL' },
                 { value: 'currency', label: '₩  Currency' },
                 { value: 'rating', label: '★  Rating' },
+                { value: 'link', label: '🔗  Link (Track 2)' },
+                { value: 'lookup', label: '⤴  Lookup (Track 3)' },
+                { value: 'rollup', label: 'Σ  Rollup (Track 3)' },
               ]}
               size="md"
             />
           </div>
+
+          {/* Track 2 — link 설정 */}
+          {type === 'link' && (
+            <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+              <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                참조 시트 / 표시 컬럼
+              </label>
+              <CustomSelect
+                value={linkedSheetId}
+                onChange={(v) => {
+                  setLinkedSheetId(v);
+                  setLinkedDisplayColumnId('');
+                }}
+                options={[
+                  { value: '', label: '— 시트 선택 —' },
+                  ...sheets.filter((s) => s.id !== currentSheetId).map((s) => ({
+                    value: s.id,
+                    label: s.name,
+                  })),
+                ]}
+                size="sm"
+              />
+              {linkedSheetId && (
+                <CustomSelect
+                  value={linkedDisplayColumnId}
+                  onChange={setLinkedDisplayColumnId}
+                  options={[
+                    { value: '', label: '— 표시 컬럼 선택 —' },
+                    ...(sheets.find((s) => s.id === linkedSheetId)?.columns.map((c) => ({
+                      value: c.id,
+                      label: c.name,
+                    })) ?? []),
+                  ]}
+                  size="sm"
+                />
+              )}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={linkedMultiple}
+                  onChange={(e) => setLinkedMultiple(e.target.checked)}
+                />
+                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  다중 선택 허용 (1:N)
+                </span>
+              </label>
+            </div>
+          )}
+
+          {/* Track 3 — lookup / rollup 설정 */}
+          {(type === 'lookup' || type === 'rollup') && (
+            <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+              <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                참조 경로 (이 시트의 link 컬럼 → 대상 시트의 컬럼)
+              </label>
+              <CustomSelect
+                value={lookupLinkColumnId}
+                onChange={(v) => {
+                  setLookupLinkColumnId(v);
+                  setLookupTargetColumnId('');
+                }}
+                options={[
+                  { value: '', label: '— link 컬럼 선택 —' },
+                  ...columns.filter((c) => c.type === 'link' && c.id !== column?.id).map((c) => ({
+                    value: c.id,
+                    label: c.name,
+                  })),
+                ]}
+                size="sm"
+              />
+              {lookupLinkColumnId && (() => {
+                const linkCol = columns.find((c) => c.id === lookupLinkColumnId);
+                const targetSheet = sheets.find((s) => s.id === linkCol?.linkedSheetId);
+                return (
+                  <CustomSelect
+                    value={lookupTargetColumnId}
+                    onChange={setLookupTargetColumnId}
+                    options={[
+                      { value: '', label: '— 가져올 컬럼 —' },
+                      ...(targetSheet?.columns.map((c) => ({
+                        value: c.id,
+                        label: c.name,
+                      })) ?? []),
+                    ]}
+                    size="sm"
+                  />
+                );
+              })()}
+              {type === 'rollup' && (
+                <CustomSelect
+                  value={rollupAggregate}
+                  onChange={(v) => setRollupAggregate(v as typeof rollupAggregate)}
+                  options={[
+                    { value: 'SUM', label: 'SUM (합)' },
+                    { value: 'AVG', label: 'AVG (평균)' },
+                    { value: 'MIN', label: 'MIN (최소)' },
+                    { value: 'MAX', label: 'MAX (최대)' },
+                    { value: 'COUNT', label: 'COUNT (개수)' },
+                    { value: 'CONCAT', label: 'CONCAT (이어붙이기)' },
+                  ]}
+                  size="sm"
+                />
+              )}
+            </div>
+          )}
 
           {/* Track 1 — 타입별 설정 */}
           {(type === 'select' || type === 'multiSelect') && (

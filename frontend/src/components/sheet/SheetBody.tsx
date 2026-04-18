@@ -17,7 +17,7 @@ import { VirtualItem } from '@tanstack/react-virtual';
 import { cn } from '@/lib/utils';
 import type { Row, Column, CellValue, CellStyle } from '@/types';
 import SheetCell from './SheetCell';
-import { cellKey, formatDisplayValue } from './utils';
+import { cellKey, formatDisplayValue, type DisplayContext } from './utils';
 
 interface SheetBodyProps {
   // 가상화 데이터
@@ -41,6 +41,9 @@ interface SheetBodyProps {
   // 계산된 값
   computedRows: Record<string, CellValue>[];
   columns: Column[];
+
+  // Track 2/3 — link/lookup/rollup 해결용 컨텍스트
+  displayContext?: DisplayContext;
 
   // 리사이즈 상태
   resizingColumn: string | null;
@@ -82,6 +85,7 @@ const SheetBody = memo(function SheetBody({
   editingCell,
   computedRows,
   columns,
+  displayContext,
   resizingColumn,
   resizingRow,
   defaultCellStyle,
@@ -288,7 +292,7 @@ const SheetBody = memo(function SheetBody({
                     columnId={columnId}
                     cellKey={cellKeyStr}
                     value={rawValue}
-                    displayValue={formatDisplayValue(displayValue, column)}
+                    displayValue={formatDisplayValue(displayValue, column, displayContext, rowData)}
                     cellStyle={cellStyle}
                     cellMemo={cellMemo}
                     isSelected={isSelected}

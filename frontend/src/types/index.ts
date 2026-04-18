@@ -65,7 +65,10 @@ export type ColumnType =
   | 'date'
   | 'url'
   | 'currency'
-  | 'rating';
+  | 'rating'
+  | 'link'      // Track 2: 다른 시트 레코드 참조 (단방향 MVP)
+  | 'lookup'    // Track 3: link 통해 연결된 레코드의 특정 컬럼 값 가져오기
+  | 'rollup';   // Track 3: link 통해 연결된 레코드들 집계 (SUM/AVG/MIN/MAX/COUNT)
 
 // 선택 옵션 (select / multiSelect 공용)
 export interface SelectOption {
@@ -106,6 +109,22 @@ export interface Column {
   ratingMax?: number;
   /** date 포맷 (기본 'YYYY-MM-DD') */
   dateFormat?: string;
+
+  // Track 2 — Linked Records (단방향 MVP)
+  /** type='link': 참조 대상 시트 ID */
+  linkedSheetId?: string;
+  /** type='link': 표시용 컬럼 (대상 시트의 컬럼 ID, 보통 이름/ID 컬럼) */
+  linkedDisplayColumnId?: string;
+  /** type='link': 다중 참조 허용 여부 (false=1:1, true=1:N) */
+  linkedMultiple?: boolean;
+
+  // Track 3 — Lookup / Rollup
+  /** type='lookup'/'rollup': 현재 시트의 link 컬럼 ID (참조 경로) */
+  lookupLinkColumnId?: string;
+  /** type='lookup'/'rollup': 가져올 대상 시트의 컬럼 ID */
+  lookupTargetColumnId?: string;
+  /** type='rollup': 집계 함수 */
+  rollupAggregate?: 'SUM' | 'AVG' | 'MIN' | 'MAX' | 'COUNT' | 'CONCAT';
 }
 
 // 행 타입
