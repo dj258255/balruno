@@ -687,6 +687,18 @@
     "importFromExcel": "Import from Excel",
     "importFromExcelDesc": "Paste CSV/Excel — with auto diagnostic"
   },
+  "views": {
+    "grid": "Grid",
+    "form": "Form",
+    "kanban": "Kanban",
+    "calendar": "Calendar",
+    "gallery": "Gallery",
+    "gantt": "Gantt",
+    "formHeading": "Add record to {name}",
+    "formEmpty": "No editable columns. Add a column first.",
+    "formAdd": "Add",
+    "comingSoon": "This view is coming soon."
+  },
   "toolGroups": {
     "formulaWorkbench": "Formula Workbench",
     "balanceInsights": "Balance Insights",

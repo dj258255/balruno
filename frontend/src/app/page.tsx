@@ -21,6 +21,12 @@ import { Sidebar, SheetTabs } from '@/components/layout';
 // Sheet components
 import { SheetTable, StickerLayer } from '@/components/sheet';
 
+// Track 4: 뷰 스위처 + 각 뷰 컴포넌트
+import ViewSwitcher from '@/components/views/ViewSwitcher';
+import FormView from '@/components/views/FormView';
+import ComingSoonView from '@/components/views/ComingSoonView';
+import type { ViewType } from '@/types';
+
 // Modal components - Dynamic imports for code splitting
 import { useOnboardingStatus } from '@/components/modals';
 
@@ -75,6 +81,7 @@ export default function Home() {
     addColumn,
     addRow,
     updateCell,
+    updateSheet,
   } = useProjectStore();
 
   // Track 0 Phase 2: Y.Doc ↔ Zustand 양방향 브릿지 (모든 편집이 Y.Doc 경유)
@@ -483,8 +490,25 @@ export default function Home() {
                     sheet={currentSheet}
                   />
 
+                  {/* Track 4: 뷰 스위처 */}
+                  <ViewSwitcher
+                    activeView={currentSheet.activeView ?? 'grid'}
+                    onChange={(view) =>
+                      updateSheet(currentProject.id, currentSheet.id, { activeView: view })
+                    }
+                  />
+
                   <div className="flex-1 min-h-0 overflow-hidden">
-                    <SheetTable projectId={currentProject.id} sheet={currentSheet} onAddMemo={handleAddMemo} />
+                    {(() => {
+                      const view: ViewType = currentSheet.activeView ?? 'grid';
+                      if (view === 'grid') {
+                        return <SheetTable projectId={currentProject.id} sheet={currentSheet} onAddMemo={handleAddMemo} />;
+                      }
+                      if (view === 'form') {
+                        return <FormView projectId={currentProject.id} sheet={currentSheet} />;
+                      }
+                      return <ComingSoonView view={view} />;
+                    })()}
                   </div>
                 </div>
               ) : (

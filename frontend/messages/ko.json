@@ -687,6 +687,18 @@
     "importFromExcel": "Excel 에서 가져오기",
     "importFromExcelDesc": "CSV/Excel 붙여넣기 — 자동 진단 포함"
   },
+  "views": {
+    "grid": "그리드",
+    "form": "폼",
+    "kanban": "칸반",
+    "calendar": "캘린더",
+    "gallery": "갤러리",
+    "gantt": "간트",
+    "formHeading": "{name} 레코드 추가",
+    "formEmpty": "편집 가능한 컬럼이 없습니다. 먼저 컬럼을 추가하세요.",
+    "formAdd": "추가",
+    "comingSoon": "이 뷰는 곧 구현됩니다."
+  },
   "toolGroups": {
     "formulaWorkbench": "수식 작업대",
     "balanceInsights": "밸런스 인사이트",
