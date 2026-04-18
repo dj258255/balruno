@@ -11,7 +11,6 @@ import {
   SidebarHeader,
   NewProjectForm,
   ProjectList,
-  ToolsSection,
   SidebarFooter,
   DataButtons,
   HelpButtons,
