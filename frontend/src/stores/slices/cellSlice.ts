@@ -50,7 +50,40 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
 
   addColumn: (projectId: string, sheetId: string, column: Omit<Column, 'id'>): string => {
     const id = uuidv4();
-    addColumnInDoc(getProjectDoc(projectId), sheetId, { ...column, id });
+    const doc = getProjectDoc(projectId);
+
+    // Track 2 양방향 미러링: link 타입이면 대상 시트에 reverse 컬럼 자동 생성
+    if (column.type === 'link' && column.linkedSheetId && !column.isReverseLink) {
+      const state = get();
+      const project = state.projects.find((p) => p.id === projectId);
+      const sourceSheet = project?.sheets.find((s) => s.id === sheetId);
+      const targetSheet = project?.sheets.find((s) => s.id === column.linkedSheetId);
+      if (sourceSheet && targetSheet) {
+        const reverseId = uuidv4();
+        // 한 transaction 에 양쪽 컬럼 생성
+        doc.transact(() => {
+          addColumnInDoc(doc, sheetId, {
+            ...column,
+            id,
+            reverseColumnId: reverseId,
+          });
+          addColumnInDoc(doc, column.linkedSheetId!, {
+            id: reverseId,
+            name: `${sourceSheet.name} (역참조)`,
+            type: 'link',
+            linkedSheetId: sheetId,
+            linkedDisplayColumnId: undefined,
+            linkedMultiple: true,
+            reverseColumnId: id,
+            isReverseLink: true,
+            width: 160,
+          });
+        });
+        return id;
+      }
+    }
+
+    addColumnInDoc(doc, sheetId, { ...column, id });
     return id;
   },
 
@@ -148,7 +181,61 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     columnId: string,
     value: CellValue
   ) => {
-    updateCellInDoc(getProjectDoc(projectId), sheetId, rowId, columnId, value);
+    const doc = getProjectDoc(projectId);
+    const state = get();
+    const project = state.projects.find((p) => p.id === projectId);
+    const sourceSheet = project?.sheets.find((s) => s.id === sheetId);
+    const column = sourceSheet?.columns.find((c) => c.id === columnId);
+
+    // Track 2 양방향 미러링: link 타입 셀 업데이트 시 반대쪽도 동기화
+    if (
+      column?.type === 'link' &&
+      column.linkedSheetId &&
+      column.reverseColumnId &&
+      sourceSheet
+    ) {
+      const targetSheet = project?.sheets.find((s) => s.id === column.linkedSheetId);
+      if (targetSheet) {
+        const oldValue = sourceSheet.rows.find((r) => r.id === rowId)?.cells[columnId];
+        const oldIds = String(oldValue ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+        const newIds = String(value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+        const added = newIds.filter((x) => !oldIds.includes(x));
+        const removed = oldIds.filter((x) => !newIds.includes(x));
+        const reverseColId = column.reverseColumnId;
+        const targetSheetId = column.linkedSheetId;
+
+        doc.transact(() => {
+          updateCellInDoc(doc, sheetId, rowId, columnId, value);
+          // 추가된 target row 의 reverse 컬럼에 현재 rowId 추가
+          for (const targetRowId of added) {
+            const targetRow = targetSheet.rows.find((r) => r.id === targetRowId);
+            if (!targetRow) continue;
+            const currentLinks = String(targetRow.cells[reverseColId] ?? '')
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean);
+            if (!currentLinks.includes(rowId)) {
+              const next = [...currentLinks, rowId].join(',');
+              updateCellInDoc(doc, targetSheetId, targetRowId, reverseColId, next);
+            }
+          }
+          // 제거된 target row 의 reverse 컬럼에서 현재 rowId 제거
+          for (const targetRowId of removed) {
+            const targetRow = targetSheet.rows.find((r) => r.id === targetRowId);
+            if (!targetRow) continue;
+            const currentLinks = String(targetRow.cells[reverseColId] ?? '')
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean);
+            const next = currentLinks.filter((x) => x !== rowId).join(',');
+            updateCellInDoc(doc, targetSheetId, targetRowId, reverseColId, next);
+          }
+        });
+        return;
+      }
+    }
+
+    updateCellInDoc(doc, sheetId, rowId, columnId, value);
   },
 
   updateCellStyle: (
