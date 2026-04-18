@@ -48,6 +48,12 @@
 7. ✅ ErrorBoundary 추가 (app/error.tsx + global-error.tsx)
 8. ✅ 접근성 `aria-*` 31개
 9. ✅ 중복 파일 10개 정리
+10. 🔥 **Track 0 완료** — Yjs 마이그레이션 전체 (Phase 1+2+3+4)
+    - ydoc.ts 27 helper (Sheet/Column/Row/Cell/Sticker/Folder)
+    - 모든 slice write 액션 Y.Doc 경유
+    - Y.UndoManager 로 historyStore 교체 (500ms merge)
+    - y-indexeddb persist + 자동 마이그레이션 (storage.ts → Y.Doc)
+    - 42 테스트 통과 (13 ydoc tests + 29 formulaEngine tests)
 
 ---
 
