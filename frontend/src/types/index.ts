@@ -117,13 +117,17 @@ export interface Column {
   /** date 포맷 (기본 'YYYY-MM-DD') */
   dateFormat?: string;
 
-  // Track 2 — Linked Records (단방향 MVP)
+  // Track 2 — Linked Records (양방향 미러링)
   /** type='link': 참조 대상 시트 ID */
   linkedSheetId?: string;
   /** type='link': 표시용 컬럼 (대상 시트의 컬럼 ID, 보통 이름/ID 컬럼) */
   linkedDisplayColumnId?: string;
   /** type='link': 다중 참조 허용 여부 (false=1:1, true=1:N) */
   linkedMultiple?: boolean;
+  /** type='link': 반대쪽 시트의 자동 생성된 reverse 컬럼 ID (양방향 동기화용) */
+  reverseColumnId?: string;
+  /** 자동 생성된 reverse 컬럼 표시 (UI 에서 "자동 생성됨" 뱃지) */
+  isReverseLink?: boolean;
 
   // Track 3 — Lookup / Rollup
   /** type='lookup'/'rollup': 현재 시트의 link 컬럼 ID (참조 경로) */
