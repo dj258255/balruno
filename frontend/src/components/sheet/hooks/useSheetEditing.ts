@@ -40,7 +40,7 @@ export function useSheetEditing({
   const formulaBarRef = useRef<HTMLInputElement>(null);
   const isComposingRef = useRef(false);
 
-  // 셀 편집 시작
+  // 셀 편집 시작 — Track 1: 타입별 전용 인터랙션
   const startEditing = useCallback(
     (rowId: string, columnId: string) => {
       const column = sheet.columns.find((c) => c.id === columnId);
@@ -50,13 +50,39 @@ export function useSheetEditing({
         return;
       }
 
+      // Track 1: checkbox 는 편집 모드 진입 대신 즉시 토글
+      if (column?.type === 'checkbox') {
+        const current = row?.cells[columnId];
+        const isTrue = current === 'true' || current === 1 || current === '1';
+        const next: CellValue = isTrue ? '' : 'true';
+        pushState(projects, '체크박스 토글');
+        updateCell(projectId, sheet.id, rowId, columnId, next);
+        return;
+      }
+
+      // Track 1: rating 은 더블클릭으로 별 하나씩 순환 (0→1→...→max→0)
+      if (column?.type === 'rating') {
+        const max = column.ratingMax ?? 5;
+        const current = row?.cells[columnId];
+        const n = typeof current === 'number' ? current : parseFloat(String(current)) || 0;
+        const nextN = n >= max ? 0 : Math.floor(n) + 1;
+        pushState(projects, '별점 변경');
+        updateCell(projectId, sheet.id, rowId, columnId, nextN);
+        return;
+      }
+
+      // lookup / rollup 은 읽기 전용
+      if (column?.type === 'lookup' || column?.type === 'rollup') {
+        return;
+      }
+
       setEditingCell({ rowId, columnId });
       const rawValue = row?.cells[columnId];
       const value = rawValue?.toString() || '';
       setEditValue(value);
       setFormulaBarValue(value);
     },
-    [sheet.rows, sheet.columns, setFormulaBarValue]
+    [sheet.rows, sheet.columns, sheet.id, projectId, updateCell, pushState, projects, setFormulaBarValue]
   );
 
   // 셀 편집 완료
