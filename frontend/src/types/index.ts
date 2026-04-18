@@ -52,8 +52,27 @@ export interface Sheet {
   updatedAt: number;
 }
 
-// 컬럼 타입 (일반: 자동 감지, 수식: 컬럼 전체 수식)
-export type ColumnType = 'general' | 'formula';
+// 컬럼 타입 — Track 1 (Field 확장)
+// general: 자동 감지 (기존), formula: 컬럼 전체 수식 (기존)
+// + 기본 7종: checkbox/select/multiSelect/date/url/currency/rating
+// Track 2/3 에서 추가될 예정: link/lookup/rollup/attachment
+export type ColumnType =
+  | 'general'
+  | 'formula'
+  | 'checkbox'
+  | 'select'
+  | 'multiSelect'
+  | 'date'
+  | 'url'
+  | 'currency'
+  | 'rating';
+
+// 선택 옵션 (select / multiSelect 공용)
+export interface SelectOption {
+  id: string;
+  label: string;
+  color?: string;
+}
 
 // 데이터 타입 (유효성 검사용)
 export type DataType = 'any' | 'number' | 'integer' | 'text';
@@ -77,6 +96,16 @@ export interface Column {
   locked?: boolean;         // 잠금 여부
   exportName?: string;      // 게임 엔진 내보내기 시 사용할 영문 필드명
   exportExcluded?: boolean; // 내보내기 제외 여부
+
+  // Track 1 — Field 타입별 설정
+  /** select/multiSelect 의 선택지 */
+  selectOptions?: SelectOption[];
+  /** currency 포맷: 통화 기호 (₩, $, 원) + 소수점 자릿수 */
+  currencyFormat?: { symbol: string; decimals: number };
+  /** rating 최대 별점 (기본 5) */
+  ratingMax?: number;
+  /** date 포맷 (기본 'YYYY-MM-DD') */
+  dateFormat?: string;
 }
 
 // 행 타입
