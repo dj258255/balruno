@@ -681,6 +681,17 @@
     "importFromExcel": "Import from Excel",
     "importFromExcelDesc": "Paste CSV/Excel — with auto diagnostic"
   },
+  "toolGroups": {
+    "formulaWorkbench": "Formula Workbench",
+    "balanceInsights": "Balance Insights",
+    "simulation": "Simulation",
+    "charts": "Charts",
+    "economy": "Economy",
+    "curveFitting": "Curve Fitting",
+    "entityGenerator": "Entity Generator",
+    "difficultyCurve": "Difficulty Curve",
+    "goalSolver": "Goal Solver"
+  },
   "commandPalette": {
     "title": "Command Palette",
     "searchPlaceholder": "Search commands or items...",

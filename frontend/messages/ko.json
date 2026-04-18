@@ -681,6 +681,17 @@
     "importFromExcel": "Excel 에서 가져오기",
     "importFromExcelDesc": "CSV/Excel 붙여넣기 — 자동 진단 포함"
   },
+  "toolGroups": {
+    "formulaWorkbench": "수식 작업대",
+    "balanceInsights": "밸런스 인사이트",
+    "simulation": "시뮬레이션",
+    "charts": "차트",
+    "economy": "이코노미",
+    "curveFitting": "곡선 피팅",
+    "entityGenerator": "엔티티 생성",
+    "difficultyCurve": "난이도 곡선",
+    "goalSolver": "목표 역산"
+  },
   "commandPalette": {
     "title": "명령 팔레트",
     "searchPlaceholder": "명령 또는 항목 검색...",
