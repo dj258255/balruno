@@ -687,6 +687,9 @@
     "importFromExcel": "Excel 에서 가져오기",
     "importFromExcelDesc": "CSV/Excel 붙여넣기 — 자동 진단 포함"
   },
+  "recordEditor": {
+    "title": "레코드 편집"
+  },
   "views": {
     "grid": "그리드",
     "form": "폼",

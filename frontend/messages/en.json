@@ -687,6 +687,9 @@
     "importFromExcel": "Import from Excel",
     "importFromExcelDesc": "Paste CSV/Excel — with auto diagnostic"
   },
+  "recordEditor": {
+    "title": "Edit Record"
+  },
   "views": {
     "grid": "Grid",
     "form": "Form",
