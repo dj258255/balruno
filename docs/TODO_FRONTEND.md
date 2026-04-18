@@ -108,21 +108,23 @@ Y.Doc (per project)
 - [x] 기존 29 테스트 전원 통과 유지 (**총 37 테스트**)
 - [x] 빌드 + TS 타입 체크 통과
 
-#### ☐ 잔여 (후속 커밋)
-- [ ] Y.Doc ↔ Zustand 선택적 구독 어댑터 (`useYDoc` 커스텀 훅 or `useSyncExternalStore`)
-- [ ] `stores/slices/cellSlice.ts` 의 `updateCell` 을 Y.Doc write 로 전환 (첫 파일럿)
-  - 나머지 action 들은 순차 migration
-- [ ] Zustand slices 는 UI 상태만 (selectedRows, cellSelectionMode 등) — 리팩터
-- [ ] 기존 `storage.ts` → Y.Doc 초기화 시 마이그레이션 경로
-- [ ] `migrateIndexedDBToYDoc()` 일회성 함수 (기존 유저)
-- [ ] y-indexeddb provider 통합 테스트 (DOM 환경, vitest + jsdom)
-- [ ] Undo/Redo 를 `Y.UndoManager` 로 교체 (기존 `historyStore` 제거 가능)
+#### ✅ Phase 2 — 모든 write 액션 Y.Doc 이관 (2026-04-18)
+- [x] `ydoc.ts` 에 27 helper 추가 (Sheet/Column/Row/Cell 스타일/Sticker/Folder)
+- [x] `cellSlice` / `sheetSlice` / `projectSlice` 의 모든 write 액션 → Y.Doc helper 로 수렴
+- [x] `useYDocSync` 활성화 — Y.Doc ↔ Zustand observer 브릿지
+- [x] 프로젝트 생성/복제 시 Y.Doc 선제 hydrate (후속 write 가 observer 로 sync)
 
-### Undo/Redo 재구현
-Y.Doc 은 `UndoManager` 내장. 기존 `historyStore` 제거 가능.
-- [ ] `new Y.UndoManager(ydoc.getArray('sheets'))` 로 교체
-- [ ] 프론트 Undo/Redo 훅 연결
-- [ ] Undo 단위 병합 (100ms 이내 편집은 한 스텝으로)
+#### ✅ Phase 3 — Y.UndoManager 교체 (2026-04-18)
+- [x] `getUndoManager(projectId)` — sheets/folders/meta 추적, 500ms merge
+- [x] `historyStore` 를 Y.UndoManager delegate 로 재작성 (기존 인터페이스 유지, tick 카운터로 reactivity)
+- [x] `useHistory` 의 setProjects 경로 제거 (UndoManager 가 Y.Doc 되돌리면 observer 자동 반사)
+- [x] 단축키 Cmd+Z / Cmd+Shift+Z / Cmd+Y 바인딩
+
+#### ✅ Phase 4 — y-indexeddb persist + 자동 마이그레이션 (2026-04-18)
+- [x] `useYDocSync` 가 `initializeProjectDoc` 호출 → y-indexeddb 복원 + 조건부 hydrate
+- [x] 매 세션 idempotent — `isDocHydrated` 가 이중 hydrate 방지
+- [x] 기존 유저: storage.ts 의 projects → Y.Doc → y-indexeddb (자동)
+- [x] 42 테스트 통과, 빌드 통과
 
 ### 마이그레이션 전략 (기존 유저)
 1. 앱 시작 시 IndexedDB `projects` store 스캔
