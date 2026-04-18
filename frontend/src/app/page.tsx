@@ -34,6 +34,7 @@ import type { ViewType } from '@/types';
 import { useOnboardingStatus } from '@/components/modals';
 
 const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ssr: false });
+const AISetupModal = dynamic(() => import('@/components/modals/AISetupModal'), { ssr: false });
 const SettingsModal = dynamic(() => import('@/components/modals/SettingsModal'), { ssr: false });
 const ReferencesModal = dynamic(() => import('@/components/modals/ReferencesModal'), { ssr: false });
 const OnboardingGuide = dynamic(() => import('@/components/modals/OnboardingGuide'), { ssr: false });
@@ -108,6 +109,7 @@ export default function Home() {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showAISetup, setShowAISetup] = useState(false);
 
   // Modal state
   const [showSettings, setShowSettings] = useState(false);
@@ -199,6 +201,13 @@ export default function Home() {
     const handler = () => setShowImportModal(true);
     window.addEventListener('balruno:open-import-modal', handler);
     return () => window.removeEventListener('balruno:open-import-modal', handler);
+  }, []);
+
+  // Track 11: WelcomeScreen → AISetupModal 열기 이벤트
+  useEffect(() => {
+    const handler = () => setShowAISetup(true);
+    window.addEventListener('balruno:open-ai-setup', handler);
+    return () => window.removeEventListener('balruno:open-ai-setup', handler);
   }, []);
 
   // Track 5: Cmd/Ctrl+K → Command Palette 토글
@@ -541,6 +550,7 @@ export default function Home() {
       {showImportModal && (
         <ImportModal onClose={() => setShowImportModal(false)} />
       )}
+      {showAISetup && <AISetupModal onClose={() => setShowAISetup(false)} />}
 
       {/* Track 6: Docked Toolbox — 우측 사이드 도킹 영역 (플로팅 ToolPanels 대체) */}
       <DockedToolbox
