@@ -39,6 +39,9 @@ export interface Sticker {
   createdAt: number;
 }
 
+// Track 4 — 뷰 타입
+export type ViewType = 'grid' | 'form' | 'kanban' | 'calendar' | 'gallery' | 'gantt';
+
 // 시트 타입
 export interface Sheet {
   id: string;
@@ -48,6 +51,10 @@ export interface Sheet {
   stickers?: Sticker[];  // 스티커 목록
   exportClassName?: string;  // 게임 엔진 내보내기 시 사용할 클래스명 (영문)
   folderId?: string;     // 소속 폴더 ID (없으면 루트)
+  /** Track 4: 현재 활성 뷰 (기본 'grid'). 단일 뷰 MVP — 다중 뷰 저장은 추후 */
+  activeView?: ViewType;
+  /** Track 4: Kanban/Calendar/Gallery 뷰에서 그룹/날짜 기준 컬럼 ID */
+  viewGroupColumnId?: string;
   createdAt: number;
   updatedAt: number;
 }

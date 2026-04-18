@@ -507,7 +507,7 @@ export function addSheetInDoc(doc: Y.Doc, sheet: Sheet): void {
 export function updateSheetInDoc(
   doc: Y.Doc,
   sheetId: string,
-  updates: Partial<Pick<Sheet, 'name' | 'exportClassName' | 'folderId'>>
+  updates: Partial<Pick<Sheet, 'name' | 'exportClassName' | 'folderId' | 'activeView' | 'viewGroupColumnId'>>
 ): void {
   doc.transact(() => {
     const found = findSheetMap(doc, sheetId);

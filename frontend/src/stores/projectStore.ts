@@ -68,7 +68,7 @@ export interface ProjectState {
   updateSheet: (
     projectId: string,
     sheetId: string,
-    updates: Partial<Pick<Sheet, 'name' | 'exportClassName'>>
+    updates: Partial<Pick<Sheet, 'name' | 'exportClassName' | 'activeView' | 'viewGroupColumnId'>>
   ) => void;
   deleteSheet: (projectId: string, sheetId: string) => void;
   setCurrentSheet: (id: string | null) => void;

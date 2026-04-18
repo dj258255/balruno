@@ -58,7 +58,7 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
   updateSheet: (
     projectId: string,
     sheetId: string,
-    updates: Partial<Pick<Sheet, 'name' | 'exportClassName'>>
+    updates: Partial<Pick<Sheet, 'name' | 'exportClassName' | 'activeView' | 'viewGroupColumnId'>>
   ) => {
     updateSheetInDoc(getProjectDoc(projectId), sheetId, updates);
   },
