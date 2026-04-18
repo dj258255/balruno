@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight, Swords, Shield, TrendingUp, Sparkles, Plus, Check, FileSpreadsheet } from 'lucide-react';
+import { ArrowRight, Swords, Shield, TrendingUp, Sparkles, Plus, Check, FileSpreadsheet, Wand2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { SAMPLE_PROJECTS } from '@/data/sampleProjects';
 import { useProjectStore } from '@/stores/projectStore';
@@ -122,9 +122,9 @@ export default function WelcomeScreen() {
             })}
           </div>
 
-          {/* 빈 프로젝트 + Excel 가져오기 옵션 */}
+          {/* 빈 프로젝트 + Excel 가져오기 + AI 생성 옵션 */}
           <div
-            className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-2"
+            className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-3 gap-2"
             style={{ borderColor: 'var(--border-secondary)' }}
           >
             <button
@@ -164,6 +164,25 @@ export default function WelcomeScreen() {
             >
               <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
               <span className="text-sm">{t('import.importFromExcel')}</span>
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new Event('balruno:open-ai-setup'))}
+              disabled={isCreating}
+              className="p-3 rounded-lg border border-dashed flex items-center justify-center gap-2 transition-all hover:border-solid disabled:opacity-50"
+              style={{
+                borderColor: '#8b5cf6',
+                color: '#8b5cf6',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(139, 92, 246, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+              aria-label="AI 로 시작"
+            >
+              <Wand2 className="w-4 h-4" aria-hidden="true" />
+              <span className="text-sm font-medium">AI 로 시작</span>
             </button>
           </div>
         </div>
