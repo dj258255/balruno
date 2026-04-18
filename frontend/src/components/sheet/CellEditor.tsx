@@ -10,13 +10,13 @@
  */
 
 import React, { forwardRef, useEffect, useRef } from 'react';
-import type { CellStyle } from '@/types';
+import type { CellStyle, ColumnType, SelectOption } from '@/types';
 
 interface CellEditorProps {
   value: string;
   onChange: (value: string) => void;
-  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  onBlur?: (e?: React.FocusEvent<HTMLInputElement>) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onBlur?: (e?: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
   isFormula?: boolean;
   position: {
     top: number;
@@ -25,10 +25,14 @@ interface CellEditorProps {
     height: number;
   };
   cellStyle?: CellStyle;
+  /** Track 1: 컬럼 타입에 따라 input type 분기 */
+  columnType?: ColumnType;
+  /** Track 1: select / multiSelect 의 옵션 목록 */
+  selectOptions?: SelectOption[];
 }
 
 export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
-  ({ value, onChange, onKeyDown, onBlur, isFormula = false, position, cellStyle }, ref) => {
+  ({ value, onChange, onKeyDown, onBlur, isFormula = false, position, cellStyle, columnType, selectOptions }, ref) => {
     const internalInputRef = useRef<HTMLInputElement>(null);
 
     // 값이 변경될 때마다 커서가 보이도록 스크롤
@@ -44,6 +48,73 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
     // 테두리 두께 - 셀 외곽에 추가되는 테두리
     const borderWidth = 2;
 
+    // Track 1: 컬럼 타입에 따른 input type
+    const inputType = (() => {
+      if (isFormula) return 'text';
+      switch (columnType) {
+        case 'date':
+          return 'date';
+        case 'url':
+          return 'url';
+        case 'currency':
+          return 'number';
+        default:
+          return 'text';
+      }
+    })();
+
+    const baseStyle: React.CSSProperties = {
+      top: position.top - borderWidth,
+      left: position.left - borderWidth,
+      width: position.width + borderWidth * 2,
+      height: position.height + borderWidth * 2,
+      padding: '0 8px',
+      border: `${borderWidth}px solid ${isFormula ? 'var(--editor-border-formula)' : 'var(--editor-border-focus)'}`,
+      borderRadius: '0',
+      outline: 'none',
+      background: isFormula ? 'var(--editor-bg-formula)' : 'var(--editor-bg)',
+      boxShadow: isFormula
+        ? '0 0 0 3px var(--editor-shadow-formula)'
+        : '0 0 0 3px var(--editor-shadow-focus)',
+      color: cellStyle?.fontColor || 'var(--text-primary)',
+      fontSize: cellStyle?.fontSize ? `${cellStyle.fontSize}px` : '13px',
+      fontFamily: isFormula ? 'var(--font-mono, monospace)' : 'inherit',
+      fontWeight: cellStyle?.bold ? 'bold' : 'normal',
+      fontStyle: cellStyle?.italic ? 'italic' : 'normal',
+      textDecoration: [
+        cellStyle?.underline ? 'underline' : '',
+        cellStyle?.strikethrough ? 'line-through' : '',
+      ].filter(Boolean).join(' ') || 'none',
+      boxSizing: 'border-box',
+      caretColor: isFormula ? 'var(--editor-border-formula)' : 'var(--editor-border-focus)',
+    };
+
+    // Track 1: select 는 <select> 드롭다운
+    if (columnType === 'select' && selectOptions && !isFormula) {
+      return (
+        <select
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            // 선택 즉시 편집 종료
+            onBlur?.(e as unknown as React.FocusEvent<HTMLSelectElement>);
+          }}
+          onKeyDown={onKeyDown}
+          onBlur={onBlur}
+          autoFocus
+          className="absolute z-50"
+          style={baseStyle}
+        >
+          <option value="">—</option>
+          {selectOptions.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
     return (
       <input
         ref={(node) => {
@@ -54,43 +125,13 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
             ref.current = node;
           }
         }}
-        type="text"
+        type={inputType}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
         onBlur={onBlur}
         className="absolute z-50"
-        style={{
-          // Google Sheets 스타일: 셀 외곽에 테두리 추가
-          // 테두리가 셀 바깥으로 확장되도록 위치 조정
-          top: position.top - borderWidth,
-          left: position.left - borderWidth,
-          // 내부 영역은 셀과 동일하게, 테두리는 외곽에 추가
-          width: position.width + borderWidth * 2,
-          height: position.height + borderWidth * 2,
-          // 셀과 동일한 패딩 (SheetCell의 px-2 = 8px)
-          padding: '0 8px',
-          // 셀 외곽을 감싸는 테두리
-          border: `${borderWidth}px solid ${isFormula ? 'var(--editor-border-formula)' : 'var(--editor-border-focus)'}`,
-          borderRadius: '0',
-          outline: 'none',
-          background: isFormula ? 'var(--editor-bg-formula)' : 'var(--editor-bg)',
-          boxShadow: isFormula
-            ? '0 0 0 3px var(--editor-shadow-formula)'
-            : '0 0 0 3px var(--editor-shadow-focus)',
-          // 셀 스타일 상속
-          color: cellStyle?.fontColor || 'var(--text-primary)',
-          fontSize: cellStyle?.fontSize ? `${cellStyle.fontSize}px` : '13px',
-          fontFamily: isFormula ? 'var(--font-mono, monospace)' : 'inherit',
-          fontWeight: cellStyle?.bold ? 'bold' : 'normal',
-          fontStyle: cellStyle?.italic ? 'italic' : 'normal',
-          textDecoration: [
-            cellStyle?.underline ? 'underline' : '',
-            cellStyle?.strikethrough ? 'line-through' : '',
-          ].filter(Boolean).join(' ') || 'none',
-          boxSizing: 'border-box',
-          caretColor: isFormula ? 'var(--editor-border-formula)' : 'var(--editor-border-focus)',
-        }}
+        style={baseStyle}
         autoComplete="off"
         spellCheck={false}
       />

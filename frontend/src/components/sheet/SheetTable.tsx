@@ -884,11 +884,15 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           }}
         >
           {/* 오버레이 에디터 */}
-          {editingCell && editorPosition && (
+          {editingCell && editorPosition && (() => {
+            const editingColumn = sheet.columns.find((c) => c.id === editingCell.columnId);
+            return (
             <>
               <CellEditor
                 ref={overlayInputRef}
                 value={editValue}
+                columnType={editingColumn?.type}
+                selectOptions={editingColumn?.selectOptions}
                 onChange={(value) => {
                   setEditValue(value);
                   setFormulaBarValue(value);
@@ -897,7 +901,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                 onKeyDown={(e) => {
                   // 자동완성이 열려있고 아이템이 있을 때 키보드 네비게이션 먼저 처리
                   if (showAutocomplete && inlineAutocompleteRef.current?.hasItems()) {
-                    const handled = inlineAutocompleteRef.current.handleKeyDown(e);
+                    const handled = inlineAutocompleteRef.current.handleKeyDown(e as React.KeyboardEvent<HTMLInputElement>);
                     if (handled) return;
                   }
 
@@ -954,7 +958,8 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                 />
               </div>
             </>
-          )}
+            );
+          })()}
 
           {/* 테이블 줌 래퍼 - transform: scale() + GPU 가속 */}
           <div
