@@ -1,12 +1,20 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Check, HelpCircle, Lock, Globe } from 'lucide-react';
+import { X, Check, HelpCircle, Lock, Globe, Plus, Trash2 } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 import { useTranslations } from 'next-intl';
 import { useEscapeKey } from '@/hooks';
 import FormulaAutocomplete from './FormulaAutocomplete';
 import CustomSelect from '@/components/ui/CustomSelect';
-import type { Column, ColumnType, DataType, ValidationConfig, Sheet } from '@/types';
+import type {
+  Column,
+  ColumnType,
+  DataType,
+  ValidationConfig,
+  Sheet,
+  SelectOption as FieldOption,
+} from '@/types';
 
 interface ColumnModalProps {
   column?: Column;
@@ -20,6 +28,9 @@ interface ColumnModalProps {
     validation?: ValidationConfig;
     locked?: boolean;
     exportName?: string;
+    selectOptions?: FieldOption[];
+    currencyFormat?: { symbol: string; decimals: number };
+    ratingMax?: number;
   }) => void;
   onClose: () => void;
   mode: 'add' | 'edit';
@@ -46,6 +57,17 @@ export default function ColumnModal({
   const [required, setRequired] = useState(column?.validation?.required || false);
   const [locked, setLocked] = useState(column?.locked || false);
   const [exportName, setExportName] = useState(column?.exportName || '');
+  // Track 1 — 타입별 설정 state
+  const [selectOptions, setSelectOptions] = useState<FieldOption[]>(
+    column?.selectOptions ?? []
+  );
+  const [currencySymbol, setCurrencySymbol] = useState(
+    column?.currencyFormat?.symbol ?? '₩'
+  );
+  const [currencyDecimals, setCurrencyDecimals] = useState(
+    column?.currencyFormat?.decimals ?? 0
+  );
+  const [ratingMax, setRatingMax] = useState(column?.ratingMax ?? 5);
   const inputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,6 +96,9 @@ export default function ColumnModal({
       validation?: ValidationConfig;
       locked?: boolean;
       exportName?: string;
+      selectOptions?: FieldOption[];
+      currencyFormat?: { symbol: string; decimals: number };
+      ratingMax?: number;
     } = {
       name: name.trim(),
       type,
@@ -87,6 +112,17 @@ export default function ColumnModal({
 
     if (type === 'formula') {
       data.formula = formula.startsWith('=') ? formula : `=${formula}`;
+    }
+
+    // Track 1 — 타입별 설정 저장
+    if (type === 'select' || type === 'multiSelect') {
+      data.selectOptions = selectOptions.filter((o) => o.label.trim());
+    }
+    if (type === 'currency') {
+      data.currencyFormat = { symbol: currencySymbol || '₩', decimals: currencyDecimals };
+    }
+    if (type === 'rating') {
+      data.ratingMax = Math.max(1, Math.min(10, ratingMax));
     }
 
     if (showValidation) {
@@ -174,43 +210,148 @@ export default function ColumnModal({
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               {t('column.type')}
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <CustomSelect
+              value={type}
+              onChange={(v) => setType(v as ColumnType)}
+              options={[
+                { value: 'general', label: t('column.typeGeneral') },
+                { value: 'formula', label: `ƒ  ${t('column.typeFormula')}` },
+                { value: 'checkbox', label: '☑  Checkbox' },
+                { value: 'select', label: '◆  Select' },
+                { value: 'multiSelect', label: '◆◆  Multi-select' },
+                { value: 'date', label: '📅  Date' },
+                { value: 'url', label: '🔗  URL' },
+                { value: 'currency', label: '₩  Currency' },
+                { value: 'rating', label: '★  Rating' },
+              ]}
+              size="md"
+            />
+          </div>
+
+          {/* Track 1 — 타입별 설정 */}
+          {(type === 'select' || type === 'multiSelect') && (
+            <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+              <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                {t('column.selectOptionsLabel')}
+              </label>
+              {selectOptions.map((opt, i) => (
+                <div key={opt.id} className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={opt.color ?? '#94a3b8'}
+                    onChange={(e) => {
+                      const next = [...selectOptions];
+                      next[i] = { ...opt, color: e.target.value };
+                      setSelectOptions(next);
+                    }}
+                    className="w-7 h-7 rounded cursor-pointer"
+                    style={{ border: '1px solid var(--border-primary)' }}
+                  />
+                  <input
+                    type="text"
+                    value={opt.label}
+                    onChange={(e) => {
+                      const next = [...selectOptions];
+                      next[i] = { ...opt, label: e.target.value };
+                      setSelectOptions(next);
+                    }}
+                    placeholder={t('column.optionPlaceholder')}
+                    className="flex-1 px-2 py-1.5 text-sm border rounded"
+                    style={{
+                      background: 'var(--bg-primary)',
+                      borderColor: 'var(--border-primary)',
+                      color: 'var(--text-primary)',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectOptions(selectOptions.filter((_, j) => j !== i))
+                    }
+                    className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/5"
+                    style={{ color: 'var(--text-tertiary)' }}
+                    aria-label={t('common.delete')}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
               <button
                 type="button"
-                onClick={() => setType('general')}
-                className={`px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
-                  type === 'general' ? 'ring-2 ring-offset-1' : ''
-                }`}
-                style={{
-                  background: type === 'general' ? 'var(--accent-light)' : 'var(--bg-primary)',
-                  borderColor: type === 'general' ? 'var(--accent)' : 'var(--border-primary)',
-                  color: type === 'general' ? 'var(--accent)' : 'var(--text-secondary)',
-                  // @ts-expect-error CSS custom property
-                  '--tw-ring-color': 'var(--accent)',
-                }}
+                onClick={() =>
+                  setSelectOptions([
+                    ...selectOptions,
+                    { id: uuidv4(), label: '', color: '#94a3b8' },
+                  ])
+                }
+                className="flex items-center gap-1.5 text-xs px-2 py-1 rounded hover:bg-black/5 dark:hover:bg-white/5"
+                style={{ color: 'var(--text-secondary)' }}
               >
-                <div className="font-semibold">{t('column.typeGeneral')}</div>
-                <div className="text-xs mt-0.5 opacity-70">{t('column.typeGeneralDesc')}</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setType('formula')}
-                className={`px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
-                  type === 'formula' ? 'ring-2 ring-offset-1' : ''
-                }`}
-                style={{
-                  background: type === 'formula' ? 'var(--primary-purple-light)' : 'var(--bg-primary)',
-                  borderColor: type === 'formula' ? 'var(--primary-purple)' : 'var(--border-primary)',
-                  color: type === 'formula' ? 'var(--primary-purple)' : 'var(--text-secondary)',
-                  // @ts-expect-error CSS custom property
-                  '--tw-ring-color': 'var(--primary-purple)',
-                }}
-              >
-                <div className="font-semibold">ƒ {t('column.typeFormula')}</div>
-                <div className="text-xs mt-0.5 opacity-70">{t('column.typeFormulaDesc')}</div>
+                <Plus className="w-3.5 h-3.5" /> {t('column.addOption')}
               </button>
             </div>
-          </div>
+          )}
+
+          {type === 'currency' && (
+            <div className="grid grid-cols-2 gap-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                  {t('column.currencySymbol')}
+                </label>
+                <input
+                  type="text"
+                  value={currencySymbol}
+                  onChange={(e) => setCurrencySymbol(e.target.value)}
+                  maxLength={3}
+                  className="w-full px-2 py-1.5 text-sm border rounded"
+                  style={{
+                    background: 'var(--bg-primary)',
+                    borderColor: 'var(--border-primary)',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                  {t('column.currencyDecimals')}
+                </label>
+                <input
+                  type="number"
+                  value={currencyDecimals}
+                  onChange={(e) => setCurrencyDecimals(Math.max(0, Math.min(6, parseInt(e.target.value) || 0)))}
+                  min={0}
+                  max={6}
+                  className="w-full px-2 py-1.5 text-sm border rounded"
+                  style={{
+                    background: 'var(--bg-primary)',
+                    borderColor: 'var(--border-primary)',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {type === 'rating' && (
+            <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                {t('column.ratingMax')} (1-10)
+              </label>
+              <input
+                type="number"
+                value={ratingMax}
+                onChange={(e) => setRatingMax(Math.max(1, Math.min(10, parseInt(e.target.value) || 5)))}
+                min={1}
+                max={10}
+                className="w-full px-2 py-1.5 text-sm border rounded"
+                style={{
+                  background: 'var(--bg-primary)',
+                  borderColor: 'var(--border-primary)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+            </div>
+          )}
 
           {type === 'formula' && (
             <div>

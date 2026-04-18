@@ -17,7 +17,7 @@ import { VirtualItem } from '@tanstack/react-virtual';
 import { cn } from '@/lib/utils';
 import type { Row, Column, CellValue, CellStyle } from '@/types';
 import SheetCell from './SheetCell';
-import { cellKey } from './utils';
+import { cellKey, formatDisplayValue } from './utils';
 
 interface SheetBodyProps {
   // 가상화 데이터
@@ -270,16 +270,6 @@ const SheetBody = memo(function SheetBody({
                 return 'transparent';
               };
 
-              // 표시 값 포맷팅
-              const formatDisplayValue = (value: CellValue): string | number => {
-                if (value === null || value === undefined) return '';
-                if (typeof value === 'number') {
-                  if (Number.isInteger(value)) return value.toLocaleString();
-                  return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
-                }
-                return String(value);
-              };
-
               return (
                 <td
                   key={cell.id}
@@ -298,7 +288,7 @@ const SheetBody = memo(function SheetBody({
                     columnId={columnId}
                     cellKey={cellKeyStr}
                     value={rawValue}
-                    displayValue={formatDisplayValue(displayValue)}
+                    displayValue={formatDisplayValue(displayValue, column)}
                     cellStyle={cellStyle}
                     cellMemo={cellMemo}
                     isSelected={isSelected}
