@@ -5,12 +5,13 @@
  * select 타입 컬럼 기준 그룹핑. 드래그로 카드 이동은 다음 세션 (updateCell 만으로 전환).
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { formatDisplayValue } from '@/components/sheet/utils';
 import type { Sheet, Row, CellValue } from '@/types';
+import RecordEditor from './RecordEditor';
 
 interface KanbanViewProps {
   projectId: string;
@@ -21,6 +22,11 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
   const t = useTranslations();
   const updateSheet = useProjectStore((s) => s.updateSheet);
   const updateCell = useProjectStore((s) => s.updateCell);
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+
+  const selectedRow = selectedRowId
+    ? sheet.rows.find((r) => r.id === selectedRowId)
+    : null;
 
   // select 타입 컬럼만 그룹핑 대상
   const selectColumns = sheet.columns.filter((c) => c.type === 'select');
@@ -76,7 +82,8 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
       {/* 상단 설정: 그룹 컬럼 선택 */}
       <div className="px-4 py-2 border-b flex items-center gap-2" style={{ borderColor: 'var(--border-primary)' }}>
         <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
@@ -132,10 +139,12 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                       key={row.id}
                       draggable
                       onDragStart={(e) => e.dataTransfer.setData('text/plain', row.id)}
-                      className="p-3 rounded-lg cursor-grab active:cursor-grabbing"
+                      onClick={() => setSelectedRowId(row.id)}
+                      className="p-3 rounded-lg cursor-pointer hover:ring-2 hover:ring-[var(--accent)]/30 transition-all"
                       style={{
                         background: 'var(--bg-primary)',
                         border: '1px solid var(--border-primary)',
+                        outline: selectedRowId === row.id ? '2px solid var(--accent)' : 'none',
                       }}
                     >
                       {cardColumns.map((c) => (
@@ -161,6 +170,16 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
           })}
         </div>
       </div>
+      </div>
+      {/* Track 4: 카드 편집 사이드 패널 */}
+      {selectedRow && (
+        <RecordEditor
+          projectId={projectId}
+          sheet={sheet}
+          row={selectedRow}
+          onClose={() => setSelectedRowId(null)}
+        />
+      )}
     </div>
   );
 }
