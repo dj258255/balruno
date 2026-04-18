@@ -55,7 +55,7 @@ import WelcomeScreen from './components/WelcomeScreen';
 import MobileHeader from './components/MobileHeader';
 import MobileSidebar from './components/MobileSidebar';
 import SheetHeader from './components/SheetHeader';
-import BottomToolbar from './components/BottomToolbar';
+import BottomDock from '@/components/BottomDock';
 import EmptySheetView from './components/EmptySheetView';
 import DockedToolbox from '@/components/DockedToolbox';
 import SidebarResizer from './components/SidebarResizer';
@@ -529,44 +529,25 @@ export default function Home() {
         }}
       />
 
-      {/* Bottom Toolbar (항상 표시) */}
-      <BottomToolbar
-        show={{
-          formulaHelper: showFormulaHelper,
-          balanceValidator: showBalanceValidator,
-          difficultyCurve: showDifficultyCurve,
-          simulation: showSimulation,
-          entityDefinition: showEntityDefinition,
+      {/* Track 6 후속: 9 그룹 하단 독바 (진입점 통일) */}
+      <BottomDock
+        panels={{
+          calculator: { show: showCalculator, setShow: setShowCalculator },
+          comparison: { show: showComparison, setShow: setShowComparison },
+          chart: { show: showChart, setShow: setShowChart },
+          preset: { show: showPresetComparison, setShow: setShowPresetComparison },
+          imbalance: { show: showImbalanceDetector, setShow: setShowImbalanceDetector },
+          goal: { show: showGoalSolver, setShow: setShowGoalSolver },
+          balance: { show: showBalanceAnalysis, setShow: setShowBalanceAnalysis },
+          economy: { show: showEconomy, setShow: setShowEconomy },
+          dpsVariance: { show: showDpsVariance, setShow: setShowDpsVariance },
+          curveFitting: { show: showCurveFitting, setShow: setShowCurveFitting },
+          formulaHelper: { show: showFormulaHelper, setShow: setShowFormulaHelper },
+          balanceValidator: { show: showBalanceValidator, setShow: setShowBalanceValidator },
+          difficultyCurve: { show: showDifficultyCurve, setShow: setShowDifficultyCurve },
+          simulation: { show: showSimulation, setShow: setShowSimulation },
+          entityDefinition: { show: showEntityDefinition, setShow: setShowEntityDefinition },
         }}
-        activeTools={{
-          calculator: showCalculator,
-          comparison: showComparison,
-          chart: showChart,
-          presetComparison: showPresetComparison,
-          imbalanceDetector: showImbalanceDetector,
-          goalSolver: showGoalSolver,
-          balanceAnalysis: showBalanceAnalysis,
-          economy: showEconomy,
-          dpsVariance: showDpsVariance,
-          curveFitting: showCurveFitting,
-        }}
-        setShow={{
-          formulaHelper: setShowFormulaHelper,
-          balanceValidator: setShowBalanceValidator,
-          difficultyCurve: setShowDifficultyCurve,
-          simulation: setShowSimulation,
-          entityDefinition: setShowEntityDefinition,
-        }}
-        onShowCalculator={() => setShowCalculator(!showCalculator)}
-        onShowComparison={() => setShowComparison(!showComparison)}
-        onShowChart={() => setShowChart(!showChart)}
-        onShowPresetComparison={() => setShowPresetComparison(!showPresetComparison)}
-        onShowImbalanceDetector={() => setShowImbalanceDetector(!showImbalanceDetector)}
-        onShowGoalSolver={() => setShowGoalSolver(!showGoalSolver)}
-        onShowBalanceAnalysis={() => setShowBalanceAnalysis(!showBalanceAnalysis)}
-        onShowEconomy={() => setShowEconomy(!showEconomy)}
-        onShowDpsVariance={() => setShowDpsVariance(!showDpsVariance)}
-        onShowCurveFitting={() => setShowCurveFitting(!showCurveFitting)}
         isModalOpen={isModalOpen}
       />
 
