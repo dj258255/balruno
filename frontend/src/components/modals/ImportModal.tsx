@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import { X, Upload, FileJson, FileText, Code, Database, AlertCircle, CheckCircle, Loader2, Check, FolderOpen, ChevronRight } from 'lucide-react';
+import { useState, useRef, useCallback, useMemo } from 'react';
+import { X, Upload, FileJson, AlertCircle, CheckCircle, Loader2, FolderOpen, Sparkles } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { importFromJSON, importSheetFromCSV } from '@/lib/storage';
-import { importFromGameEngine, detectFormat, IMPORT_FORMATS, type ImportFormat, type ImportResult } from '@/lib/gameEngineImport';
+import { importFromGameEngine, detectFormat, type ImportFormat, type ImportResult } from '@/lib/gameEngineImport';
+import { detectImbalances, type ImbalanceIssue } from '@/lib/imbalanceDetector';
+import type { Sheet, Column, Row, CellValue } from '@/types';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -272,6 +274,59 @@ export default function ImportModal({ onClose }: ImportModalProps) {
     return acc;
   }, {} as Record<string, typeof FORMAT_INFO>);
 
+  // Track 7: Import 자동 진단 — preview 단계 시트로 변환 후 imbalanceDetector 실행
+  const diagnosticIssues: ImbalanceIssue[] | null = useMemo(() => {
+    const now = Date.now();
+    let tempSheet: Sheet | null = null;
+
+    if (csvPreview && csvPreview.columns.length > 0) {
+      const columns: Column[] = csvPreview.columns.map((col, i) => ({
+        id: `col_${i}`,
+        name: col.name,
+        type: 'general',
+      }));
+      const rows: Row[] = csvPreview.rows.map((r, i) => ({
+        id: `row_${i}`,
+        cells: r.cells as Record<string, CellValue>,
+      }));
+      tempSheet = { id: 'preview', name: 'preview', columns, rows, createdAt: now, updatedAt: now };
+    } else if (previewResult?.success && previewResult.columns.length > 0) {
+      const columns: Column[] = previewResult.columns.map((col, i) => ({
+        id: `col_${i}`,
+        name: col.name,
+        type: col.type,
+      }));
+      const rows: Row[] = previewResult.rows.map((r, i) => {
+        const cellKeys = Object.keys(r.cells);
+        const cells: Record<string, CellValue> = {};
+        previewResult.columns.forEach((_, colIdx) => {
+          const value = r.cells[cellKeys[colIdx]];
+          if (value !== undefined) cells[`col_${colIdx}`] = value as CellValue;
+        });
+        return { id: `row_${i}`, cells };
+      });
+      tempSheet = { id: 'preview', name: 'preview', columns, rows, createdAt: now, updatedAt: now };
+    }
+
+    if (!tempSheet || tempSheet.rows.length < 3) return null;
+
+    try {
+      return detectImbalances(tempSheet);
+    } catch {
+      return null;
+    }
+  }, [csvPreview, previewResult]);
+
+  const diagnosticSummary = useMemo(() => {
+    if (!diagnosticIssues) return null;
+    return {
+      critical: diagnosticIssues.filter((i) => i.severity === 'critical').length,
+      warning: diagnosticIssues.filter((i) => i.severity === 'warning').length,
+      info: diagnosticIssues.filter((i) => i.severity === 'info').length,
+      top: diagnosticIssues.slice(0, 3),
+    };
+  }, [diagnosticIssues]);
+
   return (
     <div className="fixed inset-0 modal-overlay flex items-center justify-center z-[1100] p-4">
       <div
@@ -503,6 +558,63 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                   <div className="flex items-center gap-2 p-3 rounded-xl mb-4" style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
                     <AlertCircle className="w-5 h-5" style={{ color: 'var(--error)' }} />
                     <span className="text-sm" style={{ color: 'var(--error)' }}>{importError}</span>
+                  </div>
+                )}
+
+                {/* Track 7: 자동 진단 카드 — 이슈 있으면 요약 표시 */}
+                {diagnosticSummary && (diagnosticSummary.critical + diagnosticSummary.warning + diagnosticSummary.info > 0) && (
+                  <div
+                    className="mb-4 p-4 rounded-xl"
+                    style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="w-4 h-4" style={{ color: '#f59e0b' }} />
+                      <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        {t('import.autoDiagnostic')}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 mb-3 text-xs">
+                      {diagnosticSummary.critical > 0 && (
+                        <span
+                          className="px-2 py-1 rounded font-medium"
+                          style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)' }}
+                        >
+                          ❗ {t('import.diagCritical', { count: diagnosticSummary.critical })}
+                        </span>
+                      )}
+                      {diagnosticSummary.warning > 0 && (
+                        <span
+                          className="px-2 py-1 rounded font-medium"
+                          style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--warning)' }}
+                        >
+                          ⚠ {t('import.diagWarning', { count: diagnosticSummary.warning })}
+                        </span>
+                      )}
+                      {diagnosticSummary.info > 0 && (
+                        <span
+                          className="px-2 py-1 rounded font-medium"
+                          style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}
+                        >
+                          ℹ {t('import.diagInfo', { count: diagnosticSummary.info })}
+                        </span>
+                      )}
+                    </div>
+                    <ul className="text-xs space-y-1" style={{ color: 'var(--text-secondary)' }}>
+                      {diagnosticSummary.top.map((issue) => (
+                        <li key={issue.id}>• {issue.title}</li>
+                      ))}
+                    </ul>
+                    <div className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>
+                      {t('import.diagDetailHint')}
+                    </div>
+                  </div>
+                )}
+                {diagnosticSummary && diagnosticSummary.critical + diagnosticSummary.warning + diagnosticSummary.info === 0 && (
+                  <div
+                    className="mb-4 flex items-center gap-2 text-xs p-2 rounded"
+                    style={{ color: '#10b981' }}
+                  >
+                    <CheckCircle className="w-4 h-4" /> {t('import.noIssuesDetected')}
                   </div>
                 )}
 

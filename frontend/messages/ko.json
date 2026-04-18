@@ -671,7 +671,15 @@
     "selectFormatDesc": "왼쪽에서 형식을 선택하면 파일 업로드가 가능합니다",
     "selectProject": "프로젝트 선택",
     "uploadFile": "파일 업로드",
-    "useFileName": "파일 이름 사용"
+    "useFileName": "파일 이름 사용",
+    "autoDiagnostic": "자동 밸런스 진단",
+    "diagCritical": "심각 {count}",
+    "diagWarning": "경고 {count}",
+    "diagInfo": "정보 {count}",
+    "diagDetailHint": "가져오기 완료 후 Balance Insights 에서 상세 확인",
+    "noIssuesDetected": "감지된 밸런스 이슈 없음",
+    "importFromExcel": "Excel 에서 가져오기",
+    "importFromExcelDesc": "CSV/Excel 붙여넣기 — 자동 진단 포함"
   },
   "formulaPreset": {
     "title": "수식 프리셋",
