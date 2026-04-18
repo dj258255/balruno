@@ -8,7 +8,7 @@ export interface TourState {
   tourSteps: TourStep[];
 }
 
-const TOUR_STORAGE_KEY = 'powerbalance_completed_tours';
+const TOUR_STORAGE_KEY = 'balruno_completed_tours';
 
 /**
  * Hook for managing interactive tour state

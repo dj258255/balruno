@@ -324,12 +324,12 @@ export default function OnboardingGuide({ onClose }: OnboardingGuideProps) {
   };
 
   const handleComplete = () => {
-    localStorage.setItem('powerbalance_onboarding_completed', 'true');
+    localStorage.setItem('balruno_onboarding_completed', 'true');
     onClose();
   };
 
   const handleSkip = () => {
-    localStorage.setItem('powerbalance_onboarding_completed', 'true');
+    localStorage.setItem('balruno_onboarding_completed', 'true');
     onClose();
   };
 
@@ -597,7 +597,7 @@ export default function OnboardingGuide({ onClose }: OnboardingGuideProps) {
                 <span>📦</span>
                 <span>{t('onboarding.steps.survey.openSource')}</span>
                 <a
-                  href="https://github.com/dj258255/indiebalancing"
+                  href="https://github.com/dj258255/balruno"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline hover:opacity-80 transition-opacity"
@@ -670,14 +670,14 @@ export function useOnboardingStatus() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    const completed = localStorage.getItem('powerbalance_onboarding_completed');
+    const completed = localStorage.getItem('balruno_onboarding_completed');
     if (!completed) {
       setShowOnboarding(true);
     }
   }, []);
 
   const resetOnboarding = () => {
-    localStorage.removeItem('powerbalance_onboarding_completed');
+    localStorage.removeItem('balruno_onboarding_completed');
     setShowOnboarding(true);
   };
 

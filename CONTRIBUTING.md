@@ -1,8 +1,8 @@
-# Contributing to PowerBalance / 기여 가이드
+# Contributing to Balruno / 기여 가이드
 
-First off, thank you for considering contributing to PowerBalance! 🎮
+First off, thank you for considering contributing to Balruno! 🎮
 
-PowerBalance에 기여해주셔서 감사합니다! 🎮
+Balruno에 기여해주셔서 감사합니다! 🎮
 
 ## Table of Contents / 목차
 
@@ -22,7 +22,7 @@ This project and everyone participating in it is governed by our [Code of Conduc
 
 ### 🐛 Reporting Bugs / 버그 제보
 
-- Check if the bug has already been reported in [Issues](https://github.com/dj258255/indiebalancing/issues)
+- Check if the bug has already been reported in [Issues](https://github.com/dj258255/balruno/issues)
 - If not, create a new issue using the bug report template
 - Include as much detail as possible
 
@@ -55,8 +55,8 @@ This project and everyone participating in it is governed by our [Code of Conduc
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/indiebalancing.git
-cd indiebalancing/frontend
+git clone https://github.com/YOUR_USERNAME/balruno.git
+cd balruno/frontend
 
 # Install dependencies
 npm install

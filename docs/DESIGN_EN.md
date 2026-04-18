@@ -1,12 +1,12 @@
-# PowerBalance - Game Balance Tool for Indie Developers
+# Balruno - Game Balance Tool for Indie Developers
 
-![PowerBalance Screenshot](images/intro.png)
+![Balruno Screenshot](images/intro.png)
 
-**Live Demo**: https://indiebalancing.vercel.app/
+**Live Demo**: https://balruno.com
 
 ## Overview
 
-**PowerBalance** is a web-based game balance data management tool for indie game developers.
+**Balruno** is a web-based game balance data management tool for indie game developers.
 
 It provides a sheet system and formulas specialized for game development, beyond what Excel offers.
 
@@ -573,7 +573,7 @@ Filter templates by game genre:
 
 ## Summary
 
-**PowerBalance** is:
+**Balruno** is:
 
 - A spreadsheet better suited for game development than Excel
 - Based on proven balancing theory (Flow, Faucet/Sink, TTK/DPS)

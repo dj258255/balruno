@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
         }),
     }),
     {
-      name: 'powerbalance-auth',
+      name: 'balruno-auth',
       partialize: (state) => ({
         // 민감한 정보는 저장하지 않거나, 암호화 필요
         serverUrl: state.serverUrl,

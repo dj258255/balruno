@@ -1,21 +1,21 @@
 <p align="center">
-  <img src="frontend/public/icon.svg" alt="PowerBalance Logo" width="120" height="120">
+  <img src="frontend/public/icon.svg" alt="Balruno Logo" width="120" height="120">
 </p>
 
-<h1 align="center">PowerBalance</h1>
+<h1 align="center">Balruno</h1>
 
 <p align="center">
   <strong>Game Balancing Spreadsheet for Indie Developers</strong>
 </p>
 
 <p align="center">
-  <a href="https://indiebalancing.vercel.app/">
+  <a href="https://balruno.com">
     <img src="https://img.shields.io/badge/Live%20Demo-Visit%20Site-blue?style=for-the-badge" alt="Live Demo">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://indiebalancing.vercel.app">
+  <a href="https://balruno.com">
     <img src="https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel" alt="Vercel">
   </a>
   <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js 16">
@@ -39,7 +39,7 @@
 
 ## English
 
-### What is PowerBalance?
+### What is Balruno?
 
 A spreadsheet-based tool designed specifically for game balancing. Calculate DPS, EHP, TTK automatically, run Monte Carlo simulations, and export directly to Unity/Godot/Unreal.
 
@@ -63,10 +63,10 @@ A spreadsheet-based tool designed specifically for game balancing. Calculate DPS
 
 ```bash
 # Clone the repository
-git clone https://github.com/dj258255/indiebalancing.git
+git clone https://github.com/dj258255/balruno.git
 
 # Navigate to frontend
-cd indiebalancing/frontend
+cd balruno/frontend
 
 # Install dependencies
 npm install
@@ -110,7 +110,7 @@ i18n                 next-intl (EN/KO)
 ### Project Structure
 
 ```
-powerbalance/
+balruno/
 ├── frontend/
 │   ├── src/
 │   │   ├── app/              # Next.js App Router
@@ -162,17 +162,17 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ### Links
 
-- [Live Demo](https://indiebalancing.vercel.app/)
+- [Live Demo](https://balruno.com)
 - [Documentation (English)](docs/DESIGN_EN.md)
 - [Documentation (한국어)](docs/DESIGN_KO.md)
-- [Report Bug](https://github.com/dj258255/indiebalancing/issues/new?template=bug_report.md)
-- [Request Feature](https://github.com/dj258255/indiebalancing/issues/new?template=feature_request.md)
+- [Report Bug](https://github.com/dj258255/balruno/issues/new?template=bug_report.md)
+- [Request Feature](https://github.com/dj258255/balruno/issues/new?template=feature_request.md)
 
 ---
 
 ## 한국어
 
-### PowerBalance란?
+### Balruno란?
 
 게임 밸런싱에 특화된 스프레드시트 기반 도구입니다. DPS, EHP, TTK를 자동으로 계산하고, 몬테카를로 시뮬레이션을 돌리고, Unity/Godot/Unreal로 바로 내보낼 수 있습니다.
 
@@ -196,10 +196,10 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ```bash
 # 저장소 클론
-git clone https://github.com/dj258255/indiebalancing.git
+git clone https://github.com/dj258255/balruno.git
 
 # frontend 폴더로 이동
-cd indiebalancing/frontend
+cd balruno/frontend
 
 # 의존성 설치
 npm install

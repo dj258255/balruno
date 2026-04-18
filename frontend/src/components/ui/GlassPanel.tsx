@@ -20,7 +20,7 @@ interface GlassPanelProps {
 }
 
 // 드래그 힌트가 표시되었는지 확인
-const DRAG_HINT_KEY = 'powerbalance-drag-hint-shown-v2';
+const DRAG_HINT_KEY = 'balruno-drag-hint-shown-v2';
 
 export function GlassPanel({
   children,

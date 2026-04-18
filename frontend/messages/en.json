@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "IndieBalancing",
+    "name": "Balruno",
     "description": "Balance data management tool for indie game developers"
   },
   "toolDescriptions": {
@@ -400,7 +400,7 @@
     "collapse": "Collapse"
   },
   "welcome": {
-    "title": "IndieBalancing",
+    "title": "Balruno",
     "subtitle": "Balance data management tool for indie game developers",
     "startGuide": "Click",
     "startButton": "New Project",

@@ -258,7 +258,7 @@ export default function ExportModal({ onClose }: ExportModalProps) {
       } else {
         // 모든 프로젝트
         const json = exportToJSON(projects);
-        const filename = `indiebalancing-${new Date().toISOString().slice(0, 10)}.json`;
+        const filename = `balruno-${new Date().toISOString().slice(0, 10)}.json`;
         files.push({ filename, content: json, type: 'application/json' });
       }
     } else if (selectedFormat === 'csv') {

@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "인디밸런싱",
+    "name": "발루노",
     "description": "인디게임 개발자를 위한 밸런스 데이터 관리 툴"
   },
   "toolDescriptions": {
@@ -400,7 +400,7 @@
     "collapse": "접기"
   },
   "welcome": {
-    "title": "인디밸런싱",
+    "title": "발루노",
     "subtitle": "인디게임 개발자를 위한 밸런스 데이터 관리 툴",
     "startGuide": "왼쪽 사이드바에서",
     "startButton": "새 프로젝트",

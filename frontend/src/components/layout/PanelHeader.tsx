@@ -15,7 +15,7 @@ interface PanelHeaderProps {
 }
 
 // 드래그 힌트가 표시되었는지 확인
-const DRAG_HINT_KEY = 'powerbalance-drag-hint-shown';
+const DRAG_HINT_KEY = 'balruno-drag-hint-shown';
 
 export default function PanelHeader({
   title,

@@ -1,10 +1,10 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import type { Project, StorageMetadata } from '@/types';
 
-const DB_NAME = 'powerbalance';
+const DB_NAME = 'balruno';
 const DB_VERSION = 1;
 
-interface PowerBalanceDB extends DBSchema {
+interface BalrunoDB extends DBSchema {
   projects: {
     key: string;
     value: Project;
@@ -23,13 +23,13 @@ interface PowerBalanceDB extends DBSchema {
   };
 }
 
-let db: IDBPDatabase<PowerBalanceDB> | null = null;
+let db: IDBPDatabase<BalrunoDB> | null = null;
 
 // DB 초기화
-export async function initDB(): Promise<IDBPDatabase<PowerBalanceDB>> {
+export async function initDB(): Promise<IDBPDatabase<BalrunoDB>> {
   if (db) return db;
 
-  db = await openDB<PowerBalanceDB>(DB_NAME, DB_VERSION, {
+  db = await openDB<BalrunoDB>(DB_NAME, DB_VERSION, {
     upgrade(database) {
       // Projects 스토어
       if (!database.objectStoreNames.contains('projects')) {
