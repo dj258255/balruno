@@ -21,6 +21,9 @@ import { Sidebar, SheetTabs } from '@/components/layout';
 // Sheet components
 import { SheetTable, StickerLayer } from '@/components/sheet';
 
+// Track 8 Presence
+import PresenceIndicator from '@/components/PresenceIndicator';
+
 // Track 4: 뷰 스위처 + 각 뷰 컴포넌트
 import ViewSwitcher from '@/components/views/ViewSwitcher';
 import FormView from '@/components/views/FormView';
@@ -511,7 +514,22 @@ export default function Home() {
       <div className="flex-1 flex flex-col overflow-hidden pt-14 md:pt-0">
         {currentProject ? (
           <>
-            <SheetTabs project={currentProject} />
+            <div className="flex items-center justify-between border-b" style={{ borderColor: 'var(--border-primary)' }}>
+              <div className="flex-1 min-w-0">
+                <SheetTabs project={currentProject} />
+              </div>
+              <div className="flex-shrink-0 hidden md:flex items-center gap-2 px-3">
+                <PresenceIndicator projectId={currentProject.id} />
+                <button
+                  onClick={() => setShowShare(true)}
+                  className="px-3 py-1 text-xs rounded-lg font-medium transition-colors"
+                  style={{ background: '#3b82f6', color: 'white' }}
+                  title="협업 공유"
+                >
+                  공유
+                </button>
+              </div>
+            </div>
 
             <div className="flex-1 flex overflow-hidden">
               {currentSheet ? (
