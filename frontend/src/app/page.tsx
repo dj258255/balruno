@@ -35,6 +35,7 @@ import { useOnboardingStatus } from '@/components/modals';
 
 const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ssr: false });
 const AISetupModal = dynamic(() => import('@/components/modals/AISetupModal'), { ssr: false });
+const ShareModal = dynamic(() => import('@/components/modals/ShareModal'), { ssr: false });
 const SettingsModal = dynamic(() => import('@/components/modals/SettingsModal'), { ssr: false });
 const ReferencesModal = dynamic(() => import('@/components/modals/ReferencesModal'), { ssr: false });
 const OnboardingGuide = dynamic(() => import('@/components/modals/OnboardingGuide'), { ssr: false });
@@ -110,6 +111,7 @@ export default function Home() {
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showAISetup, setShowAISetup] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   // Modal state
   const [showSettings, setShowSettings] = useState(false);
@@ -209,6 +211,27 @@ export default function Home() {
     window.addEventListener('balruno:open-ai-setup', handler);
     return () => window.removeEventListener('balruno:open-ai-setup', handler);
   }, []);
+
+  // Track 8: ShareModal 열기 이벤트
+  useEffect(() => {
+    const handler = () => setShowShare(true);
+    window.addEventListener('balruno:open-share', handler);
+    return () => window.removeEventListener('balruno:open-share', handler);
+  }, []);
+
+  // Track 8: URL hash `?room=xxx` 자동 감지 → 활성 프로젝트에 attachWebrtc
+  // (받는 쪽 link 클릭 흐름 — 기존 로컬 프로젝트와 매칭되어야 sync 가능)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const room = url.searchParams.get('room');
+    if (!room || !currentProjectId) return;
+
+    // 동적 import 로 lib/ydoc 접근 (서버 번들 분리)
+    import('@/lib/ydoc').then(({ attachWebrtc }) => {
+      attachWebrtc(currentProjectId, room);
+    });
+  }, [currentProjectId]);
 
   // Track 5: Cmd/Ctrl+K → Command Palette 토글
   useEffect(() => {
@@ -551,6 +574,7 @@ export default function Home() {
         <ImportModal onClose={() => setShowImportModal(false)} />
       )}
       {showAISetup && <AISetupModal onClose={() => setShowAISetup(false)} />}
+      {showShare && <ShareModal onClose={() => setShowShare(false)} />}
 
       {/* Track 6: Docked Toolbox — 우측 사이드 도킹 영역 (플로팅 ToolPanels 대체) */}
       <DockedToolbox
