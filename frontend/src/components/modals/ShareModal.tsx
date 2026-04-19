@@ -15,12 +15,13 @@
  */
 
 import { useEffect, useState } from 'react';
-import { X, Copy, Users, Check, Wifi, WifiOff } from 'lucide-react';
+import { X, Copy, Users, Check, Wifi, WifiOff, User } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { attachWebrtc, detachWebrtc } from '@/lib/ydoc';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { usePresence, setUserIdentity } from '@/hooks/usePresence';
 
 interface ShareModalProps {
   onClose: () => void;
@@ -38,6 +39,19 @@ export default function ShareModal({ onClose }: ShareModalProps) {
 
   const [copied, setCopied] = useState(false);
   const [peerCount, setPeerCount] = useState(0);
+
+  // Presence 식별 (사용자 이름 변경)
+  const { myName, myColor } = usePresence(currentProjectId);
+  const [editingName, setEditingName] = useState(myName);
+  useEffect(() => setEditingName(myName), [myName]);
+  const handleSaveName = () => {
+    const trimmed = editingName.trim();
+    if (trimmed && trimmed !== myName) setUserIdentity(trimmed, myColor);
+  };
+  const PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#06b6d4'];
+  const handleColorChange = (color: string) => {
+    setUserIdentity(myName, color);
+  };
 
   const isActive = project?.syncMode === 'cloud' && !!project.syncRoomId;
   const roomUrl =
@@ -148,6 +162,62 @@ export default function ShareModal({ onClose }: ShareModalProps) {
         </div>
 
         <div className="p-5 space-y-4">
+          {/* 내 정보 (이름 + 색상) */}
+          <div
+            className="p-4 rounded-xl space-y-2"
+            style={{ background: 'var(--bg-secondary)' }}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <User className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                내 표시 이름 / 색상
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
+                style={{ background: myColor }}
+              >
+                {editingName
+                  .split(/[-\s]/)
+                  .map((p) => p[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase() || '?'}
+              </div>
+              <input
+                type="text"
+                value={editingName}
+                onChange={(e) => setEditingName(e.target.value)}
+                onBlur={handleSaveName}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                className="flex-1 px-3 py-2 rounded-lg text-sm"
+                style={{
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-primary)',
+                  color: 'var(--text-primary)',
+                }}
+                placeholder="표시 이름"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 pt-1">
+              {PALETTE.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => handleColorChange(c)}
+                  className="w-6 h-6 rounded-full transition-transform hover:scale-110"
+                  style={{
+                    background: c,
+                    outline: c === myColor ? '2px solid var(--text-primary)' : 'none',
+                    outlineOffset: 2,
+                  }}
+                  aria-label={`색상 ${c}`}
+                />
+              ))}
+            </div>
+          </div>
+
           {/* 활성화 토글 */}
           <div
             className="p-4 rounded-xl"

@@ -5,5 +5,5 @@ export { useTableSelection } from './useTableSelection';
 export { useComputedRows } from './useComputedRows';
 export { useTour } from './useTour';
 export { useYDocSync } from './useYDocSync';
-export { usePresence } from './usePresence';
+export { usePresence, setUserIdentity } from './usePresence';
 export type { Position, Size, DraggableState } from './useDraggable';

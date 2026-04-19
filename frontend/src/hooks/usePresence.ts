@@ -33,6 +33,16 @@ function getOrCreate(key: string, generate: () => string): string {
   return fresh;
 }
 
+/** 사용자 이름/색상을 외부에서 변경. localStorage + awareness 동기화. */
+export function setUserIdentity(name: string, color: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(NAME_KEY, name);
+  localStorage.setItem(COLOR_KEY, color);
+  // 활성 awareness 가 있으면 즉시 반영하기 위해 'change' 이벤트 dispatch
+  // (hooks 의 useEffect 가 dependency 로 안 잡히므로 storage 이벤트 활용)
+  window.dispatchEvent(new Event('balruno:user-identity-changed'));
+}
+
 export interface Peer {
   id: number;
   name: string;
@@ -44,6 +54,15 @@ export function usePresence(projectId: string | null): {
   myName: string;
   myColor: string;
 } {
+  const [identityVersion, setIdentityVersion] = useState(0);
+
+  // 외부에서 setUserIdentity 호출 시 재계산
+  useEffect(() => {
+    const handler = () => setIdentityVersion((v) => v + 1);
+    window.addEventListener('balruno:user-identity-changed', handler);
+    return () => window.removeEventListener('balruno:user-identity-changed', handler);
+  }, []);
+
   const myName = useMemo(
     () =>
       getOrCreate(NAME_KEY, () => {
@@ -51,12 +70,14 @@ export function usePresence(projectId: string | null): {
         const num = Math.floor(Math.random() * 1000);
         return `${animal}-${num}`;
       }),
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [identityVersion]
   );
   const myColor = useMemo(
     () =>
       getOrCreate(COLOR_KEY, () => PALETTE[Math.floor(Math.random() * PALETTE.length)]),
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [identityVersion]
   );
 
   const [peers, setPeers] = useState<Peer[]>([]);
