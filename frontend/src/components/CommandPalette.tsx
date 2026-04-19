@@ -27,6 +27,7 @@ import {
   Moon,
   Sun,
   FunctionSquare,
+  Users,
 } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -185,6 +186,22 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
                   <Plus className="w-4 h-4" />
                   <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
                     {t('commandPalette.newSheet')}
+                  </span>
+                </Command.Item>
+              )}
+              {currentProjectId && (
+                <Command.Item
+                  value="share collaborate"
+                  onSelect={() =>
+                    runAction(() => {
+                      window.dispatchEvent(new Event('balruno:open-share'));
+                    })
+                  }
+                  className="cmdk-item"
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                    프로젝트 공유 / 협업
                   </span>
                 </Command.Item>
               )}
