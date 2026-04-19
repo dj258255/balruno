@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "발루노",
-    "description": "인디게임 개발자를 위한 밸런스 데이터 관리 툴"
+    "name": "Balruno",
+    "description": "Game Studio Workspace — 밸런싱 + 애자일 + 로드맵 한 곳에서"
   },
   "toolDescriptions": {
     "calculator": "선택한 열의 수식을 빠르게 계산합니다",

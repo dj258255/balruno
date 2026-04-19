@@ -26,9 +26,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "발루노 - 인디게임 밸런스 툴",
-  description: "인디게임 개발자를 위한 게임 밸런스 데이터 관리 툴. 엑셀보다 게임 개발에 특화된 시트 시스템과 수식을 제공합니다.",
-  keywords: ["게임 밸런스", "인디게임", "게임 개발", "밸런싱 툴", "게임 기획", "발루노"],
+  title: "Balruno — Game Studio Workspace",
+  description: "게임 스튜디오를 위한 통합 워크스페이스. 밸런싱 데이터 + 애자일 티켓 + 에픽 로드맵을 한 곳에서. 70+ 게임 수식, 몬테카를로 시뮬, 칸반 보드, 버그 트래커, Gantt 로드맵.",
+  keywords: [
+    "게임 스튜디오", "game studio workspace", "게임 밸런스", "밸런싱 툴",
+    "스프린트 보드", "버그 트래커", "에픽 로드맵", "게임 개발 PM",
+    "Codecks alternative", "Airtable for games", "indie game studio",
+    "발루노", "Balruno",
+  ],
   icons: {
     icon: [
       {

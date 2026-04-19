@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "Balruno",
-    "description": "Balance data management tool for indie game developers"
+    "description": "Game Studio Workspace — balance data, agile tickets, epic roadmaps in one place"
   },
   "toolDescriptions": {
     "calculator": "Quickly calculate formulas for selected columns",

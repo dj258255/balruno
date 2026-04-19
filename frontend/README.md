@@ -1,14 +1,14 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="public/icon-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="public/icon.svg">
-  <img alt="IndiBalancing Logo" src="public/icon.svg" width="80" height="80">
+  <img alt="Balruno Logo" src="public/icon.svg" width="80" height="80">
 </picture>
 
-# IndiBalancing
+# Balruno — Frontend
 
-인디게임 개발자를 위한 게임 밸런스 데이터 관리 툴
+게임 스튜디오 워크스페이스 (밸런싱 + 애자일 PM + 로드맵) 의 Next.js 16 프론트엔드.
 
-See the main [README](../README.md) for full documentation.
+메인 프로젝트 문서는 [루트 README](../README.md) 참조.
 
 ## Development
 
