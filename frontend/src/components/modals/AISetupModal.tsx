@@ -39,6 +39,7 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
   const addColumn = useProjectStore((s) => s.addColumn);
 
   const [description, setDescription] = useState('');
+  const [workType, setWorkType] = useState<'balancing' | 'pm' | 'design-doc'>('balancing');
   const [genre, setGenre] = useState('rpg');
   const [projectName, setProjectName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,7 +60,7 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
       const res = await fetch('/api/ai/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description, genre }),
+        body: JSON.stringify({ description, genre, workType }),
       });
       if (!res.ok) {
         setError(`요청 실패 (${res.status})`);
@@ -130,24 +131,43 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {/* 장르 */}
+          {/* 워크타입 */}
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-              장르
+              유형
             </label>
             <CustomSelect
-              value={genre}
-              onChange={setGenre}
+              value={workType}
+              onChange={(v) => setWorkType(v as typeof workType)}
               options={[
-                { value: 'rpg', label: 'RPG (캐릭터 스탯, 레벨, 스킬)' },
-                { value: 'fps', label: 'FPS (무기 DPS/TTK)' },
-                { value: 'moba', label: 'MOBA (챔피언 밸런스)' },
-                { value: 'idle', label: '방치형 (업그레이드 ROI)' },
-                { value: 'roguelike', label: '로그라이크 (유물, 등급)' },
+                { value: 'balancing', label: '⚔️  밸런싱 (수치 시트)' },
+                { value: 'pm', label: '📋  팀 PM (스프린트 / 버그 / 로드맵)' },
+                { value: 'design-doc', label: '📝  기획 문서 (베타)' },
               ]}
               size="md"
             />
           </div>
+
+          {/* 장르 (밸런싱일 때만) */}
+          {workType === 'balancing' && (
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                장르
+              </label>
+              <CustomSelect
+                value={genre}
+                onChange={setGenre}
+                options={[
+                  { value: 'rpg', label: 'RPG (캐릭터 스탯, 레벨, 스킬)' },
+                  { value: 'fps', label: 'FPS (무기 DPS/TTK)' },
+                  { value: 'moba', label: 'MOBA (챔피언 밸런스)' },
+                  { value: 'idle', label: '방치형 (업그레이드 ROI)' },
+                  { value: 'roguelike', label: '로그라이크 (유물, 등급)' },
+                ]}
+                size="md"
+              />
+            </div>
+          )}
 
           {/* 요구사항 */}
           <div>

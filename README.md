@@ -5,7 +5,11 @@
 <h1 align="center">Balruno</h1>
 
 <p align="center">
-  <strong>Game Balancing Spreadsheet for Indie Developers</strong>
+  <strong>Game Studio Workspace — Balance Data + Agile Tickets + Epic Roadmaps in One</strong>
+</p>
+
+<p align="center">
+  <em>Codecks meets Airtable, designed for indie game studios (5–30 team members)</em>
 </p>
 
 <p align="center">
@@ -41,23 +45,41 @@
 
 ### What is Balruno?
 
-A spreadsheet-based tool designed specifically for game balancing. Calculate DPS, EHP, TTK automatically, run Monte Carlo simulations, and export directly to Unity/Godot/Unreal.
+An integrated workspace for indie game studios. **Balance data + agile project management in a single tool** — manage your spreadsheets, sprint boards, bug trackers, and epic roadmaps together.
 
-**No login required. No server needed. Everything runs locally in your browser.**
+- **Designers**: 70+ game formulas, Monte Carlo sim, engine export (Unity/Godot/Unreal)
+- **PMs**: Kanban sprints, bug tracker, Gantt epic roadmap
+- **Team**: Real-time collaboration (Yjs CRDT), AI-powered setup
+
+**Local-first. Browser-native. Open source (MIT).**
 
 ### Features
 
+#### Balancing (Designer)
 | Category | Features |
 |----------|----------|
-| **Formulas** | 70+ game-specific formulas (DPS, EHP, TTK, SCALE, DIMINISH, etc.) |
-| **Simulation** | Monte Carlo simulation (1K~100K battles, 95% CI) |
-| **Analysis** | Z-score outlier detection, power curve analysis |
+| **Formulas** | 70+ game-specific (DPS, EHP, TTK, SCALE, GACHA_PITY, DIMINISH) |
+| **Simulation** | Monte Carlo (1K~100K iterations, 95% CI) |
+| **Analysis** | Z-score outlier detection, power curve, imbalance detector |
 | **Economy** | Faucet/Sink model, inflation calculator |
-| **Visualization** | DPS variance distribution, build comparison charts |
 | **Curve Fitting** | Draw graphs → auto-generate formulas |
-| **Export** | Unity, Godot, Unreal code generation |
-| **Integration** | REST API, WebSocket, Firebase support |
-| **Storage** | Local-first (IndexedDB), no server required |
+| **Export** | Unity / Godot / Unreal code + JSON/CSV |
+
+#### Project Management (Studio)
+| Category | Features |
+|----------|----------|
+| **Sprint Board** | 5-stage Kanban (Backlog→Todo→Doing→Review→Done) with priority/role/assignee |
+| **Bug Tracker** | Severity (S1-S4) × Status × Platform (PC/Console/Mobile) |
+| **Epic Roadmap** | Gantt with phases (Pre-prod → Production → Beta → Launch) |
+| **AI Setup** | Describe requirements → auto-generate initial balance sheets |
+
+#### Platform
+| Category | Features |
+|----------|----------|
+| **Views** | Grid / Form / Kanban / Calendar / Gallery / Gantt |
+| **Field Types** | general / formula / checkbox / select / multiSelect / date / url / currency / rating / link / lookup / rollup |
+| **Collaboration** | Yjs CRDT, y-indexeddb, y-webrtc (Infrastructure) |
+| **Storage** | Local-first (IndexedDB), no server required in free tier |
 
 ### Quick Start
 
@@ -144,17 +166,32 @@ We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) 
 
 ### Roadmap
 
-- [x] Spreadsheet-based UI
-- [x] 70+ game-specific formulas
-- [x] Monte Carlo battle simulation
-- [x] Game engine export (Unity/Godot/Unreal)
-- [x] Economy simulation (Faucet/Sink)
-- [x] DPS variance visualization
-- [x] Curve fitting (Graph → Formula)
-- [x] SDK/API integration
-- [ ] Cloud sync
-- [ ] Team collaboration
-- [ ] AI-powered balance suggestions
+**Done**
+- [x] Spreadsheet engine (Grid + Form + Kanban + Calendar + Gallery + Gantt)
+- [x] 70+ game formulas, Monte Carlo simulation
+- [x] Game engine export (Unity / Godot / Unreal)
+- [x] Yjs CRDT (real-time collab infrastructure)
+- [x] Field types 12 (general/formula/checkbox/select/multiSelect/date/url/currency/rating/link/lookup/rollup)
+- [x] Sprint Board / Bug Tracker / Epic Roadmap templates
+- [x] AI Setup (template-based, LLM fallback)
+- [x] ⌘K Command Palette
+- [x] Docked tool groups (9 categories)
+
+**Next (B2B Team Features)**
+- [ ] Comments & @mentions (Yjs)
+- [ ] Presence / cursors (awareness API)
+- [ ] Member invites, roles (owner/editor/viewer)
+- [ ] Share links per view (read-only)
+- [ ] Full LLM integration (Anthropic / OpenAI)
+- [ ] Git / Slack / Discord webhooks
+- [ ] Interface Designer (dashboard builder)
+- [ ] Automations (n8n-style node editor)
+
+**Pricing (tentative)**
+- **Free** — 1 project, 3 members, local-only (MIT)
+- **Team** — $15/user/month, up to 30 members, cloud + AI
+- **Business** — $30/user/month, unlimited + SSO + audit log
+- **Enterprise** — Custom (on-prem, SLA)
 
 ### License
 
@@ -174,23 +211,41 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ### Balruno란?
 
-게임 밸런싱에 특화된 스프레드시트 기반 도구입니다. DPS, EHP, TTK를 자동으로 계산하고, 몬테카를로 시뮬레이션을 돌리고, Unity/Godot/Unreal로 바로 내보낼 수 있습니다.
+인디 게임 스튜디오를 위한 **통합 워크스페이스**. 밸런싱 데이터와 애자일 프로젝트 관리를 **한 툴**에서 — 스프레드시트, 스프린트 보드, 버그 트래커, 에픽 로드맵을 함께 관리합니다.
 
-**로그인 필요 없음. 서버 필요 없음. 모든 것이 브라우저에서 로컬로 실행됩니다.**
+- **기획자**: 70+ 게임 수식, 몬테카를로 시뮬, 엔진 export (Unity/Godot/Unreal)
+- **PM**: 칸반 스프린트, 버그 트래커, Gantt 에픽 로드맵
+- **팀**: 실시간 협업 (Yjs CRDT), AI 자동 세팅
+
+**로컬 우선. 브라우저 네이티브. 오픈소스 (MIT).**
 
 ### 주요 기능
 
+#### 밸런싱 (Designer)
 | 카테고리 | 기능 |
 |----------|------|
-| **수식** | 70개+ 게임 특화 수식 (DPS, EHP, TTK, SCALE, DIMINISH 등) |
-| **시뮬레이션** | 몬테카를로 시뮬레이션 (1천~10만회 전투, 95% 신뢰구간) |
-| **분석** | Z-score 이상치 탐지, 파워 커브 분석 |
-| **경제** | Faucet/Sink 모델, 인플레이션 계산기 |
-| **시각화** | DPS 분산 분포, 빌드 비교 차트 |
-| **커브 피팅** | 그래프 그리기 → 수식 자동 생성 |
-| **내보내기** | Unity, Godot, Unreal 코드 생성 |
-| **연동** | REST API, WebSocket, Firebase 지원 |
-| **저장** | 로컬 우선 (IndexedDB), 서버 불필요 |
+| **수식** | 70개+ 게임 특화 (DPS, EHP, TTK, SCALE, GACHA_PITY, DIMINISH) |
+| **시뮬레이션** | 몬테카를로 (1천~10만회, 95% 신뢰구간) |
+| **분석** | Z-score 이상치 탐지, 파워 커브, 불균형 탐지기 |
+| **경제** | Faucet/Sink, 인플레이션 계산기 |
+| **커브 피팅** | 그래프 → 수식 자동 생성 |
+| **내보내기** | Unity / Godot / Unreal 코드 + JSON/CSV |
+
+#### 프로젝트 관리 (Studio)
+| 카테고리 | 기능 |
+|----------|------|
+| **스프린트 보드** | 5단 칸반 (Backlog→Todo→Doing→Review→Done) + 우선순위/역할/담당자 |
+| **버그 트래커** | 심각도 (S1-S4) × 상태 × 플랫폼 (PC/Console/Mobile) |
+| **에픽 로드맵** | Gantt + 페이즈 (Pre-production → Production → Beta → Launch) |
+| **AI 자동 세팅** | 요구사항 자연어 → 초기 밸런스 시트 자동 생성 |
+
+#### 플랫폼
+| 카테고리 | 기능 |
+|----------|------|
+| **뷰** | Grid / Form / Kanban / Calendar / Gallery / Gantt |
+| **필드 타입** | general / formula / checkbox / select / multiSelect / date / url / currency / rating / link / lookup / rollup (12종) |
+| **협업** | Yjs CRDT, y-indexeddb, y-webrtc (인프라) |
+| **저장** | 로컬 우선 (IndexedDB), 무료 플랜 서버 불필요 |
 
 ### 빠른 시작
 

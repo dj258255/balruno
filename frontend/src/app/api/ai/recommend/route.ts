@@ -14,6 +14,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 interface RecommendRequest {
   description: string;
+  /** 워크타입 — 밸런싱 / 팀 PM / 기획 문서 */
+  workType?: 'balancing' | 'pm' | 'design-doc';
+  /** workType='balancing' 일 때의 장르 */
   genre?: string; // 'rpg' | 'fps' | 'moba' | 'idle' | 'roguelike'
   /** 선택: 플레이 시간, 타겟 플랫폼, 난이도 등 자유 텍스트 */
   context?: string;
@@ -37,8 +40,81 @@ interface RecommendResponse {
   mode: 'llm' | 'template-fallback';
 }
 
+/** 팀 PM 워크타입용 기본 템플릿 (Sprint + Bug + Roadmap). */
+const PM_TEMPLATE: RecommendedSheet[] = [
+  {
+    name: 'Sprint Board',
+    columns: [
+      { name: 'ID', type: 'general' },
+      { name: 'Title', type: 'general' },
+      { name: 'Status', type: 'select' },
+      { name: 'Priority', type: 'select' },
+      { name: 'Role', type: 'select' },
+      { name: 'Assignee', type: 'general' },
+      { name: 'Points', type: 'general' },
+      { name: 'Due', type: 'date' },
+    ],
+  },
+  {
+    name: 'Bugs',
+    columns: [
+      { name: 'ID', type: 'general' },
+      { name: 'Title', type: 'general' },
+      { name: 'Severity', type: 'select' },
+      { name: 'Status', type: 'select' },
+      { name: 'Platform', type: 'multiSelect' },
+      { name: 'Reporter', type: 'general' },
+      { name: 'Assignee', type: 'general' },
+      { name: 'Created', type: 'date' },
+    ],
+  },
+  {
+    name: 'Epic Roadmap',
+    columns: [
+      { name: 'ID', type: 'general' },
+      { name: 'Epic', type: 'general' },
+      { name: 'Phase', type: 'select' },
+      { name: 'Start', type: 'date' },
+      { name: 'End', type: 'date' },
+      { name: 'Owner', type: 'general' },
+    ],
+  },
+];
+
+const DESIGN_DOC_TEMPLATE: RecommendedSheet[] = [
+  {
+    name: '기획 문서',
+    columns: [
+      { name: '섹션', type: 'general' },
+      { name: '내용', type: 'general' },
+      { name: '담당', type: 'general' },
+      { name: '상태', type: 'select' },
+      { name: '리뷰 마감', type: 'date' },
+    ],
+  },
+];
+
 /** 템플릿 기반 fallback — LLM 없이도 동작. */
 function templateFallback(body: RecommendRequest): RecommendResponse {
+  const workType = body.workType ?? 'balancing';
+
+  if (workType === 'pm') {
+    return {
+      sheets: PM_TEMPLATE,
+      note: `팀 PM 템플릿 (스프린트 + 버그 + 로드맵). 요구사항: "${body.description.slice(0, 80)}".`,
+      mode: 'template-fallback',
+    };
+  }
+
+  if (workType === 'design-doc') {
+    return {
+      sheets: DESIGN_DOC_TEMPLATE,
+      note: `기획 문서 템플릿 (베타). 요구사항: "${body.description.slice(0, 80)}".`,
+      mode: 'template-fallback',
+    };
+  }
+
+  // workType === 'balancing'
   const genre = body.genre?.toLowerCase() ?? 'rpg';
 
   const base: Record<string, RecommendedSheet[]> = {
