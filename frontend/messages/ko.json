@@ -362,6 +362,18 @@
       "name": "가챠 확률 계산",
       "description": "등급별 확률, 천장, 기대 비용 계산"
     },
+    "sprintBoard": {
+      "name": "스프린트 보드",
+      "description": "5단 칸반 (Backlog/Todo/Doing/Review/Done) + 우선순위 / 역할 / 담당자"
+    },
+    "bugTracker": {
+      "name": "버그 트래커",
+      "description": "심각도 S1~S4 × 상태 × 플랫폼 (PC/Console/Mobile)"
+    },
+    "epicRoadmap": {
+      "name": "에픽 로드맵",
+      "description": "Pre-production → Launch 페이즈 Gantt 타임라인"
+    },
     "stickers": {
       "rpgCharacter": {
         "dps": "[DPS가 필요한 이유]\nDPS(초당 피해량)는 공격 속도가 다른 캐릭터를 비교할 수 있게 합니다. 느리지만 강한 캐릭터 vs 빠르지만 약한 캐릭터, 누가 더 강할까요?",
@@ -400,8 +412,12 @@
     "collapse": "접기"
   },
   "welcome": {
-    "title": "발루노",
-    "subtitle": "인디게임 개발자를 위한 밸런스 데이터 관리 툴",
+    "title": "Game Studio Workspace",
+    "subtitle": "밸런싱 데이터 + 애자일 티켓 + 에픽 로드맵 — 한 곳에서",
+    "balancingTitle": "밸런싱 (Designer)",
+    "balancingSubtitle": "수식 + 시뮬 + 엔진 export",
+    "teamPmTitle": "팀 PM (Studio)",
+    "teamPmSubtitle": "스프린트 / 버그 / 에픽 로드맵",
     "startGuide": "왼쪽 사이드바에서",
     "startButton": "새 프로젝트",
     "startEnd": "를 만들어 시작하세요"

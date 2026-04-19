@@ -39,9 +39,7 @@ export default function WelcomeScreen() {
     setTimeout(() => {
       const sample = SAMPLE_PROJECTS.find((s) => s.id === sampleId);
       if (sample) {
-        const name = sample.nameKey.startsWith('samples.') && !sample.nameKey.startsWith('samples.sprintBoard')
-          ? t(sample.nameKey as 'samples.rpgCharacter.name')
-          : sampleFallbackName(sample);
+        const name = t(sample.nameKey as 'samples.rpgCharacter.name');
         createFromSample(sampleId, name, t);
       }
       setIsCreating(false);
@@ -67,18 +65,18 @@ export default function WelcomeScreen() {
         {/* 헤더 — B2B 포지셔닝 */}
         <div className="text-center mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-            Game Studio Workspace
+            {t('welcome.title')}
           </h1>
           <p className="text-base sm:text-lg" style={{ color: 'var(--text-tertiary)' }}>
-            밸런싱 데이터 + 애자일 티켓 + 에픽 로드맵 — 한 곳에서
+            {t('welcome.subtitle')}
           </p>
         </div>
 
         {/* 밸런싱 섹션 */}
         <SampleGroup
           icon={<Swords className="w-4 h-4" style={{ color: 'var(--error)' }} />}
-          title="밸런싱 (Designer)"
-          subtitle="수식 + 시뮬 + 엔진 export"
+          title={t('welcome.balancingTitle')}
+          subtitle={t('welcome.balancingSubtitle')}
           samples={balancingSamples}
           selectedSample={selectedSample}
           isCreating={isCreating}
@@ -89,8 +87,8 @@ export default function WelcomeScreen() {
         {/* 팀 PM 섹션 — B2B 신규 */}
         <SampleGroup
           icon={<Users className="w-4 h-4" style={{ color: '#3b82f6' }} />}
-          title="팀 PM (Studio)"
-          subtitle="스프린트 / 버그 / 에픽 로드맵"
+          title={t('welcome.teamPmTitle')}
+          subtitle={t('welcome.teamPmSubtitle')}
           samples={teamSamples}
           selectedSample={selectedSample}
           isCreating={isCreating}
@@ -150,16 +148,6 @@ export default function WelcomeScreen() {
   );
 }
 
-function sampleFallbackName(sample: SampleProject): string {
-  // 팀 PM 샘플 임시 이름 (i18n 추가 전까지)
-  const fallbacks: Record<string, string> = {
-    'sprint-board': '스프린트 보드',
-    'bug-tracker': '버그 트래커',
-    'epic-roadmap': '에픽 로드맵',
-  };
-  return fallbacks[sample.id] ?? sample.id;
-}
-
 interface SampleGroupProps {
   icon: React.ReactNode;
   title: string;
@@ -185,18 +173,8 @@ function SampleGroup({ icon, title, subtitle, samples, selectedSample, isCreatin
           const IconComponent = iconMap[sample.icon] || Swords;
           const colors = categoryColors[sample.category];
           const isSelected = selectedSample === sample.id;
-          const displayName =
-            sample.nameKey.startsWith('samples.') && !sample.id.startsWith('sprint') && !sample.id.startsWith('bug') && !sample.id.startsWith('epic')
-              ? t(sample.nameKey as 'samples.rpgCharacter.name')
-              : sampleFallbackName(sample);
-          const displayDesc =
-            sample.id === 'sprint-board'
-              ? 'Backlog/Todo/Doing/Review/Done 5단 칸반'
-              : sample.id === 'bug-tracker'
-              ? '우선순위 S1-S4 + 플랫폼 태그'
-              : sample.id === 'epic-roadmap'
-              ? 'Pre-production → Launch 페이즈 Gantt'
-              : t(sample.descriptionKey as 'samples.rpgCharacter.description');
+          const displayName = t(sample.nameKey as 'samples.rpgCharacter.name');
+          const displayDesc = t(sample.descriptionKey as 'samples.rpgCharacter.description');
 
           return (
             <button
