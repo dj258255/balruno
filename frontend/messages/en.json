@@ -362,6 +362,18 @@
       "name": "Gacha Rate Calculator",
       "description": "Calculate rates, pity, and expected costs by grade"
     },
+    "sprintBoard": {
+      "name": "Sprint Board",
+      "description": "5-stage Kanban (Backlog/Todo/Doing/Review/Done) + priority / role / assignee"
+    },
+    "bugTracker": {
+      "name": "Bug Tracker",
+      "description": "Severity S1~S4 × status × platform (PC/Console/Mobile)"
+    },
+    "epicRoadmap": {
+      "name": "Epic Roadmap",
+      "description": "Pre-production → Launch phase Gantt timeline"
+    },
     "stickers": {
       "rpgCharacter": {
         "dps": "[Why DPS?]\nDPS (Damage Per Second) helps compare characters with different attack speeds. A slow but powerful character vs a fast but weak one - which is stronger?",
@@ -400,8 +412,12 @@
     "collapse": "Collapse"
   },
   "welcome": {
-    "title": "Balruno",
-    "subtitle": "Balance data management tool for indie game developers",
+    "title": "Game Studio Workspace",
+    "subtitle": "Balance data + agile tickets + epic roadmaps — all in one",
+    "balancingTitle": "Balancing (Designer)",
+    "balancingSubtitle": "Formulas + simulation + engine export",
+    "teamPmTitle": "Team PM (Studio)",
+    "teamPmSubtitle": "Sprint / Bug / Epic Roadmap",
     "startGuide": "Click",
     "startButton": "New Project",
     "startEnd": "in the sidebar to get started"
