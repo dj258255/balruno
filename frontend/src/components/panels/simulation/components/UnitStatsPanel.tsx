@@ -106,7 +106,7 @@ export function UnitStatsPanel({
           type="text"
           value={unitStats.name}
           onChange={(e) => setUnitStats(prev => ({ ...prev, name: e.target.value }))}
-          className="text-sm font-medium bg-transparent border-none outline-none flex-1 min-w-0"
+          className="input-base font-medium flex-1 min-w-0"
           style={{ color }}
           placeholder={placeholder}
         />
