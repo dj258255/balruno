@@ -202,7 +202,6 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
           />
 
           <SheetSelector
-            variant="inline"
             showProjectSelector
             selectedProjectId={selectedProjectId}
             onProjectChange={selectProject}
