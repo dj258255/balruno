@@ -613,6 +613,91 @@ export function solvePareto(input: ParetoInput): ParetoPoint[] {
   return feasible;
 }
 
+// ============================================================================
+// Monte Carlo 역산 (경량) — 확률 포함 수식에서 목표 평균 달성 + 신뢰구간 폭 체크.
+// Silver (ICML 2009) "Monte-Carlo Simulation Balancing" 아이디어 경량 적용.
+// ============================================================================
+
+export interface MCSolverInput {
+  /** 한 번의 trial 에서 결과 1개 반환 — random 내부 사용 */
+  trial: (x: number) => number;
+  /** 역산 변수 범위 */
+  lo: number;
+  hi: number;
+  /** 목표 평균 */
+  targetMean: number;
+  /** 허용 평균 오차 */
+  tolerance?: number;
+  /** 각 x 에서 trial 반복 수 */
+  trialsPerStep?: number;
+  /** bisection 최대 iter */
+  maxIter?: number;
+}
+
+export interface MCSolverResult {
+  success: boolean;
+  value?: number;
+  observedMean?: number;
+  stdev?: number;
+  /** 99% 신뢰구간 폭 (2.576 × stdev / sqrt(n)) */
+  ci99?: number;
+  iterations?: number;
+  error?: string;
+}
+
+export function solveMonteCarlo(input: MCSolverInput): MCSolverResult {
+  const { trial, lo, hi, targetMean, tolerance = 1, trialsPerStep = 500, maxIter = 25 } = input;
+
+  const evalAt = (x: number): { mean: number; stdev: number } => {
+    let sum = 0;
+    const samples: number[] = new Array(trialsPerStep);
+    for (let i = 0; i < trialsPerStep; i++) {
+      const v = trial(x);
+      samples[i] = v;
+      sum += v;
+    }
+    const mean = sum / trialsPerStep;
+    let variance = 0;
+    for (const s of samples) variance += (s - mean) ** 2;
+    variance /= trialsPerStep;
+    return { mean, stdev: Math.sqrt(variance) };
+  };
+
+  const { mean: fLo } = evalAt(lo);
+  const { mean: fHi } = evalAt(hi);
+  const increasing = fHi > fLo;
+  if ((increasing && (targetMean < fLo || targetMean > fHi))
+    || (!increasing && (targetMean > fLo || targetMean < fHi))) {
+    return { success: false, error: `목표 평균 ${targetMean} 이 범위 [${fLo.toFixed(1)}, ${fHi.toFixed(1)}] 밖` };
+  }
+
+  let left = lo;
+  let right = hi;
+  let mid = (left + right) / 2;
+  let info = evalAt(mid);
+  let iter = 0;
+  for (; iter < maxIter; iter++) {
+    mid = (left + right) / 2;
+    info = evalAt(mid);
+    if (Math.abs(info.mean - targetMean) <= tolerance) break;
+    if (right - left < 1e-6) break;
+    if ((increasing && info.mean < targetMean) || (!increasing && info.mean > targetMean)) left = mid;
+    else right = mid;
+  }
+
+  const err = Math.abs(info.mean - targetMean);
+  const ci99 = 2.576 * info.stdev / Math.sqrt(trialsPerStep);
+  return {
+    success: err <= tolerance,
+    value: mid,
+    observedMean: info.mean,
+    stdev: info.stdev,
+    ci99,
+    iterations: iter,
+    error: err <= tolerance ? undefined : `수렴 실패 — 오차 ${err.toFixed(2)}`,
+  };
+}
+
 /**
  * 메인 역산 함수
  */
