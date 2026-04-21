@@ -54,6 +54,7 @@ export function usePanelStates(): {
   const [mobaLaning, setMobaLaning] = useState(false);
   const [rtsBuildOrder, setRtsBuildOrder] = useState(false);
   const [mmoRaid, setMmoRaid] = useState(false);
+  const [autoBattler, setAutoBattler] = useState(false);
 
   const panels: Record<ToolId, PanelState> = useMemo(() => ({
     calculator: { show: calculator, setShow: setCalculator },
@@ -90,12 +91,13 @@ export function usePanelStates(): {
     mobaLaning: { show: mobaLaning, setShow: setMobaLaning },
     rtsBuildOrder: { show: rtsBuildOrder, setShow: setRtsBuildOrder },
     mmoRaid: { show: mmoRaid, setShow: setMmoRaid },
+    autoBattler: { show: autoBattler, setShow: setAutoBattler },
   }), [
     calculator, comparison, chart, preset, imbalance, goal, balance,
     economy, dpsVariance, curveFitting, formulaHelper, balanceValidator,
     difficultyCurve, simulation, entityDefinition, autoBalancer, lootSimulator,
     powerCurveCompare, comments, interfaceDesigner, automations, sensitivity,
-    changeHistory, fpsSimulation, fpsTeamSimulation, deckSimulation, frameData, aiBehavior, matchupMatrix, replayTimeline, snapshotCompare, mobaLaning, rtsBuildOrder, mmoRaid,
+    changeHistory, fpsSimulation, fpsTeamSimulation, deckSimulation, frameData, aiBehavior, matchupMatrix, replayTimeline, snapshotCompare, mobaLaning, rtsBuildOrder, mmoRaid, autoBattler,
   ]);
 
   const openByName = useCallback((name: string) => {
