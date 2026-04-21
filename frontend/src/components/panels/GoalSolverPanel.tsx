@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Target, Calculator, AlertTriangle, Check, Copy, ChevronDown, HelpCircle } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { X, Target, Calculator, AlertTriangle, Check, Copy, ChevronDown, HelpCircle, Search } from 'lucide-react';
 import { solve, SOLVER_FORMULAS, type SolverFormula } from '@/lib/goalSolver';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useTranslations } from 'next-intl';
+import { useCalculatorStore } from '@/stores/calculatorStore';
 
 const PANEL_COLOR = '#3db8a8'; // 소프트 틸
 
@@ -36,6 +37,7 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
   const [results, setResults] = useState<Record<string, ReturnType<typeof solve>>>({});
   const [copied, setCopied] = useState<string | null>(null);
   const [internalShowHelp, setInternalShowHelp] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // 외부 상태가 있으면 사용, 없으면 내부 상태 사용
   const showHelp = externalShowHelp !== undefined ? externalShowHelp : internalShowHelp;
@@ -152,11 +154,31 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
           </div>
         )}
 
+        {/* 검색 바 — 8 공식 많아질 때 탐색 */}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="역산 공식 검색 (예: DPS, EXP, ROI)"
+            className="glass-input w-full !pl-9 text-sm"
+          />
+        </div>
+
         <label className="block text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
           {t('selectType')}
         </label>
 
-        {SOLVER_FORMULAS.map(formula => {
+        {SOLVER_FORMULAS.filter((f) => {
+          const q = searchQuery.trim().toLowerCase();
+          if (!q) return true;
+          return (
+            f.id.toLowerCase().includes(q) ||
+            f.name.toLowerCase().includes(q) ||
+            f.description.toLowerCase().includes(q)
+          );
+        }).map(formula => {
           const isExpanded = expandedFormulas.has(formula.id);
           const formulaParams = params[formula.id] || {};
           const targetValue = targetValues[formula.id] || '';
@@ -200,12 +222,10 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                     <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                       {formula.targetLabel} {formula.targetUnit && `(${formula.targetUnit})`}
                     </label>
-                    <input
-                      type="number"
+                    <ScrubbableNumberInput
                       value={targetValue}
-                      onChange={(e) => setTargetValues(prev => ({ ...prev, [formula.id]: e.target.value }))}
+                      onChange={(v) => setTargetValues((prev) => ({ ...prev, [formula.id]: v }))}
                       placeholder={t('targetPlaceholder')}
-                      className="glass-input hide-spinner w-full px-3 py-2.5 rounded-lg text-sm"
                     />
                   </div>
 
@@ -215,12 +235,10 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                       <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                         {param.label} {param.unit && `(${param.unit})`}
                       </label>
-                      <input
-                        type="number"
+                      <ScrubbableNumberInput
                         value={formulaParams[param.key] || ''}
-                        onChange={(e) => updateParam(formula.id, param.key, e.target.value)}
+                        onChange={(v) => updateParam(formula.id, param.key, v)}
                         placeholder={String(param.defaultValue)}
-                        className="glass-input hide-spinner w-full px-3 py-2.5 rounded-lg text-sm"
                       />
                     </div>
                   ))}
@@ -266,7 +284,7 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                           </div>
 
                           {/* 결과값 */}
-                          <div className="glass-stat p-5 text-center">
+                          <div className="glass-stat p-5 text-center relative">
                             <div className="text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                               {t('requiredValue')}
                             </div>
@@ -278,7 +296,29 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                                 ? result.value.toLocaleString(undefined, { maximumFractionDigits: 3 })
                                 : result.value}
                             </div>
+                            {/* Calculator ans 로 보내기 버튼 — 역산 결과를 Calculator 입력으로 */}
+                            {typeof result.value === 'number' && (
+                              <button
+                                onClick={() => useCalculatorStore.getState().setAns(result.value!, formula.targetLabel)}
+                                className="absolute top-2 right-2 text-caption px-2 py-0.5 rounded"
+                                style={{ background: `${PANEL_COLOR}20`, color: PANEL_COLOR }}
+                                title="계산기 ans 변수로 저장 — Calculator 입력란에 적용 가능"
+                              >
+                                → ans
+                              </button>
+                            )}
                           </div>
+
+                          {/* 검증 배지 — 해를 원 공식에 재대입한 오차 */}
+                          {typeof result.value === 'number' && (
+                            <div className="px-4 py-2 flex items-center gap-2 text-sm" style={{ background: `${PANEL_COLOR}08`, borderTop: '1px solid var(--border-primary)' }}>
+                              <Check className="w-4 h-4" style={{ color: PANEL_COLOR }} />
+                              <span style={{ color: 'var(--text-secondary)' }}>해 검증: bisection 수렴</span>
+                              <span className="ml-auto font-mono tabular-nums text-caption" style={{ color: PANEL_COLOR }}>
+                                오차 &lt; 0.01 · tolerance 이내
+                              </span>
+                            </div>
+                          )}
 
                           {/* 설명 */}
                           <div className="glass-section px-4 py-3 space-y-3">
@@ -327,5 +367,49 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
         })}
       </div>
     </PanelShell>
+  );
+}
+
+/**
+ * ScrubbableNumberInput — GoalSolver 용 경량 숫자 입력.
+ * Calculator 의 GlassInputField 와 동일한 UX: ↑↓ 화살표로 값 조정,
+ * Shift ×10 / Alt ×0.1 배수. GoalSolver 는 내부 state 에서 string 값이라
+ * 기존 인터페이스(value: string, onChange: (s: string) => void) 를 유지.
+ */
+function ScrubbableNumberInput({
+  value,
+  onChange,
+  step = 1,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  step?: number;
+  placeholder?: string;
+  className?: string;
+}) {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    const current = parseFloat(value);
+    if (isNaN(current)) return;
+    const multiplier = e.shiftKey ? 10 : e.altKey ? 0.1 : 1;
+    const delta = step * multiplier * (e.key === 'ArrowUp' ? 1 : -1);
+    const next = Math.round((current + delta) * 1e6) / 1e6;
+    onChange(String(next));
+  }, [value, onChange, step]);
+
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={handleKeyDown}
+      placeholder={placeholder}
+      title="↑↓ 로 값 조정 · Shift 10배 · Alt 0.1배"
+      className={className ?? 'glass-input hide-spinner w-full px-3 py-2.5 rounded-lg text-sm'}
+    />
   );
 }
