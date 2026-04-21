@@ -1453,6 +1453,16 @@ input[type="checkbox"]:checked::after {
   background: rgba(59, 130, 246, 0.22);
   border-color: rgba(59, 130, 246, 0.5);
 }
+
+/* Mention/changelog 네비게이션 시 target 행 깜빡임 */
+@keyframes rowFlash {
+  0%   { background: rgba(251, 191, 36, 0.0); }
+  20%  { background: rgba(251, 191, 36, 0.35); }
+  100% { background: rgba(251, 191, 36, 0.0); }
+}
+tr.row-flash {
+  animation: rowFlash 1.5s ease-out;
+}
 .dark .tiptap-doc-editor .mention-node {
   background: rgba(59, 130, 246, 0.18);
   color: #60a5fa;

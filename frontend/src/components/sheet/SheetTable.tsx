@@ -764,6 +764,23 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
     rowVirtualizer.measure();
   }, [rowHeights, zoomLevel, rowVirtualizer]);
 
+  // ========== balruno:focus-row — 멘션/changelog 에서 특정 행으로 이동 ==========
+  const [flashRowId, setFlashRowId] = useState<string | null>(null);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ sheetId: string; rowId: string }>).detail;
+      if (!detail || detail.sheetId !== sheet.id) return;
+      const index = sheet.rows.findIndex((r) => r.id === detail.rowId);
+      if (index < 0) return;
+      rowVirtualizer.scrollToIndex(index, { align: 'center' });
+      setFlashRowId(detail.rowId);
+      const t = setTimeout(() => setFlashRowId(null), 1500);
+      return () => clearTimeout(t);
+    };
+    window.addEventListener('balruno:focus-row', handler);
+    return () => window.removeEventListener('balruno:focus-row', handler);
+  }, [sheet.id, sheet.rows, rowVirtualizer]);
+
   // ========== RENDER ==========
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -1257,13 +1274,14 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                     <tr
                       key={row.id}
                       data-index={virtualRow.index}
+                      data-row-id={rowData.id}
                       ref={(node) => {
                         // TanStack 공식 패턴: measureElement 호출
                         if (node) {
                           rowVirtualizer.measureElement(node);
                         }
                       }}
-                      className={cn(resizingRow && 'select-none')}
+                      className={cn(resizingRow && 'select-none', flashRowId === rowData.id && 'row-flash')}
                       style={{
                         display: 'flex',
                         position: 'absolute',
