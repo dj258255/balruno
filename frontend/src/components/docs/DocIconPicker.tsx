@@ -68,7 +68,11 @@ export default function DocIconPicker({
   const fallbackIconSize = size === 'sm' ? 14 : size === 'md' ? 18 : 28;
 
   return (
-    <div ref={rootRef} className={`relative inline-flex ${className}`}>
+    <div
+      ref={rootRef}
+      className={`relative inline-flex items-center align-middle ${className}`}
+      style={{ verticalAlign: 'middle' }}
+    >
       <button
         type="button"
         onClick={(e) => {
@@ -76,16 +80,25 @@ export default function DocIconPicker({
           setOpen((v) => !v);
         }}
         className={`inline-flex items-center justify-center rounded hover:bg-[var(--bg-hover)] transition-colors ${sizeCls}`}
-        style={{ lineHeight: 1, ...buttonStyle }}
+        style={{ lineHeight: 1, verticalAlign: 'middle', ...buttonStyle }}
         title="아이콘 변경"
         aria-label="문서 아이콘 변경"
       >
         {icon ? (
-          <span style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif' }}>
+          <span
+            className="leading-none"
+            style={{
+              fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              lineHeight: 1,
+            }}
+          >
             {icon}
           </span>
         ) : (
-          <FallbackIcon size={fallbackIconSize} style={{ color: fallbackColor }} />
+          <FallbackIcon size={fallbackIconSize} style={{ color: fallbackColor, display: 'block' }} />
         )}
       </button>
 
