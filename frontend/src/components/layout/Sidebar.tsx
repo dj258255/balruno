@@ -18,6 +18,7 @@ import {
   SaveStatus,
   SheetContextMenu,
   ProjectContextMenu,
+  FolderContextMenu,
   ClassNameEditModal,
   ConfirmDialogs,
 } from './sidebar/components';
@@ -165,6 +166,12 @@ export default function Sidebar({
     setSheetContextMenu,
     projectContextMenu,
     setProjectContextMenu,
+    folderContextMenu,
+    setFolderContextMenu,
+    editingFolderId,
+    setEditingFolderId,
+    editFolderName,
+    setEditFolderName,
     editingClassNameSheetId,
     setEditingClassNameSheetId,
     editClassName,
@@ -179,9 +186,12 @@ export default function Sidebar({
     setSheetDeleteConfirm,
     projectDeleteConfirm,
     setProjectDeleteConfirm,
+    folderDeleteConfirm,
+    setFolderDeleteConfirm,
     toolsContainerRef,
     sheetContextMenuRef,
     projectContextMenuRef,
+    folderContextMenuRef,
     toggleProject,
     handleCreateProject,
     handleStartEdit,
@@ -271,6 +281,15 @@ export default function Sidebar({
               projectName,
             });
           }}
+          onFolderContextMenu={(e, projectId, folderId, folderName) => {
+            setFolderContextMenu({
+              x: e.clientX,
+              y: e.clientY,
+              projectId,
+              folderId,
+              folderName,
+            });
+          }}
           onSheetMoveConfirm={(fromProjectId, toProjectId, toProjectName, sheetId, sheetName) => {
             setSheetMoveConfirm({
               fromProjectId,
@@ -286,6 +305,13 @@ export default function Sidebar({
           onProjectDelete={(projectId, projectName) => {
             setProjectDeleteConfirm({ projectId, projectName });
           }}
+          onFolderDelete={(projectId, folderId, folderName) => {
+            setFolderDeleteConfirm({ projectId, folderId, folderName });
+          }}
+          editingFolderId={editingFolderId}
+          setEditingFolderId={setEditingFolderId}
+          editFolderName={editFolderName}
+          setEditFolderName={setEditFolderName}
         />
 
         {/* 프로젝트 / 문서 섹션 사이 리사이즈 핸들 — 얇은 시각 + 넓은 hit area */}
@@ -375,6 +401,33 @@ export default function Sidebar({
         onClose={() => setProjectContextMenu(null)}
       />
 
+      <FolderContextMenu
+        menu={folderContextMenu}
+        menuRef={folderContextMenuRef}
+        onNewSheet={(projectId, folderId) => {
+          const newSheetId = projectStore.createSheet(projectId, t('sheet.newSheet'));
+          projectStore.moveSheetToFolder(projectId, newSheetId, folderId);
+          projectStore.setCurrentSheet(newSheetId);
+        }}
+        onNewSubfolder={(projectId, parentId) => {
+          projectStore.createFolder(projectId, t('folder.newFolder'), parentId);
+          // 부모 폴더 펼치기
+          if (!projectStore.projects
+            .find((p) => p.id === projectId)
+            ?.folders?.find((f) => f.id === parentId)?.isExpanded) {
+            projectStore.toggleFolderExpanded(projectId, parentId);
+          }
+        }}
+        onRename={(folderId, folderName) => {
+          setEditingFolderId(folderId);
+          setEditFolderName(folderName);
+        }}
+        onDelete={(projectId, folderId, folderName) => {
+          setFolderDeleteConfirm({ projectId, folderId, folderName });
+        }}
+        onClose={() => setFolderContextMenu(null)}
+      />
+
       <ClassNameEditModal
         sheetId={editingClassNameSheetId}
         className={editClassName}
@@ -405,6 +458,11 @@ export default function Sidebar({
         onDeleteProject={async (projectId) => {
           projectStore.deleteProject(projectId);
           await deleteProjectFromDB(projectId);
+        }}
+        folderDeleteConfirm={folderDeleteConfirm}
+        setFolderDeleteConfirm={() => setFolderDeleteConfirm(null)}
+        onDeleteFolder={(projectId, folderId) => {
+          projectStore.deleteFolder(projectId, folderId);
         }}
       />
     </>

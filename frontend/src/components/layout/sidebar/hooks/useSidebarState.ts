@@ -108,6 +108,11 @@ export function useSidebarState() {
   // 컨텍스트 메뉴 상태
   const [sheetContextMenu, setSheetContextMenu] = useState<SheetContextMenuState | null>(null);
   const [projectContextMenu, setProjectContextMenu] = useState<ProjectContextMenuState | null>(null);
+  const [folderContextMenu, setFolderContextMenu] = useState<FolderContextMenuState | null>(null);
+
+  // 폴더 편집 상태 — rename 을 Sidebar 레벨 컨텍스트 메뉴에서 트리거하려면 여기로 끌어올려야 함
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editFolderName, setEditFolderName] = useState('');
 
   // 클래스명 편집 상태
   const [editingClassNameSheetId, setEditingClassNameSheetId] = useState<string | null>(null);
@@ -122,11 +127,25 @@ export function useSidebarState() {
   const [sheetMoveConfirm, setSheetMoveConfirm] = useState<SheetMoveConfirmState | null>(null);
   const [sheetDeleteConfirm, setSheetDeleteConfirm] = useState<SheetDeleteConfirmState | null>(null);
   const [projectDeleteConfirm, setProjectDeleteConfirm] = useState<ProjectDeleteConfirmState | null>(null);
+  const [folderDeleteConfirm, setFolderDeleteConfirm] = useState<FolderDeleteConfirmState | null>(null);
 
   // 컨테이너 ref
   const toolsContainerRef = useRef<HTMLDivElement>(null);
   const sheetContextMenuRef = useRef<HTMLDivElement>(null);
   const projectContextMenuRef = useRef<HTMLDivElement>(null);
+  const folderContextMenuRef = useRef<HTMLDivElement>(null);
+
+  // 폴더 컨텍스트 메뉴 바깥 클릭 시 닫기
+  useEffect(() => {
+    if (!folderContextMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (folderContextMenuRef.current && !folderContextMenuRef.current.contains(e.target as Node)) {
+        setFolderContextMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [folderContextMenu]);
 
   // 클라이언트 마운트 감지
   useEffect(() => {
@@ -243,6 +262,14 @@ export function useSidebarState() {
     setSheetContextMenu,
     projectContextMenu,
     setProjectContextMenu,
+    folderContextMenu,
+    setFolderContextMenu,
+
+    // 폴더 편집 상태
+    editingFolderId,
+    setEditingFolderId,
+    editFolderName,
+    setEditFolderName,
 
     // 클래스명 편집 상태
     editingClassNameSheetId,
@@ -263,11 +290,14 @@ export function useSidebarState() {
     setSheetDeleteConfirm,
     projectDeleteConfirm,
     setProjectDeleteConfirm,
+    folderDeleteConfirm,
+    setFolderDeleteConfirm,
 
     // Refs
     toolsContainerRef,
     sheetContextMenuRef,
     projectContextMenuRef,
+    folderContextMenuRef,
 
     // 액션
     toggleProject,
