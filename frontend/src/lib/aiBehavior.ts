@@ -28,9 +28,12 @@ export interface BehaviorCondition {
     | 'enemy_hp_pct'
     | 'enemy_count'
     | 'turn'
+    | 'skill_cooldown_ready'
     | 'always';
   op?: ConditionOp;
   value?: number;
+  /** skill_cooldown_ready 전용 — 이 스킬 id 가 쿨다운에서 내려왔는지 검사 */
+  skillId?: string;
 }
 
 export type BehaviorAction =
@@ -54,6 +57,11 @@ export interface BehaviorContext {
   enemyHpSamples: { id: string; hp: number; maxHp: number }[];
   turn: number;
   aliveEnemyCount: number;
+  /**
+   * 스킬 id → 준비 여부. true = 쿨다운에서 내려옴(사용 가능), false = 쿨다운 중.
+   * skill_cooldown_ready 조건에서 참조.
+   */
+  skillReady?: Record<string, boolean>;
 }
 
 // ============================================================================
@@ -73,6 +81,10 @@ function cmp(op: ConditionOp, a: number, b: number): boolean {
 
 export function evaluateCondition(cond: BehaviorCondition, ctx: BehaviorContext): boolean {
   if (cond.type === 'always') return true;
+  if (cond.type === 'skill_cooldown_ready') {
+    if (!cond.skillId) return false;
+    return ctx.skillReady?.[cond.skillId] === true;
+  }
   if (cond.value === undefined || !cond.op) return false;
 
   switch (cond.type) {
@@ -186,6 +198,7 @@ export const CONDITION_LABELS: Record<BehaviorCondition['type'], string> = {
   enemy_hp_pct: '적 최소 HP %',
   enemy_count: '적 수',
   turn: '턴',
+  skill_cooldown_ready: '스킬 사용 가능',
   always: '항상',
 };
 

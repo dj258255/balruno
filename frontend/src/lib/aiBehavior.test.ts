@@ -27,6 +27,54 @@ describe('evaluateCondition', () => {
   });
 });
 
+describe('skill_cooldown_ready', () => {
+  it('skillReady 에 true 면 조건 만족', () => {
+    const ctx2 = { ...ctx, skillReady: { ultimate: true, heal: false } };
+    expect(
+      evaluateCondition({ type: 'skill_cooldown_ready', skillId: 'ultimate' }, ctx2),
+    ).toBe(true);
+  });
+
+  it('skillReady 에 false 면 조건 불만족', () => {
+    const ctx2 = { ...ctx, skillReady: { ultimate: false } };
+    expect(
+      evaluateCondition({ type: 'skill_cooldown_ready', skillId: 'ultimate' }, ctx2),
+    ).toBe(false);
+  });
+
+  it('skillReady 자체가 없으면 불만족 (안전 기본값)', () => {
+    expect(
+      evaluateCondition({ type: 'skill_cooldown_ready', skillId: 'ultimate' }, ctx),
+    ).toBe(false);
+  });
+
+  it('skillId 빠지면 불만족', () => {
+    const ctx2 = { ...ctx, skillReady: { ultimate: true } };
+    expect(evaluateCondition({ type: 'skill_cooldown_ready' }, ctx2)).toBe(false);
+  });
+
+  it('evaluateRules: 얼티밋 준비되면 해당 스킬 사용, 아니면 attack', () => {
+    const rules = [
+      {
+        id: 'ult-ready',
+        name: '얼티밋 발동',
+        condition: { type: 'skill_cooldown_ready' as const, skillId: 'ultimate' },
+        action: { type: 'skill' as const, skillId: 'ultimate' },
+      },
+      {
+        id: 'fallback',
+        name: '기본 공격',
+        condition: { type: 'always' as const },
+        action: { type: 'attack' as const },
+      },
+    ];
+    const ready = { ...ctx, skillReady: { ultimate: true } };
+    const notReady = { ...ctx, skillReady: { ultimate: false } };
+    expect(evaluateRules(rules, ready, 100)).toEqual({ type: 'skill', skillId: 'ultimate' });
+    expect(evaluateRules(rules, notReady, 100)).toEqual({ type: 'attack' });
+  });
+});
+
 describe('evaluateRules', () => {
   it('aggressive: 적 빈사 → target_lowest_hp', () => {
     const action = evaluateRules(RULE_PRESETS.aggressive, ctx, 100);
