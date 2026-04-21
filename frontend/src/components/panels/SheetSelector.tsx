@@ -17,6 +17,11 @@ interface SheetSelectorProps {
   label?: string;
   color?: string;
   className?: string;
+  /**
+   * 'card' (기본): glass-card + 아이콘 박스 + 가로 배치. 분석 패널용.
+   * 'inline': 카드 없이 라벨 + 드롭다운 세로 배치. 엔티티 정의처럼 여러 step 중 하나일 때.
+   */
+  variant?: 'card' | 'inline';
 }
 
 export default function SheetSelector({
@@ -29,6 +34,7 @@ export default function SheetSelector({
   label = '분석할 시트',
   color = '#3db88a',
   className,
+  variant = 'card',
 }: SheetSelectorProps) {
   const { projects, currentProjectId } = useProjectStore();
 
@@ -60,8 +66,9 @@ export default function SheetSelector({
   // 프로젝트가 없으면 안내 메시지
   if (projects.length === 0) {
     return (
-      <div className={cn('glass-card p-4', className)}>
-        <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+      <div className={cn(variant === 'card' ? 'glass-card p-4' : 'p-3 rounded-lg', className)}
+        style={variant === 'inline' ? { background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' } : undefined}>
+        <div className="flex items-center gap-2 text-sm" style={{ color: variant === 'inline' ? 'var(--text-tertiary)' : 'var(--text-secondary)' }}>
           <FolderOpen className="w-4 h-4" />
           <span>프로젝트가 없습니다. 새 프로젝트를 만들어주세요.</span>
         </div>
@@ -69,17 +76,21 @@ export default function SheetSelector({
     );
   }
 
-  return (
-    <div className={cn('glass-card p-4', className)}>
-      <div className="flex items-center gap-3">
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
-        >
-          <FileSpreadsheet className="w-4 h-4 text-white" />
-        </div>
+  const isInline = variant === 'inline';
 
-        <div className="flex-1 min-w-0 flex gap-2">
+  return (
+    <div className={cn(isInline ? 'space-y-2' : 'glass-card p-4', className)}>
+      <div className={cn(isInline ? 'space-y-2' : 'flex items-center gap-3')}>
+        {!isInline && (
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
+          >
+            <FileSpreadsheet className="w-4 h-4 text-white" />
+          </div>
+        )}
+
+        <div className={cn('min-w-0', isInline ? 'space-y-2' : 'flex-1 flex gap-2')}>
           {/* 프로젝트 선택 */}
           {showProjectSelector && onProjectChange && (
             <div className="flex-1 min-w-0">

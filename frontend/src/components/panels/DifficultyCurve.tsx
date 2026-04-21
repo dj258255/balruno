@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Settings, BarChart3, Wrench, ChevronDown, TrendingUp } from 'lucide-react';
+import { Settings, BarChart3, Wrench, ChevronDown, TrendingUp, Zap, Sliders } from 'lucide-react';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 
 // number input spinner 숨기는 스타일
@@ -107,6 +107,10 @@ interface DifficultyCurveProps {
 export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
   const t = useTranslations('difficultyCurve');
   const [showHelp, setShowHelp] = useState(false);
+  // Simple/Advanced 모드 — 사용자 진입 장벽 낮춤. 기본 Simple.
+  // Simple: 프리셋 + 플레이타임 + 차트 + 벽/마일스톤 추천 버튼 1개
+  // Advanced: 기존 전체 UI (곡선타입/플로우존/DDA/벽편집/휴식포인트 등)
+  const [mode, setMode] = useState<'simple' | 'advanced'>('simple');
   // 고급 설정 섹션들 접기 상태 — 시각화 / 벽·마일스톤·휴식 기본 열림, DDA 만 기본 접힘
   const [collapsedAdvanced, setCollapsedAdvanced] = useState(true);
 
@@ -190,23 +194,66 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
       {/* 도움말 섹션 */}
       {showHelp && <HelpPanel />}
 
+      {/* Simple / Advanced 모드 토글 — 진입 장벽 낮춤 */}
+      <div
+        className="flex items-center gap-1 p-1 rounded-lg"
+        style={{ background: 'var(--bg-tertiary)' }}
+      >
+        <button
+          onClick={() => setMode('simple')}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm font-medium transition-colors"
+          style={{
+            background: mode === 'simple' ? PANEL_COLOR : 'transparent',
+            color: mode === 'simple' ? 'white' : 'var(--text-secondary)',
+          }}
+        >
+          <Zap className="w-3.5 h-3.5" />
+          간단 모드
+        </button>
+        <button
+          onClick={() => setMode('advanced')}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm font-medium transition-colors"
+          style={{
+            background: mode === 'advanced' ? PANEL_COLOR : 'transparent',
+            color: mode === 'advanced' ? 'white' : 'var(--text-secondary)',
+          }}
+        >
+          <Sliders className="w-3.5 h-3.5" />
+          고급 모드
+        </button>
+      </div>
+
+      {/* Simple 모드 안내 */}
+      {mode === 'simple' && (
+        <div
+          className="p-3 rounded-lg text-caption leading-relaxed"
+          style={{ background: `${PANEL_COLOR}10`, borderLeft: `3px solid ${PANEL_COLOR}`, color: 'var(--text-secondary)' }}
+        >
+          <strong style={{ color: PANEL_COLOR }}>게임 장르 프리셋</strong>을 선택하고{' '}
+          <strong>플레이타임</strong>을 설정하면, 업계 기준 난이도 곡선과 벽 스테이지가 자동 생성됩니다.
+          세밀 조정이 필요하면 <strong>고급 모드</strong>로 전환하세요.
+        </div>
+      )}
+
       {/* ===== 섹션 1: 기본 설정 ===== */}
       <SectionDivider
         icon={Settings}
         title={t('sectionBasic')}
         color="#9179f2"
-        description="프리셋·곡선 타입·전체 스테이지 수를 먼저 정합니다"
+        description={mode === 'simple' ? '프리셋·플레이타임만 정하면 끝' : '프리셋·곡선 타입·전체 스테이지 수를 먼저 정합니다'}
       />
 
       <div className="space-y-4">
         <PresetSelector preset={preset} setPreset={setPreset} />
 
-        <CurveTypeSelector
-          curveType={curveType}
-          setCurveType={setCurveType}
-          sawtoothPeriod={sawtoothPeriod}
-          setSawtoothPeriod={setSawtoothPeriod}
-        />
+        {mode === 'advanced' && (
+          <CurveTypeSelector
+            curveType={curveType}
+            setCurveType={setCurveType}
+            sawtoothPeriod={sawtoothPeriod}
+            setSawtoothPeriod={setSawtoothPeriod}
+          />
+        )}
 
         <PlaytimeSelector
           playtime={playtime}
@@ -217,7 +264,9 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
           maxStage={maxStage}
         />
 
-        <MaxStageSelector maxStage={maxStage} setMaxStage={setMaxStage} />
+        {mode === 'advanced' && (
+          <MaxStageSelector maxStage={maxStage} setMaxStage={setMaxStage} />
+        )}
       </div>
 
       {/* ===== 섹션 2: 시각화 ===== */}
@@ -241,34 +290,38 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
         restPoints={restPoints}
       />
 
-      {/* 고급 설정 — 기본 접힘 (플로우 존 + DDA) */}
-      <SectionDivider
-        icon={BarChart3}
-        title="고급 분석"
-        color="#06b6d4"
-        description="플로우 존(Csikszentmihalyi) · DDA 동적 난이도"
-        collapsible
-        collapsed={collapsedAdvanced}
-        onToggle={() => setCollapsedAdvanced((v) => !v)}
-      />
-      {!collapsedAdvanced && (
-        <div className="space-y-4">
-          <FlowZoneEditor
-            flowZoneConfig={flowZoneConfig}
-            setFlowZoneConfig={setFlowZoneConfig}
-            showFlowZones={showFlowZones}
-            setShowFlowZones={setShowFlowZones}
-            flowZoneStats={flowZoneStats}
+      {/* 고급 설정 — Advanced 모드에서만 */}
+      {mode === 'advanced' && (
+        <>
+          <SectionDivider
+            icon={BarChart3}
+            title="고급 분석"
+            color="#06b6d4"
+            description="플로우 존(Csikszentmihalyi) · DDA 동적 난이도"
+            collapsible
+            collapsed={collapsedAdvanced}
+            onToggle={() => setCollapsedAdvanced((v) => !v)}
           />
-          <DDAEditor
-            ddaConfig={ddaConfig}
-            setDDAConfig={setDDAConfig}
-            ddaSimulation={ddaSimulation}
-            onSimulateWin={simulateWinStreak}
-            onSimulateLoss={simulateLossStreak}
-            onResetSimulation={resetDDASimulation}
-          />
-        </div>
+          {!collapsedAdvanced && (
+            <div className="space-y-4">
+              <FlowZoneEditor
+                flowZoneConfig={flowZoneConfig}
+                setFlowZoneConfig={setFlowZoneConfig}
+                showFlowZones={showFlowZones}
+                setShowFlowZones={setShowFlowZones}
+                flowZoneStats={flowZoneStats}
+              />
+              <DDAEditor
+                ddaConfig={ddaConfig}
+                setDDAConfig={setDDAConfig}
+                ddaSimulation={ddaSimulation}
+                onSimulateWin={simulateWinStreak}
+                onSimulateLoss={simulateLossStreak}
+                onResetSimulation={resetDDASimulation}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* 전체화면 모달 */}
@@ -295,39 +348,50 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
         />
       )}
 
-      {/* ===== 섹션 3: 스테이지 설계 ===== */}
-      <SectionDivider
-        icon={Wrench}
-        title={t('sectionStageDesign')}
-        color="#3db88a"
-        description="벽 스테이지 · 마일스톤 · 휴식 포인트 배치"
-      />
+      {/* ===== 섹션 3: 스테이지 설계 — Advanced 전용 ===== */}
+      {mode === 'advanced' && (
+        <>
+          <SectionDivider
+            icon={Wrench}
+            title={t('sectionStageDesign')}
+            color="#3db88a"
+            description="벽 스테이지 · 마일스톤 · 휴식 포인트 배치"
+          />
 
-      <div className="space-y-4">
-        <WallStageEditor
-          wallStages={wallStages}
-          wallData={wallData}
-          maxStage={maxStage}
-          onAdd={addWallStage}
-          onRemove={removeWallStage}
-          onUpdate={updateWallStage}
-          onChangeType={changeWallType}
-        />
+          <div className="space-y-4">
+            <WallStageEditor
+              wallStages={wallStages}
+              wallData={wallData}
+              maxStage={maxStage}
+              onAdd={addWallStage}
+              onRemove={removeWallStage}
+              onUpdate={updateWallStage}
+              onChangeType={changeWallType}
+            />
 
-        <MilestoneEditor
-          milestones={milestones}
-          onUpdate={updateMilestone}
-          onUpdateBonus={updateMilestonePowerBonus}
-        />
+            <MilestoneEditor
+              milestones={milestones}
+              onUpdate={updateMilestone}
+              onUpdateBonus={updateMilestonePowerBonus}
+            />
 
-        <RestPointEditor
-          restPoints={restPoints}
-          maxStage={maxStage}
-          onAdd={addRestPoint}
-          onRemove={removeRestPoint}
-          onUpdate={updateRestPoint}
-        />
-      </div>
+            <RestPointEditor
+              restPoints={restPoints}
+              maxStage={maxStage}
+              onAdd={addRestPoint}
+              onRemove={removeRestPoint}
+              onUpdate={updateRestPoint}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Simple 모드 안내 footer — "세부 조정 필요 시 고급 모드" */}
+      {mode === 'simple' && (
+        <div className="text-caption italic text-center pt-2" style={{ color: 'var(--text-tertiary)' }}>
+          벽 스테이지·마일스톤·휴식 포인트를 직접 편집하려면 상단 <strong>고급 모드</strong>로 전환하세요.
+        </div>
+      )}
     </PanelShell>
   );
 }
