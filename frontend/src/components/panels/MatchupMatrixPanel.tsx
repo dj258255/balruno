@@ -244,20 +244,35 @@ export default function MatchupMatrixPanel({ onClose }: Props) {
               {result.labels.map((lbl, i) => (
                 <th
                   key={i}
-                  className="px-2 py-1 font-medium"
+                  className="font-medium"
                   style={{
-                    color: result.dominantIdx.includes(i) ? '#ef4444'
-                      : result.weakIdx.includes(i) ? '#3b82f6'
-                      : 'var(--text-secondary)',
+                    // 45도 기울여서 가로 공간 절약 + 한글/영어 모두 자연스럽게 읽힘
+                    // (vertical-rl 은 한글 자소 분리 문제)
+                    height: 80,
                     minWidth: 50,
-                    writingMode: 'vertical-rl',
-                    transform: 'rotate(180deg)',
+                    maxWidth: 80,
+                    verticalAlign: 'bottom',
+                    padding: '0 4px 4px',
                   }}
                 >
-                  {lbl}
+                  <div
+                    style={{
+                      display: 'inline-block',
+                      transform: 'rotate(-45deg)',
+                      transformOrigin: 'left bottom',
+                      whiteSpace: 'nowrap',
+                      color: result.dominantIdx.includes(i) ? '#ef4444'
+                        : result.weakIdx.includes(i) ? '#3b82f6'
+                        : 'var(--text-secondary)',
+                      fontWeight: 500,
+                    }}
+                    title={lbl}
+                  >
+                    {lbl}
+                  </div>
                 </th>
               ))}
-              <th className="px-2 py-1" style={{ color: 'var(--text-tertiary)' }}>평균</th>
+              <th className="px-2 py-1 align-bottom" style={{ color: 'var(--text-tertiary)' }}>평균</th>
             </tr>
           </thead>
           <tbody>

@@ -114,18 +114,17 @@ export default function BalanceAnalysisPanel({
         />
       )}
 
-      {/* 프로젝트/시트 선택 */}
-      <div className="px-3 pt-3">
-        <SheetSelector
-          selectedProjectId={selectedProjectId}
-          onProjectChange={setSelectedProjectId}
-          showProjectSelector={true}
-          selectedSheetId={selectedSheetId}
-          onSheetChange={setSelectedSheetId}
-          label="분석할 시트"
-          color="#7c7ff2"
-        />
-      </div>
+      {/* 프로젝트/시트 선택 — 공통 SheetSelector */}
+      <SheetSelector
+        selectedProjectId={selectedProjectId}
+        onProjectChange={setSelectedProjectId}
+        showProjectSelector={true}
+        selectedSheetId={selectedSheetId}
+        onSheetChange={setSelectedSheetId}
+        label="분석할 시트"
+        color="#7c7ff2"
+        className="mx-3 mt-3"
+      />
 
       {/* 분석 유형 선택 드롭다운 */}
       <div className="flex items-center gap-2 px-3 py-2 border-b" style={{ borderColor: 'var(--border-primary)' }}>
