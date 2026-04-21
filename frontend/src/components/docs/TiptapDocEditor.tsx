@@ -183,7 +183,7 @@ export default function TiptapDocEditor({ content, onChange, placeholder, projec
     immediatelyRender: false, // Next.js SSR
     editorProps: {
       attributes: {
-        class: 'tiptap-doc-editor prose prose-sm max-w-none focus:outline-none min-h-[60vh] px-6 py-6',
+        class: 'tiptap-doc-editor prose prose-base dark:prose-invert max-w-none focus:outline-none min-h-[60vh] px-8 py-6',
       },
       handleClickOn: (_view, _pos, node) => {
         if (node.type.name === 'mention') {

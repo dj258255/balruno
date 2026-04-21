@@ -95,11 +95,12 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
 
   setCurrentSheet: (id: string | null) => {
     if (id) {
-      // 시트 선택 → 탭 자동 열기 + 소속 프로젝트도 활성화
+      // 시트 선택 → 탭 자동 열기 + 소속 프로젝트도 활성화 + 문서 비활성화
       set((state) => {
         const project = state.projects.find((p) => p.sheets.some((s) => s.id === id));
         return {
           currentSheetId: id,
+          currentDocId: null,
           currentProjectId: project?.id ?? state.currentProjectId,
           openSheetTabs: state.openSheetTabs.includes(id)
             ? state.openSheetTabs
@@ -117,6 +118,7 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
         ? state.openSheetTabs
         : [...state.openSheetTabs, sheetId],
       currentSheetId: sheetId,
+      currentDocId: null,
     }));
   },
 

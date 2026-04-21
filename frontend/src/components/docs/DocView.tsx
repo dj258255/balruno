@@ -165,8 +165,8 @@ export default function DocView({ projectId, doc, onClose }: Props) {
         </div>
       )}
 
-      {/* Tiptap 에디터 */}
-      <div className="flex-1 overflow-hidden">
+      {/* Tiptap 에디터 — 본문 스크롤 가능 + 최대 너비 제한 없음 (컨테이너 full width) */}
+      <div className="flex-1 overflow-y-auto">
         <TiptapDocEditor
           content={content}
           onChange={handleContentChange}
