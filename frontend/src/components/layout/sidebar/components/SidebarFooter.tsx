@@ -61,17 +61,7 @@ export function SidebarFooter({
         </div>
       )}
 
-      {/* 리사이즈 핸들 */}
-      <div
-        className="h-1.5 cursor-ns-resize flex items-center justify-center group hover:bg-[var(--accent)]/10 transition-colors"
-        style={{ borderTop: '1px solid var(--border-primary)' }}
-        onMouseDown={handleToolsResizeStart}
-      >
-        <div
-          className="w-8 h-0.5 rounded-full transition-colors group-hover:bg-[var(--accent)]"
-          style={{ background: 'var(--border-secondary)' }}
-        />
-      </div>
+      {/* 리사이즈 핸들 제거됨 — 도구가 BottomDock 으로 일원화되어 사이드바 내부 리사이즈는 불필요 */}
     </>
   );
 }
