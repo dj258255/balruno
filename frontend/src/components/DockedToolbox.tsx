@@ -244,6 +244,9 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
   // 현재 보이는 탭 — 그룹 내에서 show=true 인 도구 중 가장 먼저 나오는 것
   const [activeTab, setActiveTab] = useState<ToolId | null>(null);
 
+  // Panel 의 actions (도움말 등) 을 dock header 에 portal 렌더하기 위한 slot
+  const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
+
   // 그룹이 바뀌거나 활성 탭 도구가 닫혔을 때 activeTab 재조정
   useEffect(() => {
     if (!activeGroup) {
@@ -323,6 +326,12 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
           <SingleToolHeader toolId={activeTab} color={activeGroup.color} />
         )}
 
+        {/* Panel actions slot — 도움말 토글 등 portal 로 들어옴. X 버튼 왼쪽. */}
+        <div
+          ref={setActionsSlot}
+          className="flex items-center gap-0.5 flex-shrink-0 mt-0.5"
+        />
+
         <button
           onClick={closeGroup}
           className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors flex-shrink-0 mt-0.5"
@@ -333,9 +342,10 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
         </button>
       </header>
 
-      {/* 탭 컨텐츠 — PanelShell 의 내부 헤더는 context 로 자동 숨김 */}
+      {/* 탭 컨텐츠 — PanelShell 의 내부 헤더는 context 로 자동 숨김.
+          actions (도움말 등) 는 portal 로 위 slot 에 이동. */}
       <div className="flex-1 overflow-auto">
-        <PanelShellContext.Provider value={{ hideHeader: true }}>
+        <PanelShellContext.Provider value={{ hideHeader: true, actionsSlot }}>
           {renderToolContent(activeTab, panels)}
         </PanelShellContext.Provider>
       </div>

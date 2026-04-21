@@ -14,6 +14,7 @@
  */
 
 import { ReactNode, createContext, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { X, HelpCircle, type LucideIcon } from 'lucide-react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 
@@ -21,14 +22,20 @@ import { useEscapeKey } from '@/hooks/useEscapeKey';
  * PanelShellContext — DockedToolbox / BottomDock 안에서 열린 PanelShell 은
  * 자체 헤더를 숨김. 상단 dock 이 이미 아이콘+제목+설명+닫기 다 표시하므로.
  *
- * 사용: DockedToolbox 에서 `<PanelShellContext.Provider value={{ hideHeader: true }}>` 로 감쌈.
+ * 사용: DockedToolbox 에서 `<PanelShellContext.Provider value={{ hideHeader: true, actionsSlot }}>` 로 감쌈.
+ *
+ *  - actionsSlot: 지정 시 Panel 의 actions/headerExtra 를 portal 로 그 영역에 렌더.
+ *    hideHeader 일 때 dock 의 X 버튼 옆에 도움말 등 액션을 자연스럽게 배치하려는 용도.
  */
 export interface PanelShellContextValue {
   hideHeader: boolean;
+  /** actions/headerExtra 를 portal 로 렌더할 DOM 노드. null 이면 floating bar 로 fallback. */
+  actionsSlot?: HTMLElement | null;
 }
 
 export const PanelShellContext = createContext<PanelShellContextValue>({
   hideHeader: false,
+  actionsSlot: null,
 });
 
 interface PanelShellProps {
@@ -73,8 +80,14 @@ export default function PanelShell({
   const ctx = useContext(PanelShellContext);
   const shouldHideHeader = hideHeader ?? ctx.hideHeader;
 
-  // actions/headerExtra 는 헤더에 붙어있던 것 — 헤더 숨기면 본문 상단에 합류시켜 노출
-  const hasFloatingActions = shouldHideHeader && (actions || headerExtra);
+  // hideHeader 시 처리 3 단계:
+  //  1. dock 에서 actionsSlot 을 제공하면 → portal 로 거기에 렌더 (자연스러움)
+  //  2. slot 은 없지만 actions/headerExtra 있으면 → 본문 위 floating bar
+  //  3. 아무것도 없으면 생략
+  const hasFloatingActions =
+    shouldHideHeader && !ctx.actionsSlot && (actions || headerExtra);
+  const shouldPortalActions =
+    shouldHideHeader && ctx.actionsSlot && (actions || headerExtra);
 
   return (
     <div className="flex flex-col h-full" role="region" aria-label={title}>
@@ -118,6 +131,14 @@ export default function PanelShell({
           {headerExtra}
           {actions}
         </div>
+      )}
+
+      {shouldPortalActions && ctx.actionsSlot && createPortal(
+        <>
+          {headerExtra}
+          {actions}
+        </>,
+        ctx.actionsSlot,
       )}
 
       <div className={`flex-1 overflow-y-auto ${bodyClassName}`}>{children}</div>
