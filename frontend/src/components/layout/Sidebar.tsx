@@ -169,8 +169,8 @@ export default function Sidebar({
 
         <SidebarQuickAccess />
 
-        <SidebarDocsSection />
-
+        {/* "새 프로젝트 / 템플릿 갤러리" 를 Quick Access 바로 아래로 올려
+            사이드바 최상단에서 즉시 접근 가능하게 함 */}
         <NewProjectForm
           showNewProject={showNewProject}
           setShowNewProject={setShowNewProject}
@@ -178,6 +178,8 @@ export default function Sidebar({
           setNewProjectName={setNewProjectName}
           onCreateProject={handleCreateProject}
         />
+
+        <SidebarDocsSection />
 
         <ProjectList
           projects={projectStore.projects}
