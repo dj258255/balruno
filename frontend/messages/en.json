@@ -906,7 +906,18 @@
       "PI": "Pi Constant (π)",
       "E": "Euler's Number (e)",
       "SheetRef": "Reference Other Sheet Value",
-      "PrevRow": "Reference Previous Row Value"
+      "PrevRow": "Reference Previous Row Value",
+      "IFS": "Multi-condition chain (replaces nested IF)",
+      "SWITCH": "Value comparison branch",
+      "IFERROR": "Error guard (division by zero, etc.)",
+      "LARGE": "N-th largest value",
+      "SMALL": "N-th smallest value",
+      "PERCENTILE": "Percentile value",
+      "RANK": "Rank",
+      "ISBLANK": "Check if empty",
+      "ISNUMBER": "Check if number",
+      "ISERROR": "Check if error",
+      "CHOOSE": "Select value by index"
     }
   },
   "export": {
