@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { Settings, BarChart3, Wrench, ChevronDown, TrendingUp, Zap, Sliders } from 'lucide-react';
+import { Settings, BarChart3, Wrench, ChevronDown, TrendingUp, Zap, Sliders, Users, PlayCircle, AlertTriangle } from 'lucide-react';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
+import { simulateDifficultyCurve } from '@/lib/difficultySimulator';
 
 // number input spinner 숨기는 스타일
 const hideSpinnerStyle = `
@@ -115,6 +116,37 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
   // Simple 모드 내 sub-disclosure
   const [simpleExpandCurve, setSimpleExpandCurve] = useState(false);
   const [simpleExpandStage, setSimpleExpandStage] = useState(false);
+
+  // Playtest (가상 플레이어 시뮬) — Simple/Advanced 모두 노출
+  const [playtestRunning, setPlaytestRunning] = useState(false);
+  const [playtestPlayers, setPlaytestPlayers] = useState(200);
+  const [playtestResult, setPlaytestResult] = useState<ReturnType<typeof simulateDifficultyCurve> | null>(null);
+
+  const runPlaytest = () => {
+    setPlaytestRunning(true);
+    // 다음 tick 에서 실행 (UI 반응성)
+    setTimeout(() => {
+      const r = simulateDifficultyCurve({
+        segments: curveData,
+        wallStages,
+        restPoints,
+        virtualPlayers: playtestPlayers,
+        giveUpStreak: 3,
+        attemptsPerStage: 1.8,
+        secPerAttempt: 45,
+      });
+      setPlaytestResult(r);
+      setPlaytestRunning(false);
+    }, 50);
+  };
+
+  const dropoutColor = useMemo(() => {
+    if (!playtestResult) return '#6b7280';
+    const r = playtestResult.dropoutRate;
+    if (r < 0.2) return '#10b981';
+    if (r < 0.5) return '#f59e0b';
+    return '#ef4444';
+  }, [playtestResult]);
   // 고급 설정 섹션들 접기 상태 — 시각화 / 벽·마일스톤·휴식 기본 열림, DDA 만 기본 접힘
   const [collapsedAdvanced, setCollapsedAdvanced] = useState(true);
 
@@ -337,6 +369,99 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
           }
         }}
       />
+
+      {/* Playtest (가상 플레이어 시뮬) — King Candy Crush 봇 시뮬 방식 경량화 */}
+      <div
+        className="p-3 rounded-lg space-y-2"
+        style={{ background: 'var(--bg-tertiary)', borderLeft: '3px solid #06b6d4' }}
+      >
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4" style={{ color: '#06b6d4' }} />
+          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            Playtest — 가상 플레이어 시뮬
+          </span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>N</span>
+            <input
+              type="number"
+              min={50}
+              max={5000}
+              step={50}
+              value={playtestPlayers}
+              onChange={(e) => setPlaytestPlayers(parseInt(e.target.value) || 50)}
+              className="input-compact hide-spinner w-20"
+            />
+            <button
+              onClick={runPlaytest}
+              disabled={playtestRunning || curveData.length === 0}
+              className="inline-flex items-center gap-1 px-3 py-1 rounded text-caption font-semibold disabled:opacity-40"
+              style={{ background: '#06b6d4', color: 'white' }}
+            >
+              <PlayCircle className="w-3.5 h-3.5" />
+              {playtestRunning ? '실행 중...' : '재생'}
+            </button>
+          </div>
+        </div>
+        {!playtestResult && (
+          <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+            재생 버튼을 누르면 가상 플레이어 {playtestPlayers}명이 이 곡선을 플레이 시도 →
+            이탈률·평균 도달 스테이지·가장 막히는 벽 자동 탐지
+          </p>
+        )}
+        {playtestResult && (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2 rounded" style={{ background: 'var(--bg-primary)', borderLeft: `3px solid ${dropoutColor}` }}>
+                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>이탈률</div>
+                <div className="text-lg font-bold tabular-nums" style={{ color: dropoutColor }}>
+                  {Math.round(playtestResult.dropoutRate * 100)}%
+                </div>
+                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                  {playtestResult.dropoutRate < 0.2 ? '건강' : playtestResult.dropoutRate < 0.5 ? '조정 권장' : '과도하게 어려움'}
+                </div>
+              </div>
+              <div className="p-2 rounded" style={{ background: 'var(--bg-primary)' }}>
+                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>평균 도달</div>
+                <div className="text-lg font-bold tabular-nums" style={{ color: '#3b82f6' }}>
+                  {playtestResult.avgReachedStage.toFixed(1)}
+                </div>
+                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                  / {curveData.length} 스테이지
+                </div>
+              </div>
+              <div className="p-2 rounded" style={{ background: 'var(--bg-primary)' }}>
+                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>평균 플레이타임</div>
+                <div className="text-lg font-bold tabular-nums" style={{ color: '#8b5cf6' }}>
+                  {playtestResult.avgPlaytimeMin.toFixed(0)}분
+                </div>
+                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                  생존자 기준
+                </div>
+              </div>
+            </div>
+            {playtestResult.topDropoutStages.length > 0 && (
+              <div className="p-2 rounded" style={{ background: '#ef444415', borderLeft: '3px solid #ef4444' }}>
+                <div className="flex items-center gap-1 text-caption font-semibold mb-1" style={{ color: '#ef4444' }}>
+                  <AlertTriangle className="w-3 h-3" />
+                  가장 막히는 스테이지 TOP {playtestResult.topDropoutStages.length}
+                </div>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {playtestResult.topDropoutStages.map((d) => (
+                    <span
+                      key={d.stage}
+                      className="px-2 py-0.5 rounded text-caption font-mono"
+                      style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                      title={`Stage ${d.stage} 에서 ${d.dropouts}명 이탈 (${Math.round(d.dropoutRate * 100)}%)`}
+                    >
+                      Stage {d.stage} · {Math.round(d.dropoutRate * 100)}%
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* 고급 설정 — Advanced 모드에서만 */}
       {mode === 'advanced' && (
