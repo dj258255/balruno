@@ -32,6 +32,8 @@ export interface Project {
 export interface Doc {
   id: string;
   name: string;
+  /** 사용자 지정 아이콘 — 유니코드 이모지 문자 (예: "📝", "🎮"). 없으면 FileText fallback. */
+  icon?: string;
   content: string;  // Tiptap JSON 또는 HTML 직렬화
   createdAt: number;
   updatedAt: number;

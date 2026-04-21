@@ -18,6 +18,7 @@ import { exportDocAsMarkdown, exportDocAsPDF } from '@/lib/docExport';
 import type { Doc, Project } from '@/types';
 import PanelShell from '@/components/ui/PanelShell';
 import TiptapDocEditor from './TiptapDocEditor';
+import DocIconPicker from './DocIconPicker';
 
 interface Props {
   projectId: string;
@@ -124,11 +125,18 @@ export default function DocView({ projectId, doc, onClose }: Props) {
         </>
       }
     >
-      {/* 제목 */}
+      {/* 제목 + 아이콘 */}
       <div
-        className="px-6 py-4 border-b"
+        className="px-6 py-4 border-b flex items-start gap-3"
         style={{ borderColor: 'var(--border-primary)' }}
       >
+        <DocIconPicker
+          icon={doc.icon}
+          onChange={(emoji) => updateDoc(projectId, doc.id, { icon: emoji })}
+          size="lg"
+          className="shrink-0 mt-1"
+        />
+        <div className="flex-1 min-w-0">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -146,6 +154,7 @@ export default function DocView({ projectId, doc, onClose }: Props) {
               {backlinks.length}개 문서에서 참조
             </span>
           )}
+        </div>
         </div>
       </div>
 

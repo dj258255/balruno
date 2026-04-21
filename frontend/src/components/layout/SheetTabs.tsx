@@ -331,10 +331,20 @@ export default function SheetTabs({ project }: SheetTabsProps) {
               title={name}
             >
               <span className="relative w-3.5 h-3.5 flex-shrink-0">
-                <Icon
-                  className="absolute inset-0 w-3.5 h-3.5 group-hover:opacity-0 transition-opacity"
-                  style={{ color: isActive ? 'var(--accent)' : 'var(--text-secondary)' }}
-                />
+                {!isSheet && entry.doc.icon ? (
+                  <span
+                    className="absolute inset-0 flex items-center justify-center text-[14px] group-hover:opacity-0 transition-opacity"
+                    style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif', lineHeight: 1 }}
+                    aria-hidden="true"
+                  >
+                    {entry.doc.icon}
+                  </span>
+                ) : (
+                  <Icon
+                    className="absolute inset-0 w-3.5 h-3.5 group-hover:opacity-0 transition-opacity"
+                    style={{ color: isActive ? 'var(--accent)' : 'var(--text-secondary)' }}
+                  />
+                )}
                 <GripVertical
                   className="absolute inset-0 w-3.5 h-3.5 opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing transition-opacity"
                   style={{ color: 'var(--text-tertiary)' }}
