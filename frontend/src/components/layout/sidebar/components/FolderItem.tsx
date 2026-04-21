@@ -103,8 +103,17 @@ export function FolderItem({
       });
   })();
 
-  // 이 폴더의 하위 폴더들
-  const childFolders = folders.filter(f => f.parentId === folder.id);
+  // 이 폴더의 하위 폴더들 — 구버전 저장 데이터의 id 중복 방어
+  const childFolders = (() => {
+    const seen = new Set<string>();
+    return folders
+      .filter(f => f.parentId === folder.id)
+      .filter(f => {
+        if (seen.has(f.id)) return false;
+        seen.add(f.id);
+        return true;
+      });
+  })();
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();

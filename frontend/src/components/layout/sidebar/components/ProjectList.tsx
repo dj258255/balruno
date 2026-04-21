@@ -252,8 +252,17 @@ export function ProjectList({
       {renderEmptyContextMenu(emptyMenu, setEmptyMenu)}
       <div className="space-y-1.5">
         {projects.map((project, projectIndex) => {
-          // 루트 레벨 폴더들 (parentId가 없는 것)
-          const rootFolders = (project.folders || []).filter(f => !f.parentId);
+          // 루트 레벨 폴더들 (parentId가 없는 것) — 구버전 저장 데이터의 id 중복 방어
+          const rootFolders = (() => {
+            const seen = new Set<string>();
+            return (project.folders || [])
+              .filter(f => !f.parentId)
+              .filter(f => {
+                if (seen.has(f.id)) return false;
+                seen.add(f.id);
+                return true;
+              });
+          })();
 
           // 루트 레벨 시트들 (folderId가 없는 것)
           // 루트 시트 — 과거 저장 데이터의 id 중복 방어 (IndexedDB 에 남은 구버전 데이터 대응)
