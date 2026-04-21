@@ -24,6 +24,13 @@ export interface UnitStats {
   reactionSkill?: number;
   /** 판단 실력 — 스킬 선택 최적성 (팀전/다중 스킬시 효과) */
   decisionSkill?: number;
+
+  /**
+   * AI 행동 규칙 — aiBehavior.ts 의 BehaviorRule[].
+   * 설정 시 targetingMode 대신 이 규칙이 우선. decisionSkill 로 준수율 제어.
+   * 타입은 구조적 의존을 피해 any → 실제로는 BehaviorRule[] (순환참조 회피).
+   */
+  aiRules?: unknown[];
 }
 
 // 스킬 정의

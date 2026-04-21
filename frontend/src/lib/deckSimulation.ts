@@ -34,6 +34,18 @@ export interface DeckConfig {
   handSize: number;          // 턴당 드로우 (기본 5)
   baseEnergy: number;        // 턴당 에너지 (기본 3)
   turnsPerCombat: number;    // 전투 턴 수
+  /** 상대 몹 설정 — 하나 처치시 다음 몹 등장. 여러 종류일 수 있음. */
+  enemies?: EnemyMob[];
+}
+
+/**
+ * 몹 정의 — Slay the Spire의 "적 순서" 개념. 실시간 웨이브 기반.
+ * 예: Cultist(50hp) → Jaw Worm(44hp) → Elite(150hp)
+ */
+export interface EnemyMob {
+  id: string;
+  name: string;
+  hp: number;
 }
 
 export interface DeckSimResult {
@@ -47,6 +59,14 @@ export interface DeckSimResult {
   avgCardsPerTurn: number;
   /** 각 카드의 평균 play 횟수 (per combat) — 자주 쓰이는 카드 분석 */
   cardUsage: Record<string, number>;
+  /** 몹 설정 시: 평균 처치한 몹 수 (run 당) */
+  avgKills?: number;
+  /** 모든 몹 클리어한 run 비율 (0-1) */
+  clearRate?: number;
+  /** 첫 킬까지 걸린 평균 턴 */
+  avgTurnToFirstKill?: number;
+  /** 각 몹별 처치율 (0-1) */
+  mobKillRates?: Record<string, number>;
 }
 
 // ============================================================================
@@ -94,6 +114,10 @@ function simulateCombat(cfg: DeckConfig): {
   cardsPlayed: number;
   perTurnDamage: number[];
   cardUsage: Record<string, number>;
+  kills: number;
+  killedMobIds: string[];
+  firstKillTurn: number | null;
+  allCleared: boolean;
 } {
   const state: PileState = {
     drawPile: shuffle(cfg.cards),
@@ -110,6 +134,13 @@ function simulateCombat(cfg: DeckConfig): {
   let cardsPlayed = 0;
   const perTurnDamage: number[] = [];
   const cardUsage: Record<string, number> = {};
+
+  // 몹 처치 추적
+  const enemies = (cfg.enemies ?? []).map((e) => ({ ...e, remaining: e.hp }));
+  let enemyIdx = 0;
+  let kills = 0;
+  const killedMobIds: string[] = [];
+  let firstKillTurn: number | null = null;
 
   for (let turn = 0; turn < cfg.turnsPerCombat; turn++) {
     // 턴 시작 드로우
@@ -155,10 +186,38 @@ function simulateCombat(cfg: DeckConfig): {
     if (playedThisTurn === 0) deadHandTurns++;
     energyWasted += energy;
 
+    // 적용: turnDamage 를 현재 몹에 순차 누적
+    if (enemies.length > 0) {
+      let remainingDmg = turnDamage;
+      while (remainingDmg > 0 && enemyIdx < enemies.length) {
+        const mob = enemies[enemyIdx];
+        if (mob.remaining <= remainingDmg) {
+          remainingDmg -= mob.remaining;
+          mob.remaining = 0;
+          kills++;
+          killedMobIds.push(mob.id);
+          if (firstKillTurn === null) firstKillTurn = turn + 1;
+          enemyIdx++;
+        } else {
+          mob.remaining -= remainingDmg;
+          remainingDmg = 0;
+        }
+      }
+      // 몹 다 잡으면 조기 종료
+      if (enemyIdx >= enemies.length) {
+        // 턴 종료 처리 후 break
+        state.discardPile.push(...state.hand);
+        state.hand = [];
+        break;
+      }
+    }
+
     // 턴 종료 — hand 카드 discard
     state.discardPile.push(...state.hand);
     state.hand = [];
   }
+
+  const allCleared = enemies.length > 0 && enemyIdx >= enemies.length;
 
   return {
     totalDamage,
@@ -169,6 +228,10 @@ function simulateCombat(cfg: DeckConfig): {
     cardsPlayed,
     perTurnDamage,
     cardUsage,
+    kills,
+    killedMobIds,
+    firstKillTurn,
+    allCleared,
   };
 }
 
@@ -185,6 +248,13 @@ export function simulateDeck(cfg: DeckConfig, runs = 2000): DeckSimResult {
   let availSum = 0;
   let cardsSum = 0;
 
+  // 몹 통계
+  let killsSum = 0;
+  let clearedCount = 0;
+  let firstKillTurnSum = 0;
+  let firstKillCount = 0;
+  const mobKillCounts: Record<string, number> = {};
+
   for (let i = 0; i < runs; i++) {
     const r = simulateCombat(cfg);
     perTurnDamages.push(r.perTurnDamage);
@@ -196,6 +266,16 @@ export function simulateDeck(cfg: DeckConfig, runs = 2000): DeckSimResult {
     wastedSum += r.energyWasted;
     availSum += r.energyAvailable;
     cardsSum += r.cardsPlayed;
+
+    killsSum += r.kills;
+    if (r.allCleared) clearedCount++;
+    for (const mobId of r.killedMobIds) {
+      mobKillCounts[mobId] = (mobKillCounts[mobId] ?? 0) + 1;
+    }
+    if (r.firstKillTurn !== null) {
+      firstKillTurnSum += r.firstKillTurn;
+      firstKillCount++;
+    }
   }
 
   // DPT 분포 (각 run 의 평균 turn damage)
@@ -211,6 +291,14 @@ export function simulateDeck(cfg: DeckConfig, runs = 2000): DeckSimResult {
 
   const totalTurns = cfg.turnsPerCombat * runs;
 
+  const hasEnemies = (cfg.enemies?.length ?? 0) > 0;
+  const mobKillRates: Record<string, number> = {};
+  if (hasEnemies) {
+    for (const mob of cfg.enemies!) {
+      mobKillRates[mob.id] = (mobKillCounts[mob.id] ?? 0) / runs;
+    }
+  }
+
   return {
     avgDpt,
     medianDpt: median,
@@ -223,6 +311,12 @@ export function simulateDeck(cfg: DeckConfig, runs = 2000): DeckSimResult {
     cardUsage: Object.fromEntries(
       Object.entries(usage).map(([id, count]) => [id, count / runs]),
     ),
+    ...(hasEnemies && {
+      avgKills: killsSum / runs,
+      clearRate: clearedCount / runs,
+      avgTurnToFirstKill: firstKillCount > 0 ? firstKillTurnSum / firstKillCount : 0,
+      mobKillRates,
+    }),
   };
 }
 
