@@ -16,10 +16,11 @@
  */
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Rewind, Swords, Heart, Shield, Skull, Zap, RefreshCw, Sparkles } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Rewind, Swords, Heart, Shield, Skull, Zap, RefreshCw, Sparkles, Info } from 'lucide-react';
 import PanelShell from '@/components/ui/PanelShell';
 import { simulateBattleWithSkills } from '@/lib/simulation/battleEngine';
 import type { UnitStats, Skill, BattleLogEntry } from '@/lib/simulation/types';
+import { useReplayStore } from '@/stores/replayStore';
 
 interface Props {
   onClose: () => void;
@@ -77,20 +78,39 @@ const ACTION_META: Record<BattleLogEntry['action'], { Icon: typeof Swords; color
 // ============================================================================
 
 export default function ReplayTimelinePanel({ onClose }: Props) {
-  const scenario = useMemo(() => defaultScenario(), []);
+  const published = useReplayStore((s) => s.scenario);
+  const clearPublished = useReplayStore((s) => s.clear);
+
+  // 외부에서 publish 된 시나리오가 있으면 그걸 사용, 아니면 데모
+  const demoScenario = useMemo(() => defaultScenario(), []);
+  const usingPublished = !!published;
+  const scenario = useMemo(() => {
+    if (published) {
+      return {
+        unit1: published.unit1,
+        unit2: published.unit2,
+        skills1: published.skills1,
+        skills2: published.skills2,
+      };
+    }
+    return demoScenario;
+  }, [published, demoScenario]);
+
   const [seed, setSeed] = useState(0); // 재시뮬 트리거
   const [cursorIdx, setCursorIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
 
   const result = useMemo(() => {
+    // published 가 있으면 그 결과 그대로 재생 (재시뮬 안 함)
+    if (published) return published.result;
     void seed; // force re-run
     return simulateBattleWithSkills(
       scenario.unit1, scenario.unit2,
       scenario.skills1, scenario.skills2,
       { maxDuration: 120, timeStep: 0.1 },
     );
-  }, [scenario, seed]);
+  }, [published, scenario, seed]);
 
   const log = result.log;
   const cursor = log[Math.min(cursorIdx, log.length - 1)];
@@ -147,13 +167,49 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
       onClose={onClose}
       bodyClassName="p-3 space-y-3 overflow-y-auto"
     >
+      {/* 상태 배너 — 데모 vs 실제 */}
+      <div
+        className="p-2 rounded-lg flex items-center gap-2 text-caption"
+        style={{
+          background: usingPublished ? '#10b98118' : '#f59e0b18',
+          borderLeft: `3px solid ${usingPublished ? '#10b981' : '#f59e0b'}`,
+        }}
+      >
+        <Info className="w-3.5 h-3.5 shrink-0" style={{ color: usingPublished ? '#10b981' : '#f59e0b' }} />
+        <div className="flex-1" style={{ color: 'var(--text-primary)' }}>
+          {usingPublished ? (
+            <>
+              <span className="font-semibold" style={{ color: '#10b981' }}>실제 시뮬 결과</span>
+              {' '}— 전투 시뮬 패널에서 돌린 마지막 1:1 전투 재생 중
+              {published?.source && ` (${published.source})`}
+            </>
+          ) : (
+            <>
+              <span className="font-semibold" style={{ color: '#f59e0b' }}>데모 모드</span>
+              {' '}— 고정 시나리오 (영웅 vs 보스). 실제 결과를 보려면 전투 시뮬 패널에서 실행 후 여기서 재생
+            </>
+          )}
+        </div>
+        {usingPublished && (
+          <button
+            onClick={clearPublished}
+            className="px-2 py-0.5 rounded text-caption"
+            style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
+            title="데모로 돌아가기"
+          >
+            데모로
+          </button>
+        )}
+      </div>
+
       {/* 컨트롤 바 */}
       <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: 'var(--bg-tertiary)' }}>
         <button
           onClick={() => setSeed((s) => s + 1)}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded text-caption"
+          disabled={usingPublished}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded text-caption disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
-          title="새 시뮬 (다른 난수 seed)"
+          title={usingPublished ? '외부 전투 시뮬 결과 재생 중 — 데모 모드로 돌아가 재시뮬' : '새 시뮬 (다른 난수 seed)'}
         >
           <Rewind className="w-3 h-3" /> 재시뮬
         </button>
