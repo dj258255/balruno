@@ -89,7 +89,7 @@ export function DifficultyChart({
 
         {onToggleWall && (
           <div className="text-caption mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
-            💡 차트를 클릭하면 해당 위치에 <strong>벽 스테이지</strong>를 추가/제거합니다
+            차트를 클릭하면 해당 위치에 <strong>벽 스테이지</strong>를 추가/제거합니다
           </div>
         )}
 

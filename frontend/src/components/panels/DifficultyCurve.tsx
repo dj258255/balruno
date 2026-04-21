@@ -276,7 +276,6 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
         icon={Settings}
         title={t('sectionBasic')}
         color="#9179f2"
-        description={mode === 'simple' ? '프리셋·플레이타임만 정하면 끝' : '프리셋·곡선 타입·전체 스테이지 수를 먼저 정합니다'}
       />
 
       <div className="space-y-4">
@@ -346,7 +345,6 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
         icon={BarChart3}
         title={t('sectionVisualization')}
         color="#5a9cf5"
-        description="차트 미리보기 + 플로우·DDA 오버레이"
       />
 
       {/* 난이도 곡선 시각화 (항상 보임 — 메인 출력물) */}
@@ -470,7 +468,6 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
             icon={BarChart3}
             title="고급 분석"
             color="#06b6d4"
-            description="플로우 존(Csikszentmihalyi) · DDA 동적 난이도"
             collapsible
             collapsed={collapsedAdvanced}
             onToggle={() => setCollapsedAdvanced((v) => !v)}
@@ -528,7 +525,6 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
             icon={Wrench}
             title={t('sectionStageDesign')}
             color="#3db88a"
-            description="벽 스테이지 · 마일스톤 · 휴식 포인트 배치"
           />
 
           <div className="space-y-4">
