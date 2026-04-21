@@ -11,6 +11,8 @@ import { useEscapeKey } from '@/hooks';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { useCalculatorStore } from '@/stores/calculatorStore';
+import { bisect } from '@/lib/bisection';
+import { Target as TargetIcon } from 'lucide-react';
 
 const PANEL_COLOR = '#9179f2'; // 소프트 퍼플
 
@@ -261,6 +263,21 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
               </div>
               <GlassResultCard label={t('dpsResult')} value={dpsResult.toFixed(2)} color={tabColor} numericValue={dpsResult} extra={`${t('baseDps')}: ${(dpsInputs.damage * dpsInputs.attackSpeed).toFixed(2)} | ${t('critBonus')}: +${((dpsResult / (dpsInputs.damage * dpsInputs.attackSpeed) - 1) * 100).toFixed(1)}%`} />
               <GlassFormulaBox formula="damage x (1 + critRate x (critDamage - 1)) x attackSpeed" hint={t('dpsFormulaHint')} color={tabColor} />
+              <GoalSeekBox
+                color={tabColor}
+                targetLabel="DPS"
+                variables={[
+                  { key: 'damage', label: '데미지', min: 1, max: 10000 },
+                  { key: 'attackSpeed', label: '공격 속도', min: 0.1, max: 20 },
+                  { key: 'critRate', label: '치명 확률', min: 0, max: 1 },
+                  { key: 'critDamage', label: '치명 배율', min: 1, max: 10 },
+                ]}
+                computeWithOverride={(k, v) => {
+                  const o = { ...dpsInputs, [k]: v };
+                  return o.damage * (1 + o.critRate * (o.critDamage - 1)) * o.attackSpeed;
+                }}
+                onApply={(k, v) => setDpsInputs({ ...dpsInputs, [k]: v })}
+              />
             </div>
           )}
 
@@ -281,6 +298,20 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 <GlassResultCard label={t('hitsRequired')} value={`${ttkResult.hitsNeeded}`} color="#e5a440" numericValue={ttkResult.hitsNeeded} />
               </div>
               <GlassFormulaBox formula="(ceil(targetHP / damage) - 1) / attackSpeed" hint={t('ttkFormulaHint')} color={tabColor} />
+              <GoalSeekBox
+                color={tabColor}
+                targetLabel="TTK (초)"
+                variables={[
+                  { key: 'damage', label: '데미지', min: 1, max: 10000 },
+                  { key: 'attackSpeed', label: '공격 속도', min: 0.1, max: 20 },
+                ]}
+                computeWithOverride={(k, v) => {
+                  const o = { ...ttkInputs, [k]: v };
+                  const hits = Math.ceil(o.targetHP / Math.max(1, o.damage));
+                  return (hits - 1) / Math.max(0.001, o.attackSpeed);
+                }}
+                onApply={(k, v) => setTtkInputs({ ...ttkInputs, [k]: v })}
+              />
             </div>
           )}
 
@@ -298,6 +329,20 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
               </div>
               <GlassResultCard label={t('ehpResult')} value={ehpResult.toFixed(0)} color={tabColor} numericValue={ehpResult} extra={`${t('vsOriginal')} ${((ehpResult / ehpInputs.hp) * 100).toFixed(1)}% (x${(ehpResult / ehpInputs.hp).toFixed(2)})`} />
               <GlassFormulaBox formula="hp x (1 + def/100) x (1 / (1 - damageReduction))" hint={t('ehpFormulaHint')} color={tabColor} />
+              <GoalSeekBox
+                color={tabColor}
+                targetLabel="EHP"
+                variables={[
+                  { key: 'hp', label: 'HP', min: 1, max: 100000 },
+                  { key: 'def', label: '방어력', min: 0, max: 2000 },
+                  { key: 'damageReduction', label: '피해 감소', min: 0, max: 0.95 },
+                ]}
+                computeWithOverride={(k, v) => {
+                  const o = { ...ehpInputs, [k]: v };
+                  return EHP(o.hp, o.def, o.damageReduction);
+                }}
+                onApply={(k, v) => setEhpInputs({ ...ehpInputs, [k]: v })}
+              />
             </div>
           )}
 
@@ -537,6 +582,135 @@ function GlassFormulaBox({ formula, hint, color }: { formula: string; hint?: str
       <div className="text-sm mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Formula</div>
       <code className="text-sm font-mono font-semibold" style={{ color }}>{formula}</code>
       {hint && <div className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>{hint}</div>}
+    </div>
+  );
+}
+
+/**
+ * GoalSeekBox — Excel Goal Seek 인라인 버전.
+ *
+ * 사용자가 "목표값" 과 "역산할 변수" 를 지정하면 bisect 로 필요 입력 자동 산출.
+ * 결과는 해당 변수에 바로 적용 (onApply).
+ *
+ * variables: 역산 가능한 변수 목록 ({ key, label, min, max, step })
+ * computeResult: 현재 입력 상태에서 결과값 하나 반환하는 함수 (단변수 monotone 가정)
+ * getInputValue / setInputValue: 해당 변수 하나를 get/set
+ */
+function GoalSeekBox({
+  color,
+  targetLabel,
+  variables,
+  computeWithOverride,
+  onApply,
+}: {
+  color: string;
+  targetLabel: string;
+  variables: { key: string; label: string; min: number; max: number }[];
+  /** 특정 변수 하나를 value 로 바꿨을 때의 결과값 */
+  computeWithOverride: (varKey: string, value: number) => number;
+  onApply: (varKey: string, value: number) => void;
+}) {
+  const [enabled, setEnabled] = useState(false);
+  const [targetValue, setTargetValue] = useState(100);
+  const [selectedVar, setSelectedVar] = useState(variables[0]?.key ?? '');
+  const [result, setResult] = useState<{ value: number; converged: boolean } | null>(null);
+
+  const handleSolve = () => {
+    const v = variables.find((x) => x.key === selectedVar);
+    if (!v) return;
+    const r = bisect((x) => computeWithOverride(v.key, x), targetValue, {
+      lo: v.min,
+      hi: v.max,
+      tolerance: 0.01,
+      maxIter: 60,
+    });
+    if (r) {
+      setResult({ value: r.x, converged: r.converged });
+    } else {
+      setResult({ value: 0, converged: false });
+    }
+  };
+
+  return (
+    <div className="glass-section p-3" style={{ borderLeft: `3px solid ${color}` }}>
+      <div className="flex items-center justify-between mb-2">
+        <label className="inline-flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => { setEnabled(e.target.checked); setResult(null); }}
+          />
+          <TargetIcon className="w-3.5 h-3.5" style={{ color }} />
+          <span className="text-sm font-semibold" style={{ color }}>
+            Goal Seek — 목표값 역산
+          </span>
+        </label>
+        <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+          Excel Goal Seek 방식 · bisection
+        </span>
+      </div>
+      {enabled && (
+        <>
+          <div className="grid grid-cols-[auto_1fr_auto_1fr_auto] gap-2 items-center">
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>목표 {targetLabel}</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={targetValue}
+              onChange={(e) => setTargetValue(parseFloat(e.target.value) || 0)}
+              className="glass-input text-sm"
+            />
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>역산할 변수</span>
+            <select
+              value={selectedVar}
+              onChange={(e) => { setSelectedVar(e.target.value); setResult(null); }}
+              className="glass-input text-sm"
+            >
+              {variables.map((v) => (
+                <option key={v.key} value={v.key}>{v.label}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleSolve}
+              className="px-3 py-1.5 rounded text-sm font-semibold"
+              style={{ background: color, color: 'white' }}
+            >
+              계산
+            </button>
+          </div>
+          {result && (
+            <div
+              className="mt-2 p-2 rounded flex items-center gap-2"
+              style={{
+                background: result.converged ? `${color}10` : '#ef444410',
+                borderLeft: `3px solid ${result.converged ? color : '#ef4444'}`,
+              }}
+            >
+              {result.converged ? (
+                <>
+                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    필요 {variables.find((v) => v.key === selectedVar)?.label}:
+                  </span>
+                  <span className="text-lg font-bold tabular-nums" style={{ color }}>
+                    {result.value.toFixed(2)}
+                  </span>
+                  <button
+                    onClick={() => onApply(selectedVar, result.value)}
+                    className="ml-auto px-2 py-0.5 rounded text-caption font-semibold"
+                    style={{ background: color, color: 'white' }}
+                  >
+                    적용 →
+                  </button>
+                </>
+              ) : (
+                <span className="text-sm" style={{ color: '#ef4444' }}>
+                  수렴 실패 — 목표값이 해당 변수 범위 밖입니다
+                </span>
+              )}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
