@@ -557,7 +557,7 @@ function GenericSolverBox() {
         <div className="flex items-center gap-2">
           <Calculator className="w-4 h-4" style={{ color: PANEL_COLOR }} />
           <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            범용 수식 역산 (Beta)
+            범용 수식 역산
           </span>
           <span className="text-caption ml-auto" style={{ color: 'var(--text-tertiary)' }}>
             mathjs 문법 · bisection
