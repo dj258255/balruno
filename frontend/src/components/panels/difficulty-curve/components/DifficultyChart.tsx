@@ -46,6 +46,8 @@ interface DifficultyChartProps {
   onShowFullscreen: () => void;
   showFlowZones?: boolean;
   restPoints?: RestPoint[];
+  /** 차트 직접 조작 — 클릭한 지점의 stage 에 벽 추가/제거 토글 */
+  onToggleWall?: (stage: number) => void;
 }
 
 export function DifficultyChart({
@@ -58,6 +60,7 @@ export function DifficultyChart({
   onShowFullscreen,
   showFlowZones = true,
   restPoints = [],
+  onToggleWall,
 }: DifficultyChartProps) {
   const t = useTranslations('difficultyCurve');
 
@@ -84,12 +87,24 @@ export function DifficultyChart({
           <Maximize2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
         </button>
 
+        {onToggleWall && (
+          <div className="text-caption mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
+            💡 차트를 클릭하면 해당 위치에 <strong>벽 스테이지</strong>를 추가/제거합니다
+          </div>
+        )}
+
         {/* 그래프 - Recharts */}
-        <div className="h-40">
+        <div className="h-40" style={{ cursor: onToggleWall ? 'crosshair' : 'default' }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={curveData}
               margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+              onClick={(e) => {
+                if (!onToggleWall || !e || typeof e.activeLabel !== 'number') return;
+                const stage = Math.round(e.activeLabel);
+                if (stage < 1 || stage > maxStage) return;
+                onToggleWall(stage);
+              }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
 
