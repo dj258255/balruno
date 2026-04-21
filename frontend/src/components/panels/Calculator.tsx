@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { X, Calculator as CalcIcon, Crosshair, Zap, Shield, TrendingUp, Download, ChevronDown, Grid3X3 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
@@ -76,6 +76,42 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
   // Scenario A/B — 현재 탭 입력 스냅샷 저장/비교 (Raidbots Top Gear / Excel Scenario Manager 패턴)
   const [scenarioA, setScenarioA] = useState<Record<string, Record<string, number | string>> | null>(null);
   const [scenarioB, setScenarioB] = useState<Record<string, Record<string, number | string>> | null>(null);
+
+  // History — 입력 변경 snapshot. Cmd+Z 로 직전 입력 복원 (최대 20개)
+  type AllInputs = { dps: typeof dpsInputs; ttk: typeof ttkInputs; ehp: typeof ehpInputs; damage: typeof damageInputs; scale: typeof scaleInputs };
+  const [history, setHistory] = useState<AllInputs[]>([]);
+  const pushHistory = useCallback(() => {
+    setHistory((prev) => [...prev.slice(-19), { dps: { ...dpsInputs }, ttk: { ...ttkInputs }, ehp: { ...ehpInputs }, damage: { ...damageInputs }, scale: { ...scaleInputs } }]);
+  }, [dpsInputs, ttkInputs, ehpInputs, damageInputs, scaleInputs]);
+  const undoHistory = useCallback(() => {
+    setHistory((prev) => {
+      if (prev.length === 0) return prev;
+      const snap = prev[prev.length - 1];
+      setDpsInputs(snap.dps);
+      setTtkInputs(snap.ttk);
+      setEhpInputs(snap.ehp);
+      setDamageInputs(snap.damage);
+      setScaleInputs(snap.scale);
+      return prev.slice(0, -1);
+    });
+  }, []);
+
+  // Cmd/Ctrl+Z 키 핸들러
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undoHistory();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undoHistory]);
+
+  // 입력 변경 전 현재 상태 history 에 push 하는 wrapper (각 setter)
+  const setDpsWithHistory = (next: typeof dpsInputs) => { pushHistory(); setDpsInputs(next); };
+  const setTtkWithHistory = (next: typeof ttkInputs) => { pushHistory(); setTtkInputs(next); };
+  const setEhpWithHistory = (next: typeof ehpInputs) => { pushHistory(); setEhpInputs(next); };
 
   const dpsResult = useMemo(() => DPS(dpsInputs.damage, dpsInputs.attackSpeed, dpsInputs.critRate, dpsInputs.critDamage), [dpsInputs]);
   const ttkResult = useMemo(() => { const ttk = TTK(ttkInputs.targetHP, ttkInputs.damage, ttkInputs.attackSpeed); const hitsNeeded = Math.ceil(ttkInputs.targetHP / ttkInputs.damage); return { ttk, hitsNeeded }; }, [ttkInputs]);
@@ -260,10 +296,10 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.dps.description}</div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <GlassInputField label={t('damage1hit')} value={dpsInputs.damage} onChange={(v) => setDpsInputs({ ...dpsInputs, damage: v })} />
-                <GlassInputField label={t('attackSpeed')} value={dpsInputs.attackSpeed} onChange={(v) => setDpsInputs({ ...dpsInputs, attackSpeed: v })} step={0.1} />
-                <GlassInputField label={t('critRate')} value={dpsInputs.critRate} onChange={(v) => setDpsInputs({ ...dpsInputs, critRate: v })} step={0.01} min={0} max={1} />
-                <GlassInputField label={t('critMultiplier')} value={dpsInputs.critDamage} onChange={(v) => setDpsInputs({ ...dpsInputs, critDamage: v })} step={0.1} />
+                <GlassInputField label={t('damage1hit')} value={dpsInputs.damage} onChange={(v) => setDpsWithHistory({ ...dpsInputs, damage: v })} />
+                <GlassInputField label={t('attackSpeed')} value={dpsInputs.attackSpeed} onChange={(v) => setDpsWithHistory({ ...dpsInputs, attackSpeed: v })} step={0.1} />
+                <GlassInputField label={t('critRate')} value={dpsInputs.critRate} onChange={(v) => setDpsWithHistory({ ...dpsInputs, critRate: v })} step={0.01} min={0} max={1} />
+                <GlassInputField label={t('critMultiplier')} value={dpsInputs.critDamage} onChange={(v) => setDpsWithHistory({ ...dpsInputs, critDamage: v })} step={0.1} />
               </div>
               <GlassResultCard label={t('dpsResult')} value={dpsResult.toFixed(2)} color={tabColor} numericValue={dpsResult} extra={`${t('baseDps')}: ${(dpsInputs.damage * dpsInputs.attackSpeed).toFixed(2)} | ${t('critBonus')}: +${((dpsResult / (dpsInputs.damage * dpsInputs.attackSpeed) - 1) * 100).toFixed(1)}%`} />
               <GlassFormulaBox formula="damage x (1 + critRate x (critDamage - 1)) x attackSpeed" hint={t('dpsFormulaHint')} color={tabColor} />
@@ -280,7 +316,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   const o = { ...dpsInputs, [k]: v };
                   return o.damage * (1 + o.critRate * (o.critDamage - 1)) * o.attackSpeed;
                 }}
-                onApply={(k, v) => setDpsInputs({ ...dpsInputs, [k]: v })}
+                onApply={(k, v) => setDpsWithHistory({ ...dpsInputs, [k]: v })}
               />
               <ScenarioCompareBox
                 color={tabColor}
@@ -304,6 +340,14 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 ]}
                 computeResult={(o) => DPS(Number(o.damage), Number(o.attackSpeed), Number(o.critRate), Number(o.critDamage))}
               />
+              <BreakdownBox
+                color={tabColor}
+                steps={[
+                  { label: 'Base DPS (damage × attackSpeed)', value: dpsInputs.damage * dpsInputs.attackSpeed },
+                  { label: 'Crit 보정 (1 + critRate × (critMul - 1))', value: 1 + dpsInputs.critRate * (dpsInputs.critDamage - 1), note: `×${(1 + dpsInputs.critRate * (dpsInputs.critDamage - 1)).toFixed(3)}` },
+                  { label: '최종 DPS', value: dpsResult, note: 'base × crit 보정' },
+                ]}
+              />
             </div>
           )}
 
@@ -315,9 +359,9 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.ttk.description}</div>
               </div>
               <div className="grid grid-cols-3 gap-3">
-                <GlassInputField label={t('targetHp')} value={ttkInputs.targetHP} onChange={(v) => setTtkInputs({ ...ttkInputs, targetHP: v })} />
-                <GlassInputField label={t('damage1')} value={ttkInputs.damage} onChange={(v) => setTtkInputs({ ...ttkInputs, damage: v })} />
-                <GlassInputField label={t('attackSpeed')} value={ttkInputs.attackSpeed} onChange={(v) => setTtkInputs({ ...ttkInputs, attackSpeed: v })} step={0.1} />
+                <GlassInputField label={t('targetHp')} value={ttkInputs.targetHP} onChange={(v) => setTtkWithHistory({ ...ttkInputs, targetHP: v })} />
+                <GlassInputField label={t('damage1')} value={ttkInputs.damage} onChange={(v) => setTtkWithHistory({ ...ttkInputs, damage: v })} />
+                <GlassInputField label={t('attackSpeed')} value={ttkInputs.attackSpeed} onChange={(v) => setTtkWithHistory({ ...ttkInputs, attackSpeed: v })} step={0.1} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <GlassResultCard label={t('ttkResult')} value={ttkResult.ttk === Infinity ? '-' : `${ttkResult.ttk.toFixed(2)}s`} color={tabColor} numericValue={ttkResult.ttk === Infinity ? undefined : ttkResult.ttk} />
@@ -336,7 +380,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   const hits = Math.ceil(o.targetHP / Math.max(1, o.damage));
                   return (hits - 1) / Math.max(0.001, o.attackSpeed);
                 }}
-                onApply={(k, v) => setTtkInputs({ ...ttkInputs, [k]: v })}
+                onApply={(k, v) => setTtkWithHistory({ ...ttkInputs, [k]: v })}
               />
               <ScenarioCompareBox
                 color={tabColor}
@@ -366,6 +410,14 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   return t === Infinity ? 0 : t;
                 }}
               />
+              <BreakdownBox
+                color={tabColor}
+                steps={[
+                  { label: '필요 히트 수 (ceil(HP / damage))', value: ttkResult.hitsNeeded },
+                  { label: '히트 간 간격 (1 / attackSpeed)', value: 1 / Math.max(0.001, ttkInputs.attackSpeed), note: `${(1 / Math.max(0.001, ttkInputs.attackSpeed)).toFixed(3)}s` },
+                  { label: '최종 TTK ((hits-1) × interval)', value: ttkResult.ttk === Infinity ? '∞' : `${ttkResult.ttk.toFixed(2)}s`, note: '첫 히트는 즉시' },
+                ]}
+              />
             </div>
           )}
 
@@ -377,9 +429,9 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.ehp.description}</div>
               </div>
               <div className="grid grid-cols-3 gap-3">
-                <GlassInputField label={t('hp')} value={ehpInputs.hp} onChange={(v) => setEhpInputs({ ...ehpInputs, hp: v })} />
-                <GlassInputField label={t('def')} value={ehpInputs.def} onChange={(v) => setEhpInputs({ ...ehpInputs, def: v })} />
-                <GlassInputField label={t('damageReduction')} value={ehpInputs.damageReduction} onChange={(v) => setEhpInputs({ ...ehpInputs, damageReduction: v })} step={0.01} min={0} max={0.99} />
+                <GlassInputField label={t('hp')} value={ehpInputs.hp} onChange={(v) => setEhpWithHistory({ ...ehpInputs, hp: v })} />
+                <GlassInputField label={t('def')} value={ehpInputs.def} onChange={(v) => setEhpWithHistory({ ...ehpInputs, def: v })} />
+                <GlassInputField label={t('damageReduction')} value={ehpInputs.damageReduction} onChange={(v) => setEhpWithHistory({ ...ehpInputs, damageReduction: v })} step={0.01} min={0} max={0.99} />
               </div>
               <GlassResultCard label={t('ehpResult')} value={ehpResult.toFixed(0)} color={tabColor} numericValue={ehpResult} extra={`${t('vsOriginal')} ${((ehpResult / ehpInputs.hp) * 100).toFixed(1)}% (x${(ehpResult / ehpInputs.hp).toFixed(2)})`} />
               <GlassFormulaBox formula="hp x (1 + def/100) x (1 / (1 - damageReduction))" hint={t('ehpFormulaHint')} color={tabColor} />
@@ -395,7 +447,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   const o = { ...ehpInputs, [k]: v };
                   return EHP(o.hp, o.def, o.damageReduction);
                 }}
-                onApply={(k, v) => setEhpInputs({ ...ehpInputs, [k]: v })}
+                onApply={(k, v) => setEhpWithHistory({ ...ehpInputs, [k]: v })}
               />
               <ScenarioCompareBox
                 color={tabColor}
@@ -418,6 +470,15 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   { key: 'damageReduction', label: '피해 감소' },
                 ]}
                 computeResult={(o) => EHP(Number(o.hp), Number(o.def), Number(o.damageReduction))}
+              />
+              <BreakdownBox
+                color={tabColor}
+                steps={[
+                  { label: 'HP', value: ehpInputs.hp },
+                  { label: 'DEF 보정 (1 + def/100)', value: 1 + ehpInputs.def / 100, note: `×${(1 + ehpInputs.def / 100).toFixed(3)}` },
+                  { label: '피해 감소 보정 (1 / (1 - DR))', value: 1 / Math.max(0.01, 1 - ehpInputs.damageReduction), note: `×${(1 / Math.max(0.01, 1 - ehpInputs.damageReduction)).toFixed(3)}` },
+                  { label: '최종 EHP', value: ehpResult, note: 'HP × DEF × DR 보정' },
+                ]}
               />
             </div>
           )}
@@ -632,7 +693,12 @@ function GlassResultCard({ label, value, color, extra, numericValue }: { label: 
     }
   };
   return (
-    <div className="glass-stat group relative">
+    <div
+      className="glass-stat group relative"
+      role="status"
+      aria-live="polite"
+      aria-label={`${label}: ${value}`}
+    >
       <div className="text-sm mb-1 font-medium flex items-center justify-between" style={{ color: 'var(--text-secondary)' }}>
         <span>{label}</span>
         {numericValue !== undefined && (
@@ -658,6 +724,63 @@ function GlassFormulaBox({ formula, hint, color }: { formula: string; hint?: str
       <div className="text-sm mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Formula</div>
       <code className="text-sm font-mono font-semibold" style={{ color }}>{formula}</code>
       {hint && <div className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>{hint}</div>}
+    </div>
+  );
+}
+
+/**
+ * BreakdownBox — 수식 중간값(baseDamage × critMult × armorReduction) 을 단계별 분해.
+ * Path of Building 수준 투명성. "왜 이 결과가 나왔는지" 분해해서 보여줌.
+ */
+function BreakdownBox({
+  color,
+  steps,
+}: {
+  color: string;
+  steps: { label: string; value: number | string; note?: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="glass-section p-3" style={{ borderLeft: `3px solid ${color}` }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <span className="text-sm font-semibold" style={{ color }}>
+          Breakdown — 계산 단계 분해
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 transition-transform ${open ? '' : '-rotate-90'}`}
+          style={{ color }}
+        />
+      </button>
+      {open && (
+        <div className="mt-2 space-y-1">
+          {steps.map((s, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 text-caption p-1.5 rounded"
+              style={{ background: 'var(--bg-primary)' }}
+            >
+              <span
+                className="font-mono font-bold px-1.5 rounded"
+                style={{ background: `${color}20`, color, minWidth: 24, textAlign: 'center' }}
+              >
+                {i + 1}
+              </span>
+              <span className="flex-1" style={{ color: 'var(--text-primary)' }}>{s.label}</span>
+              <span className="font-mono tabular-nums font-bold" style={{ color }}>
+                {typeof s.value === 'number' ? s.value.toFixed(2) : s.value}
+              </span>
+              {s.note && (
+                <span className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
+                  {s.note}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
