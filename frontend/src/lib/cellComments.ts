@@ -64,6 +64,37 @@ export function parseMentions(text: string): string[] {
   return Array.from(set);
 }
 
+/**
+ * 현재 caret 위치에서 타이핑 중인 @멘션 컨텍스트 추출.
+ *
+ * caret 이전 문자들을 역으로 스캔 → 공백/줄바꿈/특수문자 전까지의 토큰을 찾음.
+ * 토큰이 `@` 로 시작하면 prefix 추출 — autocomplete popup 띄울 조건.
+ *
+ * 반환:
+ *  - null: @ 컨텍스트 아님 (popup 닫기)
+ *  - { prefix, start }: @ 포함 시작 인덱스 + @ 이후 prefix
+ *    prefix 는 ""(방금 @ 만 친 경우) 또는 "ti" 같은 진행 중 문자열
+ */
+export function getMentionContext(text: string, caret: number): { prefix: string; start: number } | null {
+  let i = caret - 1;
+  while (i >= 0) {
+    const ch = text[i];
+    if (ch === '@') {
+      // @ 바로 앞이 공백이거나 텍스트 시작이어야 멘션으로 취급
+      // (이메일 주소 안의 @ 와 구분)
+      if (i === 0 || /\s/.test(text[i - 1])) {
+        return { prefix: text.slice(i + 1, caret), start: i };
+      }
+      return null;
+    }
+    // 멘션에 허용되지 않는 문자 발견 — @ 컨텍스트 아님
+    if (/\s/.test(ch)) return null;
+    if (!/[A-Za-z0-9_-]/.test(ch)) return null;
+    i--;
+  }
+  return null;
+}
+
 export function addComment(
   doc: Y.Doc,
   sheetId: string,
