@@ -947,7 +947,7 @@ export default function GrowthCurveChart({
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>기본값</label>
+                          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>기본값</label>
                           <NumberInput
                             value={scenario.base}
                             onChange={(v) => updateScenario(scenario.id, { base: v })}
@@ -955,7 +955,7 @@ export default function GrowthCurveChart({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>성장률</label>
+                          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>성장률</label>
                           <NumberInput
                             value={scenario.rate}
                             onChange={(v) => updateScenario(scenario.id, { rate: v })}
@@ -963,7 +963,7 @@ export default function GrowthCurveChart({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>타입</label>
+                          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>타입</label>
                           <CustomSelect
                             value={scenario.curveType}
                             onChange={(v) => updateScenario(scenario.id, { curveType: v as CurveType })}
