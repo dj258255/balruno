@@ -4,9 +4,12 @@
 
 'use client';
 
-import { Edit2, Trash2, Copy, Plus, Code, FolderPlus, Folder } from 'lucide-react';
+import { useState } from 'react';
+import { Edit2, Trash2, Copy, Plus, Code, FolderPlus, Folder, Tag, Check, ChevronRight } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui';
 import { useTranslations } from 'next-intl';
+import type { SheetKind } from '@/types';
+import { KIND_META } from '@/lib/sheetKind';
 import type {
   SheetContextMenuState,
   ProjectContextMenuState,
@@ -21,8 +24,10 @@ import type {
 interface SheetContextMenuProps {
   menu: SheetContextMenuState | null;
   menuRef: React.RefObject<HTMLDivElement | null>;
+  currentKind?: SheetKind;
   onRename: (sheetId: string, sheetName: string) => void;
   onEditClassName: (sheetId: string, className?: string) => void;
+  onSetKind?: (projectId: string, sheetId: string, kind: SheetKind | undefined) => void;
   onDuplicate: (projectId: string, sheetId: string) => void;
   onDelete: (projectId: string, sheetId: string, sheetName: string) => void;
   onClose: () => void;
@@ -31,13 +36,16 @@ interface SheetContextMenuProps {
 export function SheetContextMenu({
   menu,
   menuRef,
+  currentKind,
   onRename,
   onEditClassName,
+  onSetKind,
   onDuplicate,
   onDelete,
   onClose,
 }: SheetContextMenuProps) {
   const t = useTranslations();
+  const [kindSubmenuOpen, setKindSubmenuOpen] = useState(false);
 
   if (!menu) return null;
 
@@ -78,6 +86,61 @@ export function SheetContextMenu({
         <Code className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
         {t('sheet.editClassName')}
       </button>
+      {onSetKind && (
+        <div
+          className="relative"
+          onMouseEnter={() => setKindSubmenuOpen(true)}
+          onMouseLeave={() => setKindSubmenuOpen(false)}
+        >
+          <button
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
+            style={{ color: 'var(--text-primary)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <Tag className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            <span className="flex-1">시트 용도</span>
+            <ChevronRight className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
+          </button>
+          {kindSubmenuOpen && (
+            <div
+              className="absolute left-full top-0 ml-1 min-w-[180px] py-1 rounded-lg shadow-lg border"
+              style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-primary)' }}
+            >
+              <button
+                onClick={() => { onSetKind(menu.projectId, menu.sheetId, undefined); onClose(); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
+                style={{ color: 'var(--text-primary)' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'var(--text-tertiary)' }} />
+                <span className="flex-1">자동 감지</span>
+                {!currentKind && <Check className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />}
+              </button>
+              <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />
+              {(Object.keys(KIND_META) as SheetKind[]).map((kind) => {
+                const meta = KIND_META[kind];
+                return (
+                  <button
+                    key={kind}
+                    onClick={() => { onSetKind(menu.projectId, menu.sheetId, kind); onClose(); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
+                    style={{ color: 'var(--text-primary)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    title={meta.description}
+                  >
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: meta.color }} />
+                    <span className="flex-1">{meta.label}</span>
+                    {currentKind === kind && <Check className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
       <button
         onClick={() => {
           onDuplicate(menu.projectId, menu.sheetId);

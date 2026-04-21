@@ -287,6 +287,11 @@ export default function Sidebar({
       <SheetContextMenu
         menu={sheetContextMenu}
         menuRef={sheetContextMenuRef}
+        currentKind={(() => {
+          if (!sheetContextMenu) return undefined;
+          const project = projectStore.projects.find((p) => p.id === sheetContextMenu.projectId);
+          return project?.sheets.find((s) => s.id === sheetContextMenu.sheetId)?.kind;
+        })()}
         onRename={(sheetId, sheetName) => {
           setEditingSheetId(sheetId);
           setEditSheetName(sheetName);
@@ -294,6 +299,9 @@ export default function Sidebar({
         onEditClassName={(sheetId, className) => {
           setEditingClassNameSheetId(sheetId);
           setEditClassName(className || '');
+        }}
+        onSetKind={(projectId, sheetId, kind) => {
+          projectStore.updateSheet(projectId, sheetId, { kind });
         }}
         onDuplicate={(projectId, sheetId) => {
           projectStore.duplicateSheet(projectId, sheetId);
