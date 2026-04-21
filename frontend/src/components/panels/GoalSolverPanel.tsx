@@ -525,6 +525,58 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
   );
 }
 
+/**
+ * 하단 Solver 박스 4종 공통 토글 래퍼 — 상단 공식 카드와 동일한 UX.
+ * 기본 접힘 · 헤더 클릭 시 펼침 · ChevronDown 회전.
+ */
+function SolverBoxShell({
+  icon: Icon,
+  title,
+  subtitle,
+  defaultOpen = false,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  title: string;
+  subtitle?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="glass-card rounded-lg overflow-hidden mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`w-full flex items-center gap-2 p-3 text-left transition-colors ${open ? 'border-b' : ''}`}
+        style={{
+          background: open ? `${PANEL_COLOR}10` : 'transparent',
+          borderColor: 'var(--border-primary)',
+        }}
+      >
+        <Icon className="w-4 h-4" style={{ color: PANEL_COLOR }} />
+        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+          {title}
+        </span>
+        {subtitle && (
+          <span className="text-caption ml-auto" style={{ color: 'var(--text-tertiary)' }}>
+            {subtitle}
+          </span>
+        )}
+        <ChevronDown
+          className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''} ${subtitle ? '' : 'ml-auto'}`}
+          style={{ color: 'var(--text-secondary)' }}
+        />
+      </button>
+      {open && (
+        <div className="p-3 space-y-3" style={{ background: `${PANEL_COLOR}08` }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GenericSolverBox() {
   const [expression, setExpression] = useState('atk * (100 / (100 + def))');
   const [varsText, setVarsText] = useState('def=50');
@@ -552,17 +604,7 @@ function GenericSolverBox() {
   };
 
   return (
-    <div className="glass-card rounded-lg overflow-hidden mt-3">
-      <div className="p-3 space-y-3" style={{ background: `${PANEL_COLOR}08` }}>
-        <div className="flex items-center gap-2">
-          <Calculator className="w-4 h-4" style={{ color: PANEL_COLOR }} />
-          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            범용 수식 역산
-          </span>
-          <span className="text-caption ml-auto" style={{ color: 'var(--text-tertiary)' }}>
-            mathjs 문법 · bisection
-          </span>
-        </div>
+    <SolverBoxShell icon={Calculator} title="범용 수식 역산" subtitle="mathjs 문법 · bisection">
         <div>
           <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>수식</label>
           <input
@@ -640,8 +682,7 @@ function GenericSolverBox() {
             )}
           </div>
         )}
-      </div>
-    </div>
+    </SolverBoxShell>
   );
 }
 
@@ -677,17 +718,7 @@ function MonteCarloBox() {
   };
 
   return (
-    <div className="glass-card rounded-lg overflow-hidden mt-3">
-      <div className="p-3 space-y-3" style={{ background: `${PANEL_COLOR}08` }}>
-        <div className="flex items-center gap-2">
-          <Target className="w-4 h-4" style={{ color: PANEL_COLOR }} />
-          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Monte Carlo 역산 — 확률 포함 수식
-          </span>
-          <span className="text-caption ml-auto" style={{ color: 'var(--text-tertiary)' }}>
-            bisection × random sampling
-          </span>
-        </div>
+    <SolverBoxShell icon={Target} title="Monte Carlo 역산 — 확률 포함 수식" subtitle="bisection × random sampling">
         <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
           시나리오: crit 확률 포함 DPS 에서 <strong>damage 역산</strong>. 각 x 후보마다 N 회 랜덤 시뮬 → 평균이 목표에 수렴하는 damage.
         </p>
@@ -755,8 +786,7 @@ function MonteCarloBox() {
             )}
           </div>
         )}
-      </div>
-    </div>
+    </SolverBoxShell>
   );
 }
 
@@ -780,17 +810,7 @@ function ParetoBox() {
   }));
 
   return (
-    <div className="glass-card rounded-lg overflow-hidden mt-3">
-      <div className="p-3 space-y-3" style={{ background: `${PANEL_COLOR}08` }}>
-        <div className="flex items-center gap-2">
-          <Target className="w-4 h-4" style={{ color: PANEL_COLOR }} />
-          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Pareto 최적화 — HP × DEF 조합
-          </span>
-          <span className="text-caption ml-auto" style={{ color: 'var(--text-tertiary)' }}>
-            2 변수 · cost 최소
-          </span>
-        </div>
+    <SolverBoxShell icon={Target} title="Pareto 최적화 — HP × DEF 조합" subtitle="2 변수 · cost 최소">
         <div className="grid grid-cols-3 gap-2">
           <div>
             <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>목표 EHP</label>
@@ -843,8 +863,7 @@ function ParetoBox() {
         <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
           점 크기 = cost · HP 축 × DEF 축 · feasible set 에서 cost 낮은 순 40개
         </p>
-      </div>
-    </div>
+    </SolverBoxShell>
   );
 }
 
@@ -876,17 +895,7 @@ function StatWeightsBox() {
   const weights = calculateStatWeights({ evaluate, currentStats: stats, deltas });
 
   return (
-    <div className="glass-card rounded-lg overflow-hidden mt-3">
-      <div className="p-3 space-y-3" style={{ background: `${PANEL_COLOR}08` }}>
-        <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4" style={{ color: PANEL_COLOR }} />
-          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Stat Weights — 스탯 1 단위 기여도
-          </span>
-          <span className="text-caption ml-auto" style={{ color: 'var(--text-tertiary)' }}>
-            SimulationCraft 방식
-          </span>
-        </div>
+    <SolverBoxShell icon={Activity} title="Stat Weights — 스탯 1 단위 기여도" subtitle="SimulationCraft 방식">
         <div className="flex gap-1">
           {(['dps', 'ehp', 'damage'] as const).map((m) => (
             <button
@@ -938,8 +947,7 @@ function StatWeightsBox() {
         <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
           bar 길이 = 정규화된 영향도 · 숫자 = 단위 증가당 {metric.toUpperCase()} 증분 (crit/damageReduction 은 %1 기준)
         </p>
-      </div>
-    </div>
+    </SolverBoxShell>
   );
 }
 
