@@ -54,7 +54,7 @@ function OptionalStatInput({
 
   return (
     <div>
-      <label className="flex items-center gap-1 text-xs mb-1" style={{ color: color || 'var(--text-secondary)' }}>
+      <label className="flex items-center gap-1 text-label mb-1" style={{ color: color || 'var(--text-secondary)' }}>
         {Icon && <Icon className="w-3 h-3" style={{ color }} />}
         {label}
       </label>
@@ -77,8 +77,7 @@ function OptionalStatInput({
           }
         }}
         placeholder={placeholder}
-        className="w-full px-2 py-1.5 rounded text-sm"
-        style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
+        className="w-full input-base"
       />
     </div>
   );

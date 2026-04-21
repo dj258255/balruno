@@ -33,7 +33,7 @@ export function StatInput({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <label className="flex items-center gap-1 text-sm mb-1" style={{ color }}>
+      <label className="flex items-center gap-1 text-label mb-1" style={{ color }}>
         <Icon className="w-3 h-3" /> {label}
       </label>
       <div className="relative">
@@ -58,8 +58,7 @@ export function StatInput({
               setInputValue(String(num));
             }
           }}
-          className="w-full px-2 py-1 pr-7 rounded text-sm"
-          style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
+          className="w-full input-base pr-7"
         />
         {isHovered && (
           <Tooltip content="셀에서 선택" position="top">
