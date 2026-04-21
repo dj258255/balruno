@@ -442,22 +442,28 @@ export default function TemplateSelector({ projectId, onClose, onSelect }: Templ
                         )}
                       </div>
 
-                      {/* 장르 태그 */}
+                      {/* 장르 태그 — 클릭으로 해당 장르 필터링 (Notion Templates 패턴) */}
                       {template.genre && template.genre.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {template.genre.slice(0, 3).map((g) => {
                             const genre = gameGenres.find((genre) => genre.id === g);
+                            const isActive = selectedGenre === g;
                             return (
-                              <span
+                              <button
                                 key={g}
-                                className="px-1.5 py-0.5 text-sm rounded"
-                                style={{
-                                  background: 'var(--accent-light)',
-                                  color: 'var(--accent)',
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedGenre(isActive ? null : g);
                                 }}
+                                className="px-1.5 py-0.5 text-sm rounded transition-colors"
+                                style={{
+                                  background: isActive ? 'var(--accent)' : 'var(--accent-light)',
+                                  color: isActive ? 'white' : 'var(--accent)',
+                                }}
+                                title={`${genre?.nameKey ? t(genre.nameKey) : genre?.name || g} 장르만 보기`}
                               >
                                 {genre?.nameKey ? t(genre.nameKey) : genre?.name || g}
-                              </span>
+                              </button>
                             );
                           })}
                           {template.genre.length > 3 && (
@@ -491,6 +497,49 @@ export default function TemplateSelector({ projectId, onClose, onSelect }: Templ
                           </span>
                         )}
                       </div>
+
+                      {/* 샘플 데이터 미니 프리뷰 — Figma Community 썸네일 패턴 */}
+                      {template.sampleRows && template.sampleRows.length > 0 && (
+                        <div
+                          className="mt-2 rounded border overflow-hidden text-caption"
+                          style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+                        >
+                          <table className="w-full">
+                            <thead>
+                              <tr style={{ background: 'var(--bg-tertiary)' }}>
+                                {template.columns.slice(0, 4).map((col, i) => (
+                                  <th
+                                    key={i}
+                                    className="px-1.5 py-0.5 text-left font-semibold truncate"
+                                    style={{ color: 'var(--text-tertiary)', maxWidth: 80 }}
+                                  >
+                                    {col.name}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {template.sampleRows.slice(0, 3).map((row, ri) => (
+                                <tr key={ri} style={{ borderTop: '1px solid var(--border-primary)' }}>
+                                  {template.columns.slice(0, 4).map((col, ci) => {
+                                    const cells = (row as { cells?: Record<string, unknown> }).cells ?? {};
+                                    const val = cells[col.name];
+                                    return (
+                                      <td
+                                        key={ci}
+                                        className="px-1.5 py-0.5 font-mono truncate"
+                                        style={{ color: 'var(--text-secondary)', maxWidth: 80 }}
+                                      >
+                                        {val !== undefined && val !== null ? String(val) : '—'}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
 
                       {/* 의존성 표시 */}
                       {template.dependencies && template.dependencies.length > 0 && (
