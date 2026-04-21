@@ -589,24 +589,6 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 setScenarioB={setScenarioB}
                 formatResult={(v) => v.toFixed(1)}
               />
-              <SensitivityTornado
-                color={tabColor}
-                inputs={scaleInputs}
-                variables={[
-                  { key: 'base', label: '기본값' },
-                  { key: 'level', label: '레벨' },
-                  { key: 'rate', label: '성장률' },
-                ]}
-                computeResult={(o) => SCALE(Number(o.base), Number(o.level), Number(o.rate), String(o.curveType))}
-              />
-              <BreakdownBox
-                color={tabColor}
-                steps={[
-                  { label: '기본값 (base)', value: scaleInputs.base },
-                  { label: `곡선 타입 · ${CURVE_TYPE_HELP[scaleInputs.curveType]?.name ?? scaleInputs.curveType}`, value: CURVE_TYPE_HELP[scaleInputs.curveType]?.formula ?? '—' },
-                  { label: `레벨 ${scaleInputs.level} 적용 · 성장률 ${scaleInputs.rate}`, value: scaleResult, note: `SCALE(${scaleInputs.base}, ${scaleInputs.level}, ${scaleInputs.rate}, ${scaleInputs.curveType})` },
-                ]}
-              />
               </CalcSection>
             </div>
           )}
