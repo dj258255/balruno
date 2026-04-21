@@ -1,7 +1,8 @@
 /**
  * Doc actions slice — Phase A.
  *
- * 문서(GDD · 설계안)의 CRUD. Y.Doc 에 저장, Zustand 는 현재 선택된 docId 만 추적.
+ * 문서(GDD · 설계안)의 CRUD. Y.Doc 에 저장, Zustand 는 현재 선택된 docId 와
+ * 상단 탭바에 열린 문서 목록 (openDocTabs) 추적.
  */
 
 import { v4 as uuidv4 } from 'uuid';
@@ -29,7 +30,11 @@ export const createDocActions = (set: SetFn) => ({
       updatedAt: now,
     };
     addDocInDoc(getProjectDoc(projectId), newDoc);
-    set({ currentDocId: id });
+    set((state) => ({
+      currentDocId: id,
+      currentSheetId: null,
+      openDocTabs: state.openDocTabs.includes(id) ? state.openDocTabs : [...state.openDocTabs, id],
+    }));
     return id;
   },
 
@@ -43,12 +48,57 @@ export const createDocActions = (set: SetFn) => ({
 
   deleteDoc: (projectId: string, docId: string) => {
     deleteDocInDoc(getProjectDoc(projectId), docId);
+    set((state) => {
+      const newOpenTabs = state.openDocTabs.filter((id) => id !== docId);
+      return {
+        openDocTabs: newOpenTabs,
+        currentDocId:
+          state.currentDocId === docId
+            ? newOpenTabs.length > 0
+              ? newOpenTabs[newOpenTabs.length - 1]
+              : null
+            : state.currentDocId,
+      };
+    });
+  },
+
+  /** 문서 선택 — null 로 닫기만 하고, id 면 탭 자동 열림 + 시트 activate 해제 */
+  setCurrentDoc: (docId: string | null) => {
+    if (!docId) {
+      set({ currentDocId: null });
+      return;
+    }
     set((state) => ({
-      currentDocId: state.currentDocId === docId ? null : state.currentDocId,
+      currentDocId: docId,
+      currentSheetId: null,
+      openDocTabs: state.openDocTabs.includes(docId)
+        ? state.openDocTabs
+        : [...state.openDocTabs, docId],
     }));
   },
 
-  setCurrentDoc: (docId: string | null) => {
-    set({ currentDocId: docId });
+  openDocTab: (docId: string) => {
+    set((state) => ({
+      openDocTabs: state.openDocTabs.includes(docId)
+        ? state.openDocTabs
+        : [...state.openDocTabs, docId],
+      currentDocId: docId,
+      currentSheetId: null,
+    }));
+  },
+
+  closeDocTab: (docId: string) => {
+    set((state) => {
+      const newTabs = state.openDocTabs.filter((id) => id !== docId);
+      const needNewSelection = state.currentDocId === docId;
+      return {
+        openDocTabs: newTabs,
+        currentDocId: needNewSelection
+          ? newTabs.length > 0
+            ? newTabs[newTabs.length - 1]
+            : null
+          : state.currentDocId,
+      };
+    });
   },
 });

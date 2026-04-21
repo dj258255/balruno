@@ -518,11 +518,13 @@ export default function Home() {
                   </div>
                 </div>
               ) : currentDoc ? (
-                <DocView
-                  projectId={currentProject.id}
-                  doc={currentDoc}
-                  onClose={() => setCurrentDoc(null)}
-                />
+                <div className="flex-1 min-w-0 flex flex-col">
+                  <DocView
+                    projectId={currentProject.id}
+                    doc={currentDoc}
+                    onClose={() => setCurrentDoc(null)}
+                  />
+                </div>
               ) : (
                 <HomeScreen />
               )}

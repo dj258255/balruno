@@ -185,6 +185,8 @@ export interface ProjectState {
 
   // 문서 액션 (Phase A — Doc 계층)
   currentDocId: string | null;
+  /** 상단 탭바에 열려있는 문서 id 목록 (시트 탭과 나란히 표시) */
+  openDocTabs: string[];
   createDoc: (projectId: string, name: string, content?: string) => string;
   updateDoc: (
     projectId: string,
@@ -193,6 +195,8 @@ export interface ProjectState {
   ) => void;
   deleteDoc: (projectId: string, docId: string) => void;
   setCurrentDoc: (docId: string | null) => void;
+  openDocTab: (docId: string) => void;
+  closeDocTab: (docId: string) => void;
 
   // 폴더 액션
   createFolder: (projectId: string, name: string, parentId?: string) => string;
@@ -226,6 +230,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   selectedRows: [],
   cellSelectionMode: { active: false, fieldLabel: '', callback: null },
   currentDocId: null,
+  openDocTabs: [],
 
   // 액션은 슬라이스에서 주입
   ...createProjectActions(set, get),

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, X, Edit2, Copy, Check, LayoutTemplate, GripVertical, ChevronLeft, ChevronRight, XCircle } from 'lucide-react';
+import { Plus, X, Edit2, Copy, Check, LayoutTemplate, GripVertical, ChevronLeft, ChevronRight, XCircle, FileText } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import type { Project } from '@/types';
 import { TemplateSelector } from '@/components/panels';
@@ -27,7 +27,16 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     duplicateSheet,
     closeSheetTab,
     reorderOpenTabs,
+    // 문서 탭 (시트 탭 옆에 나란히 렌더)
+    currentDocId,
+    openDocTabs,
+    setCurrentDoc,
+    closeDocTab,
   } = useProjectStore();
+
+  const openDocs = openDocTabs
+    .map((tabId) => project.docs?.find((d) => d.id === tabId))
+    .filter((doc): doc is NonNullable<typeof doc> => doc !== undefined);
 
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -386,6 +395,59 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                 onMouseDown={(e) => handleResizeStart(e, sheet.id)}
                 onClick={(e) => e.stopPropagation()}
               />
+            </div>
+          );
+        })}
+
+        {/* 문서 탭 — 시트 탭 옆에 나란히. 드래그/리사이즈는 미지원 (간소화). */}
+        {openDocs.map((doc) => {
+          const isActive = currentDocId === doc.id;
+          return (
+            <div
+              key={`doc-${doc.id}`}
+              className="group flex items-center gap-1 pl-2 pr-3 py-1.5 rounded-t border border-b-0 cursor-pointer transition-colors relative"
+              style={{
+                minWidth: `${MIN_TAB_WIDTH}px`,
+                maxWidth: '200px',
+                background: isActive ? 'var(--bg-primary)' : 'var(--bg-secondary)',
+                borderColor: isActive ? 'var(--border-primary)' : 'transparent',
+                marginBottom: isActive ? '-1px' : '0',
+              }}
+              onClick={() => setCurrentDoc(doc.id)}
+              onMouseEnter={(e) => {
+                if (!isActive) e.currentTarget.style.background = 'var(--bg-hover)';
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) e.currentTarget.style.background = 'var(--bg-secondary)';
+              }}
+              title={doc.name}
+            >
+              <FileText className="w-3.5 h-3.5 shrink-0" style={{ color: isActive ? 'var(--accent)' : 'var(--text-tertiary)' }} />
+              <span
+                className="text-sm flex-1 whitespace-nowrap overflow-hidden text-ellipsis"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {doc.name || '(제목 없음)'}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeDocTab(doc.id);
+                }}
+                className="p-0.5 rounded transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+                style={{ color: 'var(--text-tertiary)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                  e.currentTarget.style.background = 'var(--bg-tertiary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--text-tertiary)';
+                  e.currentTarget.style.background = 'transparent';
+                }}
+                aria-label={`${doc.name} 탭 닫기`}
+              >
+                <X className="w-3 h-3" />
+              </button>
             </div>
           );
         })}
