@@ -75,6 +75,56 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
     setResult(comparisonResult);
   };
 
+  // 뷰 모드: 표 (기존 tabular) / 패치 노트 초안 (자연어)
+  const [viewMode, setViewMode] = useState<'table' | 'patch-notes'>('table');
+
+  // 패치 노트 자동 초안 — 컬럼 평균 변화 + 추가/제거된 행
+  const patchNotes = useMemo(() => {
+    if (!result) return '';
+    const lines: string[] = [];
+
+    // 컬럼 변화 (평균 기준)
+    const notableColumns = result.columnStats
+      .filter(cs => cs.avgDiff !== 0 && (cs.oldStats.count > 0 || cs.newStats.count > 0))
+      .sort((a, b) => Math.abs(b.avgDiffPercent) - Math.abs(a.avgDiffPercent))
+      .slice(0, 15);
+
+    if (notableColumns.length > 0) {
+      lines.push('### 📊 수치 변화 (평균)');
+      for (const cs of notableColumns) {
+        const arrow = cs.avgDiff > 0 ? '↑' : '↓';
+        const pct = cs.avgDiffPercent.toFixed(1);
+        lines.push(
+          `- **${cs.columnName}**: ${cs.oldStats.avg.toFixed(2)} → ${cs.newStats.avg.toFixed(2)} ${arrow} ${cs.avgDiff > 0 ? '+' : ''}${pct}%`,
+        );
+      }
+    }
+
+    // 추가/제거 행
+    const added = result.rowChanges.filter(r => r.type === 'added');
+    const removed = result.rowChanges.filter(r => r.type === 'removed');
+    if (added.length > 0) {
+      lines.push('');
+      lines.push(`### ➕ 추가 (${added.length})`);
+      for (const r of added.slice(0, 10)) lines.push(`- ${r.rowName}`);
+      if (added.length > 10) lines.push(`- _…그 외 ${added.length - 10}개_`);
+    }
+    if (removed.length > 0) {
+      lines.push('');
+      lines.push(`### ➖ 제거 (${removed.length})`);
+      for (const r of removed.slice(0, 10)) lines.push(`- ${r.rowName}`);
+      if (removed.length > 10) lines.push(`- _…그 외 ${removed.length - 10}개_`);
+    }
+
+    if (lines.length === 0) return '_변경 사항 없음_';
+    return lines.join('\n');
+  }, [result]);
+
+  const copyPatchNotes = () => {
+    if (!patchNotes) return;
+    navigator.clipboard.writeText(patchNotes).catch(() => {});
+  };
+
   // 행 확장/축소 토글
   const toggleRow = (rowId: string) => {
     setExpandedRows(prev => {
@@ -173,12 +223,30 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
             color="#6366f1"
           />
 
-          {/* 비교 대상 선택 - 반응형 */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
-            <div className="flex-1 min-w-0">
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                {t('before')}
-              </label>
+          {/* 비교 대상 선택 — Baseline (기준) → Candidate (변경 후) 좌우 카드 */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-stretch">
+            {/* Baseline */}
+            <div
+              className="flex-1 min-w-0 p-3 rounded-lg"
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '2px solid #3b82f6',
+              }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="inline-flex items-center justify-center w-5 h-5 rounded-full text-caption font-bold text-white"
+                  style={{ background: '#3b82f6' }}
+                >
+                  A
+                </span>
+                <label className="text-sm font-semibold" style={{ color: '#3b82f6' }}>
+                  기준 (Baseline)
+                </label>
+                <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                  이전 버전
+                </span>
+              </div>
               <div className="flex gap-2">
                 <div className="flex-1 min-w-0">
                   <CustomSelect
@@ -187,7 +255,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                     placeholder={t('select')}
                     options={sources.map(s => ({
                       value: s.id,
-                      label: `[${s.type === 'snapshot' ? t('snapshot') : t('sheet')}] ${s.name}`,
+                      label: `${s.type === 'snapshot' ? '📸 ' : '📄 '}${s.name}`,
                     }))}
                     size="md"
                   />
@@ -201,7 +269,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                       border: '1px solid var(--border-primary)',
                       color: 'var(--text-secondary)'
                     }}
-                    title="스냅샷 생성"
+                    title="현재 시트를 스냅샷으로 저장 (시간 경과 비교용)"
                   >
                     <Camera className="w-4 h-4" />
                   </button>
@@ -209,12 +277,35 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
               </div>
             </div>
 
-            <ArrowRight className="w-5 h-5 hidden sm:block shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+            <div className="hidden sm:flex items-center">
+              <ArrowRight className="w-6 h-6" style={{ color: 'var(--text-tertiary)' }} />
+            </div>
+            <div className="sm:hidden flex items-center justify-center text-caption" style={{ color: 'var(--text-tertiary)' }}>
+              ↓ 변경 후 ↓
+            </div>
 
-            <div className="flex-1 min-w-0">
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                {t('after')}
-              </label>
+            {/* Candidate */}
+            <div
+              className="flex-1 min-w-0 p-3 rounded-lg"
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '2px solid #8b5cf6',
+              }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="inline-flex items-center justify-center w-5 h-5 rounded-full text-caption font-bold text-white"
+                  style={{ background: '#8b5cf6' }}
+                >
+                  B
+                </span>
+                <label className="text-sm font-semibold" style={{ color: '#8b5cf6' }}>
+                  변경 후 (Candidate)
+                </label>
+                <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                  비교 대상
+                </span>
+              </div>
               <div className="flex gap-2">
                 <div className="flex-1 min-w-0">
                   <CustomSelect
@@ -223,7 +314,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                     placeholder={t('select')}
                     options={sources.map(s => ({
                       value: s.id,
-                      label: `[${s.type === 'snapshot' ? t('snapshot') : t('sheet')}] ${s.name}`,
+                      label: `${s.type === 'snapshot' ? '📸 ' : '📄 '}${s.name}`,
                     }))}
                     size="md"
                   />
@@ -237,7 +328,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                       border: '1px solid var(--border-primary)',
                       color: 'var(--text-secondary)'
                     }}
-                    title="스냅샷 생성"
+                    title="현재 시트를 스냅샷으로 저장"
                   >
                     <Camera className="w-4 h-4" />
                   </button>
@@ -245,6 +336,11 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
               </div>
             </div>
           </div>
+
+          <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+            💡 같은 프로젝트 안의 시트 <strong>A</strong> 와 시트 <strong>B</strong> 의 cell 단위 차이를 계산합니다.
+            같은 시트의 시간 경과 변화를 보려면 카메라 아이콘으로 <strong>스냅샷</strong>을 만들어 비교하세요.
+          </p>
 
           {/* 비교 버튼 */}
           <button
@@ -262,6 +358,84 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
 
           {/* 결과 표시 */}
           {result && (
+            <div className="space-y-4">
+              {/* 비교 범위 sticky 헤더 — "헷갈림" 피드백 해결 */}
+              <div
+                className="sticky top-0 z-10 px-3 py-2 rounded-lg flex items-center gap-2 text-caption"
+                style={{
+                  background: 'linear-gradient(90deg, #3b82f610, #8b5cf610)',
+                  border: '1px solid var(--border-primary)',
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>비교 범위:</span>
+                <span className="font-mono" style={{ color: '#3b82f6' }}>
+                  A · {sources.find(s => s.id === oldSheetId)?.name ?? '—'}
+                </span>
+                <ArrowRight className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
+                <span className="font-mono" style={{ color: '#8b5cf6' }}>
+                  B · {sources.find(s => s.id === newSheetId)?.name ?? '—'}
+                </span>
+                <span className="ml-auto" style={{ color: 'var(--text-tertiary)' }}>
+                  {currentProject?.name}
+                </span>
+              </div>
+
+              {/* 뷰 모드 토글 — 표 / 패치 노트 */}
+              <div className="flex items-center gap-1 p-1 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className="flex-1 py-1.5 rounded-md text-sm font-medium transition-colors"
+                  style={{
+                    background: viewMode === 'table' ? '#6366f1' : 'transparent',
+                    color: viewMode === 'table' ? 'white' : 'var(--text-secondary)',
+                  }}
+                >
+                  📊 표 + 차트
+                </button>
+                <button
+                  onClick={() => setViewMode('patch-notes')}
+                  className="flex-1 py-1.5 rounded-md text-sm font-medium transition-colors"
+                  style={{
+                    background: viewMode === 'patch-notes' ? '#6366f1' : 'transparent',
+                    color: viewMode === 'patch-notes' ? 'white' : 'var(--text-secondary)',
+                  }}
+                >
+                  📝 패치 노트 초안
+                </button>
+              </div>
+
+              {/* 패치 노트 초안 뷰 — Riot/Blizzard 스타일 */}
+              {viewMode === 'patch-notes' && (
+                <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}>
+                  <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: 'var(--border-primary)' }}>
+                    <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      자동 생성된 패치 노트 초안
+                    </span>
+                    <button
+                      onClick={copyPatchNotes}
+                      className="px-2 py-1 rounded text-caption inline-flex items-center gap-1"
+                      style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
+                    >
+                      복사
+                    </button>
+                  </div>
+                  <pre
+                    className="p-4 text-sm font-mono whitespace-pre-wrap break-words"
+                    style={{ color: 'var(--text-primary)', lineHeight: 1.7 }}
+                  >
+                    {patchNotes}
+                  </pre>
+                  <div className="px-4 py-2 border-t text-caption" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
+                    💡 Markdown 형식 — 그대로 Notion / Discord / 깃허브 릴리스에 붙여넣을 수 있습니다.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 표 뷰 — 기존 summary + column stats + row 테이블 */}
+          {result && viewMode === 'table' && (
             <div className="space-y-5">
               {/* 요약 - 반응형 그리드 */}
               <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}>
