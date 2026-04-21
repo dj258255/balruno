@@ -76,7 +76,15 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
   };
 
   return (
-    <div className="border-t shrink-0 flex flex-col min-h-0" style={{ borderColor: 'var(--border-primary)' }}>
+    <div
+      className="border-t shrink-0 flex flex-col min-h-0"
+      style={{
+        borderColor: 'var(--border-primary)',
+        // 펼쳐진 상태: 섹션 전체 높이를 고정 (리사이즈 핸들 드래그로 조절)
+        // 접힌 상태: 헤더 한 줄만 (auto)
+        height: expanded ? `${maxHeight}px` : undefined,
+      }}
+    >
       <button
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center gap-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider hover:bg-[var(--bg-hover)] transition-colors shrink-0"
@@ -88,7 +96,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
       </button>
 
       {expanded && (
-        <div className="px-2 pb-2 overflow-y-auto" style={{ maxHeight: `${maxHeight}px` }}>
+        <div className="flex-1 min-h-0 px-2 pb-2 overflow-y-auto">
           <div className="relative mb-1" ref={templateMenuRef}>
             <div className="flex gap-1">
               <button
