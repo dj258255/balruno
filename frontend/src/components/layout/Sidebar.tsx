@@ -168,8 +168,8 @@ export default function Sidebar({
 
         <SidebarQuickAccess />
 
-        {/* "새 프로젝트 / 템플릿 갤러리" 를 Quick Access 바로 아래로 올려
-            사이드바 최상단에서 즉시 접근 가능하게 함 */}
+        {/* 섹션 순서: 새 프로젝트(생성) → 프로젝트 리스트(컨테이너) → 문서(컨테이너 안 내용)
+            Linear/Jira/ClickUp 과 동일한 "컨테이너 → 내용" 정보 계층 */}
         <NewProjectForm
           showNewProject={showNewProject}
           setShowNewProject={setShowNewProject}
@@ -177,8 +177,6 @@ export default function Sidebar({
           setNewProjectName={setNewProjectName}
           onCreateProject={handleCreateProject}
         />
-
-        <SidebarDocsSection />
 
         <ProjectList
           projects={projectStore.projects}
@@ -252,6 +250,10 @@ export default function Sidebar({
             setProjectDeleteConfirm({ projectId, projectName });
           }}
         />
+
+        {/* 문서 섹션 — 현재 프로젝트의 docs. 프로젝트 리스트 아래에 배치해
+            "컨테이너(프로젝트) → 내용(문서)" 정보 계층을 시각화 */}
+        <SidebarDocsSection />
 
         <SidebarFooter
           selectedRowsCount={projectStore.selectedRows.length}

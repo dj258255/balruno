@@ -71,10 +71,10 @@ export default function SidebarDocsSection() {
   };
 
   return (
-    <div className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
+    <div className="border-t shrink-0 flex flex-col min-h-0" style={{ borderColor: 'var(--border-primary)' }}>
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider hover:bg-[var(--bg-hover)] transition-colors"
+        className="w-full flex items-center gap-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider hover:bg-[var(--bg-hover)] transition-colors shrink-0"
         style={{ color: 'var(--text-tertiary)' }}
       >
         {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
@@ -83,7 +83,7 @@ export default function SidebarDocsSection() {
       </button>
 
       {expanded && (
-        <div className="px-2 pb-2">
+        <div className="px-2 pb-2 overflow-y-auto" style={{ maxHeight: '240px' }}>
           <div className="relative mb-1" ref={templateMenuRef}>
             <div className="flex gap-1">
               <button
