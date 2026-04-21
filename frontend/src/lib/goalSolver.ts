@@ -392,6 +392,50 @@ function getForwardForSolution(input: SolverInput, solution: number): ((x: numbe
   }
 }
 
+// ============================================================================
+// Multi-Solution — 같은 목표를 만족하는 대체 해 탐색.
+// 본 해 근처 + 더 넓은 범위에서 샘플링해 target 에 수렴하는 다른 값 발견.
+// ============================================================================
+
+export interface AlternativeSolution {
+  value: number;
+  /** 얼마나 다른 해인가 (본 해 대비 거리 비율) */
+  distanceRatio: number;
+}
+
+/**
+ * 대체 해 탐색 — forward(x) = target 을 만족하는 또 다른 x 가 있는지
+ * [primary × 0.1, primary × 10] 범위에서 균등 샘플링 (non-monotone 함수 대비).
+ */
+export function findAlternativeSolutions(
+  input: SolverInput,
+  primary: number,
+): AlternativeSolution[] {
+  if (!isFinite(primary)) return [];
+  const forward = getForwardForSolution(input, primary);
+  if (!forward) return [];
+  const target = input.targetValue;
+  const candidates: AlternativeSolution[] = [];
+  const lo = Math.max(0.01, primary * 0.1);
+  const hi = primary * 10;
+  const steps = 80;
+  let prevDiff = forward(lo) - target;
+  let prevX = lo;
+  for (let i = 1; i <= steps; i++) {
+    const x = lo + ((hi - lo) * i) / steps;
+    const diff = forward(x) - target;
+    // 부호 변화 = 해가 이 구간에 있음
+    if (prevDiff * diff < 0) {
+      const mid = (prevX + x) / 2;
+      const dist = Math.abs(mid - primary) / Math.max(0.01, Math.abs(primary));
+      if (dist > 0.1) candidates.push({ value: Math.round(mid * 100) / 100, distanceRatio: dist });
+    }
+    prevDiff = diff;
+    prevX = x;
+  }
+  return candidates.slice(0, 3);
+}
+
 /**
  * 메인 역산 함수
  */
