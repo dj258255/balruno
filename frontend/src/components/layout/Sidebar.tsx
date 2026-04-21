@@ -14,7 +14,6 @@ import {
   SidebarFooter,
   SidebarQuickAccess,
   SidebarDocsSection,
-  DataButtons,
   HelpButtons,
   SaveStatus,
   SheetContextMenu,
@@ -266,11 +265,7 @@ export default function Sidebar({
         />
 
         {/* Track 6 후속: 도구는 하단 BottomDock 으로 일원화. 사이드바에서는 제거. */}
-
-        <DataButtons
-          onShowExportModal={onShowExportModal}
-          onShowImportModal={onShowImportModal}
-        />
+        {/* 내보내기/가져오기는 ProjectMenu (시트 탭바 우측 ⋯) 에 통합됨 — 사이드바에서 제거 */}
 
         <HelpButtons
           onShowHelp={onShowHelp}
