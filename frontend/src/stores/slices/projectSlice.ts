@@ -71,7 +71,7 @@ export const createProjectActions = (set: SetFn, get: GetFn) => ({
       projects: [...state.projects, project],
       currentProjectId: project.id,
       currentSheetId: project.sheets.length > 0 ? project.sheets[0].id : null,
-      openSheetTabs: project.sheets.length > 0 ? [project.sheets[0].id] : [],
+      openTabs: project.sheets.length > 0 ? [{ kind: 'sheet' as const, id: project.sheets[0].id }] : [],
     }));
 
     return project.id;
@@ -200,7 +200,7 @@ export const createProjectActions = (set: SetFn, get: GetFn) => ({
       projects: [...state.projects, newProject],
       currentProjectId: newProjectId,
       currentSheetId: newSheets.length > 0 ? newSheets[0].id : null,
-      openSheetTabs: newSheets.length > 0 ? [newSheets[0].id] : [],
+      openTabs: newSheets.length > 0 ? [{ kind: 'sheet' as const, id: newSheets[0].id }] : [],
     }));
 
     return newProjectId;
