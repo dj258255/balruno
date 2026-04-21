@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Calculator,
   Copy,
@@ -18,6 +18,8 @@ import {
   Play,
   Search,
   BookOpen,
+  Star,
+  Clock,
 } from 'lucide-react';
 import { availableFunctions, evaluateFormula } from '@/lib/formulaEngine';
 import { cn } from '@/lib/utils';
@@ -59,6 +61,40 @@ interface FormulaHelperProps {
 
 const PANEL_COLOR = '#5a9cf5'; // 소프트 블루
 
+const FAVORITES_KEY = 'balruno:formulaHelper:favorites';
+const RECENTS_KEY = 'balruno:formulaHelper:recents';
+const MAX_RECENTS = 8;
+
+/**
+ * Fuzzy 매칭 점수 — 0 = 매칭 안 됨, 높을수록 좋은 매칭.
+ *  - 토큰이 순서대로 나타나면 ↑
+ *  - 이름 시작 매칭 = 추가 점수
+ *  - VSCode / Sublime / Raycast 공통 알고리즘 간소화
+ */
+function fuzzyScore(text: string, query: string): number {
+  if (!query) return 1;
+  const t = text.toLowerCase();
+  const q = query.toLowerCase();
+  if (t === q) return 1000;
+  if (t.startsWith(q)) return 500 - (t.length - q.length);
+  // substring contain
+  const idx = t.indexOf(q);
+  if (idx >= 0) return 200 - idx;
+  // 순서 보존 문자 매칭
+  let ti = 0;
+  let matched = 0;
+  let prevGap = 0;
+  for (let qi = 0; qi < q.length; qi++) {
+    const ch = q[qi];
+    const found = t.indexOf(ch, ti);
+    if (found < 0) return 0;
+    prevGap += found - ti;
+    ti = found + 1;
+    matched++;
+  }
+  return Math.max(1, 100 - prevGap);
+}
+
 export default function FormulaHelper({ onClose, showHelp: externalShowHelp, setShowHelp: externalSetShowHelp }: FormulaHelperProps) {
   const t = useTranslations();
   const [internalShowHelp, setInternalShowHelp] = useState(false);
@@ -69,6 +105,34 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
   const [copiedFunction, setCopiedFunction] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [recents, setRecents] = useState<string[]>([]);
+
+  // localStorage hydration
+  useEffect(() => {
+    try {
+      const favs = localStorage.getItem(FAVORITES_KEY);
+      if (favs) setFavorites(JSON.parse(favs));
+      const rec = localStorage.getItem(RECENTS_KEY);
+      if (rec) setRecents(JSON.parse(rec));
+    } catch {}
+  }, []);
+
+  const toggleFavorite = (name: string) => {
+    setFavorites((prev) => {
+      const next = prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name];
+      try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const pushRecent = (name: string) => {
+    setRecents((prev) => {
+      const next = [name, ...prev.filter((n) => n !== name)].slice(0, MAX_RECENTS);
+      try { localStorage.setItem(RECENTS_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   const getCategoryName = (id: string) => {
     const keyMap: Record<string, string> = {
@@ -97,21 +161,46 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
 
   const filteredFunctions = useMemo(() => {
     let funcs = availableFunctions;
+    let rawQuery = searchQuery.trim();
 
-    if (selectedCategory !== 'all') {
-      funcs = funcs.filter(f => f.category === selectedCategory);
+    // `>cat keyword` prefix — VSCode Command Palette 식
+    // e.g. ">combat hp" → combat 카테고리에서 hp 검색
+    let categoryOverride: string | null = null;
+    const prefixMatch = rawQuery.match(/^>(\w+)\s*(.*)$/);
+    if (prefixMatch) {
+      const cat = prefixMatch[1].toLowerCase();
+      if (CATEGORY_IDS.includes(cat as typeof CATEGORY_IDS[number])) {
+        categoryOverride = cat;
+        rawQuery = prefixMatch[2];
+      }
     }
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      funcs = funcs.filter(f =>
-        f.name.toLowerCase().includes(query) ||
-        f.description.toLowerCase().includes(query)
-      );
+    const effectiveCategory = categoryOverride ?? selectedCategory;
+    if (effectiveCategory !== 'all' && effectiveCategory !== 'favorites' && effectiveCategory !== 'recents') {
+      funcs = funcs.filter(f => f.category === effectiveCategory);
+    } else if (effectiveCategory === 'favorites') {
+      funcs = funcs.filter(f => favorites.includes(f.name));
+    } else if (effectiveCategory === 'recents') {
+      // 최근 사용 순서 유지
+      const rank = new Map(recents.map((n, i) => [n, i]));
+      funcs = funcs
+        .filter(f => rank.has(f.name))
+        .sort((a, b) => (rank.get(a.name)! - rank.get(b.name)!));
     }
 
-    return funcs;
-  }, [selectedCategory, searchQuery]);
+    if (!rawQuery) return funcs;
+
+    // Fuzzy 점수로 정렬 (name 우선, description 보조)
+    const scored = funcs
+      .map((f) => {
+        const nameScore = fuzzyScore(f.name, rawQuery);
+        const descScore = fuzzyScore(f.description, rawQuery) * 0.3;
+        return { f, score: Math.max(nameScore, descScore) };
+      })
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score);
+    return scored.map((r) => r.f);
+  }, [selectedCategory, searchQuery, favorites, recents]);
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { all: availableFunctions.length };
@@ -137,6 +226,7 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
   const handleCopy = (text: string, functionName: string) => {
     navigator.clipboard.writeText(text);
     setCopiedFunction(functionName);
+    pushRecent(functionName);
     setTimeout(() => setCopiedFunction(null), 2000);
   };
 
@@ -273,8 +363,47 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
             />
           </div>
 
-          {/* 카테고리 탭 */}
+          {/* 검색 tip */}
+          <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+            💡 <strong>fuzzy 검색</strong> (순서 불연속 매칭 OK) · <code>&gt;카테고리 키워드</code> 로 카테고리 강제 (예: <code>&gt;combat hp</code>)
+          </p>
+
+          {/* 카테고리 탭 + 즐겨찾기/최근 */}
           <div className="flex flex-wrap gap-1.5">
+            {/* 즐겨찾기 / 최근 가상 카테고리 */}
+            {(['favorites', 'recents'] as const).map((special) => {
+              const Icon = special === 'favorites' ? Star : Clock;
+              const isSelected = selectedCategory === special;
+              const count = special === 'favorites' ? favorites.length : recents.length;
+              const color = special === 'favorites' ? '#fbbf24' : '#8b5cf6';
+              return (
+                <button
+                  key={special}
+                  onClick={() => setSelectedCategory(special)}
+                  disabled={count === 0}
+                  className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-caption font-medium transition-all duration-200',
+                    isSelected ? 'shadow-sm' : 'hover:opacity-80',
+                    count === 0 && 'opacity-30 cursor-not-allowed',
+                  )}
+                  style={{
+                    background: isSelected ? color : 'rgba(0,0,0,0.03)',
+                    color: isSelected ? 'white' : 'var(--text-secondary)',
+                  }}
+                >
+                  <Icon className="w-3 h-3" />
+                  <span>{special === 'favorites' ? '즐겨찾기' : '최근'}</span>
+                  <span
+                    className="px-1.5 py-0.5 rounded-full text-caption font-bold"
+                    style={{
+                      background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.05)',
+                    }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
             {CATEGORY_IDS.map((catId) => {
               const Icon = CATEGORY_ICONS[catId];
               const color = CATEGORY_COLORS[catId];
@@ -360,17 +489,30 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
                         {func.syntax}
                       </code>
                     </div>
-                    <button
-                      onClick={() => handleCopy(func.example, func.name)}
-                      className="glass-button !p-2 shrink-0"
-                      title={t('formulaHelper.copyExample')}
-                    >
-                      {copiedFunction === func.name ? (
-                        <Check className="w-4 h-4" style={{ color: '#3db88a' }} />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => toggleFavorite(func.name)}
+                        className="glass-button !p-2"
+                        title={favorites.includes(func.name) ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+                      >
+                        <Star
+                          className="w-4 h-4"
+                          fill={favorites.includes(func.name) ? '#fbbf24' : 'none'}
+                          style={{ color: favorites.includes(func.name) ? '#fbbf24' : 'var(--text-secondary)' }}
+                        />
+                      </button>
+                      <button
+                        onClick={() => handleCopy(func.example, func.name)}
+                        className="glass-button !p-2"
+                        title={t('formulaHelper.copyExample')}
+                      >
+                        {copiedFunction === func.name ? (
+                          <Check className="w-4 h-4" style={{ color: '#3db88a' }} />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-2.5 flex items-center gap-2">
