@@ -47,7 +47,8 @@ export type ToolId =
   | 'matchupMatrix'
   | 'replayTimeline'
   | 'snapshotCompare'
-  | 'mobaLaning';
+  | 'mobaLaning'
+  | 'rtsBuildOrder';
 
 export type ToolGroupId =
   | 'build'
@@ -81,7 +82,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'simulate',
     titleKey: 'toolGroups.simulate',
     color: '#e11d48',
-    tools: ['simulation', 'fpsSimulation', 'fpsTeamSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy', 'replayTimeline', 'mobaLaning'],
+    tools: ['simulation', 'fpsSimulation', 'fpsTeamSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy', 'replayTimeline', 'mobaLaning', 'rtsBuildOrder'],
   },
   {
     id: 'compare',
@@ -129,6 +130,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   replayTimeline: 'toolDesc.replayTimeline',   // 전투 로그 scrubber · step-by-step 디버깅
   snapshotCompare: 'toolDesc.snapshotCompare', // 시뮬 스냅샷 저장 · rebalance 전후 diff
   mobaLaning: 'toolDesc.mobaLaning',           // LoL/Dota 라인전 CS/gold/XP 곡선
+  rtsBuildOrder: 'toolDesc.rtsBuildOrder',     // SC2/AoE 빌드 오더 경제·병력 타이밍
 
   // simulate — 시뮬
   simulation: 'toolDesc.simulation',           // 1:1/팀 전투 Monte Carlo
