@@ -58,7 +58,7 @@ export function BattleSettings({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>
             {t('runs')}
           </label>
           <CustomSelect
@@ -76,7 +76,7 @@ export function BattleSettings({
         </div>
 
         <div>
-          <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>
             {t('damageFormula')}
           </label>
           <CustomSelect
@@ -94,7 +94,7 @@ export function BattleSettings({
         </div>
 
         <div>
-          <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>
             {t('defenseFormula')}
           </label>
           <CustomSelect
@@ -111,7 +111,7 @@ export function BattleSettings({
         </div>
 
         <div>
-          <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>
             {t('maxBattleTime')}
           </label>
           <input
@@ -124,7 +124,7 @@ export function BattleSettings({
                 setMaxDuration(Number(v) || 0);
               }
             }}
-            className="w-full px-2 py-1.5 rounded text-sm"
+            className="w-full input-base"
             style={{
               background: 'var(--bg-primary)',
               border: '1px solid var(--border-primary)',
@@ -149,7 +149,7 @@ export function BattleSettings({
         {useArmorPen && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
             <div>
-              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>
                 {t('flatPen')}
               </label>
               <input
@@ -162,7 +162,7 @@ export function BattleSettings({
                     setArmorPen({ ...armorPen, flatPenetration: Number(v) || 0 });
                   }
                 }}
-                className="w-full px-2 py-1 rounded text-sm"
+                className="w-full input-base"
                 style={{
                   background: 'var(--bg-primary)',
                   border: '1px solid var(--border-primary)',
@@ -171,7 +171,7 @@ export function BattleSettings({
               />
             </div>
             <div>
-              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>
                 {t('percentPen')}
               </label>
               <input
@@ -184,7 +184,7 @@ export function BattleSettings({
                     setArmorPen({ ...armorPen, percentPenetration: Number(v) || 0 });
                   }
                 }}
-                className="w-full px-2 py-1 rounded text-sm"
+                className="w-full input-base"
                 style={{
                   background: 'var(--bg-primary)',
                   border: '1px solid var(--border-primary)',
@@ -215,7 +215,7 @@ export function BattleSettings({
               ] as const
             ).map(({ key, label }) => (
               <div key={key}>
-                <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+                <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>
                   {label}
                 </label>
                 <CustomSelect

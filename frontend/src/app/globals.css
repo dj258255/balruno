@@ -24,13 +24,27 @@
 /* 폼 요소 (input/textarea/select/button) 가 부모의 font-family/size 를 자동 상속
    브라우저 기본은 user-agent 고정값을 사용하므로 명시적으로 inherit 필요 */
 @layer base {
+  /* 클래스 미지정 폼 요소의 기본 폰트 크기 — semantic 스케일과 일치
+     (input/textarea/select/button = 14px body, label = 12px label) */
+  input,
+  textarea,
+  select {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  button {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  label {
+    font-size: 12px;
+    line-height: 1.4;
+  }
   input,
   textarea,
   select,
   button {
     font-family: inherit;
-    font-size: inherit;
-    line-height: inherit;
     color: inherit;
   }
   /* 숫자 input 의 spinner 제거 — PowerBalance 는 커스텀 UI 가 많음 */
@@ -83,6 +97,80 @@
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+
+  /* ========= Form / Button 공용 utility =========
+     패널·모달에서 input·button 의 크기/패딩을 통일.
+     기본 14px (body) · 32px 높이. compact 는 사이드바/BottomDock 용.
+  */
+  .input-base {
+    padding: 6px 10px;
+    font-size: 14px;
+    line-height: 1.4;
+    border-radius: 6px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 120ms, box-shadow 120ms;
+  }
+  .input-base:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+  .input-compact {
+    padding: 4px 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    border-radius: 5px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    outline: none;
+  }
+  .input-compact:focus {
+    border-color: var(--accent);
+  }
+
+  .btn-primary {
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    border-radius: 6px;
+    background: var(--accent);
+    color: white;
+    transition: background 120ms, opacity 120ms;
+  }
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-secondary {
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    border-radius: 6px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    transition: background 120ms;
+  }
+  .btn-secondary:hover {
+    background: var(--bg-hover);
+  }
+
+  /* placeholder 는 항상 덜 강한 색 — 입력값과 구분 */
+  .input-base::placeholder,
+  .input-compact::placeholder,
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-tertiary);
+    opacity: 1;
   }
 }
 
