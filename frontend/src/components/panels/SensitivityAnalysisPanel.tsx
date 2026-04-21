@@ -227,6 +227,8 @@ export default function SensitivityAnalysisPanel({ onClose, isPanel }: Props) {
             setBaselineRowIdx(0);
             setSelectedInputs(new Set());
           }}
+          label="분석할 시트"
+          color="#7c7ff2"
         />
 
         {sheet && formulaColumns.length > 0 && (
