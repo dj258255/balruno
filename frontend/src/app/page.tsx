@@ -71,9 +71,17 @@ import { InteractiveTour } from '@/components/tour';
 
 // Sub-components
 import LoadingScreen from './components/LoadingScreen';
-import HomeScreen from '@/components/home/HomeScreen';
-import DocView from '@/components/docs/DocView';
-import AICopilotPanel from '@/components/ai/AICopilotPanel';
+// HomeScreen / DocView / AICopilotPanel 은 대형 의존성 (recharts, Tiptap, AI SDK)
+// 을 끌고 오므로 dynamic — 필요 시에만 번들 로드. 초기 진입 체감 속도 대폭 개선.
+const HomeScreen = dynamic(() => import('@/components/home/HomeScreen'), {
+  ssr: false,
+  loading: () => <div className="flex-1" />,
+});
+const DocView = dynamic(() => import('@/components/docs/DocView'), {
+  ssr: false,
+  loading: () => <div className="flex-1" />,
+});
+const AICopilotPanel = dynamic(() => import('@/components/ai/AICopilotPanel'), { ssr: false });
 import MobileHeader from './components/MobileHeader';
 import MobileNotice from './components/MobileNotice';
 import MobileSidebar from './components/MobileSidebar';

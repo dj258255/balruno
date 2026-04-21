@@ -224,7 +224,10 @@ describe('Y.Doc hydrate 상태 + observer (Track 0 Phase 1)', () => {
     expect(isDocHydrated(doc)).toBe(true);
   });
 
-  it('observeProjectDoc: Y.Doc write → onChange 콜백 fire', () => {
+  // 디바운스된 observer — 50ms + rAF 후 flush. waitFor 로 기다림.
+  const waitForCallback = () => new Promise((resolve) => setTimeout(resolve, 120));
+
+  it('observeProjectDoc: Y.Doc write → onChange 콜백 fire', async () => {
     const doc = new Y.Doc();
     hydrateDocFromProject(doc, makeSampleProject());
 
@@ -234,6 +237,7 @@ describe('Y.Doc hydrate 상태 + observer (Track 0 Phase 1)', () => {
     });
 
     updateCellInDoc(doc, 'sheet-1', 'row-1', 'col-2', 7777);
+    await waitForCallback();
 
     expect(latest).not.toBeNull();
     expect(latest!.sheets[0].rows[0].cells['col-2']).toBe(7777);
@@ -241,7 +245,7 @@ describe('Y.Doc hydrate 상태 + observer (Track 0 Phase 1)', () => {
     unobserve();
   });
 
-  it('observeProjectDoc: unobserve 후 콜백 fire 안 됨', () => {
+  it('observeProjectDoc: unobserve 후 콜백 fire 안 됨', async () => {
     const doc = new Y.Doc();
     hydrateDocFromProject(doc, makeSampleProject());
 
@@ -251,10 +255,12 @@ describe('Y.Doc hydrate 상태 + observer (Track 0 Phase 1)', () => {
     });
 
     updateCellInDoc(doc, 'sheet-1', 'row-1', 'col-2', 111);
+    await waitForCallback();
     expect(count).toBe(1);
 
     unobserve();
     updateCellInDoc(doc, 'sheet-1', 'row-1', 'col-2', 222);
+    await waitForCallback();
     expect(count).toBe(1);
   });
 
@@ -272,7 +278,7 @@ describe('Y.Doc hydrate 상태 + observer (Track 0 Phase 1)', () => {
     expect(count).toBe(0);
   });
 
-  it('observeProjectDoc: 한 transaction 의 여러 write 는 콜백 1회만 fire', () => {
+  it('observeProjectDoc: 여러 write (동일/분리 트랜잭션) 는 디바운스로 콜백 1회만 fire', async () => {
     const doc = new Y.Doc();
     hydrateDocFromProject(doc, makeSampleProject());
 
@@ -281,13 +287,12 @@ describe('Y.Doc hydrate 상태 + observer (Track 0 Phase 1)', () => {
       count++;
     });
 
-    doc.transact(() => {
-      updateCellInDoc(doc, 'sheet-1', 'row-1', 'col-2', 10);
-      updateCellInDoc(doc, 'sheet-1', 'row-2', 'col-2', 20);
-      updateCellInDoc(doc, 'sheet-1', 'row-1', 'col-3', 30);
-    });
+    // 50ms 안에 연속 write — 분리 트랜잭션이어도 디바운스로 묶임
+    updateCellInDoc(doc, 'sheet-1', 'row-1', 'col-2', 10);
+    updateCellInDoc(doc, 'sheet-1', 'row-2', 'col-2', 20);
+    updateCellInDoc(doc, 'sheet-1', 'row-1', 'col-3', 30);
+    await waitForCallback();
 
-    // nested transact 안에서 발생한 write 가 1회 update 이벤트로 묶임
     expect(count).toBe(1);
 
     unobserve();
