@@ -155,9 +155,15 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
     if (funcName.includes('.')) {
       return fallback;
     }
-    const key = `formulaHelper.functions.${funcName}`;
-    const translated = t(key);
-    return translated === key ? fallback : translated;
+    // next-intl 은 missing key 에 대해 에러 throw → try-catch 로 fallback
+    // (Excel 호환 함수 등 신규 추가분은 i18n 누락 허용)
+    try {
+      const key = `formulaHelper.functions.${funcName}`;
+      const translated = t(key);
+      return translated === key ? fallback : translated;
+    } catch {
+      return fallback;
+    }
   };
 
   const filteredFunctions = useMemo(() => {
