@@ -110,7 +110,7 @@ function TaskCardView({ node }: NodeViewProps) {
               </span>
               {info.status && (
                 <span
-                  className="text-[10px] px-1.5 py-0.5 rounded-full"
+                  className="text-caption px-1.5 py-0.5 rounded-full"
                   style={{
                     background: info.status.color ? `${info.status.color}20` : 'var(--bg-tertiary)',
                     color: info.status.color ?? 'var(--text-secondary)',
@@ -121,7 +121,7 @@ function TaskCardView({ node }: NodeViewProps) {
               )}
               {info.priority && (
                 <span
-                  className="text-[10px] px-1.5 py-0.5 rounded-full"
+                  className="text-caption px-1.5 py-0.5 rounded-full"
                   style={{
                     background: info.priority.color ? `${info.priority.color}20` : 'var(--bg-tertiary)',
                     color: info.priority.color ?? 'var(--text-secondary)',
@@ -131,7 +131,7 @@ function TaskCardView({ node }: NodeViewProps) {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-3 mt-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="flex items-center gap-3 mt-1 text-caption" style={{ color: 'var(--text-tertiary)' }}>
               <span>{info.sheet.name}</span>
               {info.assignee && (
                 <span className="flex items-center gap-1">

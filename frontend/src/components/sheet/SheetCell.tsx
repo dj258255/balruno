@@ -286,7 +286,7 @@ const SheetCell = memo(function SheetCell({
       {/* Track 8B — peer cursor 뱃지 (이름) */}
       {peerCursorColor && peerCursorName && !isSelected && (
         <span
-          className="absolute -top-4 left-0 px-1 rounded text-[9px] font-semibold text-white z-30 whitespace-nowrap pointer-events-none"
+          className="absolute -top-4 left-0 px-1 rounded text-caption font-semibold text-white z-30 whitespace-nowrap pointer-events-none"
           style={{ background: peerCursorColor }}
         >
           {peerCursorName}

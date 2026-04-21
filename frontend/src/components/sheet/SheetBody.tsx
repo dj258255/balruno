@@ -170,7 +170,7 @@ const SheetBody = memo(function SheetBody({
                   <td
                     key={cell.id}
                     className={cn(
-                      'text-[14px] relative',
+                      'text-body relative',
                       isActions && 'px-1',
                       isRowNumber && 'text-center'
                     )}
@@ -282,7 +282,7 @@ const SheetBody = memo(function SheetBody({
               return (
                 <td
                   key={cell.id}
-                  className="text-[14px] relative group"
+                  className="text-body relative group"
                   style={{
                     width,
                     minWidth: 100,

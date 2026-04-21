@@ -122,7 +122,7 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
                       {g.name}
                     </span>
                     <span
-                      className="text-[10px] font-mono px-1.5 py-0.5 rounded-full flex-shrink-0"
+                      className="text-caption font-mono px-1.5 py-0.5 rounded-full flex-shrink-0"
                       style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
                     >
                       {g.projects.length}개
@@ -141,7 +141,7 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
                     <div className="flex items-center gap-2 text-xs p-1.5 rounded" style={{ background: 'rgba(16,185,129,0.08)', color: 'var(--text-primary)' }}>
                       <CheckCircle2 size={11} style={{ color: '#10b981', flexShrink: 0 }} />
                       <span className="flex-1 truncate">유지: <strong>{g.canonical.name}</strong></span>
-                      <span className="font-mono text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                      <span className="font-mono text-caption" style={{ color: 'var(--text-tertiary)' }}>
                         {new Date(g.canonical.updatedAt).toLocaleDateString()}
                       </span>
                     </div>
@@ -157,7 +157,7 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
                       >
                         <Trash2 size={11} style={{ color: '#ef4444', flexShrink: 0 }} />
                         <span className="flex-1 truncate">삭제: {dup.name}</span>
-                        <span className="font-mono text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                        <span className="font-mono text-caption" style={{ color: 'var(--text-tertiary)' }}>
                           {new Date(dup.updatedAt).toLocaleDateString()}
                         </span>
                       </div>

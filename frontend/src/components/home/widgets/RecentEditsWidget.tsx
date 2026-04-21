@@ -42,7 +42,7 @@ export default function RecentEditsWidget({ work }: Props) {
         <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
           최근 편집
         </h3>
-        <span className="ml-auto text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+        <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
           7일 이내
         </span>
       </div>
@@ -63,10 +63,10 @@ export default function RecentEditsWidget({ work }: Props) {
               <span className="truncate flex-1" style={{ color: 'var(--text-primary)' }}>
                 {item.sheet.name}
               </span>
-              <span className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>
+              <span className="text-caption truncate" style={{ color: 'var(--text-tertiary)' }}>
                 {item.projectName}
               </span>
-              <span className="text-[10px] flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>
+              <span className="text-caption flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>
                 {formatRelative(item.updatedAt)}
               </span>
             </button>

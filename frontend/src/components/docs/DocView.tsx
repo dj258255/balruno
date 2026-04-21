@@ -136,7 +136,7 @@ export default function DocView({ projectId, doc, onClose }: Props) {
           className="w-full text-2xl font-bold bg-transparent outline-none"
           style={{ color: 'var(--text-primary)' }}
         />
-        <div className="flex items-center gap-3 mt-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="flex items-center gap-3 mt-1 text-caption" style={{ color: 'var(--text-tertiary)' }}>
           <span>
             수정: {new Date(doc.updatedAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </span>
@@ -181,7 +181,7 @@ export default function DocView({ projectId, doc, onClose }: Props) {
           style={{ borderColor: 'var(--border-primary)' }}
         >
           <div
-            className="text-[10px] font-semibold uppercase tracking-wider mb-2 flex items-center gap-1"
+            className="text-overline mb-2 flex items-center gap-1"
             style={{ color: 'var(--text-tertiary)' }}
           >
             <LinkIcon className="w-3 h-3" />

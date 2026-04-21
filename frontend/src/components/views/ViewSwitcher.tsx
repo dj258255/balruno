@@ -136,7 +136,7 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
       })}
 
       {savedViews.length > 0 && (
-        <span className="mx-1 text-[10px] flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>|</span>
+        <span className="mx-1 text-caption flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>|</span>
       )}
 
       {/* 저장된 뷰 */}

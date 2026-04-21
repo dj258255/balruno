@@ -164,13 +164,13 @@ const MentionList = forwardRef<
                   {item.label}
                 </div>
                 {item.hint && (
-                  <div className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>
+                  <div className="text-caption truncate" style={{ color: 'var(--text-tertiary)' }}>
                     {item.hint}
                   </div>
                 )}
               </div>
               <span
-                className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0"
+                className="text-caption px-1.5 py-0.5 rounded-full flex-shrink-0"
                 style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
               >
                 {item.kind}

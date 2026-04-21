@@ -89,7 +89,7 @@ export default function BurndownWidget() {
               <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 {result.totalStart - result.completed}
               </div>
-              <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+              <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
                 남은 {result.unit === 'points' ? 'SP' : '태스크'}
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function BurndownWidget() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-2 flex items-center justify-between text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+          <div className="mt-2 flex items-center justify-between text-caption" style={{ color: 'var(--text-tertiary)' }}>
             <span>{result.startDate} → {result.endDate}</span>
             <span>
               진척 {Math.round((result.completed / result.totalStart) * 100)}%

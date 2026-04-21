@@ -62,7 +62,7 @@ function SectionDivider({
         <div className="flex items-center gap-1.5">
           {step && (
             <span
-              className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded"
+              className="text-caption font-mono font-bold px-1.5 py-0.5 rounded"
               style={{ background: `${color}20`, color }}
             >
               {step}
@@ -76,7 +76,7 @@ function SectionDivider({
           </span>
         </div>
         {description && (
-          <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-caption mt-0.5 truncate" style={{ color: 'var(--text-tertiary)' }}>
             {description}
           </p>
         )}
@@ -193,7 +193,7 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
 
           {/* 프로젝트 선택됐지만 시트 없을 때 */}
           {selectedProjectId && !hasSheets && (
-            <p className="text-[11px] text-center py-2" style={{ color: 'var(--text-tertiary)' }}>
+            <p className="text-caption text-center py-2" style={{ color: 'var(--text-tertiary)' }}>
               선택한 프로젝트에 시트가 없습니다. 왼쪽에서 시트를 만들어주세요.
             </p>
           )}

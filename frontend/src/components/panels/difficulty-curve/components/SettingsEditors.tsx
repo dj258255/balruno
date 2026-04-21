@@ -367,7 +367,7 @@ export function WallStageEditor({
                           background: `linear-gradient(to right, ${typeColor} 0%, ${typeColor} ${((wall.intensity - 1.1) / 1.4) * 100}%, var(--bg-tertiary) ${((wall.intensity - 1.1) / 1.4) * 100}%, var(--bg-tertiary) 100%)`,
                         }}
                       />
-                      <div className="flex justify-between mt-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                      <div className="flex justify-between mt-1 text-caption" style={{ color: 'var(--text-tertiary)' }}>
                         <span>1.1×</span>
                         <span>2.5×</span>
                       </div>
@@ -391,7 +391,7 @@ export function WallStageEditor({
                           background: `linear-gradient(to right, ${typeColor} 0%, ${typeColor} ${((wall.expectedStuckTime - 1) / 47) * 100}%, var(--bg-tertiary) ${((wall.expectedStuckTime - 1) / 47) * 100}%, var(--bg-tertiary) 100%)`,
                         }}
                       />
-                      <div className="flex justify-between mt-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                      <div className="flex justify-between mt-1 text-caption" style={{ color: 'var(--text-tertiary)' }}>
                         <span>1h</span>
                         <span>48h</span>
                       </div>
@@ -552,7 +552,7 @@ export function MilestoneEditor({ milestones, onUpdate, onUpdateBonus }: Milesto
                         background: `linear-gradient(to right, #3db88a 0%, #3db88a ${data.powerBonus}%, var(--bg-tertiary) ${data.powerBonus}%, var(--bg-tertiary) 100%)`,
                       }}
                     />
-                    <div className="flex justify-between mt-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                    <div className="flex justify-between mt-1 text-caption" style={{ color: 'var(--text-tertiary)' }}>
                       <span>0%</span>
                       <span>100%</span>
                     </div>

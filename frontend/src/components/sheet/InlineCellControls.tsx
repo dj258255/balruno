@@ -104,7 +104,7 @@ export function InlineTaskLink({
           return (
             <span
               key={rid}
-              className="text-[10px] px-1.5 py-0.5 rounded"
+              className="text-caption px-1.5 py-0.5 rounded"
               style={{ background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }}
             >
               {rid.slice(0, 6)}?
@@ -123,7 +123,7 @@ export function InlineTaskLink({
               e.stopPropagation();
               onOpen?.(rid);
             }}
-            className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border transition-colors hover:bg-[var(--bg-hover)]"
+            className="inline-flex items-center gap-1 text-caption px-1.5 py-0.5 rounded border transition-colors hover:bg-[var(--bg-hover)]"
             style={{
               borderColor: statusOpt?.color ?? 'var(--border-primary)',
               background: 'var(--bg-secondary)',
@@ -142,7 +142,7 @@ export function InlineTaskLink({
             )}
             <span className="truncate">{name}</span>
             {assignee && (
-              <span className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>
+              <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
                 @{assignee.slice(0, 8)}
               </span>
             )}

@@ -525,7 +525,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
       >
         {/* 스냅샷 inline hint — 도움말 토글 안 켜도 이건 상시 노출 */}
         <div
-          className="flex items-start gap-2 p-2.5 rounded-lg text-[11px]"
+          className="flex items-start gap-2 p-2.5 rounded-lg text-caption"
           style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
         >
           <Camera className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: '#8b5cf6' }} />

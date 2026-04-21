@@ -40,7 +40,7 @@ export default function PlaytestWidget({ work }: { work: TodaysWork }) {
               className="w-full text-left px-2 py-1 rounded text-xs truncate hover:bg-black/5 dark:hover:bg-white/5"
               style={{ color: 'var(--text-primary)' }}
             >
-              • {p.sheet.name} ({p.sheet.rows.length}) <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{p.projectName}</span>
+              • {p.sheet.name} ({p.sheet.rows.length}) <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{p.projectName}</span>
             </button>
           ))}
         </div>

@@ -118,7 +118,7 @@ export default function KeyboardShortcuts({ open, onClose }: Props) {
                   <div key={s.keys} className="flex items-center justify-between gap-2">
                     <span className="text-xs" style={{ color: 'var(--text-primary)' }}>{s.desc}</span>
                     <kbd
-                      className="text-[10px] font-mono px-1.5 py-0.5 rounded border flex-shrink-0"
+                      className="text-caption font-mono px-1.5 py-0.5 rounded border flex-shrink-0"
                       style={{
                         background: 'var(--bg-tertiary)',
                         borderColor: 'var(--border-primary)',
@@ -133,7 +133,7 @@ export default function KeyboardShortcuts({ open, onClose }: Props) {
             </div>
           ))}
         </div>
-        <div className="p-3 text-[10px] text-center border-t" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
+        <div className="p-3 text-caption text-center border-t" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
           더 많은 명령은 ⌘/Ctrl + K 로 명령 팔레트를 여세요
         </div>
       </div>

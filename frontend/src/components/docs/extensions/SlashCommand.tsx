@@ -174,7 +174,7 @@ const SlashMenuList = forwardRef<
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{item.title}</div>
                 {item.description && (
-                  <div className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>
+                  <div className="text-caption truncate" style={{ color: 'var(--text-tertiary)' }}>
                     {item.description}
                   </div>
                 )}

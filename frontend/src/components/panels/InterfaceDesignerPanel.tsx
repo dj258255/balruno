@@ -248,12 +248,12 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
       bodyClassName="flex flex-col p-0 overflow-hidden"
     >
       <div className="flex items-center gap-1 p-2 border-b overflow-x-auto flex-shrink-0" style={{ borderColor: 'var(--border-primary)' }}>
-        <span className="text-[10px] mr-2 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>위젯 추가:</span>
+        <span className="text-caption mr-2 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>위젯 추가:</span>
         {(Object.keys(WIDGET_LABELS) as WidgetType[]).map((type) => (
           <button
             key={type}
             onClick={() => addWidget(type)}
-            className="text-[11px] flex items-center gap-1 px-2 py-1 rounded flex-shrink-0"
+            className="text-caption flex items-center gap-1 px-2 py-1 rounded flex-shrink-0"
             style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
           >
             <Plus size={10} />
@@ -286,7 +286,7 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
             {layout.widgets.map((w) => (
               <div key={w.id} className="rounded border overflow-hidden" style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}>
                 <div className="widget-drag-handle flex items-center justify-between p-1.5 border-b cursor-move" style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-tertiary)' }}>
-                  <span className="text-[11px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{w.title}</span>
+                  <span className="text-caption font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{w.title}</span>
                   <div className="flex items-center gap-0.5 flex-shrink-0">
                     <button
                       onClick={() => setEditingWidget(editingWidget === w.id ? null : w.id)}
@@ -326,7 +326,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
         <div className="text-2xl font-bold" style={{ color: valid ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
           {display}{widget.config.suffix ?? ''}
         </div>
-        <div className="text-[10px] mt-1" style={{ color: 'var(--text-secondary)' }}>
+        <div className="text-caption mt-1" style={{ color: 'var(--text-secondary)' }}>
           {widget.config.aggregate} · {widget.config.column}
         </div>
       </div>
@@ -349,7 +349,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
       : sheet.columns.slice(0, 4);
     const rows = sheet.rows.slice(0, widget.config.rowLimit);
     return (
-      <table className="w-full text-[10px]">
+      <table className="w-full text-caption">
         <thead>
           <tr>{cols.map((c) => <th key={c.id} className="text-left p-0.5 font-semibold" style={{ color: 'var(--text-primary)' }}>{c.name}</th>)}</tr>
         </thead>
@@ -408,7 +408,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
               }}
               title={`${d.category}: ${d.value.toFixed(1)}`}
             />
-            <div className="text-[8px] truncate w-full text-center" style={{ color: 'var(--text-secondary)' }}>
+            <div className="text-caption truncate w-full text-center" style={{ color: 'var(--text-secondary)' }}>
               {d.category}
             </div>
           </div>
@@ -448,7 +448,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
             );
           })}
         </svg>
-        <div className="flex-1 min-w-0 space-y-0.5 overflow-y-auto text-[10px]">
+        <div className="flex-1 min-w-0 space-y-0.5 overflow-y-auto text-caption">
           {data.slice(0, 8).map((d, i) => (
             <div key={d.category} className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
@@ -527,7 +527,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
             />
           ))}
         </div>
-        <div className="flex justify-between text-[9px] mt-1" style={{ color: 'var(--text-secondary)' }}>
+        <div className="flex justify-between text-caption mt-1" style={{ color: 'var(--text-secondary)' }}>
           <span>{min.toFixed(1)}</span>
           <span>{max.toFixed(1)}</span>
         </div>
@@ -547,7 +547,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
         <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
           <polyline fill="none" stroke={widget.config.color ?? '#3b82f6'} strokeWidth="1.5" points={polyline} />
         </svg>
-        <div className="flex justify-between text-[9px]" style={{ color: 'var(--text-secondary)' }}>
+        <div className="flex justify-between text-caption" style={{ color: 'var(--text-secondary)' }}>
           <span>D1: {(widget.config.day1 * 100).toFixed(0)}%</span>
           <span>D{widget.config.days}: {(pts[pts.length - 1].retention * 100).toFixed(1)}%</span>
         </div>
@@ -561,7 +561,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
     return (
       <div className="flex flex-col gap-1 h-full justify-center">
         {steps.map((s, i) => (
-          <div key={i} className="flex items-center gap-2 text-[10px]">
+          <div key={i} className="flex items-center gap-2 text-caption">
             <div className="w-12 truncate flex-shrink-0" style={{ color: 'var(--text-primary)' }}>{s.label}</div>
             <div className="flex-1 h-2.5 rounded overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
               <div
@@ -594,7 +594,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
           <line x1={4} y1={H - 4} x2={W - 4} y2={4} stroke="var(--border-primary)" strokeDasharray="2,2" strokeWidth={1} />
           <polyline fill="none" stroke={widget.config.color ?? '#8b5cf6'} strokeWidth="1.5" points={polyline} />
         </svg>
-        <div className="text-[9px] text-center" style={{ color: 'var(--text-secondary)' }}>
+        <div className="text-caption text-center" style={{ color: 'var(--text-secondary)' }}>
           상위 {(widget.config.topPercent * 100).toFixed(0)}% 가 {(widget.config.shareOfRevenue * 100).toFixed(0)}% 매출
         </div>
       </div>
@@ -604,7 +604,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
   if (widget.type === 'liveops-kpi') {
     const k = computeLiveopsKpi(widget);
     const row = (label: string, value: string) => (
-      <div className="flex items-center justify-between text-[10px]">
+      <div className="flex items-center justify-between text-caption">
         <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
         <span className="font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>{value}</span>
       </div>
@@ -640,7 +640,7 @@ function WidgetEditor({
   const currentSheet = sheets.find((s) => s.id === (config.sheetId as string));
 
   return (
-    <div className="space-y-1.5 text-[11px]">
+    <div className="space-y-1.5 text-caption">
       <input
         value={widget.title}
         onChange={(e) => onUpdate({ title: e.target.value })}
@@ -804,7 +804,7 @@ function FilterControlRender({ widget }: { widget: import('@/lib/dashboardWidget
   const [value, setValue] = useState(widget.config.defaultValue ?? widget.config.options[0] ?? '');
   return (
     <div className="space-y-1 h-full flex flex-col justify-center">
-      <label className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+      <label className="text-caption" style={{ color: 'var(--text-secondary)' }}>
         {widget.config.filterKey}
       </label>
       <select

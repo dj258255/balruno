@@ -255,7 +255,7 @@ export default function PowerCurveComparePanel({ onClose }: Props) {
 
         {/* Hover tooltip */}
         {hoverData && (
-          <div className="text-[11px] space-y-0.5">
+          <div className="text-caption space-y-0.5">
             {hoverData.map(({ series: s, point }) => (
               <div key={s.id} className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
@@ -311,7 +311,7 @@ export default function PowerCurveComparePanel({ onClose }: Props) {
                     <select
                       value={s.sheetId}
                       onChange={(e) => updateSeries(s.id, { sheetId: e.target.value })}
-                      className="px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+                      className="px-1.5 py-0.5 text-caption rounded border bg-transparent"
                       style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                     >
                       {allSheets.map((sh) => (
@@ -321,7 +321,7 @@ export default function PowerCurveComparePanel({ onClose }: Props) {
                     <select
                       value={s.xColumn}
                       onChange={(e) => updateSeries(s.id, { xColumn: e.target.value })}
-                      className="px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+                      className="px-1.5 py-0.5 text-caption rounded border bg-transparent"
                       style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                     >
                       <option value="">X 컬럼</option>
@@ -330,14 +330,14 @@ export default function PowerCurveComparePanel({ onClose }: Props) {
                     <select
                       value={s.yColumn}
                       onChange={(e) => updateSeries(s.id, { yColumn: e.target.value })}
-                      className="px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+                      className="px-1.5 py-0.5 text-caption rounded border bg-transparent"
                       style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                     >
                       <option value="">Y 컬럼</option>
                       {cols.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                     </select>
                   </div>
-                  <div className="text-[10px] flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                  <div className="text-caption flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
                     <span>#{idx + 1}</span>
                     <span>·</span>
                     <span>{computedSeries.find((cs) => cs.id === s.id)?.points.length ?? 0} 점</span>

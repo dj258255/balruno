@@ -130,7 +130,7 @@ function TypedInput({
             );
           })}
           {(column.selectOptions?.length ?? 0) === 0 && (
-            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>옵션이 없습니다</span>
+            <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>옵션이 없습니다</span>
           )}
         </div>
       );
@@ -197,7 +197,7 @@ function TypedInput({
             border: '1px dashed var(--border-primary)',
           }}
         >
-          <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-primary)', color: 'var(--text-tertiary)' }}>
+          <span className="text-overline px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-primary)', color: 'var(--text-tertiary)' }}>
             {column.type === 'formula' ? 'ƒx' : column.type}
           </span>
           <span className="truncate">{String(value ?? '')}</span>
@@ -310,7 +310,7 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
             </h3>
             {idValue && (
               <span
-                className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                className="text-caption font-mono px-1.5 py-0.5 rounded"
                 style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
               >
                 {idValue}
@@ -359,7 +359,7 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
             </h2>
             {statusOption && (
               <span
-                className="text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5"
+                className="text-caption font-medium px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5"
                 style={{
                   background: statusOption.color ? `${statusOption.color}20` : 'var(--bg-tertiary)',
                   color: statusOption.color ?? 'var(--text-secondary)',
@@ -403,7 +403,7 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
 
       {/* 하단 footer — 자동 저장 + Esc */}
       <div
-        className="flex-shrink-0 border-t px-4 py-2.5 flex items-center justify-between text-[10px]"
+        className="flex-shrink-0 border-t px-4 py-2.5 flex items-center justify-between text-caption"
         style={{
           borderColor: 'var(--border-primary)',
           background: 'var(--bg-secondary)',
@@ -439,7 +439,7 @@ function FieldGroup({
 }) {
   return (
     <div className="p-4 space-y-3 border-b last:border-b-0" style={{ borderColor: 'var(--border-primary)' }}>
-      <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+      <div className="text-overline" style={{ color: 'var(--text-tertiary)' }}>
         {label}
       </div>
       {columns.map((col) => (
@@ -505,7 +505,7 @@ function RelatedChangesSection({
       <div className="flex items-center gap-1.5">
         <History className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
         <span
-          className="text-[10px] font-semibold uppercase tracking-wider"
+          className="text-overline"
           style={{ color: 'var(--text-tertiary)' }}
         >
           연결된 변경 ({changes.length})
@@ -522,7 +522,7 @@ function RelatedChangesSection({
               background: 'var(--bg-secondary)',
             }}
           >
-            <div className="flex items-center justify-between text-[10px] mb-1">
+            <div className="flex items-center justify-between text-caption mb-1">
               <span style={{ color: 'var(--text-tertiary)' }}>
                 {formatTime(entry.timestamp)}
               </span>
@@ -530,14 +530,14 @@ function RelatedChangesSection({
                 {entry.userName || entry.userId}
               </span>
             </div>
-            <div className="text-[11px] mb-1" style={{ color: 'var(--text-primary)' }}>
+            <div className="text-caption mb-1" style={{ color: 'var(--text-primary)' }}>
               <b>{sheetName(entry.sheetId)}</b>
               <span className="mx-1" style={{ color: 'var(--text-tertiary)' }}>/</span>
               <span style={{ color: 'var(--text-secondary)' }}>
                 {columnName(entry.sheetId, entry.columnId)}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-mono">
+            <div className="flex items-center gap-1.5 text-caption font-mono">
               <span
                 className="px-1.5 py-0.5 rounded truncate"
                 style={{
@@ -558,7 +558,7 @@ function RelatedChangesSection({
             </div>
             {entry.reason && (
               <div
-                className="text-[10px] mt-1 italic"
+                className="text-caption mt-1 italic"
                 style={{ color: 'var(--text-tertiary)' }}
               >
                 &ldquo;{entry.reason}&rdquo;

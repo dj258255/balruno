@@ -444,7 +444,7 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
                   <span className="text-sm font-semibold flex-1 text-left" style={{ color: 'var(--text-primary)' }}>
                     AI 밸런스 리뷰
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+                  <span className="text-caption px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
                     점수 {aiReview.metrics.score}/100
                   </span>
                   {showAiReview ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -459,7 +459,7 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
                     {aiReview.sections.map((sec) => (
                       <div key={sec.severity}>
                         <div className="font-semibold mb-1">{sec.title}</div>
-                        <div className="whitespace-pre-line text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+                        <div className="whitespace-pre-line text-caption" style={{ color: 'var(--text-secondary)' }}>
                           {sec.body}
                         </div>
                       </div>
@@ -468,7 +468,7 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
                     {aiReview.actionable.length > 0 && (
                       <div>
                         <div className="font-semibold mb-1">즉시 조치 가능 Top {aiReview.actionable.length}</div>
-                        <ol className="list-decimal pl-5 space-y-0.5 text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+                        <ol className="list-decimal pl-5 space-y-0.5 text-caption" style={{ color: 'var(--text-secondary)' }}>
                           {aiReview.actionable.map((a, i) => (
                             <li key={i}>{a}</li>
                           ))}
@@ -476,7 +476,7 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
                       </div>
                     )}
 
-                    <p className="text-[10px] italic pt-1 border-t" style={{ color: 'var(--text-tertiary)', borderColor: 'var(--border-primary)' }}>
+                    <p className="text-caption italic pt-1 border-t" style={{ color: 'var(--text-tertiary)', borderColor: 'var(--border-primary)' }}>
                       ※ 템플릿 기반 자동 리뷰. 백엔드 연동 시 실제 LLM 으로 업그레이드 예정.
                     </p>
                   </div>

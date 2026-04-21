@@ -304,7 +304,7 @@ function RatioChart({
             >
               {showLabel && (
                 <div
-                  className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[10px] font-medium"
+                  className="absolute top-0.5 left-1/2 -translate-x-1/2 text-caption font-medium"
                   style={{ color: FLOW_ZONE_COLORS[area.zone], opacity: 0.9 }}
                 >
                   {area.zone === 'boredom' ? t('boredom') :
@@ -321,7 +321,7 @@ function RatioChart({
           style={{ top: '33.3%', borderColor: 'var(--text-secondary)', opacity: 0.5 }}
         />
         <div
-          className="absolute right-1 text-[9px] z-10 pointer-events-none"
+          className="absolute right-1 text-caption z-10 pointer-events-none"
           style={{ top: '33.3%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}
         >
           1.0
@@ -394,7 +394,7 @@ function RatioChart({
         ) : (
           <>
             <span>{t('stage')} 1</span>
-            <span className="text-[9px]">( {t('stage')} 1~{maxStage} )</span>
+            <span className="text-caption">( {t('stage')} 1~{maxStage} )</span>
             <span>{t('stage')} {maxStage}</span>
           </>
         )}

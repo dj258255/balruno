@@ -239,7 +239,7 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
         style={{ borderColor: 'var(--border-primary)' }}
       >
         <span
-          className="text-[10px] font-semibold uppercase tracking-wider flex-shrink-0"
+          className="text-overline flex-shrink-0"
           style={{ color: activeGroup.color, letterSpacing: '0.08em' }}
         >
           {t(activeGroup.titleKey as 'toolGroups.build')}
@@ -366,7 +366,7 @@ function ToolDropdown({
                       {label}
                     </div>
                     <div
-                      className="text-[11px] truncate mt-0.5"
+                      className="text-caption truncate mt-0.5"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       {description}

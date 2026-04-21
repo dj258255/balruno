@@ -126,7 +126,7 @@ export default function AICopilotPanel({ onClose }: Props) {
           <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
             AI Copilot
           </h2>
-          <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
             프로젝트 컨텍스트 · 약 {context.tokensEstimate.toLocaleString()} 토큰
           </p>
         </div>
@@ -141,7 +141,7 @@ export default function AICopilotPanel({ onClose }: Props) {
 
       {/* 컨텍스트 요약 */}
       <div
-        className="flex items-center gap-3 px-4 py-2 border-b text-[10px]"
+        className="flex items-center gap-3 px-4 py-2 border-b text-caption"
         style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}
       >
         <div className="flex items-center gap-1">
@@ -171,12 +171,12 @@ export default function AICopilotPanel({ onClose }: Props) {
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                 프로젝트 전체를 분석해 답변합니다
               </p>
-              <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
                 수식 · changelog · 문서 · 태스크 교차 참조
               </p>
             </div>
             <div className="space-y-1">
-              <div className="text-[10px] font-semibold uppercase tracking-wider px-1" style={{ color: 'var(--text-tertiary)' }}>
+              <div className="text-overline px-1" style={{ color: 'var(--text-tertiary)' }}>
                 추천 질문
               </div>
               {SUGGESTED_PROMPTS.map((p) => (

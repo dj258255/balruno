@@ -137,7 +137,7 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
           >
             {/* 커버 이미지 섹션 */}
             <div className="p-3 border-b" style={{ borderColor: 'var(--border-primary)' }}>
-              <div className="text-[10px] font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+              <div className="text-overline mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
                 커버 이미지
               </div>
               <select
@@ -152,7 +152,7 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                 ))}
               </select>
               {urlColumns.length === 0 && (
-                <p className="text-[10px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                <p className="text-caption mt-1" style={{ color: 'var(--text-tertiary)' }}>
                   url 타입 컬럼을 먼저 만들어주세요
                 </p>
               )}
@@ -160,7 +160,7 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
 
             {/* 표시 필드 섹션 */}
             <div className="p-3">
-              <div className="text-[10px] font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+              <div className="text-overline mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
                 카드에 표시할 필드
               </div>
               <div className="max-h-52 overflow-y-auto -mx-1">
@@ -285,7 +285,7 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                         <div className="p-3">
                           {cardColumns.map((c) => (
                             <div key={c.id} className="mb-1 last:mb-0">
-                              <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+                              <div className="text-overline" style={{ color: 'var(--text-tertiary)' }}>
                                 {c.name}
                               </div>
                               <div className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>

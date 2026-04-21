@@ -31,7 +31,7 @@ export default function ProgressBar({
   return (
     <div className="space-y-1">
       {(label || detail) && (
-        <div className="flex items-center justify-between text-[11px]">
+        <div className="flex items-center justify-between text-caption">
           {label && <span style={{ color: 'var(--text-primary)' }}>{label}</span>}
           {detail && <span className="font-mono" style={{ color: 'var(--text-secondary)' }}>{detail}</span>}
         </div>

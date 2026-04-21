@@ -97,7 +97,7 @@ function Tooltip({ children, label, shortcut }: TooltipProps) {
             <span className="font-medium">{label}</span>
             {shortcut && (
               <span
-                className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                className="px-1.5 py-0.5 rounded text-caption font-medium"
                 style={{ background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }}
               >
                 {shortcut}

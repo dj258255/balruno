@@ -24,7 +24,7 @@ export function SheetKindBadge({
   if (meta.kind === 'game-data' && !showDefault) return null;
 
   const isAuto = meta.source !== 'manual';
-  const paddingClass = size === 'xs' ? 'px-1 py-[1px] text-[9px]' : 'px-1.5 py-0.5 text-[10px]';
+  const paddingClass = size === 'xs' ? 'px-1 py-[1px] text-caption' : 'px-1.5 py-0.5 text-caption';
 
   return (
     <span

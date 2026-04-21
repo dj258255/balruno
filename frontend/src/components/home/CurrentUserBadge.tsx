@@ -38,7 +38,7 @@ export default function CurrentUserBadge() {
   return (
     <button
       onClick={() => window.dispatchEvent(new Event('balruno:open-settings'))}
-      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-caption hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
       style={{ background: 'var(--bg-secondary)' }}
       title="이름/색 변경 (설정)"
     >

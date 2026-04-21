@@ -405,7 +405,7 @@ export default function SensitivityAnalysisPanel({ onClose, isPanel }: Props) {
         )}
 
         {tornadoBars.length > 0 && mode === 'tornado' && (
-          <div className="text-[11px] p-2 rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+          <div className="text-caption p-2 rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
             <b>해석</b>: 상위 변수 ±{(variation * 100).toFixed(0)}% 변화가 출력에 가장 큰 영향. 하위는 robust.
             밸런싱 시 상위 변수를 먼저 튜닝하는 게 효율적입니다.
           </div>

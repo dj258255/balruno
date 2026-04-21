@@ -284,7 +284,7 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
                   key={catId}
                   onClick={() => setSelectedCategory(catId)}
                   className={cn(
-                    'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium transition-all duration-200',
+                    'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-caption font-medium transition-all duration-200',
                     isSelected ? 'shadow-sm' : 'hover:opacity-80'
                   )}
                   style={{
@@ -295,7 +295,7 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
                   <Icon className="w-3 h-3" />
                   <span>{getCategoryName(catId)}</span>
                   <span
-                    className="px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                    className="px-1.5 py-0.5 rounded-full text-caption font-bold"
                     style={{
                       background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.05)',
                     }}
@@ -354,7 +354,7 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
                         {getFunctionDescription(func.name, func.description)}
                       </p>
                       <code
-                        className="text-[11px] block mt-1.5 px-2 py-1 rounded-lg"
+                        className="text-caption block mt-1.5 px-2 py-1 rounded-lg"
                         style={{ background: 'rgba(0,0,0,0.03)', color: 'var(--text-secondary)' }}
                       >
                         {func.syntax}
@@ -396,7 +396,7 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
                         </div>
                       )}
                       {func.paramHint && (
-                        <div className="text-[11px] break-words" style={{ color: 'var(--text-secondary)' }}>
+                        <div className="text-caption break-words" style={{ color: 'var(--text-secondary)' }}>
                           {func.paramHint}
                         </div>
                       )}

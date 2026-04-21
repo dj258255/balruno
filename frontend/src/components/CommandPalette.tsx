@@ -63,7 +63,7 @@ interface CommandPaletteProps {
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
     <kbd
-      className="text-[10px] px-1.5 py-0.5 rounded ml-auto shrink-0"
+      className="text-caption px-1.5 py-0.5 rounded ml-auto shrink-0"
       style={{
         background: 'var(--bg-tertiary)',
         color: 'var(--text-tertiary)',
@@ -425,7 +425,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
                   </div>
                   {fn.category && (
                     <span
-                      className="text-[10px] px-1.5 py-0.5 rounded shrink-0"
+                      className="text-caption px-1.5 py-0.5 rounded shrink-0"
                       style={{
                         background: 'var(--bg-tertiary)',
                         color: 'var(--text-tertiary)',

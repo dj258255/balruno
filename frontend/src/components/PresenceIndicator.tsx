@@ -31,7 +31,7 @@ export default function PresenceIndicator({ projectId }: PresenceIndicatorProps)
       {peers.slice(0, 4).map((p) => (
         <div
           key={p.id}
-          className="w-7 h-7 rounded-full border-2 flex items-center justify-center text-[10px] font-semibold text-white shadow-sm"
+          className="w-7 h-7 rounded-full border-2 flex items-center justify-center text-caption font-semibold text-white shadow-sm"
           style={{
             background: p.color,
             borderColor: 'var(--bg-primary)',
@@ -43,7 +43,7 @@ export default function PresenceIndicator({ projectId }: PresenceIndicatorProps)
       ))}
       {peers.length > 4 && (
         <div
-          className="w-7 h-7 rounded-full border-2 flex items-center justify-center text-[10px] font-semibold shadow-sm"
+          className="w-7 h-7 rounded-full border-2 flex items-center justify-center text-caption font-semibold shadow-sm"
           style={{
             borderColor: 'var(--bg-primary)',
             background: 'var(--bg-tertiary)',
@@ -55,7 +55,7 @@ export default function PresenceIndicator({ projectId }: PresenceIndicatorProps)
       )}
       {/* 본인 아바타 (가장 우측) */}
       <div
-        className="w-7 h-7 rounded-full border-2 flex items-center justify-center text-[10px] font-semibold text-white shadow-sm relative"
+        className="w-7 h-7 rounded-full border-2 flex items-center justify-center text-caption font-semibold text-white shadow-sm relative"
         style={{
           background: myColor,
           borderColor: 'var(--bg-primary)',

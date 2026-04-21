@@ -142,7 +142,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
             </button>
           </div>
 
-          <div className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+          <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>
             합계 weight: <span className="font-mono">{totalWeight.toFixed(2)}</span> ({items.length} 아이템)
           </div>
 
@@ -234,7 +234,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
                 </button>
               </div>
             ))}
-            <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
               순서: 등급 / hard pity 임계 / soft pity 시작 (선택) / soft 배율 (선택)
             </p>
           </div>
@@ -253,13 +253,13 @@ export default function LootSimulatorPanel({ onClose }: Props) {
           {bannerEnabled && (
             <div className="space-y-2 pl-5">
               <div>
-                <div className="text-[10px] mb-1" style={{ color: 'var(--text-secondary)' }}>피쳐드 아이템 (클릭 토글)</div>
+                <div className="text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>피쳐드 아이템 (클릭 토글)</div>
                 <div className="flex flex-wrap gap-1">
                   {items.map((it) => (
                     <button
                       key={it.id}
                       onClick={() => toggleFeatured(it.id)}
-                      className="text-[10px] px-1.5 py-0.5 rounded border"
+                      className="text-caption px-1.5 py-0.5 rounded border"
                       style={{
                         borderColor: featuredItemIds.has(it.id)
                           ? RARITY_COLORS[it.rarity] ?? 'var(--accent)'
@@ -289,7 +289,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
                   className="flex-1 px-2 py-0.5 text-xs rounded border bg-transparent font-mono"
                   style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                 />
-                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
                   {(featuredRate * 100).toFixed(0)}%
                 </span>
               </div>
@@ -321,7 +321,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
               ))}
             </select>
           </div>
-          <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
             선택한 등급의 모든 아이템을 한 번 이상 뽑을 확률을 측정합니다.
           </p>
         </section>
@@ -445,7 +445,7 @@ function Results({ result }: { result: LootSimResult }) {
         </h4>
         {result.rarityStats.map((rs) => (
           <div key={rs.rarity} className="space-y-1">
-            <div className="flex items-center justify-between text-[11px]">
+            <div className="flex items-center justify-between text-caption">
               <span className="font-mono font-semibold" style={{ color: RARITY_COLORS[rs.rarity] ?? 'var(--text-primary)' }}>
                 {rs.rarity}
               </span>
@@ -472,7 +472,7 @@ function Results({ result }: { result: LootSimResult }) {
       <section className="space-y-1">
         <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>가장 많이 뽑힌 아이템 Top 5</h4>
         {result.topItems.map((it) => (
-          <div key={it.name} className="flex items-center justify-between text-[11px]">
+          <div key={it.name} className="flex items-center justify-between text-caption">
             <span style={{ color: 'var(--text-primary)' }}>{it.name}</span>
             <span className="font-mono" style={{ color: 'var(--text-secondary)' }}>
               {it.count.toLocaleString()} ({(it.rate * 100).toFixed(2)}%)
@@ -487,7 +487,7 @@ function Results({ result }: { result: LootSimResult }) {
 function Card({ label, value }: { label: string; value: string }) {
   return (
     <div className="p-2 rounded border" style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}>
-      <div className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{label}</div>
+      <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>{label}</div>
       <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{value}</div>
     </div>
   );

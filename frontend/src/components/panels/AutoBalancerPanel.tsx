@@ -161,7 +161,7 @@ export default function AutoBalancerPanel({ onClose }: Props) {
               {(targetWinRate * 100).toFixed(0)}%
             </span>
           </div>
-          <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
             ※ 승률은 Unit 1 기준입니다.
           </p>
         </div>
@@ -232,14 +232,14 @@ export default function AutoBalancerPanel({ onClose }: Props) {
               </div>
             </div>
 
-            <p className="text-[11px] whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-caption whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
               {result.explanation}
             </p>
 
             {result.warnings && result.warnings.length > 0 && (
               <div className="space-y-1">
                 {result.warnings.map((w, i) => (
-                  <div key={i} className="flex items-start gap-1 text-[11px]" style={{ color: '#f59e0b' }}>
+                  <div key={i} className="flex items-start gap-1 text-caption" style={{ color: '#f59e0b' }}>
                     <AlertTriangle size={11} className="flex-shrink-0 mt-0.5" />
                     <span>{w}</span>
                   </div>
@@ -256,7 +256,7 @@ export default function AutoBalancerPanel({ onClose }: Props) {
             </button>
 
             {/* trace */}
-            <details className="text-[11px]">
+            <details className="text-caption">
               <summary className="cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                 탐색 경로 ({result.trace.length} 단계)
               </summary>
@@ -286,7 +286,7 @@ function UnitForm({
 }) {
   return (
     <div className="space-y-1.5 p-2 rounded border" style={{ borderColor: 'var(--border-primary)' }}>
-      <div className="text-[11px] font-semibold" style={{ color: 'var(--text-primary)' }}>{label}</div>
+      <div className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>{label}</div>
       {([
         ['hp', 'HP'],
         ['atk', 'ATK'],
@@ -295,13 +295,13 @@ function UnitForm({
         ['critRate', 'CR%'],
       ] as const).map(([key, lbl]) => (
         <div key={key} className="flex items-center gap-1.5">
-          <label className="text-[10px] w-8" style={{ color: 'var(--text-secondary)' }}>{lbl}</label>
+          <label className="text-caption w-8" style={{ color: 'var(--text-secondary)' }}>{lbl}</label>
           <input
             type="number"
             value={unit[key as keyof UnitStats] as number ?? 0}
             onChange={(e) => onChange(key as keyof UnitStats, parseFloat(e.target.value) || 0)}
             step={key === 'speed' || key === 'critRate' ? 0.05 : 1}
-            className="flex-1 min-w-0 px-1.5 py-0.5 text-[11px] rounded border bg-transparent font-mono"
+            className="flex-1 min-w-0 px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </div>

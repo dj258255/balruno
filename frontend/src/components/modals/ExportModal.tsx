@@ -631,7 +631,7 @@ export default function ExportModal({ onClose }: ExportModalProps) {
                                                       <CheckSquare className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--primary-blue)' }} />
                                                     )}
                                                     <span className={`truncate ${isExcluded ? 'line-through' : ''}`}>{col.name}</span>
-                                                    <span className="ml-auto text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                                                    <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
                                                       {col.type}
                                                     </span>
                                                   </button>
