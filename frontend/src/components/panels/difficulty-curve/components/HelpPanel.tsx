@@ -7,7 +7,7 @@
 import { TrendingUp, AlertTriangle, Target, Activity, Coffee, Sliders } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-const PANEL_COLOR = '#9179f2';
+const PANEL_COLOR = '#06b6d4';
 
 export function HelpPanel() {
   const t = useTranslations('difficultyCurve');
@@ -74,9 +74,9 @@ export function HelpPanel() {
             </div>
           </div>
           <div className="flex items-start gap-2">
-            <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: '#a855f7' }} />
+            <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: '#06b6d4' }} />
             <div>
-              <span className="font-medium" style={{ color: '#a855f7' }}>{t('helpTimeWall')}</span>
+              <span className="font-medium" style={{ color: '#06b6d4' }}>{t('helpTimeWall')}</span>
               <p style={{ color: 'var(--text-tertiary)' }}>{t('helpTimeWallDesc')}</p>
             </div>
           </div>
@@ -151,7 +151,7 @@ export function HelpPanel() {
         </div>
         <div className="glass-section p-3">
           <div className="flex items-center gap-2 mb-1">
-            <Sliders className="w-3.5 h-3.5" style={{ color: '#a855f7' }} />
+            <Sliders className="w-3.5 h-3.5" style={{ color: '#06b6d4' }} />
             <span className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{t('helpDDA')}</span>
           </div>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('helpDDADesc')}</p>
