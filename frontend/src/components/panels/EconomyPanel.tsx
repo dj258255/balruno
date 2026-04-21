@@ -309,7 +309,7 @@ export default function EconomyPanel({ showHelp: externalShowHelp, setShowHelp: 
               {faucets.map(faucet => (
                 <div key={faucet.id} className="glass-card p-3 space-y-2 flex-1 min-w-[220px] max-w-[280px]" style={{ borderLeft: '3px solid #3db88a' }}>
                   <div className="flex items-center justify-between">
-                    <input type="text" value={faucet.name} onChange={(e) => updateFaucet(faucet.id, { name: e.target.value })} className="text-sm font-semibold bg-transparent border-none outline-none flex-1" style={{ color: 'var(--text-primary)' }} />
+                    <input type="text" value={faucet.name} onChange={(e) => updateFaucet(faucet.id, { name: e.target.value })} className="input-base font-semibold flex-1 min-w-0" style={{ color: 'var(--text-primary)' }} />
                     <button onClick={() => setFaucets(faucets.filter(f => f.id !== faucet.id))} className="p-1 rounded-lg hover:bg-red-500/20"><Trash2 className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -329,7 +329,7 @@ export default function EconomyPanel({ showHelp: externalShowHelp, setShowHelp: 
               {sinks.map(sink => (
                 <div key={sink.id} className="glass-card p-3 space-y-2 flex-1 min-w-[260px] max-w-[320px]" style={{ borderLeft: '3px solid #e86161' }}>
                   <div className="flex items-center justify-between">
-                    <input type="text" value={sink.name} onChange={(e) => updateSink(sink.id, { name: e.target.value })} className="text-sm font-semibold bg-transparent border-none outline-none flex-1" style={{ color: 'var(--text-primary)' }} />
+                    <input type="text" value={sink.name} onChange={(e) => updateSink(sink.id, { name: e.target.value })} className="input-base font-semibold flex-1 min-w-0" style={{ color: 'var(--text-primary)' }} />
                     <button onClick={() => setSinks(sinks.filter(s => s.id !== sink.id))} className="p-1 rounded-lg hover:bg-red-500/20"><Trash2 className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -526,7 +526,7 @@ export default function EconomyPanel({ showHelp: externalShowHelp, setShowHelp: 
                   {singleSources.map(source => (
                     <div key={source.id} className="glass-card p-3 space-y-2 flex-1 min-w-[260px] max-w-[320px]" style={{ borderLeft: '3px solid #3db88a' }}>
                       <div className="flex items-center justify-between">
-                        <input type="text" value={source.name} onChange={(e) => updateSingleSource(source.id, { name: e.target.value })} className="text-sm font-semibold bg-transparent border-none outline-none flex-1" style={{ color: 'var(--text-primary)' }} />
+                        <input type="text" value={source.name} onChange={(e) => updateSingleSource(source.id, { name: e.target.value })} className="input-base font-semibold flex-1 min-w-0" style={{ color: 'var(--text-primary)' }} />
                         <button onClick={() => setSingleSources(singleSources.filter(s => s.id !== source.id))} className="p-1 rounded-lg hover:bg-red-500/20"><Trash2 className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} /></button>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -578,7 +578,7 @@ export default function EconomyPanel({ showHelp: externalShowHelp, setShowHelp: 
                   {singleSinks.map(sink => (
                     <div key={sink.id} className="glass-card p-3 space-y-2 flex-1 min-w-[260px] max-w-[320px]" style={{ borderLeft: '3px solid #e86161' }}>
                       <div className="flex items-center justify-between">
-                        <input type="text" value={sink.name} onChange={(e) => updateSingleSink(sink.id, { name: e.target.value })} className="text-sm font-semibold bg-transparent border-none outline-none flex-1" style={{ color: 'var(--text-primary)' }} />
+                        <input type="text" value={sink.name} onChange={(e) => updateSingleSink(sink.id, { name: e.target.value })} className="input-base font-semibold flex-1 min-w-0" style={{ color: 'var(--text-primary)' }} />
                         <button onClick={() => setSingleSinks(singleSinks.filter(s => s.id !== sink.id))} className="p-1 rounded-lg hover:bg-red-500/20"><Trash2 className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} /></button>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
