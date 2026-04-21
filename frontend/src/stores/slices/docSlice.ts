@@ -55,7 +55,7 @@ export const createDocActions = (set: SetFn) => ({
   updateDoc: (
     projectId: string,
     docId: string,
-    updates: Partial<Pick<Doc, 'name' | 'content'>>
+    updates: Partial<Pick<Doc, 'name' | 'content' | 'icon'>>
   ) => {
     updateDocInDoc(getProjectDoc(projectId), docId, updates);
   },

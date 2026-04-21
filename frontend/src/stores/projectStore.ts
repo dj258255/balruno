@@ -195,7 +195,7 @@ export interface ProjectState {
   updateDoc: (
     projectId: string,
     docId: string,
-    updates: Partial<Pick<Doc, 'name' | 'content'>>
+    updates: Partial<Pick<Doc, 'name' | 'content' | 'icon'>>
   ) => void;
   deleteDoc: (projectId: string, docId: string) => void;
   setCurrentDoc: (docId: string | null) => void;

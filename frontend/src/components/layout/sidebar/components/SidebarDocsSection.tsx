@@ -178,10 +178,20 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                       if (!isActive) e.currentTarget.style.background = 'transparent';
                     }}
                   >
-                    <FileText
-                      className="w-3.5 h-3.5 flex-shrink-0"
-                      style={{ color: isActive ? 'var(--accent)' : 'var(--text-secondary)' }}
-                    />
+                    {d.icon ? (
+                      <span
+                        className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0 text-[14px]"
+                        style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif', lineHeight: 1 }}
+                        aria-hidden="true"
+                      >
+                        {d.icon}
+                      </span>
+                    ) : (
+                      <FileText
+                        className="w-3.5 h-3.5 flex-shrink-0"
+                        style={{ color: isActive ? 'var(--accent)' : 'var(--text-secondary)' }}
+                      />
+                    )}
                     <span className="flex-1 truncate">{d.name || '(제목 없음)'}</span>
                     <span
                       role="button"

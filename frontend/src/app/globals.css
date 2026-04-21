@@ -21,6 +21,29 @@
    기존 1800+ text-sm / text-xs 사용처는 그대로 유지 (의미 일치).
    임의 text-[Npx] 는 semantic 으로 점진 교체.
    ========================================================================== */
+/* 폼 요소 (input/textarea/select/button) 가 부모의 font-family/size 를 자동 상속
+   브라우저 기본은 user-agent 고정값을 사용하므로 명시적으로 inherit 필요 */
+@layer base {
+  input,
+  textarea,
+  select,
+  button {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+  }
+  /* 숫자 input 의 spinner 제거 — PowerBalance 는 커스텀 UI 가 많음 */
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
+
 @layer utilities {
   .text-display {
     font-size: 24px;

@@ -1182,6 +1182,7 @@ function docToYMap(d: Doc): Y.Map<unknown> {
   const map = new Y.Map();
   map.set('id', d.id);
   map.set('name', d.name);
+  if (d.icon) map.set('icon', d.icon);
   map.set('content', d.content);
   map.set('createdAt', d.createdAt);
   map.set('updatedAt', d.updatedAt);
@@ -1192,6 +1193,7 @@ function yMapToDoc(map: Y.Map<unknown>): Doc {
   return {
     id: map.get('id') as string,
     name: map.get('name') as string,
+    icon: map.get('icon') as string | undefined,
     content: (map.get('content') as string) ?? '',
     createdAt: map.get('createdAt') as number,
     updatedAt: map.get('updatedAt') as number,
@@ -1208,7 +1210,7 @@ export function addDocInDoc(doc: Y.Doc, newDoc: Doc): void {
 export function updateDocInDoc(
   doc: Y.Doc,
   docId: string,
-  updates: Partial<Pick<Doc, 'name' | 'content'>>
+  updates: Partial<Pick<Doc, 'name' | 'content' | 'icon'>>
 ): void {
   doc.transact(() => {
     const docs = doc.getArray<Y.Map<unknown>>('docs');
