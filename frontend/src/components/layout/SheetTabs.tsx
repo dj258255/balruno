@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, X, Edit2, Copy, Check, LayoutTemplate, GripVertical, ChevronLeft, ChevronRight, XCircle, FileText } from 'lucide-react';
+import { Plus, X, Edit2, Copy, Check, LayoutTemplate, GripVertical, ChevronLeft, ChevronRight, XCircle, FileText, FileSpreadsheet } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import type { Project } from '@/types';
 import { TemplateSelector } from '@/components/panels';
@@ -316,11 +316,17 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                 if (!isActive && !draggedTabId) e.currentTarget.style.background = 'var(--bg-secondary)';
               }}
             >
-              {/* 드래그 핸들 */}
-              <GripVertical
-                className="w-3 h-3 opacity-0 group-hover:opacity-40 cursor-grab active:cursor-grabbing flex-shrink-0"
-                style={{ color: 'var(--text-tertiary)' }}
-              />
+              {/* 시트 아이콘 (문서 탭의 FileText 와 시각적 균형). hover 시 GripVertical 로 교체 — 드래그 가능 힌트. */}
+              <span className="relative w-3.5 h-3.5 flex-shrink-0">
+                <FileSpreadsheet
+                  className="absolute inset-0 w-3.5 h-3.5 group-hover:opacity-0 transition-opacity"
+                  style={{ color: isActive ? 'var(--accent)' : 'var(--text-secondary)' }}
+                />
+                <GripVertical
+                  className="absolute inset-0 w-3.5 h-3.5 opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing transition-opacity"
+                  style={{ color: 'var(--text-tertiary)' }}
+                />
+              </span>
 
               {editingSheetId === sheet.id ? (
                 <div className="flex items-center gap-1 flex-1 min-w-0">
