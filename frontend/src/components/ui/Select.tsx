@@ -178,7 +178,7 @@ export default function Select({
                     <div className="flex-1 min-w-0">
                       <div className="truncate">{opt.label}</div>
                       {opt.description && (
-                        <div className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>
+                        <div className="text-caption truncate" style={{ color: 'var(--text-tertiary)' }}>
                           {opt.description}
                         </div>
                       )}

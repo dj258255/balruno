@@ -64,7 +64,7 @@ export default function InlineStatSnapshot({
 
   if (!sourceSheet) {
     return (
-      <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+      <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
         (소스 시트 미지정)
       </span>
     );
@@ -76,7 +76,7 @@ export default function InlineStatSnapshot({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1 mb-1">
             <Camera className="w-3 h-3 shrink-0" style={{ color: 'var(--accent)' }} />
-            <span className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>
+            <span className="text-caption truncate" style={{ color: 'var(--text-secondary)' }}>
               {snapshot.label ?? 'Snapshot'}
             </span>
             <button
@@ -91,7 +91,7 @@ export default function InlineStatSnapshot({
             </button>
           </div>
           <div
-            className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] font-mono p-1.5 rounded"
+            className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-caption font-mono p-1.5 rounded"
             style={{ background: 'var(--bg-tertiary)' }}
           >
             {Object.entries(snapshot.stats)
@@ -115,7 +115,7 @@ export default function InlineStatSnapshot({
             e.stopPropagation();
             setPickerOpen(true);
           }}
-          className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded border transition-colors"
+          className="inline-flex items-center gap-1 text-caption px-2 py-1 rounded border transition-colors"
           style={{
             borderColor: 'var(--border-primary)',
             background: 'var(--bg-secondary)',
@@ -149,7 +149,7 @@ export default function InlineStatSnapshot({
               <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                 Snapshot 대상 선택
               </h3>
-              <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
                 {sourceSheet.name} 에서 {captureColumns.length}개 stats 캡처:{' '}
                 {captureColumns.map((c) => c.name).join(', ')}
               </p>
@@ -173,7 +173,7 @@ export default function InlineStatSnapshot({
                     >
                       <div className="font-medium">Row {idx + 1}{firstText ? ` — ${firstText}` : ''}</div>
                       <div
-                        className="text-[10px] font-mono mt-0.5"
+                        className="text-caption font-mono mt-0.5"
                         style={{ color: 'var(--text-tertiary)' }}
                       >
                         {captureColumns

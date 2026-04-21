@@ -445,7 +445,7 @@ export default function ColumnModal({
                   </div>
                 );
               })()}
-              <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
                 Playtest 세션 row 에서 캡처 버튼 → 선택된 stats 가 JSON 으로 고정 저장됩니다.
               </p>
             </div>
@@ -492,7 +492,7 @@ export default function ColumnModal({
                       options={colOpts}
                       size="sm"
                     />
-                    <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                    <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
                       위: 상태 컬럼 (Kanban status 표시). 아래: 담당자 컬럼 (이름/avatar 표시).
                     </p>
                   </>

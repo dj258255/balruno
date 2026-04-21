@@ -404,7 +404,7 @@ export default function OnboardingGuide({ onClose }: OnboardingGuideProps) {
                   {completedSteps.has(index) ? (
                     <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
                   ) : (
-                    <span className="text-[10px] sm:text-xs font-medium">{index + 1}</span>
+                    <span className="text-caption sm:text-xs font-medium">{index + 1}</span>
                   )}
                 </button>
               ))}

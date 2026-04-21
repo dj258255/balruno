@@ -113,7 +113,7 @@ export default function CurvePreview({ entity, curveData, overrides = [] }: Curv
               )}
               {hasOverride && (
                 <span
-                  className="px-1 rounded text-[10px]"
+                  className="px-1 rounded text-caption"
                   style={{ background: `${color}20`, color }}
                 >
                   오버라이드

@@ -72,7 +72,7 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
         <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
           {preset.name}
         </div>
-        <div className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
           {preset.description}
         </div>
       </div>
@@ -82,7 +82,7 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder={preset.urlHint}
-          className="flex-1 px-2 py-1 text-[11px] rounded font-mono"
+          className="flex-1 px-2 py-1 text-caption rounded font-mono"
           style={{
             background: 'var(--bg-primary)',
             border: '1px solid var(--border-color)',
@@ -112,13 +112,13 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
       </div>
       <details>
         <summary
-          className="text-[10px] cursor-pointer"
+          className="text-caption cursor-pointer"
           style={{ color: 'var(--text-secondary)' }}
         >
           Body 미리보기 (샘플 값 치환됨) — {preset.variables.length}개 변수
         </summary>
         <pre
-          className="mt-1 p-1.5 rounded text-[10px] overflow-x-auto font-mono"
+          className="mt-1 p-1.5 rounded text-caption overflow-x-auto font-mono"
           style={{
             background: 'var(--bg-primary)',
             color: 'var(--text-secondary)',
@@ -405,7 +405,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 );
               })}
               <div
-                className="p-2.5 rounded-lg text-[11px]"
+                className="p-2.5 rounded-lg text-caption"
                 style={{
                   backgroundColor: 'var(--accent-light)',
                   color: 'var(--accent)',

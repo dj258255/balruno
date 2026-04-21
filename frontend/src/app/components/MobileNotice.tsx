@@ -47,7 +47,7 @@ export default function MobileNotice() {
       aria-label="모바일 안내"
     >
       <Monitor size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
-      <div className="flex-1 text-[11px]" style={{ color: 'var(--text-primary)' }}>
+      <div className="flex-1 text-caption" style={{ color: 'var(--text-primary)' }}>
         <strong>모바일에선 조회 전용</strong>입니다. 수식 편집·시뮬레이션·대시보드 등 고급 기능은 데스크톱에서 이용하세요.
       </div>
       <button

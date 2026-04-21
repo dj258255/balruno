@@ -78,7 +78,7 @@ function SectionDivider({
           )}
         </div>
         {description && (
-          <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-caption mt-0.5 truncate" style={{ color: 'var(--text-tertiary)' }}>
             {description}
           </p>
         )}

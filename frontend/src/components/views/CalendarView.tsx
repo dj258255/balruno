@@ -175,7 +175,7 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className="px-2 py-0.5 text-[11px] rounded"
+                className="px-2 py-0.5 text-caption rounded"
                 style={{
                   background: mode === m ? 'var(--accent)' : 'transparent',
                   color: mode === m ? 'white' : 'var(--text-secondary)',
@@ -374,7 +374,7 @@ function MonthGrid({
                   </button>
                 ))}
                 {cell.rows.length > 3 && (
-                  <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                  <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
                     +{cell.rows.length - 3}
                   </div>
                 )}
@@ -423,7 +423,7 @@ function WeekStrip({
           >
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="text-[10px] uppercase" style={{ color: 'var(--text-tertiary)' }}>{WEEKDAYS_KO[d.getDay()]}</div>
+                <div className="text-overline" style={{ color: 'var(--text-tertiary)' }}>{WEEKDAYS_KO[d.getDay()]}</div>
                 <div className="text-sm font-semibold" style={{ color: isToday ? 'var(--accent)' : 'var(--text-primary)' }}>{d.getDate()}</div>
               </div>
               <button
@@ -504,7 +504,7 @@ function DayList({
             <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
               {titleCol ? String(row.cells[titleCol.id] ?? '·') : row.id.slice(0, 6)}
             </div>
-            <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="text-caption mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
               {sheet.columns
                 .filter((c) => c.id !== titleCol?.id)
                 .slice(0, 3)

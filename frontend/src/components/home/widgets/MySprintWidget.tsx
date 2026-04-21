@@ -61,7 +61,7 @@ export default function MySprintWidget({ work }: { work: TodaysWork }) {
               style={{ color: 'var(--text-primary)' }}
             >
               • {getTitle(ctx)}
-              <span className="ml-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+              <span className="ml-1 text-caption" style={{ color: 'var(--text-tertiary)' }}>
                 {ctx.projectName}
               </span>
             </button>

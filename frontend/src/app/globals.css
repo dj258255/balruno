@@ -2,6 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   Typography Scale (Semantic Tokens)
+   --------------------------------------------------------------------------
+   데이터 밀도 높은 앱용 (Linear / Airtable / Github 계열)
+   본문 14px · 라벨 12px · 캡션 11px · 오버라인 10px upper
+   WCAG 최소 11px 규칙 — 10px 은 overline uppercase + tracking 로만 허용
+
+   사용:
+     <h1 class="text-display">홈</h1>
+     <h2 class="text-heading">설정</h2>
+     <p class="text-body">본문</p>
+     <span class="text-label">라벨</span>
+     <span class="text-caption">5분 전</span>
+     <div class="text-overline">프로젝트</div>
+
+   호환성: text-sm (14px) = text-body · text-xs (12px) = text-label.
+   기존 1800+ text-sm / text-xs 사용처는 그대로 유지 (의미 일치).
+   임의 text-[Npx] 는 semantic 으로 점진 교체.
+   ========================================================================== */
+@layer utilities {
+  .text-display {
+    font-size: 24px;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .text-heading {
+    font-size: 18px;
+    line-height: 1.35;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .text-subhead {
+    font-size: 16px;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  .text-body {
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+  .text-label {
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+  .text-caption {
+    font-size: 11px;
+    line-height: 1.4;
+    font-weight: 400;
+  }
+  .text-overline {
+    font-size: 10px;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}
+
 /* ========================================
    Mobile & Touch Support
    참고: AG Grid, Handsontable, Google Sheets 패턴

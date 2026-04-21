@@ -274,7 +274,7 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
                       {s.columns.map((col, j) => (
                         <span
                           key={j}
-                          className="text-[11px] px-2 py-0.5 rounded"
+                          className="text-caption px-2 py-0.5 rounded"
                           style={{
                             background:
                               col.type === 'formula'

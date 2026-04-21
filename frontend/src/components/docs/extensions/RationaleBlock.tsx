@@ -162,13 +162,13 @@ function RationaleView({ node }: NodeViewProps) {
           <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
             근거 — {summary.sheet.name}/{summary.column.name}
           </span>
-          <span className="ml-auto text-[11px] font-mono px-2 py-0.5 rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+          <span className="ml-auto text-caption font-mono px-2 py-0.5 rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
             현재 값: {formatValue(summary.currentValue)}
           </span>
           <button
             type="button"
             onClick={jumpToCell}
-            className="text-[11px] flex items-center gap-0.5 px-2 py-0.5 rounded hover:bg-[var(--bg-hover)]"
+            className="text-caption flex items-center gap-0.5 px-2 py-0.5 rounded hover:bg-[var(--bg-hover)]"
             style={{ color: '#a855f7' }}
           >
             셀로
@@ -179,12 +179,12 @@ function RationaleView({ node }: NodeViewProps) {
         <div className="p-3 space-y-3">
           {/* Change history */}
           <section>
-            <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="flex items-center gap-1 text-overline mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
               <History className="w-3 h-3" />
               변경 이력 {summary.cellChanges.length > 0 && `(${summary.cellChanges.length})`}
             </div>
             {summary.cellChanges.length === 0 ? (
-              <p className="text-[11px] italic" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
                 변경 기록 없음 — 초기 값 유지
               </p>
             ) : (
@@ -192,7 +192,7 @@ function RationaleView({ node }: NodeViewProps) {
                 {summary.cellChanges.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center gap-2 text-[11px] px-2 py-1 rounded"
+                    className="flex items-center gap-2 text-caption px-2 py-1 rounded"
                     style={{ background: 'var(--bg-primary)' }}
                   >
                     <span style={{ color: 'var(--text-tertiary)' }}>
@@ -202,7 +202,7 @@ function RationaleView({ node }: NodeViewProps) {
                       {c.userName || c.userId}
                     </span>
                     <span
-                      className="px-1.5 py-0.5 rounded font-mono text-[10px]"
+                      className="px-1.5 py-0.5 rounded font-mono text-caption"
                       style={{
                         background: 'rgba(239, 68, 68, 0.1)',
                         color: '#ef4444',
@@ -213,7 +213,7 @@ function RationaleView({ node }: NodeViewProps) {
                     </span>
                     <ArrowRight className="w-2.5 h-2.5 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
                     <span
-                      className="px-1.5 py-0.5 rounded font-mono text-[10px]"
+                      className="px-1.5 py-0.5 rounded font-mono text-caption"
                       style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}
                     >
                       {formatValue(c.after)}
@@ -232,7 +232,7 @@ function RationaleView({ node }: NodeViewProps) {
           {/* Linked tasks */}
           {summary.linkedTasks.length > 0 && (
             <section>
-              <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
+              <div className="flex items-center gap-1 text-overline mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
                 <LinkIcon className="w-3 h-3" />
                 연결된 태스크 ({summary.linkedTasks.length})
               </div>
@@ -241,11 +241,11 @@ function RationaleView({ node }: NodeViewProps) {
                   <button
                     key={t.id}
                     onClick={() => jumpToTask(t.sheetId)}
-                    className="w-full flex items-center gap-2 text-[11px] px-2 py-1 rounded text-left hover:bg-[var(--bg-hover)]"
+                    className="w-full flex items-center gap-2 text-caption px-2 py-1 rounded text-left hover:bg-[var(--bg-hover)]"
                     style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
                   >
                     <span className="truncate flex-1">{t.title}</span>
-                    <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                    <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
                       {t.sheetName}
                     </span>
                   </button>

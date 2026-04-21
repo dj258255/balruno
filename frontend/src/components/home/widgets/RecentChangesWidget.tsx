@@ -83,7 +83,7 @@ export default function RecentChangesWidget({ work }: Props) {
         <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
           최근 변경 (Inbox)
         </h3>
-        <span className="ml-auto text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+        <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
           {work.recentChanges.length}개
         </span>
       </div>
@@ -102,7 +102,7 @@ export default function RecentChangesWidget({ work }: Props) {
               }
               className="w-full text-left px-2 py-1.5 rounded hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
             >
-              <div className="flex items-center gap-2 text-[10px] mb-0.5">
+              <div className="flex items-center gap-2 text-caption mb-0.5">
                 <span style={{ color: 'var(--text-tertiary)' }}>
                   {formatRelative(item.entry.timestamp)}
                 </span>
@@ -114,12 +114,12 @@ export default function RecentChangesWidget({ work }: Props) {
                   {item.projectName}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-[11px]">
+              <div className="flex items-center gap-1.5 text-caption">
                 <span className="truncate max-w-[100px]" style={{ color: 'var(--text-primary)' }}>
                   {sheet?.name ?? '—'} / {column?.name ?? '—'}
                 </span>
                 <span
-                  className="px-1.5 py-0.5 rounded text-[10px] font-mono truncate"
+                  className="px-1.5 py-0.5 rounded text-caption font-mono truncate"
                   style={{
                     background: 'rgba(239, 68, 68, 0.1)',
                     color: '#ef4444',
@@ -130,7 +130,7 @@ export default function RecentChangesWidget({ work }: Props) {
                 </span>
                 <ArrowRight className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
                 <span
-                  className="px-1.5 py-0.5 rounded text-[10px] font-mono truncate"
+                  className="px-1.5 py-0.5 rounded text-caption font-mono truncate"
                   style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}
                 >
                   {formatValue(item.entry.after)}

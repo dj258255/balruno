@@ -151,7 +151,7 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
             <button
               type="button"
               onClick={() => onBlur?.()}
-              className="text-[10px] px-2 py-0.5 rounded"
+              className="text-caption px-2 py-0.5 rounded"
               style={{ background: 'var(--accent)', color: 'white' }}
             >
               완료 (Esc)
@@ -361,7 +361,7 @@ function LinkRecordPicker({
         <button
           type="button"
           onClick={clear}
-          className="text-[10px] px-1.5 py-0.5 rounded hover:bg-[var(--bg-tertiary)]"
+          className="text-caption px-1.5 py-0.5 rounded hover:bg-[var(--bg-tertiary)]"
           style={{ color: 'var(--text-secondary)' }}
         >
           선택 해제
@@ -369,7 +369,7 @@ function LinkRecordPicker({
         <button
           type="button"
           onClick={onClose}
-          className="text-[10px] px-2 py-0.5 rounded"
+          className="text-caption px-2 py-0.5 rounded"
           style={{ background: 'var(--accent)', color: 'white' }}
         >
           {multiple ? '완료' : '닫기'}

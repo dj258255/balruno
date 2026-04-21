@@ -1306,7 +1306,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                           return (
                             <td
                               key={cell.id}
-                              className={cn('text-[14px] relative', isActions && 'px-1', isRowNumber && 'text-center')}
+                              className={cn('text-body relative', isActions && 'px-1', isRowNumber && 'text-center')}
                               style={{
                                 display: 'flex',
                                 // 행 번호 셀은 stretch로 자식이 전체 높이 차지, 액션 셀은 center
@@ -1396,7 +1396,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                         return (
                           <td
                             key={cell.id}
-                            className="text-[14px] relative group"
+                            className="text-body relative group"
                             style={{
                               width,
                               flex: `0 0 ${width}px`,

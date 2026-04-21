@@ -265,7 +265,7 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
                         {monthSegments.map((seg) => (
                           <div
                             key={`${seg.year}-${seg.month}-${seg.startIdx}`}
-                            className="flex-shrink-0 text-[11px] font-semibold border-r flex items-center justify-start px-2"
+                            className="flex-shrink-0 text-caption font-semibold border-r flex items-center justify-start px-2"
                             style={{
                               width: seg.days * DAY_W,
                               borderColor: 'var(--border-primary)',
@@ -285,7 +285,7 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
                           return (
                             <div
                               key={i}
-                              className="flex-shrink-0 text-[10px] text-center border-r flex flex-col items-center justify-center leading-tight"
+                              className="flex-shrink-0 text-caption text-center border-r flex flex-col items-center justify-center leading-tight"
                               style={{
                                 width: DAY_W,
                                 borderColor: 'var(--border-primary)',
@@ -294,7 +294,7 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
                               }}
                             >
                               <div className="font-medium">{d.getDate()}</div>
-                              <div className="text-[9px] opacity-70">{'일월화수목금토'[d.getDay()]}</div>
+                              <div className="text-caption opacity-70">{'일월화수목금토'[d.getDay()]}</div>
                             </div>
                           );
                         })}
@@ -338,7 +338,7 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
                         }}
                         title={`${iso(start)} – ${iso(end)}`}
                       >
-                        <div className="text-[10px] text-white truncate flex-1 px-1.5">
+                        <div className="text-caption text-white truncate flex-1 px-1.5">
                           {titleCol ? String(row.cells[titleCol.id] ?? '·') : ''}
                         </div>
                         {/* resize-end handle */}

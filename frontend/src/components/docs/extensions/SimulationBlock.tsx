@@ -88,7 +88,7 @@ function SimulationView({ node, updateAttributes }: NodeViewProps) {
             type="button"
             onClick={handleRun}
             disabled={isRunning}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-1 rounded text-caption disabled:opacity-50"
             style={{ background: '#e11d48', color: 'white' }}
           >
             {isRunning ? (
@@ -153,7 +153,7 @@ function NumField({
   step?: number;
 }) {
   return (
-    <label className="text-[10px] block" style={{ color: 'var(--text-tertiary)' }}>
+    <label className="text-caption block" style={{ color: 'var(--text-tertiary)' }}>
       {label}
       <input
         type="number"
@@ -170,7 +170,7 @@ function NumField({
 function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="p-2 rounded-lg" style={{ background: 'var(--bg-primary)' }}>
-      <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+      <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
         {label}
       </div>
       <div className="text-sm font-bold font-mono" style={{ color: color ?? 'var(--text-primary)' }}>

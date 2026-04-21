@@ -277,14 +277,14 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                   <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
                     권한
                   </div>
-                  <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                  <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
                     {readOnly ? '링크 받는 사람은 보기만 가능' : '편집 + 동기화 전체 허용'}
                   </div>
                 </div>
                 <div className="flex gap-1">
                   <button
                     onClick={() => setReadOnly(false)}
-                    className="text-[11px] px-2 py-1 rounded"
+                    className="text-caption px-2 py-1 rounded"
                     style={{
                       background: !readOnly ? 'var(--accent)' : 'var(--bg-tertiary)',
                       color: !readOnly ? 'white' : 'var(--text-secondary)',
@@ -294,7 +294,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                   </button>
                   <button
                     onClick={() => setReadOnly(true)}
-                    className="text-[11px] px-2 py-1 rounded"
+                    className="text-caption px-2 py-1 rounded"
                     style={{
                       background: readOnly ? 'var(--accent)' : 'var(--bg-tertiary)',
                       color: readOnly ? 'white' : 'var(--text-secondary)',
@@ -311,7 +311,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                   <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
                     링크 만료
                   </div>
-                  <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                  <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
                     {expiryKey === 'none' ? '만료 없음 (room 이 살아있는 동안 유효)' : `${expiryKey} 후 자동 만료`}
                   </div>
                 </div>
@@ -320,7 +320,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                     <button
                       key={k}
                       onClick={() => setExpiryKey(k)}
-                      className="text-[11px] px-2 py-1 rounded"
+                      className="text-caption px-2 py-1 rounded"
                       style={{
                         background: expiryKey === k ? 'var(--accent)' : 'var(--bg-tertiary)',
                         color: expiryKey === k ? 'white' : 'var(--text-secondary)',

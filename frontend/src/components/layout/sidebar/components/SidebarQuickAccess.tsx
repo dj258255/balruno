@@ -84,7 +84,7 @@ export default function SidebarQuickAccess() {
     <div className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider hover:bg-[var(--bg-hover)] transition-colors"
+        className="w-full flex items-center gap-1 px-3 py-1.5 text-overline hover:bg-[var(--bg-hover)] transition-colors"
         style={{ color: 'var(--text-tertiary)' }}
       >
         {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
@@ -209,7 +209,7 @@ function QuickLink({
       </span>
       {count !== undefined && count > 0 && (
         <span
-          className="text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0"
+          className="text-caption font-medium px-1.5 py-0.5 rounded-full flex-shrink-0"
           style={{
             background: 'var(--bg-tertiary)',
             color: 'var(--text-secondary)',

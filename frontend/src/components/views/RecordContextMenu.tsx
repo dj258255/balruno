@@ -88,7 +88,7 @@ export default function RecordContextMenu({
       <Icon size={12} className="flex-shrink-0" />
       <span className="flex-1">{label}</span>
       {shortcut && (
-        <kbd className="text-[9px] font-mono px-1 py-0.5 rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }}>
+        <kbd className="text-caption font-mono px-1 py-0.5 rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }}>
           {shortcut}
         </kbd>
       )}

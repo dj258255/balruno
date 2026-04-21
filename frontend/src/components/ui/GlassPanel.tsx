@@ -108,7 +108,7 @@ export function GlassPanel({
             {/* Title */}
             {title && (
               <h3
-                className="font-semibold text-[15px]"
+                className="font-semibold text-subhead"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {title}

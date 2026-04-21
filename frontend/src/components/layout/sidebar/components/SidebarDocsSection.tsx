@@ -87,12 +87,12 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
     >
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider hover:bg-[var(--bg-hover)] transition-colors shrink-0"
+        className="w-full flex items-center gap-1 px-3 py-1.5 text-overline hover:bg-[var(--bg-hover)] transition-colors shrink-0"
         style={{ color: 'var(--text-tertiary)' }}
       >
         {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         문서
-        <span className="ml-auto text-[10px] opacity-60">{docs.length}</span>
+        <span className="ml-auto text-caption opacity-60">{docs.length}</span>
       </button>
 
       {expanded && (
@@ -121,7 +121,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                 className="absolute left-0 right-0 top-full mt-1 rounded-lg shadow-lg border z-20"
                 style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-primary)' }}
               >
-                <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider border-b" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
+                <div className="px-2 py-1.5 text-overline border-b" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
                   GDD 장르
                 </div>
                 {DOC_TEMPLATES.filter((t) => t.category === 'genre').map((t) => (
@@ -132,10 +132,10 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                     style={{ color: 'var(--text-primary)' }}
                   >
                     <div>{t.name}</div>
-                    <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{t.description}</div>
+                    <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t.description}</div>
                   </button>
                 ))}
-                <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider border-b border-t" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
+                <div className="px-2 py-1.5 text-overline border-b border-t" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
                   시스템
                 </div>
                 {DOC_TEMPLATES.filter((t) => t.category !== 'genre').map((t) => (
@@ -146,7 +146,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                     style={{ color: 'var(--text-primary)' }}
                   >
                     <div>{t.name}</div>
-                    <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{t.description}</div>
+                    <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t.description}</div>
                   </button>
                 ))}
               </div>
@@ -154,7 +154,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
           </div>
 
           {docs.length === 0 ? (
-            <p className="text-[10px] italic px-2 py-1.5" style={{ color: 'var(--text-tertiary)' }}>
+            <p className="text-caption italic px-2 py-1.5" style={{ color: 'var(--text-tertiary)' }}>
               GDD · 설계안 · 릴리스 노트를 여기에.
             </p>
           ) : (

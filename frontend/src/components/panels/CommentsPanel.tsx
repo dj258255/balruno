@@ -124,7 +124,7 @@ export default function CommentsPanel({ onClose }: Props) {
       icon={MessageCircle}
       onClose={onClose}
       headerExtra={
-        <span className="text-[10px] px-1.5 py-0.5 rounded ml-2" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+        <span className="text-caption px-1.5 py-0.5 rounded ml-2" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
           {comments.length}
         </span>
       }
@@ -137,7 +137,7 @@ export default function CommentsPanel({ onClose }: Props) {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className="px-2 py-0.5 text-[11px] rounded transition-colors"
+            className="px-2 py-0.5 text-caption rounded transition-colors"
             style={{
               background: filter === f ? 'var(--accent)' : 'var(--bg-tertiary)',
               color: filter === f ? 'white' : 'var(--text-secondary)',
@@ -146,7 +146,7 @@ export default function CommentsPanel({ onClose }: Props) {
             {f === 'all' ? '전체' : f === 'open' ? '미해결' : '내 멘션'}
           </button>
         ))}
-        <label className="ml-auto flex items-center gap-1.5 text-[11px] cursor-pointer select-none" style={{ color: 'var(--text-secondary)' }}>
+        <label className="ml-auto flex items-center gap-1.5 text-caption cursor-pointer select-none" style={{ color: 'var(--text-secondary)' }}>
           <Checkbox
             checked={showResolved}
             onChange={(e) => setShowResolved(e.target.checked)}
@@ -166,7 +166,7 @@ export default function CommentsPanel({ onClose }: Props) {
         ) : (
           filteredGroups.map((g) => (
             <div key={g.cellKey} className="space-y-2">
-              <div className="text-[10px] font-mono px-1.5 py-0.5 rounded inline-block" style={{
+              <div className="text-caption font-mono px-1.5 py-0.5 rounded inline-block" style={{
                 background: 'var(--bg-tertiary)',
                 color: 'var(--text-secondary)',
               }}>
@@ -200,7 +200,7 @@ export default function CommentsPanel({ onClose }: Props) {
       {/* 새 코멘트 작성 */}
       <div className="border-t p-2 space-y-1.5" style={{ borderColor: 'var(--border-primary)' }}>
         {!sheet || sheet.rows.length === 0 ? (
-          <p className="text-[10px] text-center" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-caption text-center" style={{ color: 'var(--text-secondary)' }}>
             시트가 없거나 행이 비어있습니다.
           </p>
         ) : (
@@ -209,7 +209,7 @@ export default function CommentsPanel({ onClose }: Props) {
               <select
                 value={anchorRowId}
                 onChange={(e) => setAnchorRowId(e.target.value)}
-                className="px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+                className="px-1.5 py-0.5 text-caption rounded border bg-transparent"
                 style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
               >
                 {sheet.rows.map((r, i) => (
@@ -219,7 +219,7 @@ export default function CommentsPanel({ onClose }: Props) {
               <select
                 value={anchorColId}
                 onChange={(e) => setAnchorColId(e.target.value)}
-                className="px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+                className="px-1.5 py-0.5 text-caption rounded border bg-transparent"
                 style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
               >
                 {sheet.columns.map((c) => (
@@ -257,12 +257,12 @@ export default function CommentsPanel({ onClose }: Props) {
             {peers.length > 0 && (
               <div className="flex items-center gap-1 flex-wrap">
                 <AtSign size={10} style={{ color: 'var(--text-secondary)' }} />
-                <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>접속자:</span>
+                <span className="text-caption" style={{ color: 'var(--text-secondary)' }}>접속자:</span>
                 {peers.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => setNewText((t) => `${t}${t.endsWith(' ') || t === '' ? '' : ' '}@${p.name} `)}
-                    className="text-[10px] px-1.5 py-0 rounded hover:opacity-80"
+                    className="text-caption px-1.5 py-0 rounded hover:opacity-80"
                     style={{ background: p.color, color: 'white' }}
                   >
                     @{p.name}
@@ -394,17 +394,17 @@ function CommentItem({
     >
       <div className="flex items-center gap-1.5">
         <span
-          className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-semibold text-white flex-shrink-0"
+          className="w-4 h-4 rounded-full flex items-center justify-center text-caption font-semibold text-white flex-shrink-0"
           style={{ background: comment.authorColor }}
         >
           {comment.author.slice(0, 1).toUpperCase()}
         </span>
-        <span className="text-[11px] font-semibold" style={{ color: 'var(--text-primary)' }}>{comment.author}</span>
-        <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+        <span className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>{comment.author}</span>
+        <span className="text-caption" style={{ color: 'var(--text-secondary)' }}>
           {new Date(comment.timestamp).toLocaleString()}
         </span>
         {comment.resolved && (
-          <span className="text-[10px] px-1 rounded" style={{ background: 'var(--bg-tertiary)', color: '#10b981' }}>
+          <span className="text-caption px-1 rounded" style={{ background: 'var(--bg-tertiary)', color: '#10b981' }}>
             해결됨
           </span>
         )}
@@ -435,8 +435,8 @@ function CommentItem({
             className="flex-1 px-2 py-1 text-xs rounded border bg-transparent resize-none"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
-          <button onClick={save} className="px-2 py-1 text-[10px] rounded" style={{ background: 'var(--accent)', color: 'white' }}>저장</button>
-          <button onClick={() => { setEditing(false); setEditText(comment.text); }} className="px-2 py-1 text-[10px] rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>취소</button>
+          <button onClick={save} className="px-2 py-1 text-caption rounded" style={{ background: 'var(--accent)', color: 'white' }}>저장</button>
+          <button onClick={() => { setEditing(false); setEditText(comment.text); }} className="px-2 py-1 text-caption rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>취소</button>
         </div>
       ) : (
         <p

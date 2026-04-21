@@ -62,7 +62,7 @@ export default function PanelShell({
               {title}
             </h3>
             {subtitle && (
-              <p className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-caption truncate" style={{ color: 'var(--text-secondary)' }}>
                 {subtitle}
               </p>
             )}

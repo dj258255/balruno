@@ -250,7 +250,7 @@ function StickerItem({ sticker, projectId, sheetId, containerRef }: StickerItemP
               >
                 <Minus className="w-2.5 h-2.5 text-gray-600" />
               </button>
-              <span className="text-[10px] font-medium text-gray-600 min-w-[18px] text-center">
+              <span className="text-caption font-medium text-gray-600 min-w-[18px] text-center">
                 {currentFontSize}
               </span>
               <button

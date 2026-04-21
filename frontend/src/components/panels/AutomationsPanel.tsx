@@ -267,7 +267,7 @@ export default function AutomationsPanel({ onClose }: Props) {
                   style={{ color: a.enabled ? '#10b981' : 'var(--text-secondary)' }}
                 />
               )}
-              <span className="text-[11px] flex-1 truncate" style={{ color: 'var(--text-primary)' }}>
+              <span className="text-caption flex-1 truncate" style={{ color: 'var(--text-primary)' }}>
                 {a.name}
               </span>
               <button
@@ -279,7 +279,7 @@ export default function AutomationsPanel({ onClose }: Props) {
             </div>
           ))}
           {automations.length === 0 && (
-            <p className="text-[10px] p-2 text-center" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-caption p-2 text-center" style={{ color: 'var(--text-secondary)' }}>
               자동화가 없습니다
             </p>
           )}
@@ -302,7 +302,7 @@ export default function AutomationsPanel({ onClose }: Props) {
                     className="flex-1 px-2 py-1 text-sm rounded border bg-transparent font-semibold"
                     style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                   />
-                  <label className="flex items-center gap-1.5 text-[11px] cursor-pointer select-none" style={{ color: 'var(--text-secondary)' }}>
+                  <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none" style={{ color: 'var(--text-secondary)' }}>
                     <Checkbox
                       checked={selected.enabled}
                       onChange={(e) => updateAutomation(selected.id, { enabled: e.target.checked })}
@@ -318,7 +318,7 @@ export default function AutomationsPanel({ onClose }: Props) {
                         max={50000}
                         step={100}
                         onChange={(e) => setFlowIterations(Math.max(100, parseInt(e.target.value) || 1000))}
-                        className="w-20 px-1.5 py-0.5 text-[11px] rounded border bg-transparent font-mono"
+                        className="w-20 px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
                         style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                         title="시뮬 반복 횟수"
                       />
@@ -340,7 +340,7 @@ export default function AutomationsPanel({ onClose }: Props) {
                     </button>
                   )}
                 </div>
-                <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
                   {selected.mode === 'flow'
                     ? '※ Source → Gate → Sink 그래프를 Monte Carlo 로 시뮬. Machinations 스타일 확률 흐름 분석.'
                     : '※ 활성화 + cell-changed/row-added 트리거는 Y.Doc observer 통합 후 자동 발동. 현재는 manual + 테스트 실행만 지원.'}
@@ -368,7 +368,7 @@ export default function AutomationsPanel({ onClose }: Props) {
 
               {/* 노드 추가 */}
               <div className="border-t pt-3 space-y-2" style={{ borderColor: 'var(--border-primary)' }}>
-                <div className="text-[11px] font-semibold" style={{ color: 'var(--text-primary)' }}>노드 추가</div>
+                <div className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>노드 추가</div>
                 {selected.mode === 'flow' ? (
                   <FlowNodeAdder onAdd={addNode} />
                 ) : (
@@ -379,7 +379,7 @@ export default function AutomationsPanel({ onClose }: Props) {
               {/* Flow 시뮬 결과 */}
               {selected.mode === 'flow' && flowResult && (
                 <div className="border-t pt-3 space-y-2" style={{ borderColor: 'var(--border-primary)' }}>
-                  <div className="text-[11px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  <div className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>
                     시뮬 결과 ({flowResult.iterations.toLocaleString()} 회)
                   </div>
                   <div className="space-y-1">
@@ -405,8 +405,8 @@ export default function AutomationsPanel({ onClose }: Props) {
               {/* 실행 로그 (최신) */}
               {logs.length > 0 && (
                 <div className="border-t pt-3 space-y-1" style={{ borderColor: 'var(--border-primary)' }}>
-                  <div className="text-[11px] font-semibold" style={{ color: 'var(--text-primary)' }}>실행 로그 (최근)</div>
-                  <div className="space-y-0.5 font-mono text-[10px] max-h-40 overflow-y-auto p-2 rounded" style={{ background: 'var(--bg-secondary)' }}>
+                  <div className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>실행 로그 (최근)</div>
+                  <div className="space-y-0.5 font-mono text-caption max-h-40 overflow-y-auto p-2 rounded" style={{ background: 'var(--bg-secondary)' }}>
                     {logs.map((l, i) => (
                       <div key={i} className="flex gap-2" style={{
                         color: l.level === 'error' ? '#ef4444' : l.level === 'warn' ? '#f59e0b' : 'var(--text-secondary)',
@@ -423,7 +423,7 @@ export default function AutomationsPanel({ onClose }: Props) {
               {runHistory.length > 0 && (
                 <div className="border-t pt-3 space-y-1" style={{ borderColor: 'var(--border-primary)' }}>
                   <div className="flex items-center justify-between">
-                    <div className="text-[11px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    <div className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>
                       실행 히스토리 ({runHistory.length})
                     </div>
                     <button
@@ -433,7 +433,7 @@ export default function AutomationsPanel({ onClose }: Props) {
                           localStorage.removeItem(`balruno:automation-runs:${currentProjectId}`);
                         }
                       }}
-                      className="text-[10px]"
+                      className="text-caption"
                       style={{ color: 'var(--text-tertiary)' }}
                     >
                       지우기
@@ -443,7 +443,7 @@ export default function AutomationsPanel({ onClose }: Props) {
                     {runHistory.map((r, i) => {
                       const hasError = r.logs.some((l) => l.level === 'error');
                       return (
-                        <details key={i} className="text-[10px] rounded" style={{ background: 'var(--bg-secondary)' }}>
+                        <details key={i} className="text-caption rounded" style={{ background: 'var(--bg-secondary)' }}>
                           <summary className="flex items-center gap-2 px-2 py-1 cursor-pointer">
                             <span
                               className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -519,7 +519,7 @@ function NodeAdder({ onAdd, hasTrigger }: { onAdd: (type: NodeType, subtype: str
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <span className="text-[10px] w-12" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+      <span className="text-caption w-12" style={{ color: 'var(--text-secondary)' }}>{label}</span>
       {children}
     </div>
   );
@@ -530,7 +530,7 @@ function Btn({ sub, onClick }: { sub: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded"
+      className="text-caption flex items-center gap-1 px-1.5 py-0.5 rounded"
       style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
     >
       <Icon size={10} />
@@ -563,7 +563,7 @@ function NodeCard({
     <div className="rounded border" style={{ borderColor: typeColor, background: 'var(--bg-secondary)' }}>
       <div className="flex items-center gap-2 p-2 border-b" style={{ borderColor: 'var(--border-primary)' }}>
         <Icon size={12} style={{ color: typeColor }} />
-        <span className="text-[11px] font-semibold flex-1" style={{ color: typeColor }}>
+        <span className="text-caption font-semibold flex-1" style={{ color: typeColor }}>
           {node.type.toUpperCase()}: {SUBTYPE_LABELS[node.subtype] ?? node.subtype}
         </span>
         <button onClick={onRemove} className="p-0.5 rounded hover:bg-[var(--bg-tertiary)]">
@@ -589,7 +589,7 @@ function NodeConfigEditor({
   const setCfg = (patch: Record<string, unknown>) => onChange({ ...cfg, ...patch });
 
   if (node.subtype === 'manual') {
-    return <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>설정 없음 — 테스트 실행 버튼으로 수동 발동.</p>;
+    return <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>설정 없음 — 테스트 실행 버튼으로 수동 발동.</p>;
   }
 
   // Flow nodes
@@ -600,7 +600,7 @@ function NodeConfigEditor({
           type="number"
           value={(cfg.rate as number) ?? 100}
           onChange={(e) => setCfg({ rate: parseFloat(e.target.value) || 0 })}
-          className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent font-mono"
+          className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
           style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
         />
       </Field>
@@ -617,7 +617,7 @@ function NodeConfigEditor({
             step={0.01}
             value={(cfg.probability as number) ?? 0.5}
             onChange={(e) => setCfg({ probability: Math.max(0, Math.min(1, parseFloat(e.target.value) || 0)) })}
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent font-mono"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
             style={{ borderColor: 'var(--border-primary)' }}
           />
         </Field>
@@ -627,7 +627,7 @@ function NodeConfigEditor({
             step={0.1}
             value={(cfg.multiplier as number) ?? 1}
             onChange={(e) => setCfg({ multiplier: parseFloat(e.target.value) || 1 })}
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent font-mono"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
             style={{ borderColor: 'var(--border-primary)' }}
           />
         </Field>
@@ -640,7 +640,7 @@ function NodeConfigEditor({
         <input
           value={(cfg.label as string) ?? ''}
           onChange={(e) => setCfg({ label: e.target.value })}
-          className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+          className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent"
           style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
         />
       </Field>
@@ -686,7 +686,7 @@ function NodeConfigEditor({
           <input
             value={String(cfg.value ?? '')}
             onChange={(e) => setCfg({ value: e.target.value })}
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
@@ -715,7 +715,7 @@ function NodeConfigEditor({
             type="number"
             value={(cfg.threshold as number) ?? 0}
             onChange={(e) => setCfg({ threshold: parseFloat(e.target.value) || 0 })}
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent font-mono"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
@@ -729,7 +729,7 @@ function NodeConfigEditor({
         <input
           value={(cfg.message as string) ?? ''}
           onChange={(e) => setCfg({ message: e.target.value })}
-          className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+          className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent"
           style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
         />
       </Field>
@@ -761,7 +761,7 @@ function NodeConfigEditor({
           <input
             value={String(cfg.value ?? '')}
             onChange={(e) => setCfg({ value: e.target.value })}
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
@@ -777,7 +777,7 @@ function NodeConfigEditor({
             value={(cfg.url as string) ?? ''}
             onChange={(e) => setCfg({ url: e.target.value })}
             placeholder="https://..."
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
@@ -787,7 +787,7 @@ function NodeConfigEditor({
             onChange={(e) => setCfg({ body: e.target.value })}
             placeholder='{"key": "value"}'
             rows={2}
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent font-mono resize-none"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono resize-none"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
@@ -802,7 +802,7 @@ function NodeConfigEditor({
           type="number"
           value={Number(cfg.ms ?? 1000)}
           onChange={(e) => setCfg({ ms: Number(e.target.value) })}
-          className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent font-mono"
+          className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
           style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
         />
       </Field>
@@ -824,7 +824,7 @@ function NodeConfigEditor({
             type="number"
             value={Number(cfg.limit ?? 100)}
             onChange={(e) => setCfg({ limit: Number(e.target.value) })}
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent font-mono"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
@@ -840,7 +840,7 @@ function NodeConfigEditor({
             value={(cfg.expr as string) ?? ''}
             onChange={(e) => setCfg({ expr: e.target.value })}
             placeholder="예: 100 * 1.15^10"
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent font-mono"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
@@ -849,7 +849,7 @@ function NodeConfigEditor({
             value={(cfg.label as string) ?? ''}
             onChange={(e) => setCfg({ label: e.target.value })}
             placeholder="결과 레이블"
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
@@ -864,7 +864,7 @@ function NodeConfigEditor({
           type="number"
           value={Number(cfg.intervalMin ?? 60)}
           onChange={(e) => setCfg({ intervalMin: Number(e.target.value) })}
-          className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent font-mono"
+          className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
           style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
         />
       </Field>
@@ -873,7 +873,7 @@ function NodeConfigEditor({
 
   if (node.subtype === 'branch') {
     return (
-      <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+      <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
         분기 노드 — 이후 연결된 edge 를 Pass/Fail 별도 라벨로 사용.
         (compare 와 동일하게 평가 후 분기)
       </p>
@@ -887,7 +887,7 @@ function NodeConfigEditor({
     const targetSheet = sheets.find((s) => s.id === (cfg.targetSheetId as string));
     return (
       <div className="space-y-1">
-        <div className="text-[10px] font-semibold pt-0.5" style={{ color: 'var(--text-secondary)' }}>소스</div>
+        <div className="text-caption font-semibold pt-0.5" style={{ color: 'var(--text-secondary)' }}>소스</div>
         <Field label="시트">
           <SheetSelect value={(cfg.sourceSheetId as string) ?? ''} sheets={sheets} onChange={(v) => setCfg({ sourceSheetId: v, sourceRowId: '' })} />
         </Field>
@@ -898,7 +898,7 @@ function NodeConfigEditor({
             options={[{ value: '', label: '- 트리거 컨텍스트 사용 -' }, ...(sourceSheet?.rows.map((r, i) => ({ value: r.id, label: `Row ${i + 1}` })) ?? [])]}
           />
         </Field>
-        <div className="text-[10px] font-semibold pt-1.5" style={{ color: 'var(--text-secondary)' }}>타겟 (선택)</div>
+        <div className="text-caption font-semibold pt-1.5" style={{ color: 'var(--text-secondary)' }}>타겟 (선택)</div>
         <Field label="시트">
           <SheetSelect value={(cfg.targetSheetId as string) ?? ''} sheets={sheets} onChange={(v) => setCfg({ targetSheetId: v, targetRowId: '', targetColumnId: '' })} />
         </Field>
@@ -922,7 +922,7 @@ function NodeConfigEditor({
             ]}
           />
         </Field>
-        <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+        <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
           타겟 미지정 시 로그로만 출력. stat-snapshot 컬럼 권장.
         </p>
       </div>
@@ -937,7 +937,7 @@ function NodeConfigEditor({
             value={(cfg.title as string) ?? ''}
             onChange={(e) => setCfg({ title: e.target.value })}
             placeholder="예: 플레이테스트 회고 — 보스전 난이도"
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
@@ -947,7 +947,7 @@ function NodeConfigEditor({
             onChange={(e) => setCfg({ description: e.target.value })}
             placeholder="세부사항 (선택)"
             rows={2}
-            className="w-full px-1.5 py-0.5 text-[11px] rounded border bg-transparent resize-none"
+            className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent resize-none"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
@@ -961,7 +961,7 @@ function NodeConfigEditor({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5">
-      <label className="text-[10px] w-12 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{label}</label>
+      <label className="text-caption w-12 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{label}</label>
       <div className="flex-1 min-w-0">{children}</div>
     </div>
   );

@@ -30,7 +30,7 @@ function Action({ icon: Icon, color, label, desc, onClick }: ActionProps) {
         <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
           {label}
         </div>
-        <div className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="text-caption truncate" style={{ color: 'var(--text-tertiary)' }}>
           {desc}
         </div>
       </div>

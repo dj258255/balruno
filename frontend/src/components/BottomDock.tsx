@@ -136,7 +136,7 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
               style={{ color: '#8b5cf6' }}
             />
             <span
-              className="text-[10px] font-medium pointer-events-none leading-tight whitespace-nowrap mt-0.5"
+              className="text-caption font-medium pointer-events-none leading-tight whitespace-nowrap mt-0.5"
               style={{ color: 'var(--text-secondary)' }}
             >
               AI 시작
@@ -184,7 +184,7 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
                   }}
                 />
                 <span
-                  className="text-[10px] font-medium pointer-events-none leading-tight whitespace-nowrap mt-0.5"
+                  className="text-caption font-medium pointer-events-none leading-tight whitespace-nowrap mt-0.5"
                   style={{
                     color: isActive ? group.color : 'var(--text-secondary)',
                     opacity: isActive ? 1 : 0.85,

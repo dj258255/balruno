@@ -401,7 +401,7 @@ export default function DiagramView({ projectId, sheet }: Props) {
                 <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                   {tpl.name}
                 </div>
-                <div className="text-[11px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                <div className="text-caption mt-1" style={{ color: 'var(--text-tertiary)' }}>
                   {tpl.description}
                 </div>
               </button>
@@ -457,7 +457,7 @@ export default function DiagramView({ projectId, sheet }: Props) {
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={exportSvg}
-              className="flex items-center gap-1 px-2 py-1 rounded text-[11px]"
+              className="flex items-center gap-1 px-2 py-1 rounded text-caption"
               style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
               title="SVG 로 내보내기"
             >
@@ -466,7 +466,7 @@ export default function DiagramView({ projectId, sheet }: Props) {
             </button>
             <button
               onClick={exportPng}
-              className="flex items-center gap-1 px-2 py-1 rounded text-[11px]"
+              className="flex items-center gap-1 px-2 py-1 rounded text-caption"
               style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
               title="PNG 로 내보내기 (2x)"
             >
@@ -475,7 +475,7 @@ export default function DiagramView({ projectId, sheet }: Props) {
             </button>
             <button
               onClick={resetView}
-              className="px-2 py-1 rounded text-[11px]"
+              className="px-2 py-1 rounded text-caption"
               style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
               title="뷰 초기화"
             >
@@ -782,7 +782,7 @@ export default function DiagramView({ projectId, sheet }: Props) {
             node={selectedNode}
             onChange={(cfg) => updateNode(selectedNode.id, { config: cfg })}
           />
-          <div className="mt-4 text-[10px] space-y-1" style={{ color: 'var(--text-tertiary)' }}>
+          <div className="mt-4 text-caption space-y-1" style={{ color: 'var(--text-tertiary)' }}>
             <div><b>팁 1:</b> 노드 더블클릭 → 다른 노드 클릭 = edge 생성.</div>
             <div>
               <b>팁 2 (Track 15-3):</b> rate/probability 자리에{' '}
@@ -946,7 +946,7 @@ function CtxButton({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-2">
-      <label className="text-[10px] block mb-1" style={{ color: 'var(--text-secondary)' }}>
+      <label className="text-caption block mb-1" style={{ color: 'var(--text-secondary)' }}>
         {label}
       </label>
       {children}

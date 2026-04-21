@@ -105,7 +105,7 @@ export default function ProjectMenu({ onShowExport, onShowImport, onShowHelp, on
           style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-primary)' }}
           role="menu"
         >
-          <div className="px-2.5 py-1.5 text-[10px] uppercase tracking-wider font-semibold truncate" style={{ color: 'var(--text-tertiary)' }}>
+          <div className="px-2.5 py-1.5 text-overline truncate" style={{ color: 'var(--text-tertiary)' }}>
             {currentProject.name}
           </div>
           <div className="h-px mx-1 my-1" style={{ background: 'var(--border-primary)' }} />

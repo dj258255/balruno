@@ -33,7 +33,7 @@ export default function BalanceHealthWidget({ work }: { work: TodaysWork }) {
         <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
           밸런스 상태
         </h3>
-        <span className="ml-auto text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+        <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
           {work.projectCount} 프로젝트
         </span>
       </div>
@@ -57,7 +57,7 @@ export default function BalanceHealthWidget({ work }: { work: TodaysWork }) {
               <span className="truncate flex-1 text-left" style={{ color: 'var(--text-primary)' }}>
                 {s.name}
               </span>
-              <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+              <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
                 {s.sheetCount} 시트 · {s.rowCount} 행
               </span>
             </button>

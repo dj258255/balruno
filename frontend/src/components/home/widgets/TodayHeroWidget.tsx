@@ -173,7 +173,7 @@ function HeroCard({
           <div className="text-2xl font-bold leading-none" style={{ color }}>
             {count}
           </div>
-          <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+          <div className="text-caption mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
             / {total} {totalLabel}
           </div>
         </div>
@@ -197,7 +197,7 @@ function HeroCard({
             </button>
           ))}
           {rows.length > 3 && (
-            <div className="text-[10px] px-2" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="text-caption px-2" style={{ color: 'var(--text-tertiary)' }}>
               + {rows.length - 3}개 더
             </div>
           )}
