@@ -293,6 +293,17 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 setScenarioA={setScenarioA}
                 setScenarioB={setScenarioB}
               />
+              <SensitivityTornado
+                color={tabColor}
+                inputs={dpsInputs}
+                variables={[
+                  { key: 'damage', label: '데미지' },
+                  { key: 'attackSpeed', label: '공격 속도' },
+                  { key: 'critRate', label: '치명 확률' },
+                  { key: 'critDamage', label: '치명 배율' },
+                ]}
+                computeResult={(o) => DPS(Number(o.damage), Number(o.attackSpeed), Number(o.critRate), Number(o.critDamage))}
+              />
             </div>
           )}
 
@@ -342,6 +353,19 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 setScenarioB={setScenarioB}
                 formatResult={(v) => v < 0 ? '∞' : `${v.toFixed(2)}s`}
               />
+              <SensitivityTornado
+                color={tabColor}
+                inputs={ttkInputs}
+                variables={[
+                  { key: 'targetHP', label: '타겟 HP' },
+                  { key: 'damage', label: '데미지' },
+                  { key: 'attackSpeed', label: '공격 속도' },
+                ]}
+                computeResult={(o) => {
+                  const t = TTK(Number(o.targetHP), Number(o.damage), Number(o.attackSpeed));
+                  return t === Infinity ? 0 : t;
+                }}
+              />
             </div>
           )}
 
@@ -384,6 +408,16 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 setScenarioA={setScenarioA}
                 setScenarioB={setScenarioB}
                 formatResult={(v) => v.toFixed(0)}
+              />
+              <SensitivityTornado
+                color={tabColor}
+                inputs={ehpInputs}
+                variables={[
+                  { key: 'hp', label: 'HP' },
+                  { key: 'def', label: '방어력' },
+                  { key: 'damageReduction', label: '피해 감소' },
+                ]}
+                computeResult={(o) => EHP(Number(o.hp), Number(o.def), Number(o.damageReduction))}
               />
             </div>
           )}
@@ -624,6 +658,84 @@ function GlassFormulaBox({ formula, hint, color }: { formula: string; hint?: str
       <div className="text-sm mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Formula</div>
       <code className="text-sm font-mono font-semibold" style={{ color }}>{formula}</code>
       {hint && <div className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>{hint}</div>}
+    </div>
+  );
+}
+
+/**
+ * SensitivityTornado — 각 입력을 ±delta% 변동 시 결과 기여도 막대 랭킹.
+ * GoldSim / Power BI Inforiver 의 토네이도 차트 경량 버전.
+ * 어떤 입력이 가장 영향 크게 주는지 한눈에 파악.
+ */
+function SensitivityTornado<T extends Record<string, number | string>>({
+  color,
+  inputs,
+  variables,
+  computeResult,
+  delta = 0.1,
+}: {
+  color: string;
+  inputs: T;
+  variables: { key: string; label: string }[];
+  computeResult: (inputs: T) => number;
+  delta?: number;
+}) {
+  const base = computeResult(inputs);
+  const rows = variables
+    .map((v) => {
+      const current = Number(inputs[v.key]);
+      if (!isFinite(current) || current === 0) return null;
+      const up = computeResult({ ...inputs, [v.key]: current * (1 + delta) } as T);
+      const down = computeResult({ ...inputs, [v.key]: current * (1 - delta) } as T);
+      const range = Math.max(Math.abs(up - base), Math.abs(down - base));
+      return { key: v.key, label: v.label, up, down, range, upDelta: up - base, downDelta: down - base };
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null)
+    .sort((a, b) => b.range - a.range);
+
+  const maxRange = Math.max(1, ...rows.map((r) => r.range));
+
+  return (
+    <div className="glass-section p-3" style={{ borderLeft: `3px solid ${color}` }}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-semibold" style={{ color }}>
+          Sensitivity — 입력 ±{Math.round(delta * 100)}% 영향도
+        </span>
+        <span className="text-caption tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+          baseline {base.toFixed(2)}
+        </span>
+      </div>
+      <div className="space-y-1">
+        {rows.map((r) => {
+          const downPct = (Math.abs(r.downDelta) / maxRange) * 50;
+          const upPct = (Math.abs(r.upDelta) / maxRange) * 50;
+          return (
+            <div key={r.key} className="flex items-center gap-2 text-caption">
+              <span className="w-20 truncate" style={{ color: 'var(--text-secondary)' }}>{r.label}</span>
+              <div className="flex-1 flex items-center h-4 relative" style={{ background: 'var(--bg-primary)' }}>
+                {/* down (음수 쪽, 왼쪽) */}
+                <div
+                  className="absolute right-1/2 top-0 bottom-0"
+                  style={{ width: `${downPct}%`, background: r.downDelta < 0 ? '#ef4444' : '#10b981', opacity: 0.7 }}
+                />
+                {/* up (양수 쪽, 오른쪽) */}
+                <div
+                  className="absolute left-1/2 top-0 bottom-0"
+                  style={{ width: `${upPct}%`, background: r.upDelta > 0 ? '#10b981' : '#ef4444', opacity: 0.7 }}
+                />
+                {/* 중앙선 */}
+                <div className="absolute left-1/2 top-0 bottom-0 w-px" style={{ background: 'var(--text-tertiary)' }} />
+              </div>
+              <span className="w-24 text-right tabular-nums font-mono" style={{ color: 'var(--text-primary)' }}>
+                {r.downDelta > 0 ? '+' : ''}{r.downDelta.toFixed(1)} / {r.upDelta > 0 ? '+' : ''}{r.upDelta.toFixed(1)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-caption italic mt-2" style={{ color: 'var(--text-tertiary)' }}>
+        각 입력 -{Math.round(delta * 100)}% / +{Math.round(delta * 100)}% 변동 시 결과 변화량 · range 넓은 순 정렬
+      </p>
     </div>
   );
 }
