@@ -63,6 +63,12 @@ interface ProjectListProps {
   moveSheetToFolder?: (projectId: string, sheetId: string, folderId: string | null) => void;
   moveFolderToFolder?: (projectId: string, folderId: string, parentId: string | null) => void;
 
+  // 폴더 편집 (Sidebar 레벨 context menu 에서 rename 트리거하기 위해 끌어올림)
+  editingFolderId: string | null;
+  setEditingFolderId: (id: string | null) => void;
+  editFolderName: string;
+  setEditFolderName: (name: string) => void;
+
   // 컨텍스트 메뉴
   onSheetContextMenu: (e: React.MouseEvent, projectId: string, sheetId: string, sheetName: string, exportClassName?: string) => void;
   onProjectContextMenu: (e: React.MouseEvent, projectId: string, projectName: string) => void;
@@ -122,12 +128,12 @@ export function ProjectList({
   onSheetDelete,
   onProjectDelete,
   onFolderDelete,
+  editingFolderId,
+  setEditingFolderId,
+  editFolderName,
+  setEditFolderName,
 }: ProjectListProps) {
   const t = useTranslations();
-
-  // 폴더 편집 상태
-  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
-  const [editFolderName, setEditFolderName] = useState('');
 
   // 시트 드래그 상태 (폴더 이동용)
   const [draggedSheetForFolder, setDraggedSheetForFolder] = useState<string | null>(null);

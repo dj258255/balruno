@@ -8,7 +8,8 @@
  * 이 앱에 특정 이모지 이미지 자산을 포함하지 않음. emoji-mart 는 MIT.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { FileText, type LucideIcon } from 'lucide-react';
 
@@ -52,13 +53,52 @@ export default function DocIconPicker({
 }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) return;
+
+    const updatePos = () => {
+      const rect = buttonRef.current!.getBoundingClientRect();
+      // emoji-mart 기본 피커 크기 ~352×435 — 화면 오른쪽/아래로 벗어나면 반대쪽으로 뒤집기
+      const PICKER_W = 352;
+      const PICKER_H = 435;
+      const margin = 4;
+      let top = rect.bottom + margin;
+      let left = rect.left;
+      if (left + PICKER_W > window.innerWidth - 8) {
+        left = Math.max(8, window.innerWidth - PICKER_W - 8);
+      }
+      if (top + PICKER_H > window.innerHeight - 8) {
+        // 아래 공간 부족 → 버튼 위로
+        top = Math.max(8, rect.top - PICKER_H - margin);
+      }
+      setPos({ top, left });
+    };
+
+    updatePos();
+    window.addEventListener('resize', updatePos);
+    window.addEventListener('scroll', updatePos, true);
+    return () => {
+      window.removeEventListener('resize', updatePos);
+      window.removeEventListener('scroll', updatePos, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target)) return;
+      if (popoverRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
@@ -74,6 +114,7 @@ export default function DocIconPicker({
       style={{ verticalAlign: 'middle' }}
     >
       <button
+        ref={buttonRef}
         type="button"
         onClick={(e) => {
           e.stopPropagation();
@@ -102,8 +143,13 @@ export default function DocIconPicker({
         )}
       </button>
 
-      {open && (
-        <div className="absolute z-50 top-full left-0 mt-1" onMouseDown={(e) => e.stopPropagation()}>
+      {open && mounted && pos && createPortal(
+        <div
+          ref={popoverRef}
+          className="fixed z-[1200]"
+          style={{ top: pos.top, left: pos.left }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
           <EmojiPickerInner
             onSelect={(e) => {
               onChange(e);
@@ -118,7 +164,8 @@ export default function DocIconPicker({
                 : undefined
             }
           />
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
