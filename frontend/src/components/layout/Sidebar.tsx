@@ -288,15 +288,19 @@ export default function Sidebar({
           }}
         />
 
-        {/* 프로젝트 / 문서 섹션 사이 리사이즈 핸들 — SidebarResizer 와 동일한 시각/동작 */}
+        {/* 프로젝트 / 문서 섹션 사이 리사이즈 핸들 — 얇은 시각 + 넓은 hit area */}
         <div
           onPointerDown={handleDocsResizeStart}
-          className="h-1.5 cursor-row-resize hover:bg-[var(--accent)] transition-colors shrink-0"
+          className="relative h-1 cursor-row-resize shrink-0 group"
           style={{ touchAction: 'none' }}
           role="separator"
+          aria-orientation="horizontal"
           aria-label="프로젝트/문서 영역 크기 조절"
           title="드래그로 문서 섹션 높이 조절"
-        />
+        >
+          <div className="absolute inset-x-0 -top-1 -bottom-1" />
+          <div className="absolute inset-0 transition-colors group-hover:bg-[var(--accent)]" />
+        </div>
 
         {/* 문서 섹션 — 현재 프로젝트의 docs. 리사이즈 핸들로 높이 조절 가능 */}
         <SidebarDocsSection maxHeight={docsHeight} />
