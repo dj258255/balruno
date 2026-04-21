@@ -39,6 +39,7 @@ const FrameDataPanel = dynamic(() => import('@/components/panels/FrameDataPanel'
 const AIBehaviorPanel = dynamic(() => import('@/components/panels/AIBehaviorPanel'), { ssr: false });
 const MatchupMatrixPanel = dynamic(() => import('@/components/panels/MatchupMatrixPanel'), { ssr: false });
 const ReplayTimelinePanel = dynamic(() => import('@/components/panels/ReplayTimelinePanel'), { ssr: false });
+const SnapshotComparePanel = dynamic(() => import('@/components/panels/SnapshotComparePanel'), { ssr: false });
 const EconomyPanel = dynamic(() => import('@/components/panels/EconomyPanel'), { ssr: false });
 const DPSVariancePanel = dynamic(() => import('@/components/panels/DPSVariancePanel'), { ssr: false });
 const CurveFittingPanel = dynamic(() => import('@/components/panels/CurveFittingPanel'), { ssr: false });
@@ -93,6 +94,7 @@ const TOOL_LABEL_KEYS: Record<ToolId, string> = {
   aiBehavior: 'sidebar.aiBehavior',
   matchupMatrix: 'sidebar.matchupMatrix',
   replayTimeline: 'sidebar.replayTimeline',
+  snapshotCompare: 'sidebar.snapshotCompare',
 };
 
 function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
@@ -158,6 +160,8 @@ function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
       return <MatchupMatrixPanel onClose={close} />;
     case 'replayTimeline':
       return <ReplayTimelinePanel onClose={close} />;
+    case 'snapshotCompare':
+      return <SnapshotComparePanel onClose={close} />;
   }
 }
 

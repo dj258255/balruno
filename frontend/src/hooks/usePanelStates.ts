@@ -50,6 +50,7 @@ export function usePanelStates(): {
   const [aiBehavior, setAiBehavior] = useState(false);
   const [matchupMatrix, setMatchupMatrix] = useState(false);
   const [replayTimeline, setReplayTimeline] = useState(false);
+  const [snapshotCompare, setSnapshotCompare] = useState(false);
 
   const panels: Record<ToolId, PanelState> = useMemo(() => ({
     calculator: { show: calculator, setShow: setCalculator },
@@ -82,12 +83,13 @@ export function usePanelStates(): {
     aiBehavior: { show: aiBehavior, setShow: setAiBehavior },
     matchupMatrix: { show: matchupMatrix, setShow: setMatchupMatrix },
     replayTimeline: { show: replayTimeline, setShow: setReplayTimeline },
+    snapshotCompare: { show: snapshotCompare, setShow: setSnapshotCompare },
   }), [
     calculator, comparison, chart, preset, imbalance, goal, balance,
     economy, dpsVariance, curveFitting, formulaHelper, balanceValidator,
     difficultyCurve, simulation, entityDefinition, autoBalancer, lootSimulator,
     powerCurveCompare, comments, interfaceDesigner, automations, sensitivity,
-    changeHistory, fpsSimulation, fpsTeamSimulation, deckSimulation, frameData, aiBehavior, matchupMatrix, replayTimeline,
+    changeHistory, fpsSimulation, fpsTeamSimulation, deckSimulation, frameData, aiBehavior, matchupMatrix, replayTimeline, snapshotCompare,
   ]);
 
   const openByName = useCallback((name: string) => {
