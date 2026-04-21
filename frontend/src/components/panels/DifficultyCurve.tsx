@@ -108,9 +108,13 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
   const t = useTranslations('difficultyCurve');
   const [showHelp, setShowHelp] = useState(false);
   // Simple/Advanced 모드 — 사용자 진입 장벽 낮춤. 기본 Simple.
-  // Simple: 프리셋 + 플레이타임 + 차트 + 벽/마일스톤 추천 버튼 1개
-  // Advanced: 기존 전체 UI (곡선타입/플로우존/DDA/벽편집/휴식포인트 등)
+  // Simple: 프리셋 + 플레이타임 + 차트 (차트 클릭으로 벽 직접 조작)
+  //         + "자세히 ▸" 인라인 확장으로 곡선타입/최대스테이지 점진 노출
+  // Advanced: 기존 전체 UI (플로우존/DDA/벽편집기/마일스톤/휴식포인트)
   const [mode, setMode] = useState<'simple' | 'advanced'>('simple');
+  // Simple 모드 내 sub-disclosure
+  const [simpleExpandCurve, setSimpleExpandCurve] = useState(false);
+  const [simpleExpandStage, setSimpleExpandStage] = useState(false);
   // 고급 설정 섹션들 접기 상태 — 시각화 / 벽·마일스톤·휴식 기본 열림, DDA 만 기본 접힘
   const [collapsedAdvanced, setCollapsedAdvanced] = useState(true);
 
@@ -246,6 +250,28 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
       <div className="space-y-4">
         <PresetSelector preset={preset} setPreset={setPreset} />
 
+        {/* Simple 모드: 인라인 "자세히 ▸" 로 점진 노출 (진짜 숨기는 게 아님) */}
+        {mode === 'simple' && (
+          <div className="space-y-2">
+            <button
+              onClick={() => setSimpleExpandCurve((v) => !v)}
+              className="inline-flex items-center gap-1 text-caption font-medium"
+              style={{ color: PANEL_COLOR }}
+            >
+              <ChevronDown className={`w-3 h-3 transition-transform ${simpleExpandCurve ? 'rotate-0' : '-rotate-90'}`} />
+              곡선 타입 자세히
+            </button>
+            {simpleExpandCurve && (
+              <CurveTypeSelector
+                curveType={curveType}
+                setCurveType={setCurveType}
+                sawtoothPeriod={sawtoothPeriod}
+                setSawtoothPeriod={setSawtoothPeriod}
+              />
+            )}
+          </div>
+        )}
+
         {mode === 'advanced' && (
           <CurveTypeSelector
             curveType={curveType}
@@ -263,6 +289,20 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
           estimatedDays={estimatedDays}
           maxStage={maxStage}
         />
+
+        {mode === 'simple' && (
+          <div className="space-y-2">
+            <button
+              onClick={() => setSimpleExpandStage((v) => !v)}
+              className="inline-flex items-center gap-1 text-caption font-medium"
+              style={{ color: PANEL_COLOR }}
+            >
+              <ChevronDown className={`w-3 h-3 transition-transform ${simpleExpandStage ? 'rotate-0' : '-rotate-90'}`} />
+              스테이지 수 직접 지정
+            </button>
+            {simpleExpandStage && <MaxStageSelector maxStage={maxStage} setMaxStage={setMaxStage} />}
+          </div>
+        )}
 
         {mode === 'advanced' && (
           <MaxStageSelector maxStage={maxStage} setMaxStage={setMaxStage} />
@@ -288,6 +328,14 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
         onShowFullscreen={() => setShowFullscreen(true)}
         showFlowZones={showFlowZones}
         restPoints={restPoints}
+        onToggleWall={(stage) => {
+          // 같은 stage 에 있으면 제거, 없으면 추가 (토글)
+          if (wallStages.includes(stage)) {
+            removeWallStage(stage);
+          } else {
+            addWallStage(stage);
+          }
+        }}
       />
 
       {/* 고급 설정 — Advanced 모드에서만 */}
