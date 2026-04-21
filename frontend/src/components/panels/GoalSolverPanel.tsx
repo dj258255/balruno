@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import { X, Target, Calculator, AlertTriangle, Check, Copy, ChevronDown, HelpCircle, Search, Activity, Clock, Trash2, XCircle } from 'lucide-react';
-import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, findAlternativeSolutions, solveGeneric, calculateStatWeights, type SolverFormula, type GenericSolverResult } from '@/lib/goalSolver';
+import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, findAlternativeSolutions, solveGeneric, calculateStatWeights, solvePareto, type SolverFormula, type GenericSolverResult } from '@/lib/goalSolver';
+import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip as RTooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useTranslations } from 'next-intl';
 import { useCalculatorStore } from '@/stores/calculatorStore';
@@ -501,6 +502,9 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
         {/* Stat Weights (Phase 5) — SimCraft 방식 */}
         <StatWeightsBox />
 
+        {/* Pareto 최적화 (Phase 6) — 2변수 cost 최소 */}
+        <ParetoBox />
+
         {/* 최근 역산 기록 (History) */}
         <GoalSolverHistoryPanel
           onReload={(entry) => {
@@ -633,6 +637,94 @@ function GenericSolverBox() {
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ParetoBox() {
+  // 기본 프리셋: HP + DEF 조합으로 EHP 5000 목표 · cost = HP + DEF × 3
+  const [ehpTarget, setEhpTarget] = useState(5000);
+  const [hpCost, setHpCost] = useState(1);
+  const [defCost, setDefCost] = useState(3);
+
+  const points = solvePareto({
+    varX: { key: 'hp', min: 1000, max: 8000, step: 200 },
+    varY: { key: 'def', min: 0, max: 500, step: 20 },
+    metric: (hp, def) => hp * (1 + def / 100),
+    metricTarget: ehpTarget,
+    cost: (hp, def) => hp * hpCost + def * defCost,
+  });
+
+  const best = points[0];
+  const chartData = points.slice(0, 40).map((p) => ({
+    hp: p.x, def: p.y, cost: p.costValue, ehp: p.metricValue,
+  }));
+
+  return (
+    <div className="glass-card rounded-lg overflow-hidden mt-3">
+      <div className="p-3 space-y-3" style={{ background: `${PANEL_COLOR}08` }}>
+        <div className="flex items-center gap-2">
+          <Target className="w-4 h-4" style={{ color: PANEL_COLOR }} />
+          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            Pareto 최적화 — HP × DEF 조합
+          </span>
+          <span className="text-caption ml-auto" style={{ color: 'var(--text-tertiary)' }}>
+            2 변수 · cost 최소
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>목표 EHP</label>
+            <input type="number" value={ehpTarget} onChange={(e) => setEhpTarget(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>HP 단가</label>
+            <input type="number" step="0.1" value={hpCost} onChange={(e) => setHpCost(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>DEF 단가</label>
+            <input type="number" step="0.1" value={defCost} onChange={(e) => setDefCost(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
+          </div>
+        </div>
+        {best ? (
+          <div className="p-2 rounded-lg" style={{ background: `${PANEL_COLOR}15`, borderLeft: `3px solid ${PANEL_COLOR}` }}>
+            <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>최소 cost 조합 (Pareto 1위)</div>
+            <div className="font-mono text-sm font-bold" style={{ color: PANEL_COLOR }}>
+              HP {best.x} + DEF {best.y} → EHP {Math.round(best.metricValue)} · cost {Math.round(best.costValue)}
+            </div>
+          </div>
+        ) : (
+          <div className="p-2 rounded-lg text-caption" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+            목표 EHP {ehpTarget} 을 만족하는 조합이 범위 내 없음 — 범위 넓히거나 목표 완화
+          </div>
+        )}
+        {chartData.length > 0 && (
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
+                <XAxis dataKey="hp" name="HP" tick={{ fontSize: 10 }} />
+                <YAxis dataKey="def" name="DEF" tick={{ fontSize: 10 }} />
+                <ZAxis dataKey="cost" range={[20, 200]} />
+                <RTooltip cursor={{ strokeDasharray: '3 3' }} content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const p = payload[0].payload as { hp: number; def: number; cost: number; ehp: number };
+                  return (
+                    <div style={{ background: 'var(--bg-primary)', padding: '6px 8px', border: '1px solid var(--border-primary)', borderRadius: 6, fontSize: 11 }}>
+                      HP {p.hp} · DEF {p.def}<br />
+                      EHP {Math.round(p.ehp)} · cost {Math.round(p.cost)}
+                    </div>
+                  );
+                }} />
+                <Scatter data={chartData} fill={PANEL_COLOR} />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
+          점 크기 = cost · HP 축 × DEF 축 · feasible set 에서 cost 낮은 순 40개
+        </p>
       </div>
     </div>
   );
