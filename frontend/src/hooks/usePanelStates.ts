@@ -44,6 +44,9 @@ export function usePanelStates(): {
   const [sensitivity, setSensitivity] = useState(false);
   const [changeHistory, setChangeHistory] = useState(false);
   const [fpsSimulation, setFpsSimulation] = useState(false);
+  const [deckSimulation, setDeckSimulation] = useState(false);
+  const [frameData, setFrameData] = useState(false);
+  const [aiBehavior, setAiBehavior] = useState(false);
 
   const panels: Record<ToolId, PanelState> = useMemo(() => ({
     calculator: { show: calculator, setShow: setCalculator },
@@ -70,12 +73,15 @@ export function usePanelStates(): {
     sensitivity: { show: sensitivity, setShow: setSensitivity },
     changeHistory: { show: changeHistory, setShow: setChangeHistory },
     fpsSimulation: { show: fpsSimulation, setShow: setFpsSimulation },
+    deckSimulation: { show: deckSimulation, setShow: setDeckSimulation },
+    frameData: { show: frameData, setShow: setFrameData },
+    aiBehavior: { show: aiBehavior, setShow: setAiBehavior },
   }), [
     calculator, comparison, chart, preset, imbalance, goal, balance,
     economy, dpsVariance, curveFitting, formulaHelper, balanceValidator,
     difficultyCurve, simulation, entityDefinition, autoBalancer, lootSimulator,
     powerCurveCompare, comments, interfaceDesigner, automations, sensitivity,
-    changeHistory, fpsSimulation,
+    changeHistory, fpsSimulation, deckSimulation, frameData, aiBehavior,
   ]);
 
   const openByName = useCallback((name: string) => {

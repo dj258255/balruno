@@ -39,7 +39,10 @@ export type ToolId =
   | 'automations'
   | 'sensitivity'
   | 'changeHistory'
-  | 'fpsSimulation';
+  | 'fpsSimulation'
+  | 'deckSimulation'
+  | 'frameData'
+  | 'aiBehavior';
 
 export type ToolGroupId =
   | 'build'
@@ -73,7 +76,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'simulate',
     titleKey: 'toolGroups.simulate',
     color: '#e11d48',
-    tools: ['simulation', 'fpsSimulation', 'dpsVariance', 'lootSimulator', 'economy'],
+    tools: ['simulation', 'fpsSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy'],
   },
   {
     id: 'compare',
@@ -85,7 +88,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'auto',
     titleKey: 'toolGroups.auto',
     color: '#f43f5e',
-    tools: ['goal', 'autoBalancer', 'automations'],
+    tools: ['goal', 'autoBalancer', 'automations', 'aiBehavior'],
   },
   {
     id: 'share',
@@ -121,6 +124,9 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   // simulate — 시뮬
   simulation: 'toolDesc.simulation',           // 1:1/팀 전투 Monte Carlo
   fpsSimulation: 'toolDesc.fpsSimulation',     // FPS 무기 TTK · BTK · 거리별 DPS
+  deckSimulation: 'toolDesc.deckSimulation',   // 덱빌더 DPT · deadHand · 에너지 낭비
+  frameData: 'toolDesc.frameData',             // 격투 프레임 · 유리/불리 · 콤보 라우트
+  aiBehavior: 'toolDesc.aiBehavior',           // AI 조건→액션 규칙 에디터
   dpsVariance: 'toolDesc.dpsVariance',         // DPS 분포·백분위·히스토그램
   lootSimulator: 'toolDesc.lootSimulator',     // 가챠 피티·드롭 확률
   economy: 'toolDesc.economy',                 // Faucet/Sink·인플레이션

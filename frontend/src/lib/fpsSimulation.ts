@@ -51,6 +51,88 @@ export interface PlayerStats {
   armor: number;
 }
 
+/**
+ * Apex Legends 스타일 쉴드 티어.
+ * 각 티어별 shield HP 와 헬멧(헤드샷 감소) 추가.
+ * 실제 Apex:
+ *  - 흰(1): shield 50,  helmet 10%
+ *  - 파(2): shield 75,  helmet 20%
+ *  - 보(3): shield 100, helmet 25%
+ *  - 금(4): shield 100, helmet 25% + 부가 효과 (단순화 생략)
+ *  - 레드(Evo full): shield 125, helmet 25%
+ */
+export type ShieldTier = 'none' | 'white' | 'blue' | 'purple' | 'red';
+
+export interface ShieldBracket {
+  tier: ShieldTier;
+  label: string;
+  shieldHp: number;
+  headshotReduction: number; // 0-1, 헬멧이 헤드 피해를 감소시키는 비율
+  color: string;
+}
+
+export const SHIELD_BRACKETS: Record<ShieldTier, ShieldBracket> = {
+  none:   { tier: 'none',   label: '무',   shieldHp: 0,   headshotReduction: 0,    color: '#6b7280' },
+  white:  { tier: 'white',  label: 'Lv1',  shieldHp: 50,  headshotReduction: 0.1,  color: '#e5e7eb' },
+  blue:   { tier: 'blue',   label: 'Lv2',  shieldHp: 75,  headshotReduction: 0.2,  color: '#3b82f6' },
+  purple: { tier: 'purple', label: 'Lv3',  shieldHp: 100, headshotReduction: 0.25, color: '#8b5cf6' },
+  red:    { tier: 'red',    label: 'Red',  shieldHp: 125, headshotReduction: 0.25, color: '#ef4444' },
+};
+
+/** 티어에서 PlayerStats 생성 — 기본 HP 100 */
+export function playerFromShieldTier(tier: ShieldTier, baseHp = 100): PlayerStats {
+  const b = SHIELD_BRACKETS[tier];
+  return { hp: baseHp, shield: b.shieldHp, armor: 0 };
+}
+
+/**
+ * 쉴드 티어별 TTK/BTK 비교 (한 번의 연산으로 전체 티어).
+ * 각 티어에서 몇 발에 깨지고 몇 초 걸리는지 brackets chart 로 표시.
+ */
+export interface ShieldBreakdown {
+  tier: ShieldTier;
+  label: string;
+  totalHp: number;
+  btkBody: number;     // 몸샷만으로 처치 필요 발수
+  btkHead: number;     // 헤드샷만으로 (헬멧 감소 반영)
+  ttkBodyMs: number;
+  ttkHeadMs: number;
+}
+
+export function calculateShieldBreakdown(
+  weapon: WeaponStats,
+  distance: number,
+): ShieldBreakdown[] {
+  const tiers: ShieldTier[] = ['none', 'white', 'blue', 'purple', 'red'];
+  const shotIntervalMs = 60_000 / weapon.rpm;
+  const rangeMul = rangeMultiplier(weapon, distance);
+
+  return tiers.map((tier) => {
+    const bracket = SHIELD_BRACKETS[tier];
+    const totalHp = 100 + bracket.shieldHp; // base HP 100
+
+    const bodyDmg = weapon.damageBody * rangeMul;
+    const headDmgReduced = weapon.damageHead * rangeMul * (1 - bracket.headshotReduction);
+
+    const btkBody = Math.ceil(totalHp / Math.max(1, bodyDmg));
+    const btkHead = Math.ceil(totalHp / Math.max(1, headDmgReduced));
+
+    // TTK: (btk - 1) 개의 shotInterval (첫 발은 즉시)
+    const ttkBodyMs = (btkBody - 1) * shotIntervalMs;
+    const ttkHeadMs = (btkHead - 1) * shotIntervalMs;
+
+    return {
+      tier,
+      label: bracket.label,
+      totalHp,
+      btkBody,
+      btkHead,
+      ttkBodyMs,
+      ttkHeadMs,
+    };
+  });
+}
+
 export interface AimProfile {
   /** 헤드샷 확률 (0-1) — aim skill 로부터 유도 */
   headshotRate: number;
