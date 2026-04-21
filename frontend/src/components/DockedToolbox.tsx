@@ -299,11 +299,11 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
 
       {/* 헤더 — 그룹 라벨 + 도구 선택 (아이콘+이름+설명) + 닫기 */}
       <header
-        className="flex items-start gap-2 px-3 py-2 border-b"
+        className="flex items-center gap-2 px-3 py-2 border-b"
         style={{ borderColor: 'var(--border-primary)' }}
       >
         <span
-          className="text-overline flex-shrink-0 mt-1.5"
+          className="text-overline flex-shrink-0"
           style={{ color: activeGroup.color, letterSpacing: '0.08em' }}
         >
           {t(activeGroup.titleKey as 'toolGroups.build')}
@@ -329,12 +329,12 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
         {/* Panel actions slot — 도움말 토글 등 portal 로 들어옴. X 버튼 왼쪽. */}
         <div
           ref={setActionsSlot}
-          className="flex items-center gap-0.5 flex-shrink-0 mt-0.5"
+          className="flex items-center gap-0.5 flex-shrink-0"
         />
 
         <button
           onClick={closeGroup}
-          className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors flex-shrink-0 mt-0.5"
+          className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors flex-shrink-0"
           aria-label={t('common.close')}
           style={{ color: 'var(--text-tertiary)' }}
         >
