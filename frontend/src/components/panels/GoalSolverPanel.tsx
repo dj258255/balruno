@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { X, Target, Calculator, AlertTriangle, Check, Copy, ChevronDown, HelpCircle, Search, Activity, Clock, Trash2, XCircle } from 'lucide-react';
-import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, findAlternativeSolutions, type SolverFormula } from '@/lib/goalSolver';
+import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, findAlternativeSolutions, solveGeneric, type SolverFormula, type GenericSolverResult } from '@/lib/goalSolver';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useTranslations } from 'next-intl';
 import { useCalculatorStore } from '@/stores/calculatorStore';
@@ -495,6 +495,9 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
           );
         })}
 
+        {/* 범용 수식 역산 (Phase 4) — 임의 mathjs 수식에 대해 변수 역산 */}
+        <GenericSolverBox />
+
         {/* 최근 역산 기록 (History) */}
         <GoalSolverHistoryPanel
           onReload={(entry) => {
@@ -509,6 +512,126 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
         />
       </div>
     </PanelShell>
+  );
+}
+
+function GenericSolverBox() {
+  const [expression, setExpression] = useState('atk * (100 / (100 + def))');
+  const [varsText, setVarsText] = useState('def=50');
+  const [solveFor, setSolveFor] = useState('atk');
+  const [target, setTarget] = useState('200');
+  const [lo, setLo] = useState('1');
+  const [hi, setHi] = useState('10000');
+  const [result, setResult] = useState<GenericSolverResult | null>(null);
+
+  const handleSolve = () => {
+    const fixed: Record<string, number> = {};
+    for (const pair of varsText.split(/[,;\n]+/)) {
+      const m = pair.trim().match(/^(\w+)\s*=\s*(-?\d+\.?\d*)$/);
+      if (m) fixed[m[1]] = parseFloat(m[2]);
+    }
+    const r = solveGeneric({
+      expression: expression.trim(),
+      fixedVars: fixed,
+      solveFor: solveFor.trim(),
+      target: parseFloat(target) || 0,
+      lo: parseFloat(lo) || 0.001,
+      hi: parseFloat(hi) || 100000,
+    });
+    setResult(r);
+  };
+
+  return (
+    <div className="glass-card rounded-lg overflow-hidden mt-3">
+      <div className="p-3 space-y-3" style={{ background: `${PANEL_COLOR}08` }}>
+        <div className="flex items-center gap-2">
+          <Calculator className="w-4 h-4" style={{ color: PANEL_COLOR }} />
+          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            범용 수식 역산 (Beta)
+          </span>
+          <span className="text-caption ml-auto" style={{ color: 'var(--text-tertiary)' }}>
+            mathjs 문법 · bisection
+          </span>
+        </div>
+        <div>
+          <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>수식</label>
+          <input
+            type="text"
+            value={expression}
+            onChange={(e) => setExpression(e.target.value)}
+            placeholder='atk * (100 / (100 + def))'
+            className="glass-input w-full text-sm font-mono"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>고정 변수 (key=val;)</label>
+            <input
+              type="text"
+              value={varsText}
+              onChange={(e) => setVarsText(e.target.value)}
+              placeholder="def=50; multiplier=1.5"
+              className="glass-input w-full text-sm font-mono"
+            />
+          </div>
+          <div>
+            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>역산할 변수</label>
+            <input
+              type="text"
+              value={solveFor}
+              onChange={(e) => setSolveFor(e.target.value)}
+              placeholder="atk"
+              className="glass-input w-full text-sm font-mono"
+            />
+          </div>
+          <div>
+            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>목표값</label>
+            <ScrubbableNumberInput value={target} onChange={setTarget} />
+          </div>
+          <div>
+            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>범위 min / max</label>
+            <div className="flex gap-1">
+              <input type="number" value={lo} onChange={(e) => setLo(e.target.value)} className="glass-input hide-spinner w-full px-2 py-1 text-caption" />
+              <input type="number" value={hi} onChange={(e) => setHi(e.target.value)} className="glass-input hide-spinner w-full px-2 py-1 text-caption" />
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={handleSolve}
+          className="w-full py-2 rounded-lg font-medium text-sm"
+          style={{ background: PANEL_COLOR, color: 'white' }}
+        >
+          역산 실행
+        </button>
+        {result && (
+          <div
+            className="p-2 rounded-lg flex items-center gap-2 text-sm"
+            style={{
+              background: result.success ? `${PANEL_COLOR}15` : 'rgba(239,68,68,0.1)',
+              borderLeft: `3px solid ${result.success ? PANEL_COLOR : '#ef4444'}`,
+            }}
+          >
+            {result.success ? (
+              <>
+                <Check className="w-4 h-4" style={{ color: PANEL_COLOR }} />
+                <span style={{ color: 'var(--text-secondary)' }}>{solveFor} =</span>
+                <span className="font-bold tabular-nums" style={{ color: PANEL_COLOR }}>
+                  {result.value!.toFixed(3)}
+                </span>
+                <span className="text-caption ml-auto" style={{ color: 'var(--text-tertiary)' }}>
+                  {result.iterations} iter
+                </span>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="w-4 h-4" style={{ color: '#ef4444' }} />
+                <span style={{ color: '#ef4444' }}>{result.error}</span>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
