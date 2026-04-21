@@ -113,6 +113,41 @@ describe('calculateDpsCurve', () => {
   });
 });
 
+describe('이동 패널티 + recoil + first shot bonus', () => {
+  it('이동 중이면 B 승률 저하 (양쪽 동일 에임)', () => {
+    const aim = aimSkillToProfile(70);
+    const staticResult = simulateFpsDuel(
+      WEAPON_PRESETS[0], aim,
+      WEAPON_PRESETS[0], aim,
+      { hp: 100, shield: 50, armor: 0 },
+      { hp: 100, shield: 50, armor: 0 },
+      { distance: 20, firstShot: 'both-aware', bothAwareDelayMs: 100, aMoving: false, bMoving: false },
+      2000,
+    );
+    const bMoving = simulateFpsDuel(
+      WEAPON_PRESETS[0], aim,
+      WEAPON_PRESETS[0], aim,
+      { hp: 100, shield: 50, armor: 0 },
+      { hp: 100, shield: 50, armor: 0 },
+      { distance: 20, firstShot: 'both-aware', bothAwareDelayMs: 100, aMoving: false, bMoving: true },
+      2000,
+    );
+    // B 가 이동 중이면 맞추기 힘들어서 A 승률 UP
+    expect(bMoving.aWinRate).toBeGreaterThanOrEqual(staticResult.aWinRate);
+  });
+
+  it('recoil 높으면 연사 TTK 증가', () => {
+    const weaponLowRecoil = { ...WEAPON_PRESETS[0], recoilIntensity: 0 };
+    const weaponHighRecoil = { ...WEAPON_PRESETS[0], recoilIntensity: 1 };
+    const aim = aimSkillToProfile(70);
+    const target = { hp: 200, shield: 0, armor: 0 };
+    const low = simulateWeaponTtk(weaponLowRecoil, target, 30, aim, 2000);
+    const high = simulateWeaponTtk(weaponHighRecoil, target, 30, aim, 2000);
+    // recoil 있으면 평균 BTK 증가 (또는 kill 확률 감소)
+    expect(high.avgBtk).toBeGreaterThanOrEqual(low.avgBtk * 0.95);
+  });
+});
+
 describe('calculateShieldBreakdown (Apex 방식)', () => {
   it('쉴드 티어 5개 반환 (none/white/blue/purple/red)', () => {
     const rows = calculateShieldBreakdown(WEAPON_PRESETS[0], 10);

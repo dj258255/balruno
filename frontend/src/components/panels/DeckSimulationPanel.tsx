@@ -9,7 +9,7 @@
 import { useState, useMemo } from 'react';
 import { Layers, Plus, Trash2, BarChart3 } from 'lucide-react';
 import PanelShell from '@/components/ui/PanelShell';
-import { simulateDeck, CARD_PRESETS, type Card, type DeckConfig } from '@/lib/deckSimulation';
+import { simulateDeck, CARD_PRESETS, type Card, type DeckConfig, type EnemyMob } from '@/lib/deckSimulation';
 
 interface Props {
   onClose: () => void;
@@ -22,7 +22,16 @@ export default function DeckSimulationPanel({ onClose }: Props) {
   const [turns, setTurns] = useState(5);
   const [runs, setRuns] = useState(2000);
 
-  const cfg: DeckConfig = useMemo(() => ({ cards, handSize, baseEnergy, turnsPerCombat: turns }), [cards, handSize, baseEnergy, turns]);
+  // Slay the Spire Act 1 기본 몹 근사 (공식 위키 참고)
+  const [enemies, setEnemies] = useState<EnemyMob[]>([
+    { id: 'cultist', name: 'Cultist', hp: 50 },
+    { id: 'jaw-worm', name: 'Jaw Worm', hp: 42 },
+  ]);
+
+  const cfg: DeckConfig = useMemo(
+    () => ({ cards, handSize, baseEnergy, turnsPerCombat: turns, enemies }),
+    [cards, handSize, baseEnergy, turns, enemies],
+  );
   const result = useMemo(() => simulateDeck(cfg, runs), [cfg, runs]);
 
   const addCard = () => {
@@ -37,6 +46,11 @@ export default function DeckSimulationPanel({ onClose }: Props) {
   };
 
   const removeCard = (idx: number) => setCards((prev) => prev.filter((_, i) => i !== idx));
+
+  const addEnemy = () => setEnemies((prev) => [...prev, { id: `mob-${Date.now()}`, name: '몹', hp: 50 }]);
+  const updateEnemy = <K extends keyof EnemyMob>(idx: number, key: K, value: EnemyMob[K]) =>
+    setEnemies((prev) => prev.map((e, i) => (i === idx ? { ...e, [key]: value } : e)));
+  const removeEnemy = (idx: number) => setEnemies((prev) => prev.filter((_, i) => i !== idx));
 
   return (
     <PanelShell
@@ -61,6 +75,88 @@ export default function DeckSimulationPanel({ onClose }: Props) {
         <Stat label="최악(P10)~최선(P90)" value={`${result.p10Dpt.toFixed(0)}~${result.p90Dpt.toFixed(0)}`} sub="80% 신뢰 구간" color="#3b82f6" />
         <Stat label="Dead Hand" value={`${Math.round(result.deadHandRate * 100)}%`} sub="플레이 불가 턴 비율" color="#f59e0b" />
         <Stat label="에너지 낭비" value={`${Math.round(result.avgEnergyWaste * 100)}%`} sub="미사용 에너지 비율" color="#10b981" />
+      </div>
+
+      {/* 몹 킬 통계 (enemies 있을 때만) */}
+      {result.avgKills !== undefined && (
+        <div className="grid grid-cols-3 gap-2">
+          <Stat
+            label="평균 킬 수"
+            value={result.avgKills.toFixed(2)}
+            sub={`총 ${enemies.length}몹 중`}
+            color="#ef4444"
+          />
+          <Stat
+            label="전체 클리어율"
+            value={`${Math.round((result.clearRate ?? 0) * 100)}%`}
+            sub="모든 몹 처치한 run"
+            color="#10b981"
+          />
+          <Stat
+            label="첫 킬 평균 턴"
+            value={(result.avgTurnToFirstKill ?? 0).toFixed(1)}
+            sub="처음 몹 눕힌 시점"
+            color="#f59e0b"
+          />
+        </div>
+      )}
+
+      {/* 몹 편집 */}
+      <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
+            상대 몹 시퀀스 ({enemies.length})
+          </span>
+          <button onClick={addEnemy} className="btn-primary text-caption inline-flex items-center gap-1">
+            <Plus className="w-3 h-3" /> 몹 추가
+          </button>
+        </div>
+        <p className="text-caption italic mb-2" style={{ color: 'var(--text-tertiary)' }}>
+          왼쪽부터 순서대로 등장. 덱 DPT 를 누적해 처치 — 턴 안에 쓰러뜨리면 다음 몹.
+        </p>
+        <div className="space-y-1">
+          {enemies.map((enemy, idx) => {
+            const killRate = result.mobKillRates?.[enemy.id] ?? 0;
+            return (
+              <div key={enemy.id} className="flex items-center gap-2 p-1.5 rounded-md" style={{ background: 'var(--bg-primary)' }}>
+                <span className="text-caption tabular-nums w-6 text-center" style={{ color: 'var(--text-tertiary)' }}>
+                  #{idx + 1}
+                </span>
+                <input
+                  value={enemy.name}
+                  onChange={(e) => updateEnemy(idx, 'name', e.target.value)}
+                  className="input-compact flex-1 min-w-0"
+                />
+                <label className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                  HP
+                </label>
+                <input
+                  type="number"
+                  value={enemy.hp}
+                  min={1}
+                  onChange={(e) => updateEnemy(idx, 'hp', parseInt(e.target.value) || 1)}
+                  className="input-compact hide-spinner"
+                  style={{ width: 70 }}
+                />
+                <span
+                  className="text-caption tabular-nums w-12 text-right font-semibold"
+                  style={{ color: killRate >= 0.8 ? '#10b981' : killRate >= 0.5 ? '#f59e0b' : '#ef4444' }}
+                  title="이 몹 처치율"
+                >
+                  {Math.round(killRate * 100)}%
+                </span>
+                <button onClick={() => removeEnemy(idx)} className="p-1 rounded hover:bg-[var(--bg-tertiary)]">
+                  <Trash2 className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+              </div>
+            );
+          })}
+          {enemies.length === 0 && (
+            <p className="text-caption italic text-center py-4" style={{ color: 'var(--text-tertiary)' }}>
+              몹을 추가하면 킬 수/클리어율 분석이 표시됩니다
+            </p>
+          )}
+        </div>
       </div>
 
       {/* 카드 사용 빈도 */}

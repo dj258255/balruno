@@ -2,6 +2,7 @@
  * 전투 시뮬레이션 엔진
  */
 
+import { evaluateRules, type BehaviorRule } from '@/lib/aiBehavior';
 import type {
   UnitStats,
   Skill,
@@ -1615,7 +1616,32 @@ export function simulateTeamBattleWithSkills(
     if (aliveEnemies.length === 0) return null;
 
     if (attacker) {
-      const decisionSkill = (attacker as unknown as { decisionSkill?: number }).decisionSkill ?? 50;
+      const a = attacker as unknown as { decisionSkill?: number; aiRules?: unknown[] };
+      const decisionSkill = a.decisionSkill ?? 50;
+
+      // AI 규칙이 있으면 aiBehavior.evaluateRules 로 액션 결정
+      if (a.aiRules && Array.isArray(a.aiRules) && a.aiRules.length > 0) {
+        const ctx = {
+          selfHp: attacker.currentHp,
+          selfMaxHp: attacker.maxHp,
+          enemyHpSamples: aliveEnemies.map((e) => ({ id: e.id, hp: e.currentHp, maxHp: e.maxHp })),
+          turn: 0,
+          aliveEnemyCount: aliveEnemies.length,
+        };
+        const action = evaluateRules(a.aiRules as BehaviorRule[], ctx, decisionSkill);
+        // 액션별 타겟 결정 override
+        if (action.type === 'target_lowest_hp') {
+          return aliveEnemies.reduce((min, e) => (e.currentHp < min.currentHp ? e : min));
+        }
+        if (action.type === 'target_highest_atk') {
+          return aliveEnemies.reduce((max, e) => (e.atk > max.atk ? e : max));
+        }
+        if (action.type === 'target_random') {
+          return aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+        }
+        // attack / skill / defensive — mode 기본 흐름으로 (아래로 통과)
+      }
+
       const mistakeProb = 1 - decisionSkill / 100;
       if (Math.random() < mistakeProb * 0.5) {
         return aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];

@@ -40,6 +40,12 @@ export interface WeaponStats {
   falloffDamageMultiplier: number;
   /** 방어 관통률 (0-1) — armor 를 무시하는 비율 */
   armorPenPercent: number;
+  /** 첫 발 hit bonus (0-1) — 조준 완료 상태 첫 발은 정확함. CoD/Valorant 모델 */
+  firstShotAccuracyBonus?: number;
+  /** recoil 강도 (0-1) — 1 이면 연사할수록 hit rate 급감, 0 이면 무반동 */
+  recoilIntensity?: number;
+  /** 이동 중 명중률 감소 (0-1) — 1 이면 이동 시 아예 못 맞춤 */
+  movingAccuracyPenalty?: number;
 }
 
 export interface PlayerStats {
@@ -153,6 +159,9 @@ export interface FpsEngagement {
   firstShot: 'A' | 'B' | 'both-aware';
   /** ms 기준 동시 조우 후 ADS 대기 */
   bothAwareDelayMs: number;
+  /** A/B 이동 상태 — 이동 중이면 movingAccuracyPenalty 적용 */
+  aMoving?: boolean;
+  bMoving?: boolean;
 }
 
 export interface FpsSimResult {
@@ -226,14 +235,50 @@ function armorDamageMultiplier(armor: number, armorPen: number): number {
 // 한 발 피해 계산
 // ============================================================================
 
+/**
+ * 한 발의 effective hit rate 계산 — 첫 발 보너스, recoil (연사 shot index), 이동 페널티 반영.
+ * Valorant / CoD 공식 밸런싱에서 다음 3 요소를 종합:
+ *  - First shot: 첫 발은 completely accurate (spread 0)
+ *  - Recoil: shot index 증가하면 spread 증가 → hit rate 감소
+ *  - Movement: 이동 중 spread 증가
+ */
+function effectiveHitRate(
+  weapon: WeaponStats,
+  aim: AimProfile,
+  shotIndex: number,
+  moving: boolean,
+): number {
+  let rate = aim.hitRate;
+
+  // 첫 발 보너스
+  if (shotIndex === 0 && weapon.firstShotAccuracyBonus) {
+    rate = Math.min(1, rate + weapon.firstShotAccuracyBonus);
+  } else if (shotIndex > 0 && weapon.recoilIntensity) {
+    // Recoil: shot 5발 째부터 본격 감소. max 약 -50%
+    const recoilFactor = Math.min(1, (shotIndex - 1) / 15);
+    rate *= 1 - weapon.recoilIntensity * 0.5 * recoilFactor;
+  }
+
+  if (moving && weapon.movingAccuracyPenalty) {
+    rate *= 1 - weapon.movingAccuracyPenalty;
+  }
+
+  return Math.max(0, Math.min(1, rate));
+}
+
 function rollShotDamage(
   weapon: WeaponStats,
   player: PlayerStats,
   distance: number,
   aim: AimProfile,
+  shotIndex = 0,
+  moving = false,
 ): { damage: number; part: 'head' | 'body' | 'limb' | 'miss' } {
+  // 동적 hit rate
+  const hitRate = effectiveHitRate(weapon, aim, shotIndex, moving);
+
   // miss 체크
-  if (Math.random() > aim.hitRate) {
+  if (Math.random() > hitRate) {
     return { damage: 0, part: 'miss' };
   }
 
@@ -284,7 +329,7 @@ export function simulateWeaponTtk(
     let killed = false;
 
     while (shotsFired < weapon.magazineSize) {
-      const { damage } = rollShotDamage(weapon, target, distance, aim);
+      const { damage } = rollShotDamage(weapon, target, distance, aim, shotsFired, false);
       shotsFired++;
       totalShots++;
       totalDamage += damage;
@@ -374,17 +419,20 @@ export function simulateFpsDuel(
     let bHp = playerB.hp + playerB.shield;
     let aNext = aStartMs;
     let bNext = bStartMs;
-    let aShots = 0;
+    let aShots = 0;     // 현재 탄창 내 shot index (recoil 계산용)
     let bShots = 0;
+    let aTotalFired = 0;
+    let bTotalFired = 0;
     let winnerA = false;
     let winnerB = false;
 
     // 탄창 2개 소진할 때까지 (대부분 훨씬 전에 끝남)
-    while (aShots < weaponA.magazineSize * 2 && bShots < weaponB.magazineSize * 2) {
+    while (aTotalFired < weaponA.magazineSize * 2 && bTotalFired < weaponB.magazineSize * 2) {
       if (aNext <= bNext) {
         // A 가 먼저 발사
-        const { damage } = rollShotDamage(weaponA, playerB, engagement.distance, aimA);
+        const { damage } = rollShotDamage(weaponA, playerB, engagement.distance, aimA, aShots, !!engagement.aMoving);
         aShots++;
+        aTotalFired++;
         bHp -= damage;
         if (bHp <= 0) {
           aTtk.push(aNext);
@@ -393,9 +441,15 @@ export function simulateFpsDuel(
           break;
         }
         aNext += intervalA;
+        // 탄창 끝 → reload 시간 후 shotIndex 리셋 (reload 중 취약 창)
+        if (aShots >= weaponA.magazineSize) {
+          aNext += weaponA.reloadTimeSeconds * 1000;
+          aShots = 0;
+        }
       } else {
-        const { damage } = rollShotDamage(weaponB, playerA, engagement.distance, aimB);
+        const { damage } = rollShotDamage(weaponB, playerA, engagement.distance, aimB, bShots, !!engagement.bMoving);
         bShots++;
+        bTotalFired++;
         aHp -= damage;
         if (aHp <= 0) {
           bTtk.push(bNext);
@@ -404,6 +458,10 @@ export function simulateFpsDuel(
           break;
         }
         bNext += intervalB;
+        if (bShots >= weaponB.magazineSize) {
+          bNext += weaponB.reloadTimeSeconds * 1000;
+          bShots = 0;
+        }
       }
     }
 
@@ -464,6 +522,7 @@ export function calculateDpsCurve(
 // 기본 무기 프리셋 (사용자 시작점)
 // ============================================================================
 
+// 실제 게임 밸런싱 문서 기반 근사치 (Apex R-301/Volt/Longbow/Peacekeeper · CoD MP5 · Valorant Vandal 참고).
 export const WEAPON_PRESETS: WeaponStats[] = [
   {
     id: 'assault',
@@ -479,6 +538,9 @@ export const WEAPON_PRESETS: WeaponStats[] = [
     rangeFalloffEnd: 60,
     falloffDamageMultiplier: 0.6,
     armorPenPercent: 0.2,
+    firstShotAccuracyBonus: 0.1,
+    recoilIntensity: 0.5,
+    movingAccuracyPenalty: 0.3,
   },
   {
     id: 'smg',
@@ -494,6 +556,9 @@ export const WEAPON_PRESETS: WeaponStats[] = [
     rangeFalloffEnd: 35,
     falloffDamageMultiplier: 0.4,
     armorPenPercent: 0.1,
+    firstShotAccuracyBonus: 0.05,
+    recoilIntensity: 0.7,
+    movingAccuracyPenalty: 0.15,
   },
   {
     id: 'dmr',
@@ -509,6 +574,9 @@ export const WEAPON_PRESETS: WeaponStats[] = [
     rangeFalloffEnd: 120,
     falloffDamageMultiplier: 0.8,
     armorPenPercent: 0.4,
+    firstShotAccuracyBonus: 0.2,
+    recoilIntensity: 0.3,
+    movingAccuracyPenalty: 0.5,
   },
   {
     id: 'shotgun',
@@ -524,5 +592,8 @@ export const WEAPON_PRESETS: WeaponStats[] = [
     rangeFalloffEnd: 20,
     falloffDamageMultiplier: 0.15,
     armorPenPercent: 0.3,
+    firstShotAccuracyBonus: 0.05,
+    recoilIntensity: 0.2,
+    movingAccuracyPenalty: 0.1,
   },
 ];

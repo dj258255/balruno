@@ -36,6 +36,8 @@ export default function FPSSimulationPanel({ onClose }: Props) {
   const [distance, setDistance] = useState(20);
   const [targetArmor, setTargetArmor] = useState(0.1);
   const [firstShot, setFirstShot] = useState<'A' | 'B' | 'both-aware'>('both-aware');
+  const [aMoving, setAMoving] = useState(false);
+  const [bMoving, setBMoving] = useState(false);
   const [runs, setRuns] = useState(5000);
 
   const aimA = useMemo(() => aimSkillToProfile(aimSkillA), [aimSkillA]);
@@ -57,10 +59,10 @@ export default function FPSSimulationPanel({ onClose }: Props) {
         weaponB, aimB,
         { hp: 100, shield: 0, armor: 0 },
         { hp: 100, shield: 0, armor: 0 },
-        { distance, firstShot, bothAwareDelayMs: 100 },
+        { distance, firstShot, bothAwareDelayMs: 100, aMoving, bMoving },
         runs,
       ),
-    [weaponA, aimA, weaponB, aimB, distance, firstShot, runs],
+    [weaponA, aimA, weaponB, aimB, distance, firstShot, aMoving, bMoving, runs],
   );
 
   const dpsCurveA = useMemo(() => {
@@ -128,6 +130,18 @@ export default function FPSSimulationPanel({ onClose }: Props) {
 
         <RangeRow label="A 에임 실력" value={aimSkillA} unit="" min={0} max={100} step={5} onChange={setAimSkillA} format={(v) => `${v} (${skillTier(v)})`} />
         <RangeRow label="B 에임 실력" value={aimSkillB} unit="" min={0} max={100} step={5} onChange={setAimSkillB} format={(v) => `${v} (${skillTier(v)})`} />
+
+        <div className="flex gap-2">
+          <label className="flex-1 flex items-center gap-2 p-2 rounded-md cursor-pointer" style={{ background: 'var(--bg-primary)' }}>
+            <input type="checkbox" checked={aMoving} onChange={(e) => setAMoving(e.target.checked)} />
+            <span className="text-label" style={{ color: 'var(--text-primary)' }}>A 이동 중</span>
+          </label>
+          <label className="flex-1 flex items-center gap-2 p-2 rounded-md cursor-pointer" style={{ background: 'var(--bg-primary)' }}>
+            <input type="checkbox" checked={bMoving} onChange={(e) => setBMoving(e.target.checked)} />
+            <span className="text-label" style={{ color: 'var(--text-primary)' }}>B 이동 중</span>
+          </label>
+        </div>
+
         <RangeRow label="반복 수" value={runs} unit="회" min={500} max={20000} step={500} onChange={setRuns} />
       </div>
 
@@ -334,6 +348,13 @@ function WeaponCard({
         <NumField label="감쇠 끝m" value={weapon.rangeFalloffEnd} onChange={(v) => update('rangeFalloffEnd', v)} />
         <NumField label="최소배율" value={weapon.falloffDamageMultiplier} step={0.05} onChange={(v) => update('falloffDamageMultiplier', v)} />
       </div>
+      {/* 첫 발 보너스 / 반동 / 이동 패널티 — 실제 FPS 공식 밸런싱 지표 */}
+      <div className="grid grid-cols-3 gap-1.5">
+        <NumField label="첫발+" value={weapon.firstShotAccuracyBonus ?? 0} step={0.05} onChange={(v) => update('firstShotAccuracyBonus', v)} />
+        <NumField label="반동" value={weapon.recoilIntensity ?? 0} step={0.05} onChange={(v) => update('recoilIntensity', v)} />
+        <NumField label="이동패널" value={weapon.movingAccuracyPenalty ?? 0} step={0.05} onChange={(v) => update('movingAccuracyPenalty', v)} />
+      </div>
+      <NumField label="재장전(초)" value={weapon.reloadTimeSeconds} step={0.1} onChange={(v) => update('reloadTimeSeconds', v)} />
     </div>
   );
 }

@@ -44,6 +44,25 @@ describe('simulateDeck', () => {
     expect(high.avgCardsPerTurn).toBeGreaterThan(low.avgCardsPerTurn);
   });
 
+  it('몹 시퀀스 제공 시 킬 통계 계산', () => {
+    const result = simulateDeck({
+      cards: CARD_PRESETS,
+      handSize: 5,
+      baseEnergy: 3,
+      turnsPerCombat: 10,
+      enemies: [
+        { id: 'weak', name: 'Weak', hp: 10 },
+        { id: 'strong', name: 'Strong', hp: 200 },
+      ],
+    }, 500);
+
+    expect(result.avgKills).toBeDefined();
+    expect(result.avgKills!).toBeGreaterThan(0);
+    expect(result.mobKillRates!.weak).toBeGreaterThan(0.8); // 10HP 는 쉽게 처치
+    expect(result.clearRate).toBeDefined();
+    expect(result.avgTurnToFirstKill).toBeGreaterThan(0);
+  });
+
   it('고비용 카드만 있고 에너지 적으면 deadHand 증가', () => {
     const result = simulateDeck({
       cards: Array.from({ length: 10 }, (_, i) => ({
