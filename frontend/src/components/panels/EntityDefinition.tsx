@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Users, TrendingUp, Settings, Table2, Sliders } from 'lucide-react';
+import { Users, TrendingUp, Settings, Table2, Sliders, Check } from 'lucide-react';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import EmptyState from '@/components/ui/EmptyState';
 
@@ -43,37 +43,55 @@ function SectionDivider({
   color,
   step,
   description,
+  complete,
 }: {
   icon: React.ElementType;
   title: string;
   color: string;
   step?: string; // 예: "1/5"
   description?: string;
+  /** 이 step 이 완료됐는지 — 완료 시 체크마크 + 색상 가득 (Progressive Disclosure 피드백) */
+  complete?: boolean;
 }) {
   return (
     <div className="flex items-center gap-3 pt-2 pb-1">
       <div
         className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 relative"
-        style={{ background: `${color}15` }}
+        style={{
+          background: complete ? color : `${color}15`,
+          transition: 'background 0.2s ease',
+        }}
       >
-        <Icon className="w-3.5 h-3.5" style={{ color }} />
+        {complete ? (
+          <Check className="w-4 h-4" style={{ color: 'white' }} strokeWidth={3} />
+        ) : (
+          <Icon className="w-3.5 h-3.5" style={{ color }} />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           {step && (
             <span
               className="text-caption font-mono font-bold px-1.5 py-0.5 rounded"
-              style={{ background: `${color}20`, color }}
+              style={{
+                background: complete ? color : `${color}20`,
+                color: complete ? 'white' : color,
+              }}
             >
               {step}
             </span>
           )}
           <span
             className="text-xs font-semibold uppercase tracking-wider"
-            style={{ color: 'var(--text-tertiary)' }}
+            style={{ color: complete ? color : 'var(--text-tertiary)' }}
           >
             {title}
           </span>
+          {complete && (
+            <span className="text-caption" style={{ color }}>
+              ✓ 완료
+            </span>
+          )}
         </div>
         {description && (
           <p className="text-caption mt-0.5 truncate" style={{ color: 'var(--text-tertiary)' }}>
@@ -81,7 +99,7 @@ function SectionDivider({
           </p>
         )}
       </div>
-      <div className="flex-1 h-px" style={{ background: 'var(--border-primary)' }} />
+      <div className="flex-1 h-px" style={{ background: complete ? color : 'var(--border-primary)', opacity: complete ? 0.3 : 1 }} />
     </div>
   );
 }
@@ -180,6 +198,7 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
             color={PANEL_COLOR}
             step="1/5"
             description="엔티티 데이터가 있는 시트를 고릅니다"
+            complete={!!selectedSourceSheetId}
           />
 
           <SheetSelector
@@ -211,6 +230,7 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
             color="#3b82f6"
             step="2/5"
             description="ID·이름·레벨 컬럼이 무엇인지 지정"
+            complete={!!idColumn && !!nameColumn && !!levelColumn}
           />
 
           <ColumnMappingSelector
@@ -231,6 +251,7 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
             color="#f59e0b"
             step="3/5"
             description="HP/ATK 등 스탯별 소스 컬럼과 성장 곡선 설정"
+            complete={statDefinitions.length > 0}
           />
 
           <StatDefinitionEditor
@@ -245,6 +266,7 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
             color="#5a9cf5"
             step="4/5"
             description="레벨 테이블을 만들 개체(캐릭터·몬스터) 선택"
+            complete={!!selectedEntityId}
           />
 
           <TagFilter
@@ -311,6 +333,7 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
             color="#9179f2"
             step="5/5"
             description="최종 레벨 테이블을 새 시트로 저장"
+            complete={previewData.length > 0}
           />
 
           <PreviewTable
