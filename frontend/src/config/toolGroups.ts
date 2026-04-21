@@ -40,6 +40,7 @@ export type ToolId =
   | 'sensitivity'
   | 'changeHistory'
   | 'fpsSimulation'
+  | 'fpsTeamSimulation'
   | 'deckSimulation'
   | 'frameData'
   | 'aiBehavior';
@@ -76,7 +77,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'simulate',
     titleKey: 'toolGroups.simulate',
     color: '#e11d48',
-    tools: ['simulation', 'fpsSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy'],
+    tools: ['simulation', 'fpsSimulation', 'fpsTeamSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy'],
   },
   {
     id: 'compare',
@@ -124,6 +125,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   // simulate — 시뮬
   simulation: 'toolDesc.simulation',           // 1:1/팀 전투 Monte Carlo
   fpsSimulation: 'toolDesc.fpsSimulation',     // FPS 무기 TTK · BTK · 거리별 DPS
+  fpsTeamSimulation: 'toolDesc.fpsTeamSimulation', // FPS 팀 전투 trade-kill · clutch
   deckSimulation: 'toolDesc.deckSimulation',   // 덱빌더 DPT · deadHand · 에너지 낭비
   frameData: 'toolDesc.frameData',             // 격투 프레임 · 유리/불리 · 콤보 라우트
   aiBehavior: 'toolDesc.aiBehavior',           // AI 조건→액션 규칙 에디터

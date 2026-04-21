@@ -36,6 +36,8 @@ export interface DeckConfig {
   turnsPerCombat: number;    // 전투 턴 수
   /** 상대 몹 설정 — 하나 처치시 다음 몹 등장. 여러 종류일 수 있음. */
   enemies?: EnemyMob[];
+  /** 플레이어 최대 HP. 설정 시 몹 공격 데미지 받음 → 생존 시뮬 모드. */
+  player?: PlayerConfig;
 }
 
 /**
@@ -46,6 +48,14 @@ export interface EnemyMob {
   id: string;
   name: string;
   hp: number;
+  /** 이 몹이 턴당 주는 데미지 (플레이어 HP 에서 차감, block 으로 경감) */
+  attackDamage?: number;
+  /** 공격 주기 — 매 N 턴마다 공격 (1=매 턴, 2=격턴). 기본 1. */
+  attackInterval?: number;
+}
+
+export interface PlayerConfig {
+  maxHp: number;
 }
 
 export interface DeckSimResult {
@@ -67,6 +77,14 @@ export interface DeckSimResult {
   avgTurnToFirstKill?: number;
   /** 각 몹별 처치율 (0-1) */
   mobKillRates?: Record<string, number>;
+  /** 생존 시뮬 모드: player 생존률 (0-1) */
+  survivalRate?: number;
+  /** 평균 종료 HP (죽었으면 0) */
+  avgEndHp?: number;
+  /** 평균 받은 데미지 */
+  avgDamageTaken?: number;
+  /** 평균 block 으로 차단한 데미지 */
+  avgDamageBlocked?: number;
 }
 
 // ============================================================================
@@ -118,6 +136,11 @@ function simulateCombat(cfg: DeckConfig): {
   killedMobIds: string[];
   firstKillTurn: number | null;
   allCleared: boolean;
+  // 생존 시뮬 모드 결과
+  playerEndHp: number;
+  damageTaken: number;
+  damageBlocked: number;
+  survived: boolean;
 } {
   const state: PileState = {
     drawPile: shuffle(cfg.cards),
@@ -142,6 +165,13 @@ function simulateCombat(cfg: DeckConfig): {
   const killedMobIds: string[] = [];
   let firstKillTurn: number | null = null;
 
+  // 생존 시뮬 (player 설정 시만 활성)
+  const hasPlayer = !!cfg.player;
+  let playerHp = cfg.player?.maxHp ?? 100;
+  let damageTaken = 0;
+  let damageBlocked = 0;
+  let survived = true;
+
   for (let turn = 0; turn < cfg.turnsPerCombat; turn++) {
     // 턴 시작 드로우
     draw(state, cfg.handSize);
@@ -150,6 +180,7 @@ function simulateCombat(cfg: DeckConfig): {
 
     let playedThisTurn = 0;
     let turnDamage = 0;
+    let turnBlock = 0;
 
     // 가능한 카드 반복 플레이 (cost ≤ 현재 에너지, 가장 비싼 것 우선)
     let playableExists = true;
@@ -170,7 +201,10 @@ function simulateCombat(cfg: DeckConfig): {
 
       const upMul = card.upgraded ? 1.3 : 1;
       if (card.damage) turnDamage += card.damage * upMul;
-      if (card.block) totalBlock += card.block * upMul;
+      if (card.block) {
+        turnBlock += card.block * upMul;
+        totalBlock += card.block * upMul;
+      }
       if (card.draw) draw(state, card.draw * (card.upgraded ? 2 : 1));
 
       // hand 에서 제거 + 파일 이동
@@ -185,6 +219,29 @@ function simulateCombat(cfg: DeckConfig): {
     perTurnDamage.push(turnDamage);
     if (playedThisTurn === 0) deadHandTurns++;
     energyWasted += energy;
+
+    // 몹 공격 단계 (생존 시뮬) — 현재 생존 몹이 플레이어 공격
+    if (hasPlayer && enemyIdx < enemies.length) {
+      const currentMob = enemies[enemyIdx];
+      const interval = currentMob.attackInterval ?? 1;
+      if (currentMob.attackDamage && turn % interval === 0) {
+        const incoming = currentMob.attackDamage;
+        // block 으로 우선 흡수, 나머지는 HP 차감
+        const blocked = Math.min(turnBlock, incoming);
+        const actualDmg = incoming - blocked;
+        damageBlocked += blocked;
+        damageTaken += actualDmg;
+        playerHp -= actualDmg;
+        if (playerHp <= 0) {
+          survived = false;
+          playerHp = 0;
+          // 턴 종료 처리 후 break
+          state.discardPile.push(...state.hand);
+          state.hand = [];
+          break;
+        }
+      }
+    }
 
     // 적용: turnDamage 를 현재 몹에 순차 누적
     if (enemies.length > 0) {
@@ -232,6 +289,10 @@ function simulateCombat(cfg: DeckConfig): {
     killedMobIds,
     firstKillTurn,
     allCleared,
+    playerEndHp: playerHp,
+    damageTaken,
+    damageBlocked,
+    survived,
   };
 }
 
@@ -255,6 +316,12 @@ export function simulateDeck(cfg: DeckConfig, runs = 2000): DeckSimResult {
   let firstKillCount = 0;
   const mobKillCounts: Record<string, number> = {};
 
+  // 생존 통계
+  let survivedCount = 0;
+  let endHpSum = 0;
+  let dmgTakenSum = 0;
+  let dmgBlockedSum = 0;
+
   for (let i = 0; i < runs; i++) {
     const r = simulateCombat(cfg);
     perTurnDamages.push(r.perTurnDamage);
@@ -276,6 +343,11 @@ export function simulateDeck(cfg: DeckConfig, runs = 2000): DeckSimResult {
       firstKillTurnSum += r.firstKillTurn;
       firstKillCount++;
     }
+
+    if (r.survived) survivedCount++;
+    endHpSum += r.playerEndHp;
+    dmgTakenSum += r.damageTaken;
+    dmgBlockedSum += r.damageBlocked;
   }
 
   // DPT 분포 (각 run 의 평균 turn damage)
@@ -316,6 +388,12 @@ export function simulateDeck(cfg: DeckConfig, runs = 2000): DeckSimResult {
       clearRate: clearedCount / runs,
       avgTurnToFirstKill: firstKillCount > 0 ? firstKillTurnSum / firstKillCount : 0,
       mobKillRates,
+    }),
+    ...(cfg.player && {
+      survivalRate: survivedCount / runs,
+      avgEndHp: endHpSum / runs,
+      avgDamageTaken: dmgTakenSum / runs,
+      avgDamageBlocked: dmgBlockedSum / runs,
     }),
   };
 }

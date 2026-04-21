@@ -87,7 +87,8 @@ export default function FrameDataPanel({ onClose }: Props) {
           {moves.map((m, idx) => {
             const a = analyzeMove(m);
             return (
-              <div key={m.id} className="grid grid-cols-12 gap-1 items-center p-1.5 rounded-md" style={{ background: 'var(--bg-primary)' }}>
+              <div key={m.id} className="space-y-1">
+              <div className="grid grid-cols-12 gap-1 items-center p-1.5 rounded-md" style={{ background: 'var(--bg-primary)' }}>
                 <input className="input-compact col-span-3" value={m.name} onChange={(e) => updateMove(idx, 'name', e.target.value)} />
                 <input type="number" className="input-compact hide-spinner col-span-1 text-center" value={m.startup} onChange={(e) => updateMove(idx, 'startup', parseInt(e.target.value) || 0)} />
                 <input type="number" className="input-compact hide-spinner col-span-1 text-center" value={m.active} onChange={(e) => updateMove(idx, 'active', parseInt(e.target.value) || 0)} />
@@ -117,6 +118,30 @@ export default function FrameDataPanel({ onClose }: Props) {
                     <Trash2 className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
                   </button>
                 </div>
+              </div>
+              {/* INV/CH 배지 라인 — 있는 경우만 */}
+              {(a.invincibleRange || (m.counterHitMultiplier && m.counterHitMultiplier !== 1)) && (
+                <div className="flex items-center gap-1 pl-2">
+                  {a.invincibleRange && (
+                    <span
+                      className="text-caption font-bold px-1.5 py-0.5 rounded"
+                      style={{ background: '#10b98130', color: '#10b981' }}
+                      title={`${a.invincibleRange.from}-${a.invincibleRange.to}f ${a.invincibleRange.type} 무적`}
+                    >
+                      INV {a.invincibleRange.from}-{a.invincibleRange.to}f
+                    </span>
+                  )}
+                  {m.counterHitMultiplier && m.counterHitMultiplier !== 1 && (
+                    <span
+                      className="text-caption font-bold px-1.5 py-0.5 rounded"
+                      style={{ background: '#f59e0b30', color: '#f59e0b' }}
+                      title={`카운터 히트 시 ${a.counterHitDamage} 피해 (×${m.counterHitMultiplier.toFixed(1)}) + ${a.counterHitOnHit}f 유리`}
+                    >
+                      CH ×{m.counterHitMultiplier.toFixed(1)} → {a.counterHitDamage}dmg, +{a.counterHitOnHit}f
+                    </span>
+                  )}
+                </div>
+              )}
               </div>
             );
           })}

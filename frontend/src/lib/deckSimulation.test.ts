@@ -63,6 +63,34 @@ describe('simulateDeck', () => {
     expect(result.avgTurnToFirstKill).toBeGreaterThan(0);
   });
 
+  it('생존 모드: 플레이어 HP 낮고 몹 공격 세면 사망률 높음', () => {
+    const result = simulateDeck({
+      cards: CARD_PRESETS,
+      handSize: 5,
+      baseEnergy: 3,
+      turnsPerCombat: 10,
+      enemies: [{ id: 'big', name: 'Boss', hp: 500, attackDamage: 50, attackInterval: 1 }],
+      player: { maxHp: 50 },
+    }, 500);
+
+    expect(result.survivalRate).toBeDefined();
+    expect(result.survivalRate!).toBeLessThan(0.2); // HP 50 에 atk 50 맞으면 금방 죽음
+    expect(result.avgDamageTaken!).toBeGreaterThan(0);
+  });
+
+  it('생존 모드: 강한 덱 + 약한 몹 → 거의 전부 생존', () => {
+    const result = simulateDeck({
+      cards: CARD_PRESETS,
+      handSize: 5,
+      baseEnergy: 3,
+      turnsPerCombat: 10,
+      enemies: [{ id: 'weak', name: 'Weak', hp: 20, attackDamage: 2, attackInterval: 2 }],
+      player: { maxHp: 80 },
+    }, 500);
+
+    expect(result.survivalRate!).toBeGreaterThan(0.8);
+  });
+
   it('고비용 카드만 있고 에너지 적으면 deadHand 증가', () => {
     const result = simulateDeck({
       cards: Array.from({ length: 10 }, (_, i) => ({

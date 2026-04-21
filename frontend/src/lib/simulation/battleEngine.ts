@@ -1758,6 +1758,43 @@ export function simulateTeamBattleWithSkills(
     return false;
   };
 
+  // AI 액션 기반 스킬 우선순위 재정렬 — aiRules 설정된 유닛만
+  const reorderSkillsByAI = (
+    attacker: UnitState,
+    enemies: UnitState[],
+    skills: Skill[],
+  ): Skill[] => {
+    const a = attacker as unknown as { aiRules?: unknown[]; decisionSkill?: number };
+    if (!a.aiRules || !Array.isArray(a.aiRules) || a.aiRules.length === 0) return skills;
+    const ctx = {
+      selfHp: attacker.currentHp,
+      selfMaxHp: attacker.maxHp,
+      enemyHpSamples: enemies.filter((e) => e.alive).map((e) => ({ id: e.id, hp: e.currentHp, maxHp: e.maxHp })),
+      turn: 0,
+      aliveEnemyCount: enemies.filter((e) => e.alive).length,
+    };
+    const action = evaluateRules(a.aiRules as BehaviorRule[], ctx, a.decisionSkill ?? 50);
+
+    // defensive → heal/hot/invincible/revive 스킬 우선
+    // skill:<id> → 해당 id 가 맨 앞
+    if (action.type === 'defensive') {
+      return [...skills].sort((a1, b1) => {
+        const defensive = ['heal', 'hot', 'invincible', 'aoe_heal', 'revive'];
+        const aDef = defensive.includes(a1.skillType ?? 'damage');
+        const bDef = defensive.includes(b1.skillType ?? 'damage');
+        return (bDef ? 1 : 0) - (aDef ? 1 : 0);
+      });
+    }
+    if (action.type === 'skill') {
+      const idx = skills.findIndex((s) => s.id === action.skillId);
+      if (idx >= 0) {
+        const target = skills[idx];
+        return [target, ...skills.filter((_, i) => i !== idx)];
+      }
+    }
+    return skills;
+  };
+
   // 스킬 처리 함수
   const processUnitSkills = (
     attacker: UnitState,
@@ -1768,7 +1805,10 @@ export function simulateTeamBattleWithSkills(
   ): void => {
     if (time < attacker.invincibleUntil) return; // 무적 중 스킬 사용 불가
 
-    for (const skill of skills) {
+    // AI 규칙에 따라 스킬 평가 순서 재정렬 (defensive/skill 액션 반영)
+    const orderedSkills = reorderSkillsByAI(attacker, enemies, skills);
+
+    for (const skill of orderedSkills) {
       const cooldownEnds = attacker.skillCooldowns.get(skill.id) || 0;
       if (time < cooldownEnds) continue;
 

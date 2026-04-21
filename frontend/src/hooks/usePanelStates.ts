@@ -44,6 +44,7 @@ export function usePanelStates(): {
   const [sensitivity, setSensitivity] = useState(false);
   const [changeHistory, setChangeHistory] = useState(false);
   const [fpsSimulation, setFpsSimulation] = useState(false);
+  const [fpsTeamSimulation, setFpsTeamSimulation] = useState(false);
   const [deckSimulation, setDeckSimulation] = useState(false);
   const [frameData, setFrameData] = useState(false);
   const [aiBehavior, setAiBehavior] = useState(false);
@@ -73,6 +74,7 @@ export function usePanelStates(): {
     sensitivity: { show: sensitivity, setShow: setSensitivity },
     changeHistory: { show: changeHistory, setShow: setChangeHistory },
     fpsSimulation: { show: fpsSimulation, setShow: setFpsSimulation },
+    fpsTeamSimulation: { show: fpsTeamSimulation, setShow: setFpsTeamSimulation },
     deckSimulation: { show: deckSimulation, setShow: setDeckSimulation },
     frameData: { show: frameData, setShow: setFrameData },
     aiBehavior: { show: aiBehavior, setShow: setAiBehavior },
@@ -81,7 +83,7 @@ export function usePanelStates(): {
     economy, dpsVariance, curveFitting, formulaHelper, balanceValidator,
     difficultyCurve, simulation, entityDefinition, autoBalancer, lootSimulator,
     powerCurveCompare, comments, interfaceDesigner, automations, sensitivity,
-    changeHistory, fpsSimulation, deckSimulation, frameData, aiBehavior,
+    changeHistory, fpsSimulation, fpsTeamSimulation, deckSimulation, frameData, aiBehavior,
   ]);
 
   const openByName = useCallback((name: string) => {
