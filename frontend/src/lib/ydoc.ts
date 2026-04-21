@@ -77,8 +77,9 @@ export function attachWebrtc(projectId: string, roomName: string): WebrtcProvide
 
   const doc = getProjectDoc(projectId);
   const provider = new WebrtcProvider(roomName, doc, {
-    // 공용 신호서버 (Yjs 공식 운영). 필요 시 자체 호스트로 교체.
-    signaling: ['wss://signaling.yjs.dev', 'wss://y-webrtc-signaling-eu.herokuapp.com'],
+    // Yjs 공식 운영. heroku 신호서버는 2022 free tier 폐지로 동작하지 않아 제거.
+    // 필요 시 자체 호스트로 교체 (y-webrtc-signaling docker image 또는 Spring Boot).
+    signaling: ['wss://signaling.yjs.dev'],
   });
   webrtcCache.set(projectId, provider);
   return provider;
