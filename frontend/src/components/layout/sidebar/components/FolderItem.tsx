@@ -314,7 +314,12 @@ export function FolderItem({
                 color: currentSheetId === sheet.id ? 'white' : 'var(--text-primary)',
               }}
             >
-              <FileSpreadsheet className="w-4 h-4 flex-shrink-0" />
+              <FileSpreadsheet
+                className="w-4 h-4 flex-shrink-0"
+                style={{
+                  color: currentSheetId === sheet.id ? 'white' : 'var(--accent)',
+                }}
+              />
               {editingSheetId === sheet.id ? (
                 <input
                   type="text"

@@ -13,16 +13,18 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { MoreHorizontal, Copy, Download, Upload, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Copy, Download, Upload, Trash2, HelpCircle, BookOpen } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { toast } from '@/components/ui/Toast';
 
 interface ProjectMenuProps {
   onShowExport: () => void;
   onShowImport: () => void;
+  onShowHelp?: () => void;
+  onShowReferences?: () => void;
 }
 
-export default function ProjectMenu({ onShowExport, onShowImport }: ProjectMenuProps) {
+export default function ProjectMenu({ onShowExport, onShowImport, onShowHelp, onShowReferences }: ProjectMenuProps) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -111,6 +113,16 @@ export default function ProjectMenu({ onShowExport, onShowImport }: ProjectMenuP
           <Item icon={Copy} label="복제" onClick={handleDuplicate} />
           <Item icon={Download} label="내보내기" onClick={run(onShowExport)} />
           <Item icon={Upload} label="가져오기" onClick={run(onShowImport)} />
+
+          {(onShowHelp || onShowReferences) && (
+            <div className="h-px mx-1 my-1" style={{ background: 'var(--border-primary)' }} />
+          )}
+          {onShowHelp && (
+            <Item icon={HelpCircle} label="사용 가이드" onClick={run(onShowHelp)} />
+          )}
+          {onShowReferences && (
+            <Item icon={BookOpen} label="참고 자료" onClick={run(onShowReferences)} />
+          )}
 
           <div className="h-px mx-1 my-1" style={{ background: 'var(--border-primary)' }} />
 

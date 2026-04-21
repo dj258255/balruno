@@ -473,6 +473,8 @@ export default function Home() {
                 <ProjectMenu
                   onShowExport={() => setShowExportModal(true)}
                   onShowImport={() => setShowImportModal(true)}
+                  onShowHelp={() => setShowOnboarding(true)}
+                  onShowReferences={() => setShowReferences(true)}
                 />
               </div>
             </div>
