@@ -43,7 +43,8 @@ export type ToolId =
   | 'fpsTeamSimulation'
   | 'deckSimulation'
   | 'frameData'
-  | 'aiBehavior';
+  | 'aiBehavior'
+  | 'matchupMatrix';
 
 export type ToolGroupId =
   | 'build'
@@ -71,7 +72,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'check',
     titleKey: 'toolGroups.check',
     color: '#ec4899',
-    tools: ['balance', 'imbalance', 'balanceValidator', 'sensitivity'],
+    tools: ['balance', 'imbalance', 'balanceValidator', 'sensitivity', 'matchupMatrix'],
   },
   {
     id: 'simulate',
@@ -121,6 +122,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   imbalance: 'toolDesc.imbalance',             // Z-score 통계적 이상치 자동 탐지
   balanceValidator: 'toolDesc.balanceValidator', // 런칭 전 룰 기반 최종 검증
   sensitivity: 'toolDesc.sensitivity',         // 변수 민감도 · Tornado/Spider
+  matchupMatrix: 'toolDesc.matchupMatrix',     // N×N 매치업 heatmap · Perfect Imbalance
 
   // simulate — 시뮬
   simulation: 'toolDesc.simulation',           // 1:1/팀 전투 Monte Carlo
