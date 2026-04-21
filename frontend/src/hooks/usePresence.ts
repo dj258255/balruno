@@ -43,20 +43,34 @@ export function setUserIdentity(name: string, color: string): void {
   window.dispatchEvent(new Event('balruno:user-identity-changed'));
 }
 
+export interface PeerCellRef {
+  sheetId: string;
+  rowId: string;
+  columnId: string;
+}
+
 export interface Peer {
   id: number;
   name: string;
   color: string;
-  /** 현재 선택/편집 중인 셀 (Track 8B 셀 커서) */
-  activeCell?: { sheetId: string; rowId: string; columnId: string } | null;
+  /** 현재 활성 (단일) 셀 — 단일 클릭·키보드 포커스 */
+  activeCell?: PeerCellRef | null;
+  /** 드래그/Shift 로 선택된 셀 범위 — 다중 선택 시각화용 */
+  selectedCells?: PeerCellRef[];
+  /** 현재 편집 모드 (타이핑 중) — cell typing indicator */
+  isEditing?: boolean;
 }
 
 export function usePresence(projectId: string | null): {
   peers: Peer[];
   myName: string;
   myColor: string;
-  /** 내 선택 셀을 peer 에게 publish */
-  publishActiveCell: (cell: { sheetId: string; rowId: string; columnId: string } | null) => void;
+  /** 단일 활성 셀 publish */
+  publishActiveCell: (cell: PeerCellRef | null) => void;
+  /** 다중 선택 범위 publish */
+  publishSelectedCells: (cells: PeerCellRef[]) => void;
+  /** 편집 모드 on/off publish */
+  publishEditing: (editing: boolean) => void;
 } {
   const [identityVersion, setIdentityVersion] = useState(0);
 
@@ -110,13 +124,17 @@ export function usePresence(projectId: string | null): {
         if (id === myId) return;
         const s = state as {
           user?: { name?: string; color?: string };
-          activeCell?: { sheetId: string; rowId: string; columnId: string } | null;
+          activeCell?: PeerCellRef | null;
+          selectedCells?: PeerCellRef[];
+          isEditing?: boolean;
         };
         next.push({
           id,
           name: s.user?.name ?? 'Anonymous',
           color: s.user?.color ?? '#94a3b8',
           activeCell: s.activeCell ?? null,
+          selectedCells: s.selectedCells ?? [],
+          isEditing: s.isEditing ?? false,
         });
       });
       setPeers(next);
@@ -130,16 +148,21 @@ export function usePresence(projectId: string | null): {
     };
   }, [projectId, myName, myColor]);
 
-  const publishActiveCell = (cell: { sheetId: string; rowId: string; columnId: string } | null) => {
+  const mergeLocalState = (patch: Record<string, unknown>) => {
     if (!projectId) return;
     const provider = getWebrtc(projectId);
     if (!provider) return;
-    const prev = provider.awareness.getLocalState() as { user?: unknown; activeCell?: unknown } | null;
+    const prev = (provider.awareness.getLocalState() ?? {}) as Record<string, unknown>;
     provider.awareness.setLocalState({
-      user: prev?.user ?? { name: myName, color: myColor },
-      activeCell: cell,
+      ...prev,
+      user: prev.user ?? { name: myName, color: myColor },
+      ...patch,
     });
   };
 
-  return { peers, myName, myColor, publishActiveCell };
+  const publishActiveCell = (cell: PeerCellRef | null) => mergeLocalState({ activeCell: cell });
+  const publishSelectedCells = (cells: PeerCellRef[]) => mergeLocalState({ selectedCells: cells });
+  const publishEditing = (editing: boolean) => mergeLocalState({ isEditing: editing });
+
+  return { peers, myName, myColor, publishActiveCell, publishSelectedCells, publishEditing };
 }
