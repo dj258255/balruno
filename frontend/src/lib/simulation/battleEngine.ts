@@ -97,6 +97,17 @@ function calculateDamageReduction(
 /**
  * 데미지 계산 (방어관통 및 다양한 방어 공식 지원)
  */
+/**
+ * 0-100 실력 점수를 multiplier 로 변환.
+ * 50=기준(1.0), 0=약함(0.6), 100=강함(1.4)
+ * Overwatch / Destiny 밸런싱 문서의 "skill tier" 공식 기반.
+ */
+function skillMul(skill: number | undefined): number {
+  if (skill === undefined) return 1;
+  const clamped = Math.max(0, Math.min(100, skill));
+  return 0.6 + (clamped / 100) * 0.8;
+}
+
 function calculateDamage(
   attacker: UnitStats,
   defender: UnitStats,
@@ -104,18 +115,21 @@ function calculateDamage(
   defFormula: DefenseFormulaType = 'subtractive',
   armorPen?: ArmorPenetrationConfig
 ): { damage: number; isCrit: boolean; isMiss: boolean; effectiveDef: number } {
-  // 명중 체크
-  const accuracy = attacker.accuracy ?? 1;
-  const evasion = defender.evasion ?? 0;
-  const hitChance = Math.max(0, Math.min(1, accuracy - evasion));
+  // 명중 체크 — 에임 실력으로 accuracy 보정, 반응 실력으로 evasion 보정
+  const baseAccuracy = attacker.accuracy ?? 1;
+  const baseEvasion = defender.evasion ?? 0;
+  const effAccuracy = baseAccuracy * skillMul(attacker.aimSkill);
+  const effEvasion = baseEvasion * skillMul(defender.reactionSkill);
+  const hitChance = Math.max(0, Math.min(1, effAccuracy - effEvasion));
 
   if (Math.random() > hitChance) {
     return { damage: 0, isCrit: false, isMiss: true, effectiveDef: defender.def };
   }
 
-  // 크리티컬 체크
-  const critRate = attacker.critRate ?? 0;
-  const isCrit = Math.random() < critRate;
+  // 크리티컬 체크 — 에임 실력이 critRate 에도 보정 적용 (약한 보정)
+  const baseCritRate = attacker.critRate ?? 0;
+  const effCritRate = baseCritRate * (0.8 + (skillMul(attacker.aimSkill) - 0.6) * 0.25);
+  const isCrit = Math.random() < Math.max(0, Math.min(1, effCritRate));
   const critMultiplier = isCrit ? (attacker.critDamage ?? 1.5) : 1;
 
   // 방어관통 적용한 유효 방어력 계산
