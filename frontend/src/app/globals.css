@@ -796,6 +796,12 @@ input[type="checkbox"]:checked::after {
   animation: slideDown 0.3s ease-out forwards;
 }
 
+/* P9a — peer typing indicator (셀 뱃지 옆 작은 점이 깜빡) */
+@keyframes balruno-typing-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50%      { opacity: 1;   transform: scale(1.1); }
+}
+
 /* 호버 효과 */
 .hover-lift {
   transition: transform 0.15s ease, box-shadow 0.15s ease;

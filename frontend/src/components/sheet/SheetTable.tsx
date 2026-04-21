@@ -91,7 +91,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
   const { pushState } = useHistoryStore();
 
   // Track 8B — 셀 cursor presence
-  const { peers, publishActiveCell } = usePresence(projectId);
+  const { peers, publishActiveCell, publishSelectedCells, publishEditing } = usePresence(projectId);
   // selectedCell 바인딩은 아래 useSheetSelection 에서 나오므로 이후 effect 에서 publish
   const { zoomLevel, setCurrentCellStyle, columnHeaderFontSize, rowHeaderFontSize, rowHeaderWidth } = useSheetUIStore();
 
@@ -217,6 +217,15 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
     return () => publishActiveCell(null);
   }, [selectedCell, sheet.id, publishActiveCell]);
 
+  // P9a — selectedCells (drag 범위) publish. 단일 cell 일 땐 노이즈 제거 위해 빈 배열.
+  useEffect(() => {
+    const multi = selectedCells.length > 1
+      ? selectedCells.map((c) => ({ sheetId: sheet.id, rowId: c.rowId, columnId: c.columnId }))
+      : [];
+    publishSelectedCells(multi);
+    return () => publishSelectedCells([]);
+  }, [selectedCells, sheet.id, publishSelectedCells]);
+
   // 편집 훅
   const {
     editingCell,
@@ -246,6 +255,12 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
     setFormulaBarValue,
     setSelectedCells,
   });
+
+  // P9a — editing 상태 publish (typing indicator)
+  useEffect(() => {
+    publishEditing(!!editingCell);
+    return () => publishEditing(false);
+  }, [editingCell, publishEditing]);
 
   // 드래그 훅
   const {
@@ -1427,6 +1442,19 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                               peerCursorName={(() => {
                                 const peer = peers.find((p) => p.activeCell?.sheetId === sheet.id && p.activeCell?.rowId === rowData.id && p.activeCell?.columnId === columnId);
                                 return peer?.name;
+                              })()}
+                              peerIsEditing={(() => {
+                                const peer = peers.find((p) => p.activeCell?.sheetId === sheet.id && p.activeCell?.rowId === rowData.id && p.activeCell?.columnId === columnId);
+                                return peer?.isEditing;
+                              })()}
+                              peerRangeColor={(() => {
+                                // selectedCells 범위에 이 셀 포함된 peer 있는지
+                                const peer = peers.find((p) =>
+                                  (p.selectedCells ?? []).some(
+                                    (c) => c.sheetId === sheet.id && c.rowId === rowData.id && c.columnId === columnId,
+                                  ),
+                                );
+                                return peer?.color;
                               })()}
                               inlineControl={(() => {
                                 if (column.locked || rowData.locked) return undefined;

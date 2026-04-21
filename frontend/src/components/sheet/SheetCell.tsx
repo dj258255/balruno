@@ -72,6 +72,10 @@ export interface SheetCellProps {
   peerCursorColor?: string;
   /** peer 이름 (툴팁) */
   peerCursorName?: string;
+  /** P9a — peer 가 이 셀을 편집 중이면 true (typing indicator) */
+  peerIsEditing?: boolean;
+  /** P9a — peer 의 drag selection 범위 안에 이 셀이 있으면 색상 — 파스텔 처리 */
+  peerRangeColor?: string;
 }
 
 // 커스텀 비교 함수 - 필요한 props만 비교하여 리렌더링 최소화
@@ -98,6 +102,12 @@ function arePropsEqual(prevProps: SheetCellProps, nextProps: SheetCellProps): bo
   if (prevProps.cellHasFormula !== nextProps.cellHasFormula) return false;
   if (prevProps.cellMemo !== nextProps.cellMemo) return false;
   if (prevProps.isCopyMode !== nextProps.isCopyMode) return false;
+
+  // Peer cursor / range / typing
+  if (prevProps.peerCursorColor !== nextProps.peerCursorColor) return false;
+  if (prevProps.peerCursorName !== nextProps.peerCursorName) return false;
+  if (prevProps.peerIsEditing !== nextProps.peerIsEditing) return false;
+  if (prevProps.peerRangeColor !== nextProps.peerRangeColor) return false;
 
   // 인라인 컨트롤 — value 변경 시 자동 재계산되므로 별도 비교 X
   // (inlineControl 은 매 렌더 새 ReactNode 라 비교가 무의미)
@@ -138,6 +148,8 @@ const SheetCell = memo(function SheetCell({
   inlineControl,
   peerCursorColor,
   peerCursorName,
+  peerIsEditing,
+  peerRangeColor,
 }: SheetCellProps) {
   /**
    * Pointer Events 핸들러
@@ -197,6 +209,10 @@ const SheetCell = memo(function SheetCell({
     if (isMoveTarget) return 'var(--accent-light)';
     if (isFillPreview) return 'var(--primary-green-light)';
     if (isMultiSelected && !isSelected) return 'var(--primary-blue-light)';
+    // P9a — peer 드래그 범위 (로컬 선택 없을 때만, 15% 투명도)
+    if (peerRangeColor && !isSelected && !isMultiSelected) {
+      return `${peerRangeColor}26`; // hex 26 ≈ 15%
+    }
     return backgroundColor;
   };
 
@@ -283,13 +299,20 @@ const SheetCell = memo(function SheetCell({
         </span>
       )}
 
-      {/* Track 8B — peer cursor 뱃지 (이름) */}
+      {/* Track 8B — peer cursor 뱃지 (이름 + typing indicator) */}
       {peerCursorColor && peerCursorName && !isSelected && (
         <span
-          className="absolute -top-4 left-0 px-1 rounded text-caption font-semibold text-white z-30 whitespace-nowrap pointer-events-none"
+          className="absolute -top-4 left-0 px-1 rounded text-caption font-semibold text-white z-30 whitespace-nowrap pointer-events-none inline-flex items-center gap-1"
           style={{ background: peerCursorColor }}
         >
           {peerCursorName}
+          {peerIsEditing && (
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full bg-white"
+              style={{ animation: 'balruno-typing-pulse 1s ease-in-out infinite' }}
+              aria-label="typing"
+            />
+          )}
         </span>
       )}
 
