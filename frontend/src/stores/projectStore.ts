@@ -34,6 +34,11 @@ export interface CellSelectionMode {
   callback: ((value: number, rowId?: string, columnId?: string) => void) | null;
 }
 
+/** 상단 탭바 entry — 시트/문서 단일 배열 순서로 섞임. 드래그 재정렬 지원. */
+export type TabEntry =
+  | { kind: 'sheet'; id: string }
+  | { kind: 'doc'; id: string };
+
 // ==== 스토어 상태 ====
 
 export interface ProjectState {
@@ -41,7 +46,8 @@ export interface ProjectState {
   projects: Project[];
   currentProjectId: string | null;
   currentSheetId: string | null;
-  openSheetTabs: string[];
+  /** 시트·문서 통합 탭 배열 — 한 줄에 섞인 순서대로 저장. 드래그 재정렬 지원. */
+  openTabs: TabEntry[];
   isLoading: boolean;
   lastSaved: number | null;
   selectedRows: SelectedRowData[];
@@ -185,8 +191,6 @@ export interface ProjectState {
 
   // 문서 액션 (Phase A — Doc 계층)
   currentDocId: string | null;
-  /** 상단 탭바에 열려있는 문서 id 목록 (시트 탭과 나란히 표시) */
-  openDocTabs: string[];
   createDoc: (projectId: string, name: string, content?: string) => string;
   updateDoc: (
     projectId: string,
@@ -224,13 +228,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   projects: [],
   currentProjectId: null,
   currentSheetId: null,
-  openSheetTabs: [],
+  openTabs: [],
   isLoading: false,
   lastSaved: null,
   selectedRows: [],
   cellSelectionMode: { active: false, fieldLabel: '', callback: null },
   currentDocId: null,
-  openDocTabs: [],
 
   // 액션은 슬라이스에서 주입
   ...createProjectActions(set, get),

@@ -20,23 +20,17 @@ export default function SheetTabs({ project }: SheetTabsProps) {
   const t = useTranslations();
   const {
     currentSheetId,
-    openSheetTabs,
+    openTabs,
     setCurrentSheet,
     createSheet,
     updateSheet,
     duplicateSheet,
     closeSheetTab,
     reorderOpenTabs,
-    // 문서 탭 (시트 탭 옆에 나란히 렌더)
     currentDocId,
-    openDocTabs,
     setCurrentDoc,
     closeDocTab,
   } = useProjectStore();
-
-  const openDocs = openDocTabs
-    .map((tabId) => project.docs?.find((d) => d.id === tabId))
-    .filter((doc): doc is NonNullable<typeof doc> => doc !== undefined);
 
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -146,23 +140,37 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     }
   };
 
-  // 열린 탭 순서대로 시트 정렬
-  const openSheets = openSheetTabs
-    .map((tabId) => project.sheets.find((s) => s.id === tabId))
-    .filter((sheet): sheet is NonNullable<typeof sheet> => sheet !== undefined);
+  // 열린 탭을 (sheet|doc) 객체와 함께 entry 로 materialize — 순서 유지
+  type RenderableTab =
+    | { kind: 'sheet'; id: string; sheet: NonNullable<ReturnType<typeof project.sheets.find>> }
+    | { kind: 'doc'; id: string; doc: NonNullable<NonNullable<typeof project.docs>[number]> };
 
-  // 탭 드래그 핸들러
-  const handleTabDragStart = (e: React.DragEvent, sheetId: string) => {
-    e.dataTransfer.setData('text/plain', sheetId);
-    e.dataTransfer.setData('application/x-sheet-tab', sheetId);
+  const renderables: RenderableTab[] = openTabs
+    .map((entry): RenderableTab | null => {
+      if (entry.kind === 'sheet') {
+        const sheet = project.sheets.find((s) => s.id === entry.id);
+        return sheet ? { kind: 'sheet', id: entry.id, sheet } : null;
+      }
+      const doc = project.docs?.find((d) => d.id === entry.id);
+      return doc ? { kind: 'doc', id: entry.id, doc } : null;
+    })
+    .filter((r): r is RenderableTab => r !== null);
+
+  // 드래그할 때는 "entry key" 로 식별. 시트·문서 구분을 위해 prefix.
+  const entryKey = (kind: 'sheet' | 'doc', id: string) => `${kind}:${id}`;
+
+  // 탭 드래그 핸들러 — 같은 배열 안에서 시트/문서 자유롭게 재정렬
+  const handleTabDragStart = (e: React.DragEvent, kind: 'sheet' | 'doc', id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.setData('application/x-tab', entryKey(kind, id));
     e.dataTransfer.effectAllowed = 'move';
-    setDraggedTabId(sheetId);
+    setDraggedTabId(entryKey(kind, id));
   };
 
-  const handleTabDragOver = (e: React.DragEvent, sheetId: string) => {
+  const handleTabDragOver = (e: React.DragEvent, kind: 'sheet' | 'doc', id: string) => {
     e.preventDefault();
-    if (e.dataTransfer.types.includes('application/x-sheet-tab')) {
-      setDragOverTabId(sheetId);
+    if (e.dataTransfer.types.includes('application/x-tab')) {
+      setDragOverTabId(entryKey(kind, id));
     }
   };
 
@@ -170,11 +178,12 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     setDragOverTabId(null);
   };
 
-  const handleTabDrop = (e: React.DragEvent, targetSheetId: string) => {
+  const handleTabDrop = (e: React.DragEvent, targetKind: 'sheet' | 'doc', targetId: string) => {
     e.preventDefault();
-    if (draggedTabId && draggedTabId !== targetSheetId) {
-      const fromIndex = openSheetTabs.indexOf(draggedTabId);
-      const toIndex = openSheetTabs.indexOf(targetSheetId);
+    const targetKey = entryKey(targetKind, targetId);
+    if (draggedTabId && draggedTabId !== targetKey) {
+      const fromIndex = openTabs.findIndex((t) => entryKey(t.kind, t.id) === draggedTabId);
+      const toIndex = openTabs.findIndex((t) => entryKey(t.kind, t.id) === targetKey);
       if (fromIndex !== -1 && toIndex !== -1) {
         reorderOpenTabs(fromIndex, toIndex);
       }
@@ -236,7 +245,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
       container.removeEventListener('scroll', updateScrollState);
       resizeObserver.disconnect();
     };
-  }, [updateScrollState, openSheets.length]);
+  }, [updateScrollState, renderables.length]);
 
   // 스크롤 함수
   const scrollTabs = (direction: 'left' | 'right') => {
@@ -281,22 +290,26 @@ export default function SheetTabs({ project }: SheetTabsProps) {
           className="flex items-center gap-1 px-2 py-1 overflow-x-auto scrollbar-none flex-1 min-w-0"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-        {openSheets.map((sheet) => {
-          const isActive = currentSheetId === sheet.id;
-          const tabWidth = getTabWidth(sheet.id);
+        {renderables.map((entry) => {
+          const isSheet = entry.kind === 'sheet';
+          const name = isSheet ? entry.sheet.name : (entry.doc.name || '(제목 없음)');
+          const isActive = isSheet ? currentSheetId === entry.id : currentDocId === entry.id;
+          const tabWidth = isSheet ? getTabWidth(entry.id) : Math.max(MIN_TAB_WIDTH, 180);
+          const dragKey = entryKey(entry.kind, entry.id);
+          const Icon = isSheet ? FileSpreadsheet : FileText;
 
           return (
             <div
-              key={sheet.id}
-              draggable={editingSheetId !== sheet.id}
-              onDragStart={(e) => handleTabDragStart(e, sheet.id)}
-              onDragOver={(e) => handleTabDragOver(e, sheet.id)}
+              key={dragKey}
+              draggable={!(isSheet && editingSheetId === entry.id)}
+              onDragStart={(e) => handleTabDragStart(e, entry.kind, entry.id)}
+              onDragOver={(e) => handleTabDragOver(e, entry.kind, entry.id)}
               onDragLeave={handleTabDragLeave}
-              onDrop={(e) => handleTabDrop(e, sheet.id)}
+              onDrop={(e) => handleTabDrop(e, entry.kind, entry.id)}
               onDragEnd={handleTabDragEnd}
               className={cn(
                 "group flex items-center gap-1 pl-1 pr-3 py-1.5 rounded-t border border-b-0 cursor-pointer transition-colors relative",
-                dragOverTabId === sheet.id && "ring-2 ring-[var(--accent)]",
+                dragOverTabId === dragKey && "ring-2 ring-[var(--accent)]",
               )}
               style={{
                 width: `${tabWidth}px`,
@@ -305,20 +318,20 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                 background: isActive ? 'var(--bg-primary)' : 'var(--bg-secondary)',
                 borderColor: isActive ? 'var(--border-primary)' : 'transparent',
                 marginBottom: isActive ? '-1px' : '0',
-                opacity: draggedTabId === sheet.id ? 0.5 : 1,
+                opacity: draggedTabId === dragKey ? 0.5 : 1,
               }}
-              onClick={() => setCurrentSheet(sheet.id)}
-              onContextMenu={(e) => handleContextMenu(e, sheet.id, sheet.name)}
+              onClick={() => (isSheet ? setCurrentSheet(entry.id) : setCurrentDoc(entry.id))}
+              onContextMenu={isSheet ? (e) => handleContextMenu(e, entry.id, entry.sheet.name) : undefined}
               onMouseEnter={(e) => {
                 if (!isActive && !draggedTabId) e.currentTarget.style.background = 'var(--bg-hover)';
               }}
               onMouseLeave={(e) => {
                 if (!isActive && !draggedTabId) e.currentTarget.style.background = 'var(--bg-secondary)';
               }}
+              title={name}
             >
-              {/* 시트 아이콘 (문서 탭의 FileText 와 시각적 균형). hover 시 GripVertical 로 교체 — 드래그 가능 힌트. */}
               <span className="relative w-3.5 h-3.5 flex-shrink-0">
-                <FileSpreadsheet
+                <Icon
                   className="absolute inset-0 w-3.5 h-3.5 group-hover:opacity-0 transition-opacity"
                   style={{ color: isActive ? 'var(--accent)' : 'var(--text-secondary)' }}
                 />
@@ -328,7 +341,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                 />
               </span>
 
-              {editingSheetId === sheet.id ? (
+              {isSheet && editingSheetId === entry.id ? (
                 <div className="flex items-center gap-1 flex-1 min-w-0">
                   <input
                     type="text"
@@ -368,12 +381,13 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                     className="text-sm flex-1 whitespace-nowrap overflow-hidden text-ellipsis"
                     style={{ color: 'var(--text-primary)' }}
                   >
-                    {sheet.name}
+                    {name}
                   </span>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      closeSheetTab(sheet.id);
+                      if (isSheet) closeSheetTab(entry.id);
+                      else closeDocTab(entry.id);
                     }}
                     className="p-0.5 rounded transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
                     style={{ color: 'var(--text-tertiary)' }}
@@ -388,72 +402,21 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                       e.currentTarget.style.border = '1px solid transparent';
                     }}
                     title={t('common.close')}
-                    aria-label={`${sheet.name} 탭 닫기`}
+                    aria-label={`${name} 탭 닫기`}
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </>
               )}
 
-              {/* 리사이즈 핸들 */}
-              <div
-                className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-[var(--accent)] opacity-0 group-hover:opacity-50 transition-opacity"
-                onMouseDown={(e) => handleResizeStart(e, sheet.id)}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-          );
-        })}
-
-        {/* 문서 탭 — 시트 탭 옆에 나란히. 드래그/리사이즈는 미지원 (간소화). */}
-        {openDocs.map((doc) => {
-          const isActive = currentDocId === doc.id;
-          return (
-            <div
-              key={`doc-${doc.id}`}
-              className="group flex items-center gap-1 pl-2 pr-3 py-1.5 rounded-t border border-b-0 cursor-pointer transition-colors relative"
-              style={{
-                minWidth: `${MIN_TAB_WIDTH}px`,
-                maxWidth: '200px',
-                background: isActive ? 'var(--bg-primary)' : 'var(--bg-secondary)',
-                borderColor: isActive ? 'var(--border-primary)' : 'transparent',
-                marginBottom: isActive ? '-1px' : '0',
-              }}
-              onClick={() => setCurrentDoc(doc.id)}
-              onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.background = 'var(--bg-hover)';
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) e.currentTarget.style.background = 'var(--bg-secondary)';
-              }}
-              title={doc.name}
-            >
-              <FileText className="w-3.5 h-3.5 shrink-0" style={{ color: isActive ? 'var(--accent)' : 'var(--text-tertiary)' }} />
-              <span
-                className="text-sm flex-1 whitespace-nowrap overflow-hidden text-ellipsis"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {doc.name || '(제목 없음)'}
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  closeDocTab(doc.id);
-                }}
-                className="p-0.5 rounded transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
-                style={{ color: 'var(--text-tertiary)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                  e.currentTarget.style.background = 'var(--bg-tertiary)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = 'var(--text-tertiary)';
-                  e.currentTarget.style.background = 'transparent';
-                }}
-                aria-label={`${doc.name} 탭 닫기`}
-              >
-                <X className="w-3 h-3" />
-              </button>
+              {/* 리사이즈 핸들 — 시트 탭만 */}
+              {isSheet && (
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-[var(--accent)] opacity-0 group-hover:opacity-50 transition-opacity"
+                  onMouseDown={(e) => handleResizeStart(e, entry.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
             </div>
           );
         })}
@@ -640,33 +603,31 @@ export default function SheetTabs({ project }: SheetTabsProps) {
             {t('sheet.closeTab')}
           </button>
 
-          {/* 다른 탭 모두 닫기 */}
+          {/* 다른 탭 모두 닫기 — 시트/문서 모두 */}
           <button
             onClick={() => {
-              // 현재 탭을 제외한 모든 탭 닫기
-              openSheetTabs.forEach((tabId) => {
-                if (tabId !== contextMenu.sheetId) {
-                  closeSheetTab(tabId);
-                }
+              openTabs.forEach((t) => {
+                if (t.kind === 'sheet' && t.id !== contextMenu.sheetId) closeSheetTab(t.id);
+                else if (t.kind === 'doc') closeDocTab(t.id);
               });
               setContextMenu(null);
             }}
-            disabled={openSheetTabs.length <= 1}
+            disabled={openTabs.length <= 1}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left disabled:opacity-40"
             style={{ color: 'var(--text-primary)' }}
-            onMouseEnter={(e) => { if (openSheetTabs.length > 1) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+            onMouseEnter={(e) => { if (openTabs.length > 1) e.currentTarget.style.background = 'var(--bg-hover)'; }}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
             <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
             {t('sheet.closeOthers')}
           </button>
 
-          {/* 모든 탭 닫기 */}
+          {/* 모든 탭 닫기 — 시트/문서 모두 */}
           <button
             onClick={() => {
-              // 모든 탭 닫기
-              [...openSheetTabs].forEach((tabId) => {
-                closeSheetTab(tabId);
+              [...openTabs].forEach((t) => {
+                if (t.kind === 'sheet') closeSheetTab(t.id);
+                else closeDocTab(t.id);
               });
               setContextMenu(null);
             }}

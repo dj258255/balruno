@@ -8,7 +8,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { StoreApi } from 'zustand';
 import type { Sheet, Column, Row, CellValue } from '@/types';
-import type { ProjectState } from '../projectStore';
+import type { ProjectState, TabEntry } from '../projectStore';
 import {
   getProjectDoc,
   addSheetInDoc,
@@ -20,6 +20,21 @@ import {
 
 type SetFn = StoreApi<ProjectState>['setState'];
 type GetFn = StoreApi<ProjectState>['getState'];
+
+// --- Tab 유틸 (시트/문서 통합 배열 조작) ---
+const hasTab = (tabs: TabEntry[], kind: TabEntry['kind'], id: string) =>
+  tabs.some((t) => t.kind === kind && t.id === id);
+
+const withTab = (tabs: TabEntry[], kind: TabEntry['kind'], id: string): TabEntry[] =>
+  hasTab(tabs, kind, id) ? tabs : [...tabs, { kind, id }];
+
+const withoutTab = (tabs: TabEntry[], kind: TabEntry['kind'], id: string): TabEntry[] =>
+  tabs.filter((t) => !(t.kind === kind && t.id === id));
+
+/** 탭 닫은 뒤 남은 배열에서 "다음 활성" entry 결정 (바로 전에 있던 것 우선). */
+const nextActiveAfterClose = (tabs: TabEntry[]): TabEntry | null => {
+  return tabs.length > 0 ? tabs[tabs.length - 1] : null;
+};
 
 export const createSheetActions = (set: SetFn, get: GetFn) => ({
   createSheet: (projectId: string, name: string, exportClassName?: string): string => {
@@ -49,7 +64,8 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     // UI 상태는 Zustand
     set((state) => ({
       currentSheetId: id,
-      openSheetTabs: [...state.openSheetTabs, id],
+      currentDocId: null,
+      openTabs: withTab(state.openTabs, 'sheet', id),
     }));
 
     return id;
@@ -80,31 +96,28 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     deleteSheetInDoc(getProjectDoc(projectId), sheetId);
 
     set((state) => {
-      const newOpenTabs = state.openSheetTabs.filter((id) => id !== sheetId);
+      const newTabs = withoutTab(state.openTabs, 'sheet', sheetId);
+      if (state.currentSheetId !== sheetId) {
+        return { openTabs: newTabs };
+      }
+      const next = nextActiveAfterClose(newTabs);
       return {
-        openSheetTabs: newOpenTabs,
-        currentSheetId:
-          state.currentSheetId === sheetId
-            ? newOpenTabs.length > 0
-              ? newOpenTabs[newOpenTabs.length - 1]
-              : null
-            : state.currentSheetId,
+        openTabs: newTabs,
+        currentSheetId: next?.kind === 'sheet' ? next.id : null,
+        currentDocId: next?.kind === 'doc' ? next.id : null,
       };
     });
   },
 
   setCurrentSheet: (id: string | null) => {
     if (id) {
-      // 시트 선택 → 탭 자동 열기 + 소속 프로젝트도 활성화 + 문서 비활성화
       set((state) => {
         const project = state.projects.find((p) => p.sheets.some((s) => s.id === id));
         return {
           currentSheetId: id,
           currentDocId: null,
           currentProjectId: project?.id ?? state.currentProjectId,
-          openSheetTabs: state.openSheetTabs.includes(id)
-            ? state.openSheetTabs
-            : [...state.openSheetTabs, id],
+          openTabs: withTab(state.openTabs, 'sheet', id),
         };
       });
     } else {
@@ -114,9 +127,7 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
 
   openSheetTab: (sheetId: string) => {
     set((state) => ({
-      openSheetTabs: state.openSheetTabs.includes(sheetId)
-        ? state.openSheetTabs
-        : [...state.openSheetTabs, sheetId],
+      openTabs: withTab(state.openTabs, 'sheet', sheetId),
       currentSheetId: sheetId,
       currentDocId: null,
     }));
@@ -124,25 +135,25 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
 
   closeSheetTab: (sheetId: string) => {
     set((state) => {
-      const newTabs = state.openSheetTabs.filter((id) => id !== sheetId);
-      const needNewSelection = state.currentSheetId === sheetId;
+      const newTabs = withoutTab(state.openTabs, 'sheet', sheetId);
+      if (state.currentSheetId !== sheetId) {
+        return { openTabs: newTabs };
+      }
+      const next = nextActiveAfterClose(newTabs);
       return {
-        openSheetTabs: newTabs,
-        currentSheetId: needNewSelection
-          ? newTabs.length > 0
-            ? newTabs[newTabs.length - 1]
-            : null
-          : state.currentSheetId,
+        openTabs: newTabs,
+        currentSheetId: next?.kind === 'sheet' ? next.id : null,
+        currentDocId: next?.kind === 'doc' ? next.id : null,
       };
     });
   },
 
   reorderOpenTabs: (fromIndex: number, toIndex: number) => {
     set((state) => {
-      const tabs = [...state.openSheetTabs];
+      const tabs = [...state.openTabs];
       const [removed] = tabs.splice(fromIndex, 1);
       tabs.splice(toIndex, 0, removed);
-      return { openSheetTabs: tabs };
+      return { openTabs: tabs };
     });
   },
 
@@ -185,8 +196,9 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     duplicateSheetInDoc(getProjectDoc(projectId), newSheet);
 
     set((state) => ({
-      openSheetTabs: [...state.openSheetTabs, newId],
+      openTabs: withTab(state.openTabs, 'sheet', newId),
       currentSheetId: newId,
+      currentDocId: null,
     }));
 
     return newId;
@@ -208,11 +220,12 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     deleteSheetInDoc(getProjectDoc(fromProjectId), sheetId);
 
     set((state) => {
-      const newOpenTabs = state.openSheetTabs.filter((id) => id !== sheetId);
+      const without = withoutTab(state.openTabs, 'sheet', sheetId);
       return {
         currentProjectId: toProjectId,
         currentSheetId: sheetId,
-        openSheetTabs: [...newOpenTabs, sheetId],
+        currentDocId: null,
+        openTabs: withTab(without, 'sheet', sheetId),
       };
     });
   },
