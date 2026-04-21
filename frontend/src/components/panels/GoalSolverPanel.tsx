@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { X, Target, Calculator, AlertTriangle, Check, Copy, ChevronDown, HelpCircle, Search, Activity, Clock, Trash2, XCircle } from 'lucide-react';
-import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, findAlternativeSolutions, solveGeneric, type SolverFormula, type GenericSolverResult } from '@/lib/goalSolver';
+import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, findAlternativeSolutions, solveGeneric, calculateStatWeights, type SolverFormula, type GenericSolverResult } from '@/lib/goalSolver';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useTranslations } from 'next-intl';
 import { useCalculatorStore } from '@/stores/calculatorStore';
@@ -498,6 +498,9 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
         {/* 범용 수식 역산 (Phase 4) — 임의 mathjs 수식에 대해 변수 역산 */}
         <GenericSolverBox />
 
+        {/* Stat Weights (Phase 5) — SimCraft 방식 */}
+        <StatWeightsBox />
+
         {/* 최근 역산 기록 (History) */}
         <GoalSolverHistoryPanel
           onReload={(entry) => {
@@ -630,6 +633,101 @@ function GenericSolverBox() {
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function StatWeightsBox() {
+  // 기본 DPS 공식 + 4 스탯 (damage / attackSpeed / critRate / critDamage)
+  const [metric, setMetric] = useState<'dps' | 'ehp' | 'damage'>('dps');
+  const [stats, setStats] = useState<Record<string, number>>({
+    damage: 100,
+    attackSpeed: 1.5,
+    critRate: 0.2,
+    critDamage: 2.0,
+  });
+
+  const evaluate = (s: Record<string, number>) => {
+    if (metric === 'dps') return s.damage * (1 + s.critRate * (s.critDamage - 1)) * s.attackSpeed;
+    if (metric === 'ehp') return s.hp * (1 + s.def / 100) / Math.max(0.01, 1 - (s.dmgReduction || 0));
+    return s.atk * (100 / (100 + s.def)) * (s.multiplier || 1);
+  };
+
+  // metric 바뀔 때 stats 초기화
+  const switchMetric = (m: 'dps' | 'ehp' | 'damage') => {
+    setMetric(m);
+    if (m === 'dps') setStats({ damage: 100, attackSpeed: 1.5, critRate: 0.2, critDamage: 2.0 });
+    else if (m === 'ehp') setStats({ hp: 1000, def: 50, dmgReduction: 0 });
+    else setStats({ atk: 150, def: 50, multiplier: 1 });
+  };
+
+  const deltas: Record<string, number> = { critRate: 0.01, dmgReduction: 0.01 };
+  const weights = calculateStatWeights({ evaluate, currentStats: stats, deltas });
+
+  return (
+    <div className="glass-card rounded-lg overflow-hidden mt-3">
+      <div className="p-3 space-y-3" style={{ background: `${PANEL_COLOR}08` }}>
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4" style={{ color: PANEL_COLOR }} />
+          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            Stat Weights — 스탯 1 단위 기여도
+          </span>
+          <span className="text-caption ml-auto" style={{ color: 'var(--text-tertiary)' }}>
+            SimulationCraft 방식
+          </span>
+        </div>
+        <div className="flex gap-1">
+          {(['dps', 'ehp', 'damage'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => switchMetric(m)}
+              className="flex-1 py-1 rounded text-caption font-semibold"
+              style={{
+                background: metric === m ? PANEL_COLOR : 'var(--bg-primary)',
+                color: metric === m ? 'white' : 'var(--text-secondary)',
+              }}
+            >
+              {m.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {Object.entries(stats).map(([k, v]) => (
+            <div key={k}>
+              <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{k}</label>
+              <input
+                type="number"
+                value={v}
+                step={deltas[k] ?? 1}
+                onChange={(e) => setStats({ ...stats, [k]: parseFloat(e.target.value) || 0 })}
+                className="glass-input hide-spinner w-full px-2 py-1 text-sm"
+              />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-1">
+          {weights.map((w) => (
+            <div key={w.stat} className="flex items-center gap-2 text-caption">
+              <span className="w-20 font-mono" style={{ color: 'var(--text-secondary)' }}>{w.stat}</span>
+              <div className="flex-1 h-3 rounded overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+                <div
+                  className="h-full"
+                  style={{
+                    width: `${Math.abs(w.normalized) * 100}%`,
+                    background: w.weight >= 0 ? PANEL_COLOR : '#ef4444',
+                  }}
+                />
+              </div>
+              <span className="w-24 text-right tabular-nums font-mono" style={{ color: 'var(--text-primary)' }}>
+                +{w.weight.toFixed(3)} / {deltas[w.stat] ?? 1}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
+          bar 길이 = 정규화된 영향도 · 숫자 = 단위 증가당 {metric.toUpperCase()} 증분 (crit/damageReduction 은 %1 기준)
+        </p>
       </div>
     </div>
   );

@@ -527,6 +527,51 @@ export function solveGeneric(input: GenericSolverInput): GenericSolverResult {
   };
 }
 
+// ============================================================================
+// Stat Weights — SimCraft 방식.
+// 각 스탯 1 단위 증가 시 목표 metric (DPS/EHP/TTK) 에 주는 영향도 계산.
+// 기획자가 'DEF 1 vs HP 1 vs crit 1% 중 어디 우선 투자?' 답 내리는 데 사용.
+// ============================================================================
+
+export interface StatWeightInput {
+  /** 기본 수식 — evaluateFn 으로 관측할 출력 */
+  evaluate: (stats: Record<string, number>) => number;
+  /** 현재 스탯 값 */
+  currentStats: Record<string, number>;
+  /** 각 스탯 증분 크기 (default 1) — 비율 스탯 (crit 등) 은 0.01 추천 */
+  deltas?: Record<string, number>;
+}
+
+export interface StatWeight {
+  stat: string;
+  /** baseline metric 값 */
+  baseline: number;
+  /** stat + delta 일 때 metric 값 */
+  withDelta: number;
+  /** 단위 delta 당 metric 변화량 */
+  weight: number;
+  /** 정규화 (최대 weight = 1.0) */
+  normalized: number;
+}
+
+export function calculateStatWeights(input: StatWeightInput): StatWeight[] {
+  const { evaluate, currentStats, deltas } = input;
+  const baseline = evaluate(currentStats);
+  const results: Omit<StatWeight, 'normalized'>[] = [];
+
+  for (const stat of Object.keys(currentStats)) {
+    const d = deltas?.[stat] ?? 1;
+    const withDelta = evaluate({ ...currentStats, [stat]: currentStats[stat] + d });
+    const weight = (withDelta - baseline) / d;
+    results.push({ stat, baseline, withDelta, weight });
+  }
+
+  const maxAbs = Math.max(0.0001, ...results.map((r) => Math.abs(r.weight)));
+  return results
+    .map((r) => ({ ...r, normalized: r.weight / maxAbs }))
+    .sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight));
+}
+
 /**
  * 메인 역산 함수
  */
