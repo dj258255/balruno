@@ -136,7 +136,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
   {
     id: 'build',
     titleKey: 'toolGroups.build',
-    color: '#8b5cf6',
+    color: '#06b6d4',
     tools: ['calculator', 'formulaHelper', 'preset', 'entityDefinition', 'difficultyCurve'],
   },
   {
