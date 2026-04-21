@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { X, Target, Calculator, AlertTriangle, Check, Copy, ChevronDown, HelpCircle, Search, Activity, Clock, Trash2, XCircle } from 'lucide-react';
-import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, type SolverFormula } from '@/lib/goalSolver';
+import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, findAlternativeSolutions, type SolverFormula } from '@/lib/goalSolver';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useTranslations } from 'next-intl';
 import { useCalculatorStore } from '@/stores/calculatorStore';
@@ -39,6 +39,13 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
   const [copied, setCopied] = useState<string | null>(null);
   const [internalShowHelp, setInternalShowHelp] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // Constraints (Phase 3) — 각 공식별 integer/min/max
+  const [constraints, setConstraints] = useState<Record<string, { integer: boolean; min: string; max: string }>>({});
+
+  const getConstraint = (fid: string) => constraints[fid] ?? { integer: false, min: '', max: '' };
+  const setConstraint = (fid: string, patch: Partial<{ integer: boolean; min: string; max: string }>) => {
+    setConstraints((prev) => ({ ...prev, [fid]: { ...getConstraint(fid), ...patch } }));
+  };
 
   // 외부 상태가 있으면 사용, 없으면 내부 상태 사용
   const showHelp = externalShowHelp !== undefined ? externalShowHelp : internalShowHelp;
@@ -99,6 +106,23 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
       targetValue: parsedTarget,
     };
     const solverResult = solve(input);
+
+    // Constraints 후처리 — integer / min / max 적용
+    const c = getConstraint(formulaId);
+    const minN = c.min ? parseFloat(c.min) : null;
+    const maxN = c.max ? parseFloat(c.max) : null;
+    if (solverResult.success && typeof solverResult.value === 'number') {
+      let v = solverResult.value;
+      let adjusted = false;
+      const notes: string[] = [];
+      if (c.integer) { const r = Math.round(v); if (r !== v) { v = r; adjusted = true; notes.push('정수로 반올림'); } }
+      if (minN !== null && v < minN) { v = minN; adjusted = true; notes.push(`최소 ${minN} 로 클램프`); }
+      if (maxN !== null && v > maxN) { v = maxN; adjusted = true; notes.push(`최대 ${maxN} 로 클램프`); }
+      if (adjusted) {
+        solverResult.value = v;
+        solverResult.warnings = [...(solverResult.warnings ?? []), `제약조건 적용: ${notes.join(' · ')}`];
+      }
+    }
 
     setResults(prev => ({ ...prev, [formulaId]: solverResult }));
 
@@ -255,6 +279,43 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                     </div>
                   ))}
 
+                  {/* Constraints — Excel Solver 스타일 제약조건 */}
+                  <details className="glass-section p-2 rounded-lg">
+                    <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                      제약조건 (선택)
+                    </summary>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      <label className="flex items-center gap-1.5 text-caption" style={{ color: 'var(--text-secondary)' }}>
+                        <input
+                          type="checkbox"
+                          checked={getConstraint(formula.id).integer}
+                          onChange={(e) => setConstraint(formula.id, { integer: e.target.checked })}
+                        />
+                        정수 해
+                      </label>
+                      <div>
+                        <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>최소</label>
+                        <input
+                          type="number"
+                          value={getConstraint(formula.id).min}
+                          onChange={(e) => setConstraint(formula.id, { min: e.target.value })}
+                          placeholder="-"
+                          className="glass-input hide-spinner w-full px-2 py-1 text-caption"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>최대</label>
+                        <input
+                          type="number"
+                          value={getConstraint(formula.id).max}
+                          onChange={(e) => setConstraint(formula.id, { max: e.target.value })}
+                          placeholder="-"
+                          className="glass-input hide-spinner w-full px-2 py-1 text-caption"
+                        />
+                      </div>
+                    </div>
+                  </details>
+
                   {/* 계산 버튼 */}
                   <button
                     onClick={() => handleCalculate(formula.id)}
@@ -321,9 +382,11 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                             )}
                           </div>
 
-                          {/* 검증 배지 — 해를 원 공식에 재대입한 오차 */}
+                          {/* 검증 배지 — 해를 원 공식에 재대입한 오차 + 대체 해 */}
                           {typeof result.value === 'number' && (() => {
-                            const sens = verifyAndAnalyzeSensitivity({ formula: formula.id, params: Object.fromEntries(Object.entries(formulaParams).map(([k, v]) => [k, parseFloat(v) || 0])), targetValue: parseFloat(targetValue) || 0 }, result);
+                            const inp = { formula: formula.id, params: Object.fromEntries(Object.entries(formulaParams).map(([k, v]) => [k, parseFloat(v) || 0])), targetValue: parseFloat(targetValue) || 0 };
+                            const sens = verifyAndAnalyzeSensitivity(inp, result);
+                            const alts = findAlternativeSolutions(inp, result.value as number);
                             const sensColor = sens?.level === 'high' ? '#ef4444' : sens?.level === 'medium' ? '#f59e0b' : PANEL_COLOR;
                             return (
                               <div className="px-4 py-2 space-y-1" style={{ background: `${PANEL_COLOR}08`, borderTop: '1px solid var(--border-primary)' }}>
@@ -338,6 +401,16 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                                   <div className="flex items-center gap-2 text-caption">
                                     <Activity className="w-3.5 h-3.5" style={{ color: sensColor }} />
                                     <span style={{ color: sensColor }}>{sens.message}</span>
+                                  </div>
+                                )}
+                                {alts.length > 0 && (
+                                  <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                                    <span>대체 해 ({alts.length}): </span>
+                                    {alts.map((a, i) => (
+                                      <span key={i} className="font-mono ml-1 px-1 rounded" style={{ background: 'var(--bg-primary)' }}>
+                                        {a.value}
+                                      </span>
+                                    ))}
                                   </div>
                                 )}
                               </div>
