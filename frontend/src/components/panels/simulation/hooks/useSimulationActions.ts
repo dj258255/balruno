@@ -16,6 +16,7 @@ import type {
 } from '@/lib/simulation/types';
 import { runMonteCarloSimulationAsync } from '@/lib/simulation/monteCarloSimulator';
 import { runTeamMonteCarloSimulation } from '@/lib/simulation/battleEngine';
+import { useReplayStore } from '@/stores/replayStore';
 import type { TeamResult } from './useSimulationState';
 
 interface UseSimulationActionsProps {
@@ -103,6 +104,19 @@ export function useSimulationActions({
 
       setResult(simulationResult);
       setSelectedBattleIndex(0);
+
+      // 첫 번째 샘플 전투를 Replay 패널에 publish — step-by-step 검사 가능
+      const firstSample = simulationResult.sampleBattles[0];
+      if (firstSample) {
+        useReplayStore.getState().publish({
+          unit1: unit1Stats,
+          unit2: unit2Stats,
+          skills1: unit1Skills,
+          skills2: unit2Skills,
+          result: firstSample,
+          source: '전투 시뮬 1:1',
+        });
+      }
     } catch (error) {
       console.error('Simulation failed:', error);
     } finally {
