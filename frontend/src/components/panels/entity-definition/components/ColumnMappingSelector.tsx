@@ -67,7 +67,7 @@ export default function ColumnMappingSelector({
             value={exportFieldNames.entityId}
             onChange={(e) => onExportFieldNamesChange({ ...exportFieldNames, entityId: e.target.value })}
             placeholder={idColumn || 'ID'}
-            className="w-full px-2 py-1.5 rounded text-xs"
+            className="w-full input-compact"
             style={{
               background: 'var(--bg-primary)',
               border: '1px solid var(--border-primary)',
@@ -100,7 +100,7 @@ export default function ColumnMappingSelector({
             value={exportFieldNames.entityName}
             onChange={(e) => onExportFieldNamesChange({ ...exportFieldNames, entityName: e.target.value })}
             placeholder={nameColumn || '이름'}
-            className="w-full px-2 py-1.5 rounded text-xs"
+            className="w-full input-compact"
             style={{
               background: 'var(--bg-primary)',
               border: '1px solid var(--border-primary)',
@@ -133,7 +133,7 @@ export default function ColumnMappingSelector({
             value={exportFieldNames.level}
             onChange={(e) => onExportFieldNamesChange({ ...exportFieldNames, level: e.target.value })}
             placeholder={levelColumn || '레벨'}
-            className="w-full px-2 py-1.5 rounded text-xs"
+            className="w-full input-compact"
             style={{
               background: 'var(--bg-primary)',
               border: '1px solid var(--border-primary)',

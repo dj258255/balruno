@@ -463,7 +463,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                         value={sheetName}
                         onChange={(e) => setSheetName(e.target.value)}
                         placeholder={file ? file.name.replace(/\.(json|csv|cs|gd|h)$/i, '') : t('import.useFileName')}
-                        className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none"
+                        className="w-full input-base focus:outline-none"
                         style={{
                           background: 'var(--bg-primary)',
                           border: '1px solid var(--border-primary)',

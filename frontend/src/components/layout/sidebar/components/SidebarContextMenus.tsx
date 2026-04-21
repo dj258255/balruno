@@ -415,7 +415,7 @@ export function ClassNameEditModal({
             }
           }}
           placeholder="CharacterStats"
-          className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none mb-2"
+          className="w-full input-base focus:outline-none mb-2"
           style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--border-primary)',

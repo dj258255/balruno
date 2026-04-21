@@ -91,7 +91,7 @@ export default function LevelRangeSelector({
             }}
             min={1}
             max={levelRange.max - 1}
-            className="w-full px-3 py-2 rounded-lg text-sm hide-spinner"
+            className="w-full input-base hide-spinner"
             style={{
               background: 'var(--bg-secondary)',
               border: '1px solid var(--border-primary)',
@@ -117,7 +117,7 @@ export default function LevelRangeSelector({
             }}
             min={levelRange.min + 1}
             max={maxLimit}
-            className="w-full px-3 py-2 rounded-lg text-sm hide-spinner"
+            className="w-full input-base hide-spinner"
             style={{
               background: 'var(--bg-secondary)',
               border: '1px solid var(--border-primary)',

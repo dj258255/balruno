@@ -696,7 +696,7 @@ export default function ExportModal({ onClose }: ExportModalProps) {
                               value={classNames[sheet.id] ?? (sheet.exportClassName || '')}
                               onChange={(e) => handleClassNameChange(sheet.id, e.target.value)}
                               placeholder={sheet.name.replace(/[^a-zA-Z0-9]/g, '') || 'ClassName'}
-                              className="flex-1 px-2 py-1.5 rounded text-sm focus:outline-none min-w-0"
+                              className="flex-1 input-base focus:outline-none min-w-0"
                               style={{
                                 background: 'var(--bg-primary)',
                                 border: `1px solid ${isValid ? 'var(--border-primary)' : 'var(--error)'}`,

@@ -179,7 +179,7 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
               onChange={(e) => setDescription(e.target.value)}
               rows={5}
               placeholder="예: 메트로이드바니아 장르 + 난이도 중상 + 플레이 20시간 목표 + 스킬 트리 30개 노드 + F2P 가챠 없음"
-              className="w-full px-3 py-2 rounded-lg text-sm resize-none"
+              className="w-full input-base resize-none"
               style={{
                 background: 'var(--bg-primary)',
                 border: '1px solid var(--border-primary)',
@@ -198,7 +198,7 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
               placeholder="비우면 자동 생성"
-              className="w-full px-3 py-2 rounded-lg text-sm"
+              className="w-full input-base"
               style={{
                 background: 'var(--bg-primary)',
                 border: '1px solid var(--border-primary)',

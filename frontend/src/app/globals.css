@@ -120,7 +120,8 @@
   }
   .input-compact {
     padding: 4px 8px;
-    font-size: 12px;
+    /* 13px — Linear/Airtable 소형 input 표준. WCAG 11px 상한 위 */
+    font-size: 13px;
     line-height: 1.4;
     border-radius: 5px;
     border: 1px solid var(--border-primary);
