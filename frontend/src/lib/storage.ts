@@ -56,10 +56,109 @@ export async function initDB(): Promise<IDBPDatabase<BalrunoDB>> {
   return db;
 }
 
-// 모든 프로젝트 로드
+/**
+ * 과거 버전 (9자 random id) 으로 저장된 프로젝트들의 중복 sheet/column/row id 자동 수복.
+ * 로드 시점에 검사 → 중복 발견 시 uuid 재발급 + cells/cellStyles/cellMemos 키 remap.
+ * project.id 자체 중복은 다른 프로젝트이므로 그쪽 id 만 재발급.
+ */
+function migrateDuplicateIds(projects: Project[]): { projects: Project[]; changed: boolean } {
+  // uuid v4 dynamic import — 초기 로드 경로에 무거운 import 회피
+  // (storage.ts 는 이미 uuid 사용 가능)
+  const { v4: uuidv4 } = require('uuid') as typeof import('uuid');
+  let changed = false;
+
+  const seenProjectIds = new Set<string>();
+  const normalizedProjects = projects.map((project) => {
+    let nextProject = project;
+    if (seenProjectIds.has(project.id)) {
+      nextProject = { ...project, id: uuidv4() };
+      changed = true;
+    }
+    seenProjectIds.add(nextProject.id);
+
+    // 시트 중복 → DROP (이전엔 rename 이었으나 고스트 시트가 리프레시마다 "정식"
+    // 으로 승격돼 계속 늘어나는 버그 발생. 같은 id 가 두 번 이상 나오면 첫 번째만 유지).
+    const seenSheetIds = new Set<string>();
+    const sheetsFixed = nextProject.sheets
+      .filter((sheet) => {
+        if (seenSheetIds.has(sheet.id)) {
+          changed = true;
+          return false;
+        }
+        seenSheetIds.add(sheet.id);
+        return true;
+      })
+      .map((sheet) => {
+      // 컬럼 id 중복 — 같은 시트 내에서만 검사
+      const colIdMap: Record<string, string> = {};
+      const seenColIds = new Set<string>();
+      const columnsFixed = sheet.columns.map((col) => {
+        if (seenColIds.has(col.id)) {
+          const newId = uuidv4();
+          colIdMap[col.id] = newId;
+          changed = true;
+          seenColIds.add(newId);
+          return { ...col, id: newId };
+        }
+        seenColIds.add(col.id);
+        return col;
+      });
+
+      // Row id 중복 → DROP (시트와 동일한 이유로 rename 에서 변경)
+      const seenRowIds = new Set<string>();
+      const rowsFixed = sheet.rows
+        .filter((row) => {
+          if (seenRowIds.has(row.id)) {
+            changed = true;
+            return false;
+          }
+          seenRowIds.add(row.id);
+          return true;
+        })
+        .map((row) => {
+          if (Object.keys(colIdMap).length === 0) return row;
+
+          const remap = <T,>(src: Record<string, T> | undefined): Record<string, T> | undefined => {
+            if (!src) return src;
+            const out: Record<string, T> = {};
+            for (const [k, v] of Object.entries(src)) {
+              out[colIdMap[k] ?? k] = v;
+            }
+            return out;
+          };
+          return {
+            ...row,
+            cells: remap(row.cells) ?? {},
+            cellStyles: remap(row.cellStyles),
+            cellMemos: remap(row.cellMemos),
+          };
+        });
+
+      return { ...sheet, columns: columnsFixed, rows: rowsFixed };
+    });
+
+    return { ...nextProject, sheets: sheetsFixed };
+  });
+
+  return { projects: normalizedProjects, changed };
+}
+
+// 모든 프로젝트 로드 — 중복 id 자동 마이그레이션 포함
 export async function loadProjects(): Promise<Project[]> {
   const database = await initDB();
-  return database.getAll('projects');
+  const raw = await database.getAll('projects');
+
+  const { projects, changed } = migrateDuplicateIds(raw);
+  if (changed) {
+    console.log('[storage] 중복 id 감지 → 자동 마이그레이션 완료');
+    // 조용히 재저장 — 사용자 눈에 띄지 않도록 비동기
+    const tx = database.transaction('projects', 'readwrite');
+    await Promise.all([
+      ...projects.map((p) => tx.store.put(p)),
+      tx.done,
+    ]);
+  }
+  return projects;
 }
 
 // 프로젝트 저장

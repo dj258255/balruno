@@ -1,25 +1,21 @@
 'use client';
 
 /**
- * Track 6 — 우측 도킹 도구 박스.
- *
- * 기존 플로팅 ToolPanels 의 역할 승계. 17개 도구 중 활성인 것 중 가장 먼저 등장한
- * 그룹 하나를 선택 → 해당 그룹의 내부 탭 헤더 + 선택 탭 컨텐츠 렌더.
+ * 우측 도킹 도구 박스 — 6 그룹 중 활성 그룹 하나의 탭 + 컨텐츠 렌더.
  *
  * UX:
- *  - 한 번에 하나의 그룹만 표시
- *  - 그룹 내부는 탭 전환 (탭을 누르면 해당 도구의 show=true)
- *  - 탭의 X 버튼으로 각 탭 닫기 (해당 도구 show=false). 모두 닫히면 그룹 사라짐
- *  - 그룹 헤더의 X 로 그룹 전체 닫기
+ *  - 한 번에 하나의 그룹만 표시 (BottomDock 의 활성 그룹과 동기)
+ *  - 그룹 내부 여러 도구가 열리면 탭 전환, 탭 X 로 개별 닫기
+ *  - 그룹 헤더 X 로 그룹 전체 닫기 (해당 그룹 내 모든 도구 close)
  *
- * 기존 플로팅 상태 (`show*`) 는 그대로 유지 — 이 컴포넌트는 그 state 의 read/write 만.
+ * 패널 상태 (`show*`) 는 상위에서 주입된 panels prop 의 read/write 만 담당.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { X } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { TOOL_GROUPS, type ToolGroupId, type ToolId } from '@/config/toolGroups';
+import { TOOL_GROUPS, TOOL_DESCRIPTIONS, type ToolGroupId, type ToolId } from '@/config/toolGroups';
 
 const WIDTH_KEY = 'balruno:docked-toolbox-width';
 const MIN_W = 280;
@@ -40,6 +36,14 @@ const EconomyPanel = dynamic(() => import('@/components/panels/EconomyPanel'), {
 const DPSVariancePanel = dynamic(() => import('@/components/panels/DPSVariancePanel'), { ssr: false });
 const CurveFittingPanel = dynamic(() => import('@/components/panels/CurveFittingPanel'), { ssr: false });
 const EntityDefinition = dynamic(() => import('@/components/panels/EntityDefinition'), { ssr: false });
+const AutoBalancerPanel = dynamic(() => import('@/components/panels/AutoBalancerPanel'), { ssr: false });
+const LootSimulatorPanel = dynamic(() => import('@/components/panels/LootSimulatorPanel'), { ssr: false });
+const PowerCurveComparePanel = dynamic(() => import('@/components/panels/PowerCurveComparePanel'), { ssr: false });
+const CommentsPanel = dynamic(() => import('@/components/panels/CommentsPanel'), { ssr: false });
+const InterfaceDesignerPanel = dynamic(() => import('@/components/panels/InterfaceDesignerPanel'), { ssr: false });
+const AutomationsPanel = dynamic(() => import('@/components/panels/AutomationsPanel'), { ssr: false });
+const SensitivityAnalysisPanel = dynamic(() => import('@/components/panels/SensitivityAnalysisPanel'), { ssr: false });
+const ChangeHistoryPanel = dynamic(() => import('@/components/panels/ChangeHistoryPanel'), { ssr: false });
 const PresetComparisonModal = dynamic(() => import('@/components/modals/PresetComparisonModal'), { ssr: false });
 
 interface PanelState {
@@ -67,6 +71,14 @@ const TOOL_LABEL_KEYS: Record<ToolId, string> = {
   difficultyCurve: 'bottomTabs.difficultyCurve',
   simulation: 'bottomTabs.simulation',
   entityDefinition: 'bottomTabs.entityDefinition',
+  autoBalancer: 'sidebar.autoBalancer',
+  lootSimulator: 'sidebar.lootSimulator',
+  powerCurveCompare: 'sidebar.powerCurveCompare',
+  comments: 'sidebar.comments',
+  interfaceDesigner: 'sidebar.interfaceDesigner',
+  automations: 'sidebar.automations',
+  sensitivity: 'sidebar.sensitivity',
+  changeHistory: 'sidebar.changeHistory',
 };
 
 function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
@@ -102,6 +114,22 @@ function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
       return <SimulationPanel onClose={close} />;
     case 'entityDefinition':
       return <EntityDefinition onClose={close} />;
+    case 'autoBalancer':
+      return <AutoBalancerPanel onClose={close} />;
+    case 'lootSimulator':
+      return <LootSimulatorPanel onClose={close} />;
+    case 'powerCurveCompare':
+      return <PowerCurveComparePanel onClose={close} />;
+    case 'comments':
+      return <CommentsPanel onClose={close} />;
+    case 'interfaceDesigner':
+      return <InterfaceDesignerPanel onClose={close} />;
+    case 'automations':
+      return <AutomationsPanel onClose={close} />;
+    case 'sensitivity':
+      return <SensitivityAnalysisPanel onClose={close} isPanel />;
+    case 'changeHistory':
+      return <ChangeHistoryPanel onClose={close} />;
   }
 }
 
@@ -173,8 +201,6 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
 
   if (!activeGroup || !activeTab) return null;
 
-  const shownTabs = activeGroup.tools.filter((tid) => panels[tid].show);
-
   const closeGroup = () => {
     activeGroup.tools.forEach((tid) => {
       if (panels[tid].show) panels[tid].setShow(false);
@@ -183,9 +209,11 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
 
   return (
     <aside
-      className="flex-shrink-0 border-l hidden md:flex flex-col overflow-hidden relative"
+      role="complementary"
+      aria-label={t(activeGroup.titleKey as 'toolGroups.build')}
+      className="flex-shrink-0 border-l flex flex-col overflow-hidden relative fixed md:relative inset-x-0 bottom-[88px] md:bottom-auto top-auto md:inset-auto z-40 md:z-auto md:!w-[var(--dock-w)] w-full max-h-[65vh] md:max-h-none md:pb-[110px]"
       style={{
-        width: `${width}px`,
+        ['--dock-w' as string]: `${width}px`,
         background: 'var(--bg-primary)',
         borderColor: 'var(--border-primary)',
       }}
@@ -198,86 +226,158 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
         role="separator"
         aria-label="Resize toolbox"
       />
-      {/* 헤더: 그룹 타이틀 + 그룹 닫기 */}
+      {/* 그룹 색 인디케이터 — 상단 2px 바 (아이덴티티, 말로 반복 안 해도 됨) */}
       <div
-        className="flex items-center justify-between px-4 py-2 border-b"
+        aria-hidden
+        className="h-[2px] flex-shrink-0"
+        style={{ background: activeGroup.color }}
+      />
+
+      {/* 헤더 — 한 줄: 그룹 라벨(메타) + 도구 선택(주) + 닫기 */}
+      <header
+        className="flex items-center gap-2 px-3 py-2 border-b"
         style={{ borderColor: 'var(--border-primary)' }}
       >
-        <div className="flex items-center gap-2">
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ background: activeGroup.color }}
+        <span
+          className="text-[10px] font-semibold uppercase tracking-wider flex-shrink-0"
+          style={{ color: activeGroup.color, letterSpacing: '0.08em' }}
+        >
+          {t(activeGroup.titleKey as 'toolGroups.build')}
+        </span>
+
+        {activeGroup.tools.length > 1 ? (
+          <ToolDropdown
+            tools={activeGroup.tools}
+            current={activeTab}
+            color={activeGroup.color}
+            onChange={(nextId) => {
+              activeGroup.tools.forEach((tid) => {
+                if (tid !== nextId && panels[tid].show) panels[tid].setShow(false);
+              });
+              if (!panels[nextId].show) panels[nextId].setShow(true);
+              setActiveTab(nextId);
+            }}
           />
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            {t(activeGroup.titleKey as 'toolGroups.formulaWorkbench')}
-          </h3>
-        </div>
+        ) : (
+          <span
+            className="flex-1 text-sm font-semibold truncate"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {t(TOOL_LABEL_KEYS[activeTab] as 'sidebar.calculator')}
+          </span>
+        )}
+
         <button
           onClick={closeGroup}
-          className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors"
+          className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors flex-shrink-0"
           aria-label={t('common.close')}
           style={{ color: 'var(--text-tertiary)' }}
         >
           <X className="w-4 h-4" />
         </button>
-      </div>
-
-      {/* 탭 바 — 그룹 내부 여러 도구가 활성일 때만 */}
-      {shownTabs.length > 1 && (
-        <div
-          className="flex gap-0.5 px-2 py-1 border-b overflow-x-auto"
-          style={{
-            borderColor: 'var(--border-primary)',
-            background: 'var(--bg-secondary)',
-          }}
-        >
-          {shownTabs.map((tid) => (
-            <button
-              key={tid}
-              onClick={() => setActiveTab(tid)}
-              className="px-3 py-1.5 text-xs rounded transition-colors flex items-center gap-1.5 shrink-0"
-              style={{
-                background: activeTab === tid ? 'var(--bg-primary)' : 'transparent',
-                color: activeTab === tid ? activeGroup.color : 'var(--text-secondary)',
-                fontWeight: activeTab === tid ? 600 : 400,
-              }}
-            >
-              {t(TOOL_LABEL_KEYS[tid] as 'sidebar.calculator')}
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  panels[tid].setShow(false);
-                }}
-                className="p-0.5 rounded hover:bg-[var(--bg-hover)]"
-                aria-label={t('common.close')}
-              >
-                <X className="w-3 h-3" />
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* 단일 탭일 때 — 도구 이름을 서브헤더로 */}
-      {shownTabs.length === 1 && (
-        <div
-          className="px-4 py-1.5 border-b text-xs"
-          style={{
-            borderColor: 'var(--border-primary)',
-            background: 'var(--bg-secondary)',
-            color: 'var(--text-tertiary)',
-          }}
-        >
-          {t(TOOL_LABEL_KEYS[activeTab] as 'sidebar.calculator')}
-        </div>
-      )}
+      </header>
 
       {/* 탭 컨텐츠 */}
       <div className="flex-1 overflow-auto">
         {renderToolContent(activeTab, panels)}
       </div>
     </aside>
+  );
+}
+
+/**
+ * 인라인 도구 드롭다운 — Calculator 의 수식 선택 스타일 재사용.
+ * glass-card 트리거(좌측 그룹색 accent) + glass-panel 드롭다운 + 외부 클릭 backdrop.
+ */
+function ToolDropdown({
+  tools, current, color, onChange,
+}: {
+  tools: ToolId[];
+  current: ToolId;
+  color: string;
+  onChange: (next: ToolId) => void;
+}) {
+  const t = useTranslations();
+  const [open, setOpen] = useState(false);
+  const currentLabel = t(TOOL_LABEL_KEYS[current] as 'sidebar.calculator');
+
+  return (
+    <div className="relative flex-1 min-w-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="glass-card w-full flex items-center gap-2 px-3 py-2 transition-all hover:shadow-md text-left"
+        style={{ borderLeft: `3px solid ${color}` }}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span
+          className="text-sm font-bold flex-1 truncate"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          {currentLabel}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-180' : ''}`}
+          style={{ color: 'var(--text-secondary)' }}
+        />
+      </button>
+
+      {open && (
+        <>
+          {/* 외부 클릭 시 닫기 backdrop */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+            aria-hidden
+          />
+          <div
+            role="listbox"
+            className="absolute left-0 right-0 top-full mt-1 glass-panel z-50 overflow-hidden p-1"
+          >
+            {tools.map((tid) => {
+              const label = t(TOOL_LABEL_KEYS[tid] as 'sidebar.calculator');
+              const description = t(TOOL_DESCRIPTIONS[tid] as 'toolDesc.calculator');
+              const isActive = tid === current;
+              return (
+                <button
+                  key={tid}
+                  type="button"
+                  onClick={() => {
+                    onChange(tid);
+                    setOpen(false);
+                  }}
+                  role="option"
+                  aria-selected={isActive}
+                  className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+                    isActive ? '' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                  }`}
+                  style={{ background: isActive ? `${color}15` : undefined }}
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
+                    style={{ background: color }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className="text-sm font-semibold truncate"
+                      style={{ color: isActive ? color : 'var(--text-primary)' }}
+                    >
+                      {label}
+                    </div>
+                    <div
+                      className="text-[11px] truncate mt-0.5"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {description}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
   );
 }

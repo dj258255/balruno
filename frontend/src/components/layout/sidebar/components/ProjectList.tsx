@@ -231,7 +231,17 @@ export function ProjectList({
           const rootFolders = (project.folders || []).filter(f => !f.parentId);
 
           // 루트 레벨 시트들 (folderId가 없는 것)
-          const rootSheets = project.sheets.filter(s => !s.folderId);
+          // 루트 시트 — 과거 저장 데이터의 id 중복 방어 (IndexedDB 에 남은 구버전 데이터 대응)
+          const rootSheets = (() => {
+            const seen = new Set<string>();
+            return project.sheets
+              .filter(s => !s.folderId)
+              .filter(s => {
+                if (seen.has(s.id)) return false;
+                seen.add(s.id);
+                return true;
+              });
+          })();
 
           return (
             <div

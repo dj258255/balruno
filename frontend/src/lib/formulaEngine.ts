@@ -186,6 +186,82 @@ function computeCellValue(
 }
 
 /**
+ * Track 2 — 링크 컬럼 traversal: `{링크컬럼}.타겟컬럼` 문법.
+ *
+ * 현재 행에서 link 타입 컬럼을 찾아 → 그 값(rowId) 으로 대상 시트 row 를 조회 →
+ * 타겟 컬럼 값을 반환. 다중 링크(linkedMultiple) 는 첫 번째 row 만 사용 (MVP).
+ *
+ * 예: `={무기}.데미지` → 현재 row.cells[무기_col_id] = "weapon_123"
+ *     → 무기 시트에서 id=weapon_123 row → 데미지 컬럼 값.
+ *
+ * 대괄호 `{}` 로 감싼 이유: 일반 컬럼 참조(중간점 없음) 와 구분하기 위함.
+ */
+function processLinkTraversal(
+  expression: string,
+  currentSheet: Sheet,
+  currentRow: Record<string, CellValue>,
+  sheets: Sheet[],
+  scope: Record<string, CellValue>,
+  recursionDepth: number = 0,
+): SheetReferenceResult {
+  let convertedExpr = expression;
+  const errors: string[] = [];
+  const replacements: { original: string; varName: string; value: CellValue }[] = [];
+  let refIndex = Object.keys(scope).filter((k) => k.startsWith('__link')).length;
+
+  const pattern = /\{([가-힣a-zA-Z_][가-힣a-zA-Z0-9_]*)\}\.([가-힣a-zA-Z_][가-힣a-zA-Z0-9_()%]*)/g;
+  const matches = Array.from(expression.matchAll(pattern));
+  for (const match of matches) {
+    const [fullMatch, linkColName, targetColName] = match;
+    const linkCol = currentSheet.columns.find((c) => c.name === linkColName);
+    if (!linkCol || linkCol.type !== 'link' || !linkCol.linkedSheetId) {
+      errors.push(`'${linkColName}' 은 link 타입 컬럼이 아닙니다`);
+      replacements.push({ original: fullMatch, varName: `__link${refIndex}__`, value: 0 });
+      refIndex++;
+      continue;
+    }
+    const targetSheet = sheets.find((s) => s.id === linkCol.linkedSheetId);
+    if (!targetSheet) {
+      errors.push(`링크 대상 시트 없음: "${linkColName}"`);
+      replacements.push({ original: fullMatch, varName: `__link${refIndex}__`, value: 0 });
+      refIndex++;
+      continue;
+    }
+    const linkValue = currentRow[linkCol.id];
+    if (linkValue === null || linkValue === undefined || linkValue === '') {
+      replacements.push({ original: fullMatch, varName: `__link${refIndex}__`, value: 0 });
+      refIndex++;
+      continue;
+    }
+    const rowIds = String(linkValue).split(',').map((s) => s.trim()).filter(Boolean);
+    const targetRowId = rowIds[0]; // MVP: 첫 번째만
+    const targetRow = targetSheet.rows.find((r) => r.id === targetRowId);
+    if (!targetRow) {
+      errors.push(`링크 row 없음: "${targetRowId}" in ${targetSheet.name}`);
+      replacements.push({ original: fullMatch, varName: `__link${refIndex}__`, value: 0 });
+      refIndex++;
+      continue;
+    }
+    const targetCol = targetSheet.columns.find((c) => c.name === targetColName);
+    if (!targetCol) {
+      errors.push(`링크 대상 컬럼 없음: "${targetColName}" in ${targetSheet.name}`);
+      replacements.push({ original: fullMatch, varName: `__link${refIndex}__`, value: 0 });
+      refIndex++;
+      continue;
+    }
+    const value = computeCellValue(targetSheet, targetRow, targetCol, sheets, recursionDepth + 1);
+    replacements.push({ original: fullMatch, varName: `__link${refIndex}__`, value });
+    refIndex++;
+  }
+
+  for (const rep of replacements) {
+    convertedExpr = convertedExpr.split(rep.original).join(rep.varName);
+    scope[rep.varName] = rep.value;
+  }
+  return { expression: convertedExpr, scope, errors };
+}
+
+/**
  * 시트 참조 (시트명.참조명) 처리
  * 예: 글로벌설정.BASE_HP, 캐릭터스탯.공격력
  *
@@ -463,6 +539,22 @@ function convertKoreanToScope(
   let varIndex = 0;
   const errors: string[] = [];
   const warnings: string[] = [];
+
+  // 0. Track 2 — 링크 컬럼 traversal: {링크컬럼}.타겟컬럼
+  // 예: {무기}.데미지 = 현재 행의 무기 링크가 가리키는 row 의 데미지 컬럼
+  if (context?.currentSheet && context?.sheets) {
+    const linkResult = processLinkTraversal(
+      convertedExpr,
+      context.currentSheet,
+      context.currentRow,
+      context.sheets,
+      scope,
+      recursionDepth,
+    );
+    convertedExpr = linkResult.expression;
+    scope = linkResult.scope;
+    errors.push(...linkResult.errors);
+  }
 
   // 1. 시트 참조 처리 (시트명.컬럼명)
   if (context?.sheets) {

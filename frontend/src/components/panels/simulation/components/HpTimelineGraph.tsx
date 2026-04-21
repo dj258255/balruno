@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useMemo } from 'react';
-import { Maximize2, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { Maximize2, X, ZoomIn, ZoomOut, Skull, Sword, Heart, Shield, RotateCcw } from 'lucide-react';
 
 interface BattleLogEntry {
   time: number;
@@ -233,7 +233,7 @@ function HpGraph({
             }}
             title={`${unit1Name} 사망 (${unit1Death.time.toFixed(1)}s)`}
           >
-            <span className="text-sm" style={{ filter: 'drop-shadow(0 0 2px var(--primary-blue))' }}>💀</span>
+            <Skull className="w-3 h-3" style={{ color: 'var(--primary-blue)', filter: 'drop-shadow(0 0 2px var(--primary-blue))' }} />
           </div>
         )}
         {unit2Death && (
@@ -245,31 +245,29 @@ function HpGraph({
             }}
             title={`${unit2Name} 사망 (${unit2Death.time.toFixed(1)}s)`}
           >
-            <span className="text-sm" style={{ filter: 'drop-shadow(0 0 2px var(--primary-red))' }}>💀</span>
+            <Skull className="w-3 h-3" style={{ color: 'var(--primary-red)', filter: 'drop-shadow(0 0 2px var(--primary-red))' }} />
           </div>
         )}
 
         {/* Skill event markers */}
         {skillEvents.map((event, i) => {
           let color = '#e5a440';
-          let symbol = '⚔';
-          if (event.action === 'heal') { color = '#3db88a'; symbol = '♥'; }
-          if (event.action === 'invincible') { color = '#5a9cf5'; symbol = '🛡'; }
-          if (event.action === 'revive') { color = '#a896f5'; symbol = '↻'; }
+          let Icon = Sword;
+          if (event.action === 'heal') { color = '#3db88a'; Icon = Heart; }
+          if (event.action === 'invincible') { color = '#5a9cf5'; Icon = Shield; }
+          if (event.action === 'revive') { color = '#a896f5'; Icon = RotateCcw; }
 
           return (
             <div
               key={`skill-marker-${i}`}
-              className="absolute w-4 h-4 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-xs"
+              className="absolute w-4 h-4 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
               style={{
                 left: `${getX(event.time)}%`,
                 top: `${getY(event.hp, event.maxHp)}%`,
-                color: color,
-                textShadow: '0 0 2px var(--bg-primary), 0 0 2px var(--bg-primary)',
               }}
               title={`${event.skillName || event.action} (${event.time.toFixed(1)}s)`}
             >
-              {symbol}
+              <Icon className="w-3 h-3" style={{ color, filter: 'drop-shadow(0 0 2px var(--bg-primary))' }} />
             </div>
           );
         })}
@@ -452,11 +450,11 @@ export function HpTimelineGraph({
             {skillEvents.length > 0 && (
               <>
                 <span className="flex items-center gap-0.5">
-                  <span style={{ color: '#e5a440' }}>⚔</span>
+                  <Sword className="w-3 h-3" style={{ color: '#e5a440' }} />
                   <span className="text-xs">스킬</span>
                 </span>
                 <span className="flex items-center gap-0.5">
-                  <span style={{ color: '#3db88a' }}>♥</span>
+                  <Heart className="w-3 h-3" style={{ color: '#3db88a' }} />
                   <span className="text-xs">힐</span>
                 </span>
               </>
@@ -560,19 +558,19 @@ export function HpTimelineGraph({
                 {skillEvents.length > 0 && (
                   <>
                     <span className="flex items-center gap-1">
-                      <span style={{ color: '#e5a440' }}>⚔</span>
+                      <Sword className="w-3 h-3" style={{ color: '#e5a440' }} />
                       <span style={{ color: 'var(--text-secondary)' }}>스킬</span>
                     </span>
                     <span className="flex items-center gap-1">
-                      <span style={{ color: '#3db88a' }}>♥</span>
+                      <Heart className="w-3 h-3" style={{ color: '#3db88a' }} />
                       <span style={{ color: 'var(--text-secondary)' }}>힐</span>
                     </span>
                     <span className="flex items-center gap-1">
-                      <span style={{ color: '#5a9cf5' }}>🛡</span>
+                      <Shield className="w-3 h-3" style={{ color: '#5a9cf5' }} />
                       <span style={{ color: 'var(--text-secondary)' }}>무적</span>
                     </span>
                     <span className="flex items-center gap-1">
-                      <span style={{ color: '#a896f5' }}>↻</span>
+                      <RotateCcw className="w-3 h-3" style={{ color: '#a896f5' }} />
                       <span style={{ color: 'var(--text-secondary)' }}>부활</span>
                     </span>
                   </>

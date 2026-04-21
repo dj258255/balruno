@@ -244,6 +244,10 @@ const FormulaBar = memo(function FormulaBar({
         <input
           ref={formulaBarRef}
           type="text"
+          role="combobox"
+          aria-label={t('table.formulaBarPlaceholder')}
+          aria-autocomplete="list"
+          aria-expanded={false}
           value={formulaBarValue}
           onChange={(e) => onFormulaBarChange(e.target.value)}
           onFocus={onFormulaBarFocus}

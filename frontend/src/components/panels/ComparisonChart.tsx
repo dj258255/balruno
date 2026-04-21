@@ -20,7 +20,7 @@ import { X, Trash2, Download, Check, HelpCircle, ChevronDown, ChevronUp, BarChar
 import { useProjectStore } from '@/stores/projectStore';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
-import { useEscapeKey } from '@/hooks';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import SheetSelector from './SheetSelector';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { computeSheetRows } from '@/lib/formulaEngine';
@@ -53,10 +53,12 @@ const COLORS = [
 
 const PANEL_COLOR = '#7c7ff2'; // 소프트 인디고
 
-export default function ComparisonChart({ onClose, isPanel = false, showHelp = false, setShowHelp }: ComparisonChartProps) {
+export default function ComparisonChart({ onClose, isPanel = false, showHelp: externalShowHelp, setShowHelp: externalSetShowHelp }: ComparisonChartProps) {
   const { projects, currentProjectId, currentSheetId, selectedRows, clearSelectedRows, deselectRow } = useProjectStore();
   const t = useTranslations('comparisonChart');
-  useEscapeKey(onClose);
+  const [internalShowHelp, setInternalShowHelp] = useState(false);
+  const showHelp = externalShowHelp ?? internalShowHelp;
+  const setShowHelp = externalSetShowHelp ?? setInternalShowHelp;
 
   // 프로젝트 및 시트 선택 상태
   const [selectedProjectId, setSelectedProjectId] = useState<string>(currentProjectId || '');
@@ -249,58 +251,46 @@ export default function ComparisonChart({ onClose, isPanel = false, showHelp = f
     </div>
   );
 
-  const wrapperClass = isPanel
-    ? "flex flex-col h-full"
-    : "fixed inset-0 flex items-end sm:items-center justify-center z-[1100] p-0 sm:p-4 bg-black/50 backdrop-blur-sm";
+  const modalHeader = (
+    <div className="glass-panel-header">
+      <div className="flex items-center gap-3">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: `linear-gradient(135deg, ${PANEL_COLOR}, ${PANEL_COLOR}cc)` }}
+        >
+          <PieChart className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+            {t('fullTitle')}
+          </h2>
+          {hasSheet && (
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+              {t('visualizeData', { sheetName: selectedSheet.name })}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="glass-button flex items-center gap-1.5 !px-3"
+          style={{ color: showHelp ? PANEL_COLOR : 'var(--text-secondary)' }}
+        >
+          <HelpCircle className="w-4 h-4" />
+          <span className="text-sm">{t('help')}</span>
+          {showHelp ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        </button>
+        <button onClick={onClose} className="glass-button !p-2">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  );
 
-  const cardClass = isPanel
-    ? "flex flex-col h-full"
-    : "glass-panel w-full max-w-5xl h-[95vh] sm:h-auto sm:max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-2xl";
-
-  return (
-    <div className={wrapperClass}>
-      <div className={cardClass}>
-        {/* 헤더 - 모달일 때만 표시 */}
-        {!isPanel && (
-          <div className="glass-panel-header">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ background: `linear-gradient(135deg, ${PANEL_COLOR}, ${PANEL_COLOR}cc)` }}
-              >
-                <PieChart className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  {t('fullTitle')}
-                </h2>
-                {hasSheet && (
-                  <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                    {t('visualizeData', { sheetName: selectedSheet.name })}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {setShowHelp && (
-                <button
-                  onClick={() => setShowHelp(!showHelp)}
-                  className="glass-button flex items-center gap-1.5 !px-3"
-                  style={{ color: showHelp ? PANEL_COLOR : 'var(--text-secondary)' }}
-                >
-                  <HelpCircle className="w-4 h-4" />
-                  <span className="text-sm">{t('help')}</span>
-                  {showHelp ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                </button>
-              )}
-              <button onClick={onClose} className="glass-button !p-2">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 프로젝트/시트 선택 */}
+  const body = (
+    <>
+      {/* 프로젝트/시트 선택 */}
         <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border-primary)' }}>
           <SheetSelector
             selectedProjectId={selectedProjectId}
@@ -828,6 +818,32 @@ export default function ComparisonChart({ onClose, isPanel = false, showHelp = f
                 )}
           </div>
         )}
+    </>
+  );
+
+  // Panel 모드 — PanelShell 로 통합
+  if (isPanel) {
+    return (
+      <PanelShell
+        title={t('fullTitle')}
+        subtitle="여러 엔티티 레이더 비교"
+        icon={PieChart}
+        iconColor={PANEL_COLOR}
+        onClose={onClose}
+        bodyClassName="p-0 flex flex-col overflow-hidden"
+        actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color={PANEL_COLOR} />}
+      >
+        {body}
+      </PanelShell>
+    );
+  }
+
+  // 모달 모드 — 기존 카드 구조
+  return (
+    <div className="fixed inset-0 flex items-end sm:items-center justify-center z-[1100] p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
+      <div className="glass-panel w-full max-w-5xl h-[95vh] sm:h-auto sm:max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-2xl">
+        {modalHeader}
+        {body}
       </div>
     </div>
   );

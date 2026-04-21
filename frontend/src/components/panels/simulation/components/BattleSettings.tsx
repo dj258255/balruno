@@ -9,6 +9,7 @@ import type { BattleConfig, DefenseFormulaType, ArmorPenetrationConfig } from '@
 import type { ColumnMapping } from '../hooks';
 import { useTranslations } from 'next-intl';
 import CustomSelect from '@/components/ui/CustomSelect';
+import Checkbox from '@/components/ui/Checkbox';
 
 interface BattleSettingsProps {
   runs: number;
@@ -135,13 +136,10 @@ export function BattleSettings({
 
       {/* 방어관통 설정 */}
       <div className="pt-3 border-t" style={{ borderColor: 'var(--border-primary)' }}>
-        <label className="flex items-center gap-2 cursor-pointer mb-2">
-          <input
-            type="checkbox"
+        <label className="flex items-center gap-2 cursor-pointer mb-2 select-none">
+          <Checkbox
             checked={useArmorPen}
             onChange={(e) => setUseArmorPen(e.target.checked)}
-            className="w-4 h-4 rounded"
-            style={{ accentColor: 'var(--accent)' }}
           />
           <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             {t('useArmorPen')}

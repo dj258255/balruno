@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight, Swords, Shield, TrendingUp, Sparkles, Plus, Check, FileSpreadsheet, Wand2, Kanban, Bug, GanttChart, Users } from 'lucide-react';
+import { ArrowRight, Swords, Shield, TrendingUp, Sparkles, Plus, Check, FileSpreadsheet, Wand2, Kanban, Bug, GanttChart, Users, Crosshair, Zap, Castle, Coins, Dices, Gamepad2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { SAMPLE_PROJECTS, type SampleProject } from '@/data/sampleProjects';
 import { useProjectStore } from '@/stores/projectStore';
@@ -14,6 +14,12 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; style?: 
   Kanban,
   Bug,
   GanttChart,
+  Crosshair,
+  Zap,
+  Castle,
+  Coins,
+  Dices,
+  Gamepad2,
 };
 
 const categoryColors: Record<string, { bg: string; border: string; text: string }> = {
@@ -60,7 +66,7 @@ export default function WelcomeScreen() {
   const teamSamples = SAMPLE_PROJECTS.filter((s) => s.category === 'team-pm');
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 overflow-y-auto">
+    <div className="flex-1 flex flex-col items-center justify-start p-4 sm:p-8 pt-8 sm:pt-12 pb-[180px] overflow-y-auto">
       <div className="max-w-3xl w-full">
         {/* 헤더 — B2B 포지셔닝 */}
         <div className="text-center mb-6">

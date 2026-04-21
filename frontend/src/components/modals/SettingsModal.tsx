@@ -5,13 +5,132 @@ import { useTranslations } from 'next-intl';
 import { useLocaleSwitch, Locale } from '@/lib/i18n';
 import { useEscapeKey } from '@/hooks';
 import { useAuthStore } from '@/stores/authStore';
-import { Check, Globe, Cloud, Monitor } from 'lucide-react';
+import { Check, Globe, Cloud, Monitor, Webhook, Copy, Send } from 'lucide-react';
+import { WEBHOOK_PRESETS, renderWebhookBody } from '@/lib/webhookPresets';
+import { toast } from '@/components/ui/Toast';
 
-type SettingsTab = 'language' | 'sync';
+type SettingsTab = 'language' | 'sync' | 'integrations';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
+  const [url, setUrl] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [testing, setTesting] = useState(false);
+
+  const sampleValues = Object.fromEntries(
+    preset.variables.map((v) => [v.key, v.example])
+  );
+  const renderedBody = renderWebhookBody(preset.bodyTemplate, sampleValues);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(preset.bodyTemplate);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('복사 실패');
+    }
+  };
+
+  const handleTest = async () => {
+    if (!url.trim() || !url.startsWith('http')) {
+      toast.error('유효한 URL 을 입력하세요');
+      return;
+    }
+    setTesting(true);
+    try {
+      const res = await fetch(url, {
+        method: preset.method,
+        headers: { 'Content-Type': 'application/json' },
+        body: renderedBody,
+      });
+      if (res.ok) {
+        toast.success(`Test 성공 (${res.status})`);
+      } else {
+        toast.error(`Test 실패: ${res.status} ${res.statusText}`);
+      }
+    } catch (e) {
+      toast.error(`Test 실패: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <div
+      className="p-2.5 rounded-lg space-y-2"
+      style={{
+        backgroundColor: 'var(--bg-tertiary)',
+        border: '1px solid var(--border-color)',
+      }}
+    >
+      <div>
+        <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          {preset.name}
+        </div>
+        <div className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+          {preset.description}
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder={preset.urlHint}
+          className="flex-1 px-2 py-1 text-[11px] rounded font-mono"
+          style={{
+            background: 'var(--bg-primary)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-primary)',
+          }}
+        />
+        <button
+          onClick={handleCopy}
+          className="p-1.5 rounded"
+          style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+          title="body 복사"
+        >
+          {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+        </button>
+        <button
+          onClick={handleTest}
+          disabled={testing || !url.trim()}
+          className="p-1.5 rounded"
+          style={{
+            background: testing ? 'var(--bg-secondary)' : 'var(--accent)',
+            color: testing ? 'var(--text-tertiary)' : 'white',
+          }}
+          title="샘플 payload 로 테스트 발송"
+        >
+          <Send className="w-3 h-3" />
+        </button>
+      </div>
+      <details>
+        <summary
+          className="text-[10px] cursor-pointer"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Body 미리보기 (샘플 값 치환됨) — {preset.variables.length}개 변수
+        </summary>
+        <pre
+          className="mt-1 p-1.5 rounded text-[10px] overflow-x-auto font-mono"
+          style={{
+            background: 'var(--bg-primary)',
+            color: 'var(--text-secondary)',
+            maxHeight: 120,
+            overflowY: 'auto',
+          }}
+        >
+          {renderedBody}
+        </pre>
+      </details>
+    </div>
+  );
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
@@ -51,6 +170,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const tabs = [
     { id: 'language' as const, icon: Globe, label: t('settings.language') },
     { id: 'sync' as const, icon: Cloud, label: t('settings.sync') },
+    { id: 'integrations' as const, icon: Webhook, label: 'Integrations' },
   ];
 
   return (
@@ -256,6 +376,43 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'integrations' && (
+            <div className="px-5 space-y-3">
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                Track 14 — 외부 툴과 양방향 통합. 복사 버튼으로 body 템플릿을 클립보드에 담고,
+                Test 버튼으로 직접 웹훅 URL 에 샘플 payload 를 발송할 수 있습니다.
+              </p>
+              {(['discord', 'slack', 'github', 'notion', 'generic'] as const).map((service) => {
+                const presets = WEBHOOK_PRESETS.filter((p) => p.service === service);
+                if (presets.length === 0) return null;
+                return (
+                  <div key={service}>
+                    <h3
+                      className="text-xs font-semibold uppercase tracking-wider mb-1.5"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {service}
+                    </h3>
+                    <div className="space-y-1.5">
+                      {presets.map((p) => (
+                        <PresetCard key={p.id} preset={p} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              <div
+                className="p-2.5 rounded-lg text-[11px]"
+                style={{
+                  backgroundColor: 'var(--accent-light)',
+                  color: 'var(--accent)',
+                }}
+              >
+                사용법: Automation 패널 → Webhook 액션 → URL 붙여넣기 + 위 프리셋의 body 템플릿 복사.
+              </div>
             </div>
           )}
         </div>

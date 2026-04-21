@@ -19,7 +19,9 @@ import {
 } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { detectImbalances, getSeverityColor, type ImbalanceIssue, type Severity, type DetectionConfig } from '@/lib/imbalanceDetector';
-import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { reviewBalance } from '@/lib/balanceReview';
+import { Sparkles } from 'lucide-react';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useTranslations } from 'next-intl';
 import SheetSelector from './SheetSelector';
 
@@ -41,8 +43,7 @@ const TYPE_ICONS: Record<string, typeof AlertTriangle> = {
 };
 
 export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShowHelp, setShowHelp: externalSetShowHelp }: ImbalanceDetectorPanelProps) {
-  // ESC 키로 패널 닫기
-  useEscapeKey(onClose);
+  // PanelShell 이 ESC 담당
   const t = useTranslations('imbalanceDetector');
 
   const { projects, currentProjectId, currentSheetId } = useProjectStore();
@@ -106,6 +107,13 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
     return counts;
   }, [issues]);
 
+  // Track 11 — AI 리뷰 (템플릿 기반)
+  const aiReview = useMemo(() => {
+    if (!hasAnalyzed) return null;
+    return reviewBalance(issues);
+  }, [hasAnalyzed, issues]);
+  const [showAiReview, setShowAiReview] = useState(true);
+
   // 이슈 확장/축소 토글
   const toggleIssue = (issueId: string) => {
     setExpandedIssues(prev => {
@@ -120,9 +128,16 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* 내용 */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4">
+    <PanelShell
+      title="이상치 탐지"
+      subtitle="Z-score 통계적 이상치 자동 탐지"
+      icon={AlertTriangle}
+      iconColor={PANEL_COLOR}
+      onClose={onClose}
+      bodyClassName="p-4 space-y-4 overflow-x-hidden scrollbar-slim"
+      actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color={PANEL_COLOR} />}
+    >
+      <>
         {/* 프로젝트/시트 선택 */}
         <SheetSelector
           selectedProjectId={selectedProjectId}
@@ -412,6 +427,63 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
               )}
             </div>
 
+            {/* Track 11 — AI 밸런스 리뷰 (템플릿) */}
+            {aiReview && (
+              <div
+                className="rounded-lg border-2 overflow-hidden"
+                style={{
+                  borderColor: aiReview.metrics.critical > 0 ? '#ef4444' : aiReview.metrics.score >= 80 ? '#10b981' : '#f59e0b',
+                  background: 'var(--bg-secondary)',
+                }}
+              >
+                <button
+                  onClick={() => setShowAiReview((v) => !v)}
+                  className="w-full px-3 py-2 flex items-center gap-2 hover:bg-[var(--bg-tertiary)]"
+                >
+                  <Sparkles size={14} style={{ color: 'var(--accent)' }} />
+                  <span className="text-sm font-semibold flex-1 text-left" style={{ color: 'var(--text-primary)' }}>
+                    AI 밸런스 리뷰
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+                    점수 {aiReview.metrics.score}/100
+                  </span>
+                  {showAiReview ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+                {showAiReview && (
+                  <div className="px-3 pb-3 space-y-3 text-xs" style={{ color: 'var(--text-primary)' }}>
+                    <div className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>
+                      {aiReview.headline}
+                    </div>
+                    <p style={{ color: 'var(--text-secondary)' }}>{aiReview.summary}</p>
+
+                    {aiReview.sections.map((sec) => (
+                      <div key={sec.severity}>
+                        <div className="font-semibold mb-1">{sec.title}</div>
+                        <div className="whitespace-pre-line text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+                          {sec.body}
+                        </div>
+                      </div>
+                    ))}
+
+                    {aiReview.actionable.length > 0 && (
+                      <div>
+                        <div className="font-semibold mb-1">즉시 조치 가능 Top {aiReview.actionable.length}</div>
+                        <ol className="list-decimal pl-5 space-y-0.5 text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+                          {aiReview.actionable.map((a, i) => (
+                            <li key={i}>{a}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+
+                    <p className="text-[10px] italic pt-1 border-t" style={{ color: 'var(--text-tertiary)', borderColor: 'var(--border-primary)' }}>
+                      ※ 템플릿 기반 자동 리뷰. 백엔드 연동 시 실제 LLM 으로 업그레이드 예정.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 이슈 목록 */}
             {filteredIssues.length > 0 && (
               <div className="space-y-2">
@@ -506,7 +578,7 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
             </p>
           </div>
         )}
-      </div>
-    </div>
+      </>
+    </PanelShell>
   );
 }

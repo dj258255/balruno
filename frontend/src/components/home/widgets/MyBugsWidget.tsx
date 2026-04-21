@@ -1,0 +1,60 @@
+'use client';
+
+import { Bug } from 'lucide-react';
+import type { TodaysWork, RowWithContext } from '@/hooks/useTodaysWork';
+import { useProjectStore } from '@/stores/projectStore';
+
+export default function MyBugsWidget({ work }: { work: TodaysWork }) {
+  const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
+  const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
+
+  const jump = (ctx: RowWithContext) => {
+    setCurrentProject(ctx.projectId);
+    setCurrentSheet(ctx.sheet.id);
+  };
+
+  const getTitle = (ctx: RowWithContext): string => {
+    const titleCol = ctx.sheet.columns.find(
+      (c) => c.name.toLowerCase() === 'title' || c.name.toLowerCase() === 'name' || c.type === 'general'
+    );
+    if (!titleCol) return '(제목 없음)';
+    const v = ctx.row.cells[titleCol.id];
+    return v ? String(v) : '(제목 없음)';
+  };
+
+  return (
+    <div className="glass-card p-4" style={{ borderLeft: '3px solid #ef4444' }}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Bug className="w-4 h-4" style={{ color: '#ef4444' }} />
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            내 버그
+          </h3>
+        </div>
+        <div className="text-2xl font-bold" style={{ color: '#ef4444' }}>
+          {work.myBugs.length}
+        </div>
+      </div>
+      {work.myBugs.length === 0 ? (
+        <p className="text-xs italic" style={{ color: 'var(--text-tertiary)' }}>
+          {work.openBugs.length > 0
+            ? `${work.openBugs.length}개 오픈 — 내게 할당 없음`
+            : '오픈 버그 없음'}
+        </p>
+      ) : (
+        <div className="space-y-0.5 max-h-48 overflow-y-auto">
+          {work.myBugs.map((ctx, i) => (
+            <button
+              key={i}
+              onClick={() => jump(ctx)}
+              className="w-full text-left px-2 py-1 rounded text-xs truncate hover:bg-black/5 dark:hover:bg-white/5"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              • {getTitle(ctx)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

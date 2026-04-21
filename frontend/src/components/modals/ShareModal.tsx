@@ -39,6 +39,8 @@ export default function ShareModal({ onClose }: ShareModalProps) {
 
   const [copied, setCopied] = useState(false);
   const [peerCount, setPeerCount] = useState(0);
+  const [readOnly, setReadOnly] = useState(false);
+  const [expiryKey, setExpiryKey] = useState<'none' | '1h' | '1d' | '7d'>('none');
 
   // Presence 식별 (사용자 이름 변경)
   const { myName, myColor } = usePresence(currentProjectId);
@@ -54,10 +56,16 @@ export default function ShareModal({ onClose }: ShareModalProps) {
   };
 
   const isActive = project?.syncMode === 'cloud' && !!project.syncRoomId;
-  const roomUrl =
-    isActive && project?.syncRoomId && typeof window !== 'undefined'
-      ? `${window.location.origin}/?room=${project.syncRoomId}`
-      : null;
+  const roomUrl = (() => {
+    if (!isActive || !project?.syncRoomId || typeof window === 'undefined') return null;
+    const params = new URLSearchParams({ room: project.syncRoomId });
+    if (readOnly) params.set('readonly', '1');
+    if (expiryKey !== 'none') {
+      const ms = { '1h': 3600_000, '1d': 86400_000, '7d': 604800_000 }[expiryKey];
+      params.set('expires', String(Date.now() + ms));
+    }
+    return `${window.location.origin}/?${params.toString()}`;
+  })();
 
   // 활성화 시 WebRTC 자동 연결 + awareness 구독
   useEffect(() => {
@@ -126,10 +134,18 @@ export default function ShareModal({ onClose }: ShareModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 modal-overlay flex items-center justify-center z-[1100] p-4">
+    <div
+      className="fixed inset-0 modal-overlay flex items-center justify-center z-[1100] p-4"
+      role="presentation"
+      onClick={onClose}
+    >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-modal-title"
         className="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scaleIn"
         style={{ background: 'var(--bg-primary)' }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
         <div
@@ -144,7 +160,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
               <Users className="w-5 h-5" style={{ color: '#3b82f6' }} />
             </div>
             <div>
-              <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+              <h2 id="share-modal-title" className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
                 프로젝트 공유
               </h2>
               <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
@@ -252,9 +268,70 @@ export default function ShareModal({ onClose }: ShareModalProps) {
             </p>
           </div>
 
-          {/* 공유 URL */}
+          {/* 공유 URL + 권한/만료 */}
           {isActive && roomUrl && (
-            <div>
+            <div className="space-y-3">
+              {/* 권한 */}
+              <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+                <div>
+                  <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                    권한
+                  </div>
+                  <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                    {readOnly ? '링크 받는 사람은 보기만 가능' : '편집 + 동기화 전체 허용'}
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setReadOnly(false)}
+                    className="text-[11px] px-2 py-1 rounded"
+                    style={{
+                      background: !readOnly ? 'var(--accent)' : 'var(--bg-tertiary)',
+                      color: !readOnly ? 'white' : 'var(--text-secondary)',
+                    }}
+                  >
+                    편집
+                  </button>
+                  <button
+                    onClick={() => setReadOnly(true)}
+                    className="text-[11px] px-2 py-1 rounded"
+                    style={{
+                      background: readOnly ? 'var(--accent)' : 'var(--bg-tertiary)',
+                      color: readOnly ? 'white' : 'var(--text-secondary)',
+                    }}
+                  >
+                    읽기전용
+                  </button>
+                </div>
+              </div>
+
+              {/* 만료 */}
+              <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+                <div>
+                  <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                    링크 만료
+                  </div>
+                  <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                    {expiryKey === 'none' ? '만료 없음 (room 이 살아있는 동안 유효)' : `${expiryKey} 후 자동 만료`}
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  {(['none', '1h', '1d', '7d'] as const).map((k) => (
+                    <button
+                      key={k}
+                      onClick={() => setExpiryKey(k)}
+                      className="text-[11px] px-2 py-1 rounded"
+                      style={{
+                        background: expiryKey === k ? 'var(--accent)' : 'var(--bg-tertiary)',
+                        color: expiryKey === k ? 'white' : 'var(--text-secondary)',
+                      }}
+                    >
+                      {k === 'none' ? '없음' : k}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                 공유 링크
               </label>

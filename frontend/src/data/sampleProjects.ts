@@ -1,4 +1,6 @@
+import { v4 as uuidv4 } from 'uuid';
 import type { Project } from '@/types';
+import { GENRE_SAMPLES } from './genreSamples';
 
 // 샘플 프로젝트 카테고리 — 밸런싱 + 팀 PM
 export type SampleCategory =
@@ -25,8 +27,8 @@ export interface SampleProject extends SampleProjectMeta {
   createProject: (t: TranslateFunction) => Project;  // 프로젝트 생성 함수 (번역 함수 전달)
 }
 
-// 유틸: 고유 ID 생성
-const generateId = () => Math.random().toString(36).substring(2, 11);
+// 유틸: 고유 ID 생성 — uuid v4 사용 (이전 9자 랜덤은 collision 가능성이 있었음)
+const generateId = () => uuidv4();
 
 // ============================================
 // 1. RPG 캐릭터 스탯 샘플
@@ -609,6 +611,77 @@ const createEpicRoadmapProject = (_t: TranslateFunction): Project => {
 };
 
 // ============================================
+// Track 13 — Playtest Sessions (team-pm)
+// ============================================
+const createPlaytestSessionsProject = (_t: TranslateFunction): Project => {
+  const now = Date.now();
+  const sheetId = generateId();
+
+  return {
+    id: generateId(),
+    name: '',
+    description: '',
+    createdAt: now,
+    updatedAt: now,
+    sheets: [
+      {
+        id: sheetId,
+        name: 'Playtests',
+        createdAt: now,
+        updatedAt: now,
+        activeView: 'grid',
+        columns: [
+          { id: 'c-id', name: 'ID', type: 'general', width: 80 },
+          { id: 'c-title', name: 'Session', type: 'general', width: 200 },
+          { id: 'c-date', name: 'Date', type: 'date', width: 120 },
+          { id: 'c-testers', name: 'Testers', type: 'person', width: 140 },
+          { id: 'c-goals', name: 'Goals', type: 'multiSelect', width: 160, selectOptions: [
+            { id: 'combat', label: 'Combat balance', color: '#ef4444' },
+            { id: 'economy', label: 'Economy check', color: '#f59e0b' },
+            { id: 'progression', label: 'Progression pace', color: '#10b981' },
+            { id: 'onboarding', label: 'Onboarding UX', color: '#3b82f6' },
+            { id: 'regression', label: 'Regression test', color: '#94a3b8' },
+          ]},
+          { id: 'c-status', name: 'Status', type: 'select', width: 110, selectOptions: [
+            { id: 'scheduled', label: 'Scheduled', color: '#94a3b8' },
+            { id: 'running', label: 'Running', color: '#3b82f6' },
+            { id: 'done', label: 'Done', color: '#10b981' },
+            { id: 'blocked', label: 'Blocked', color: '#ef4444' },
+          ]},
+          { id: 'c-rating', name: 'Overall', type: 'rating', width: 110, ratingMax: 5 },
+          { id: 'c-notes', name: 'Notes', type: 'general', width: 240 },
+          { id: 'c-linked-tasks', name: 'Action items', type: 'general', width: 200 },
+        ],
+        rows: [
+          { id: 'r1', cells: {
+            'c-id': 'PT-001', 'c-title': 'Sword 밸런스 검증',
+            'c-date': '2026-04-25', 'c-testers': 'QA1, Daisy',
+            'c-goals': 'combat,regression', 'c-status': 'scheduled',
+            'c-notes': 'Sword damage 100 → 120 변경 후 첫 테스트',
+          }},
+          { id: 'r2', cells: {
+            'c-id': 'PT-002', 'c-title': 'Gold drop rate 확인',
+            'c-date': '2026-04-22', 'c-testers': 'JunhoPD, Lee',
+            'c-goals': 'economy', 'c-status': 'done',
+            'c-rating': 3,
+            'c-notes': '3시간 플레이 후 1200 골드. 너무 적음. drop rate 1.3x 상향 제안',
+            'c-linked-tasks': 'DROP-adj-042',
+          }},
+          { id: 'r3', cells: {
+            'c-id': 'PT-003', 'c-title': '튜토리얼 first-10min',
+            'c-date': '2026-04-20', 'c-testers': 'Guest-A, Guest-B',
+            'c-goals': 'onboarding,progression', 'c-status': 'done',
+            'c-rating': 2,
+            'c-notes': '5분 지나니까 둘 다 헤맴. 튜토리얼 스킵 UI 필요.',
+            'c-linked-tasks': 'UX-tut-017',
+          }},
+        ],
+      },
+    ],
+  };
+};
+
+// ============================================
 // 샘플 프로젝트 목록
 // ============================================
 export const SAMPLE_PROJECTS: SampleProject[] = [
@@ -644,6 +717,8 @@ export const SAMPLE_PROJECTS: SampleProject[] = [
     category: 'gacha',
     createProject: createGachaProject,
   },
+  // 장르별 완성 템플릿 (2026-04-20): FPS / MOBA / Strategy / Idle / Roguelike
+  ...GENRE_SAMPLES,
   // 팀 PM 샘플 (B2B 전환, 2026-04-19)
   {
     id: 'sprint-board',
@@ -668,6 +743,14 @@ export const SAMPLE_PROJECTS: SampleProject[] = [
     icon: 'GanttChart',
     category: 'team-pm',
     createProject: createEpicRoadmapProject,
+  },
+  {
+    id: 'playtest-sessions',
+    nameKey: 'samples.playtestSessions.name',
+    descriptionKey: 'samples.playtestSessions.description',
+    icon: 'Gamepad2',
+    category: 'team-pm',
+    createProject: createPlaytestSessionsProject,
   },
 ];
 

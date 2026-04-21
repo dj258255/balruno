@@ -579,7 +579,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                           className="px-2 py-1 rounded font-medium"
                           style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)' }}
                         >
-                          ❗ {t('import.diagCritical', { count: diagnosticSummary.critical })}
+                          {t('import.diagCritical', { count: diagnosticSummary.critical })}
                         </span>
                       )}
                       {diagnosticSummary.warning > 0 && (
@@ -587,7 +587,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                           className="px-2 py-1 rounded font-medium"
                           style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--warning)' }}
                         >
-                          ⚠ {t('import.diagWarning', { count: diagnosticSummary.warning })}
+                          {t('import.diagWarning', { count: diagnosticSummary.warning })}
                         </span>
                       )}
                       {diagnosticSummary.info > 0 && (
@@ -595,7 +595,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                           className="px-2 py-1 rounded font-medium"
                           style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}
                         >
-                          ℹ {t('import.diagInfo', { count: diagnosticSummary.info })}
+                          {t('import.diagInfo', { count: diagnosticSummary.info })}
                         </span>
                       )}
                     </div>

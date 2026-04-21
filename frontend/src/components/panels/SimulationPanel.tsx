@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { Play, RefreshCw, User, Grid3X3, Swords } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
-import { useEscapeKey } from '@/hooks/useEscapeKey';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useTranslations } from 'next-intl';
 import CustomSelect from '@/components/ui/CustomSelect';
 
@@ -24,10 +25,12 @@ interface SimulationPanelProps {
   setShowHelp?: (value: boolean) => void;
 }
 
-export default function SimulationPanel({ onClose, showHelp = false }: SimulationPanelProps) {
+export default function SimulationPanel({ onClose, showHelp: externalShowHelp, setShowHelp: externalSetShowHelp }: SimulationPanelProps) {
   const t = useTranslations('simulation');
   const tCommon = useTranslations();
-  useEscapeKey(onClose);
+  const [internalShowHelp, setInternalShowHelp] = useState(false);
+  const showHelp = externalShowHelp ?? internalShowHelp;
+  const setShowHelp = externalSetShowHelp ?? setInternalShowHelp;
 
   const { startCellSelection } = useProjectStore();
 
@@ -55,7 +58,15 @@ export default function SimulationPanel({ onClose, showHelp = false }: Simulatio
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <PanelShell
+      title="전투 시뮬"
+      subtitle="1:1/팀 전투 Monte Carlo"
+      icon={Swords}
+      iconColor="#e11d48"
+      onClose={onClose}
+      bodyClassName="p-0 flex flex-col overflow-hidden"
+      actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color="#e11d48" />}
+    >
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4">
         {/* 도움말 섹션 */}
         {showHelp && (
@@ -114,7 +125,7 @@ export default function SimulationPanel({ onClose, showHelp = false }: Simulatio
           }));
         }}
       />
-    </div>
+    </PanelShell>
   );
 }
 

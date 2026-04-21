@@ -24,7 +24,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { SCALE } from '@/lib/formulaEngine';
 import type { CurveType } from '@/types';
-import { useEscapeKey } from '@/hooks';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { cn } from '@/lib/utils';
 import {
   PANEL_COLOR,
@@ -59,93 +59,21 @@ interface Scenario {
   enabled: boolean;
 }
 
-// 커스텀 Select 컴포넌트
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-interface CustomSelectProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: SelectOption[];
-  className?: string;
-}
-
-function CustomSelect({ value, onChange, options, className }: CustomSelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = React.useRef<HTMLDivElement>(null);
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  return (
-    <div ref={selectRef} className={cn('relative', className)}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full glass-input flex items-center justify-between gap-2 text-sm px-3 py-2"
-        style={{ color: 'var(--text-primary)' }}
-      >
-        <span className="truncate">{selectedOption?.label || value}</span>
-        <ChevronDown className={cn('w-4 h-4 shrink-0 transition-transform', isOpen && 'rotate-180')} style={{ color: 'var(--text-secondary)' }} />
-      </button>
-      {isOpen && (
-        <div
-          className="absolute z-50 w-full mt-1 py-1 rounded-xl shadow-lg border overflow-hidden"
-          style={{
-            background: 'var(--bg-primary)',
-            borderColor: 'var(--border-primary)',
-          }}
-        >
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={cn(
-                'w-full px-3 py-2 text-left text-sm transition-colors',
-                option.value === value
-                  ? 'font-medium'
-                  : 'hover:bg-[var(--bg-secondary)]'
-              )}
-              style={{
-                color: option.value === value ? PANEL_COLOR : 'var(--text-primary)',
-                background: option.value === value ? `${PANEL_COLOR}15` : undefined,
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+// 보조 컴포넌트 + 훅 분리 → growth-curve-chart/
+import { CustomSelect, ToggleSwitch, PreviewCard, NumberInput } from './growth-curve-chart/components';
+import { useScenarios, useSegments } from './growth-curve-chart/hooks';
 
 export default function GrowthCurveChart({
   initialBase = 100,
   initialRate = 1.1,
   initialMaxLevel = 50,
-  showHelp = false,
-  setShowHelp,
+  showHelp: externalShowHelp,
+  setShowHelp: externalSetShowHelp,
   onClose,
 }: GrowthCurveChartProps) {
-  useEscapeKey(() => {
-    if (onClose) onClose();
-  });
+  const [internalShowHelp, setInternalShowHelp] = useState(false);
+  const showHelp = externalShowHelp ?? internalShowHelp;
+  const setShowHelp = externalSetShowHelp ?? setInternalShowHelp;
 
   // 기본 상태
   const [base, setBase] = useState(initialBase);
@@ -172,19 +100,18 @@ export default function GrowthCurveChart({
   // 구간별 성장
   // 실제 RPG 성장 패턴: 초반 급성장 → 중반 안정 → 후반 완만
   const [showSegmented, setShowSegmented] = useState(false);
-  const [segments, setSegments] = useState<GrowthSegment[]>([
-    { id: '1', startLevel: 1, endLevel: 15, curveType: 'exponential', rate: 1.12 },  // 초반: 급성장 (튜토리얼~초보)
-    { id: '2', startLevel: 16, endLevel: 35, curveType: 'linear', rate: 50 },        // 중반: 안정적 성장 (메인 콘텐츠)
-    { id: '3', startLevel: 36, endLevel: 50, curveType: 'logarithmic', rate: 100 },  // 후반: 완만 (엔드게임)
-  ]);
+  const { segments, setSegments, addSegment, removeSegment, updateSegment } = useSegments([
+    { id: '1', startLevel: 1, endLevel: 15, curveType: 'exponential', rate: 1.12 },  // 초반: 급성장
+    { id: '2', startLevel: 16, endLevel: 35, curveType: 'linear', rate: 50 },        // 중반: 안정적
+    { id: '3', startLevel: 36, endLevel: 50, curveType: 'logarithmic', rate: 100 },  // 후반: 완만
+  ], initialMaxLevel);
   const [interpolation, setInterpolation] = useState<InterpolationType>('none');
   const [transitionWidth, setTransitionWidth] = useState(3);
 
   // === 새로운 기능들 ===
 
-  // 1. 다중 시나리오 비교
-  // 실제 RPG에서 워리어(HP형)/메이지(MP형) 밸런스 비교 예시
-  const [scenarios, setScenarios] = useState<Scenario[]>([
+  // 1. 다중 시나리오 비교 — useScenarios 훅 (Track D-2 2차 분해)
+  const { scenarios, setScenarios, addScenario, removeScenario, updateScenario } = useScenarios([
     { id: '1', name: '워리어 HP', color: SCENARIO_COLORS[0], base: 500, rate: 1.08, curveType: 'linear', enabled: false },
     { id: '2', name: '메이지 HP', color: SCENARIO_COLORS[1], base: 300, rate: 1.05, curveType: 'linear', enabled: false },
   ]);
@@ -240,68 +167,7 @@ export default function GrowthCurveChart({
 
   const t = useTranslations('growthCurve');
 
-  // 시나리오 관리
-  const addScenario = () => {
-    const newId = Date.now().toString();
-    // 시나리오별 기본 템플릿 (스탯 유형별)
-    const templates = [
-      { name: 'HP형', base: 500, rate: 1.06 },
-      { name: '공격형', base: 50, rate: 1.08 },
-      { name: '방어형', base: 30, rate: 1.05 },
-      { name: '속도형', base: 100, rate: 1.03 },
-    ];
-    const template = templates[scenarios.length % templates.length];
-    setScenarios([
-      ...scenarios,
-      {
-        id: newId,
-        name: `${template.name} ${Math.floor(scenarios.length / templates.length) + 1}`,
-        color: SCENARIO_COLORS[scenarios.length % SCENARIO_COLORS.length],
-        base: template.base,
-        rate: template.rate,
-        curveType: 'linear',
-        enabled: true,
-      },
-    ]);
-  };
-
-  const removeScenario = (id: string) => {
-    setScenarios(scenarios.filter(s => s.id !== id));
-  };
-
-  const updateScenario = (id: string, updates: Partial<Scenario>) => {
-    setScenarios(scenarios.map(s => s.id === id ? { ...s, ...updates } : s));
-  };
-
-  // 구간 관리
-  const addSegment = () => {
-    const lastSegment = segments[segments.length - 1];
-    const newStart = lastSegment ? lastSegment.endLevel + 1 : 1;
-    const newEnd = Math.min(newStart + 10, maxLevel);
-
-    if (newStart <= maxLevel) {
-      setSegments([
-        ...segments,
-        {
-          id: Date.now().toString(),
-          startLevel: newStart,
-          endLevel: newEnd,
-          curveType: 'linear',
-          rate: 10,
-        },
-      ]);
-    }
-  };
-
-  const removeSegment = (id: string) => {
-    setSegments(segments.filter((s) => s.id !== id));
-  };
-
-  const updateSegment = (id: string, updates: Partial<GrowthSegment>) => {
-    setSegments(
-      segments.map((s) => (s.id === id ? { ...s, ...updates } : s))
-    );
-  };
+  // (시나리오/세그먼트 관리는 useScenarios/useSegments 훅으로 분리됨 — 위 114, 103 라인)
 
   // 목표 역계산 로직
   const solveGoal = useCallback(() => {
@@ -467,7 +333,15 @@ export default function GrowthCurveChart({
   }, [base, rate, previewLevel, customBase, customRate, customCurve, showCustom, showSegmented, segments, interpolation, transitionWidth, showDiminishing, diminishingConfig]);
 
   return (
-    <div className="flex flex-col h-full">
+    <PanelShell
+      title="성장 곡선"
+      subtitle="레벨별 스탯 라인 차트"
+      icon={TrendingUp}
+      iconColor={PANEL_COLOR}
+      onClose={onClose ?? (() => {})}
+      bodyClassName="p-0 flex flex-col overflow-hidden"
+      actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color={PANEL_COLOR} />}
+    >
       <div className="p-4 space-y-5 overflow-y-auto overflow-x-hidden flex-1 scrollbar-slim">
         {/* 도움말 섹션 */}
         {showHelp && (
@@ -1727,88 +1601,9 @@ export default function GrowthCurveChart({
           </div>
         )}
       </div>
-    </div>
+    </PanelShell>
   );
 }
 
 // 토글 스위치 컴포넌트
-function ToggleSwitch({ checked, color }: { checked: boolean; color: string }) {
-  return (
-    <div
-      className="w-9 h-5 rounded-full relative transition-all"
-      style={{ background: checked ? color : 'var(--border-primary)' }}
-    >
-      <div
-        className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all"
-        style={{ left: checked ? '18px' : '2px' }}
-      />
-    </div>
-  );
-}
-
-// 미리보기 카드 컴포넌트
-function PreviewCard({ color, label, value }: { color: string; label: string; value: number }) {
-  return (
-    <div className="glass-section flex items-center justify-between px-3 py-2" style={{ borderLeft: `3px solid ${color}` }}>
-      <span className="text-sm font-medium" style={{ color }}>{label}</span>
-      <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-        {value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-      </span>
-    </div>
-  );
-}
-
-// 숫자 입력 컴포넌트
-function NumberInput({
-  value,
-  onChange,
-  min,
-  max,
-  className,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  min?: number;
-  max?: number;
-  className?: string;
-}) {
-  const [inputValue, setInputValue] = useState(String(value));
-
-  useEffect(() => {
-    setInputValue(String(value));
-  }, [value]);
-
-  return (
-    <input
-      type="text"
-      inputMode="decimal"
-      value={inputValue}
-      onChange={(e) => {
-        const newValue = e.target.value;
-        if (newValue === '' || /^-?\d*\.?\d*$/.test(newValue)) {
-          setInputValue(newValue);
-          const num = parseFloat(newValue);
-          if (!isNaN(num)) {
-            let finalNum = num;
-            if (max !== undefined) finalNum = Math.min(max, finalNum);
-            if (min !== undefined) finalNum = Math.max(min, finalNum);
-            onChange(finalNum);
-          }
-        }
-      }}
-      onBlur={() => {
-        const num = parseFloat(inputValue);
-        if (isNaN(num) || inputValue === '') {
-          setInputValue(String(min ?? 0));
-          onChange(min ?? 0);
-        } else {
-          let finalNum = num;
-          if (max !== undefined) finalNum = Math.min(max, finalNum);
-          if (min !== undefined) finalNum = Math.max(min, finalNum);
-          setInputValue(String(finalNum));
-        }
-      }}
-      className={className}
-    />
-  );
-}
+// ToggleSwitch / PreviewCard / NumberInput → growth-curve-chart/components.tsx

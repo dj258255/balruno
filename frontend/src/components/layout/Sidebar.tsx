@@ -12,6 +12,8 @@ import {
   NewProjectForm,
   ProjectList,
   SidebarFooter,
+  SidebarQuickAccess,
+  SidebarDocsSection,
   DataButtons,
   HelpButtons,
   SaveStatus,
@@ -165,6 +167,10 @@ export default function Sidebar({
         }}
       >
         <SidebarHeader />
+
+        <SidebarQuickAccess />
+
+        <SidebarDocsSection />
 
         <NewProjectForm
           showNewProject={showNewProject}

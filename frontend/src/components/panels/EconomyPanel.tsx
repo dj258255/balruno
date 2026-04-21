@@ -33,7 +33,7 @@ import {
 } from '@/lib/economySimulator';
 import { useProjectStore } from '@/stores/projectStore';
 import { Tooltip as TooltipUI } from '@/components/ui/Tooltip';
-import { useEscapeKey } from '@/hooks';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 
 const PANEL_COLOR = '#e5a440'; // 소프트 앰버
 
@@ -43,11 +43,11 @@ interface EconomyPanelProps {
   onClose?: () => void;
 }
 
-export default function EconomyPanel({ showHelp, setShowHelp, onClose }: EconomyPanelProps) {
+export default function EconomyPanel({ showHelp: externalShowHelp, setShowHelp: externalSetShowHelp, onClose }: EconomyPanelProps) {
   const t = useTranslations('economy');
-  useEscapeKey(() => {
-    if (onClose) onClose();
-  });
+  const [internalShowHelp, setInternalShowHelp] = useState(false);
+  const showHelp = externalShowHelp ?? internalShowHelp;
+  const setShowHelp = externalSetShowHelp ?? setInternalShowHelp;
 
   // 게임 모드 (online/single)
   const [gameMode, setGameMode] = useState<'online' | 'single'>('online');
@@ -158,7 +158,15 @@ export default function EconomyPanel({ showHelp, setShowHelp, onClose }: Economy
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <PanelShell
+      title="경제 시뮬"
+      subtitle="Faucet/Sink·인플레이션"
+      icon={Coins}
+      iconColor={PANEL_COLOR}
+      onClose={onClose ?? (() => {})}
+      bodyClassName="p-0 flex flex-col overflow-hidden"
+      actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color={PANEL_COLOR} />}
+    >
       <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden scrollbar-slim">
         {/* Help Content */}
         {showHelp && (
@@ -753,7 +761,7 @@ export default function EconomyPanel({ showHelp, setShowHelp, onClose }: Economy
           </div>
         </div>
       )}
-    </div>
+    </PanelShell>
   );
 }
 

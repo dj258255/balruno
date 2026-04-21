@@ -1240,8 +1240,9 @@ input[type="checkbox"]:checked::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 68px;
+  height: 54px;
+  padding: 6px 4px 4px;
   border-radius: 14px;
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -1249,6 +1250,14 @@ input[type="checkbox"]:checked::after {
               z-index 0s;
   transform-origin: bottom center;
   z-index: 10;
+}
+
+.dock-item:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.dark .dock-item:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .dock-item-wrapper:hover .dock-item {
@@ -1312,5 +1321,192 @@ input[type="checkbox"]:checked::after {
 }
 
 .scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* 스켈레톤 펄스 애니메이션 — Skeleton.tsx 에서 사용 */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-pulse {
+    animation: none;
+  }
+}
+
+/* ==================================================
+   Tiptap Doc Editor — Milestone 1
+   ================================================== */
+.tiptap-doc-editor {
+  color: var(--text-primary);
+  line-height: 1.65;
+  font-size: 14px;
+}
+.tiptap-doc-editor h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.25;
+}
+.tiptap-doc-editor h2 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+.tiptap-doc-editor h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+}
+.tiptap-doc-editor p {
+  margin: 0.4rem 0;
+}
+.tiptap-doc-editor ul,
+.tiptap-doc-editor ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.tiptap-doc-editor ul {
+  list-style-type: disc;
+}
+.tiptap-doc-editor ol {
+  list-style-type: decimal;
+}
+.tiptap-doc-editor li {
+  margin: 0.15rem 0;
+}
+.tiptap-doc-editor li > p {
+  margin: 0;
+}
+.tiptap-doc-editor blockquote {
+  border-left: 3px solid var(--border-primary);
+  padding-left: 1rem;
+  margin: 0.75rem 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+.tiptap-doc-editor code {
+  background: var(--bg-tertiary);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.875em;
+  font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+}
+.tiptap-doc-editor pre {
+  background: var(--bg-tertiary);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+.tiptap-doc-editor pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.875em;
+}
+.tiptap-doc-editor a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.tiptap-doc-editor hr {
+  border: none;
+  border-top: 1px solid var(--border-primary);
+  margin: 1.5rem 0;
+}
+.tiptap-doc-editor strong {
+  font-weight: 700;
+}
+/* Placeholder */
+.tiptap-doc-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-tertiary);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Mention 노드 (@sheet / @task / @doc 등) */
+.tiptap-doc-editor .mention-node {
+  display: inline-block;
+  padding: 1px 6px;
+  margin: 0 1px;
+  border-radius: 4px;
+  font-size: 0.875em;
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.tiptap-doc-editor .mention-node:hover {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+.dark .tiptap-doc-editor .mention-node {
+  background: rgba(59, 130, 246, 0.18);
+  color: #60a5fa;
+}
+.dark .tiptap-doc-editor .mention-node:hover {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Live Cell 노드 */
+.tiptap-doc-editor .live-cell-wrapper {
+  display: inline-block;
+}
+.tiptap-doc-editor .live-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  margin: 0 1px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.tiptap-doc-editor .live-cell:hover {
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.2);
+}
+.tiptap-doc-editor .live-cell[data-broken='true'] {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.25);
+  text-decoration: line-through;
+}
+.tiptap-doc-editor .live-cell-value {
+  font-weight: 600;
+}
+.tiptap-doc-editor .live-cell-arrow {
+  width: 10px;
+  height: 10px;
+  opacity: 0.5;
+}
+
+/* Tippy 팝오버 — slash/mention 메뉴 기본 배경 제거 (우리 glass-panel 이 내용임) */
+.tippy-box[data-theme~=''] {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.tippy-box[data-theme~=''] > .tippy-content {
+  padding: 0;
+}
+.tippy-box[data-theme~=''] > .tippy-arrow {
   display: none;
 }

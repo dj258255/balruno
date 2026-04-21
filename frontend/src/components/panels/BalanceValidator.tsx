@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
-import { useEscapeKey } from '@/hooks';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useProjectStore } from '@/stores/projectStore';
 import { Tooltip } from '@/components/ui/Tooltip';
 import CustomSelect from '@/components/ui/CustomSelect';
@@ -219,9 +219,11 @@ function StatInputField({
   );
 }
 
-export default function BalanceValidator({ onClose, showHelp = false, setShowHelp }: BalanceValidatorProps) {
+export default function BalanceValidator({ onClose, showHelp: externalShowHelp, setShowHelp: externalSetShowHelp }: BalanceValidatorProps) {
   const t = useTranslations('balanceValidator');
-  useEscapeKey(onClose ?? (() => {}), !!onClose);
+  const [internalShowHelp, setInternalShowHelp] = useState(false);
+  const showHelp = externalShowHelp ?? internalShowHelp;
+  const setShowHelp = externalSetShowHelp ?? setInternalShowHelp;
   const [units, setUnits] = useState<UnitData[]>([
     { name: '전사', role: 'balanced', hp: 1000, atk: 100, def: 50, attackSpeed: 1.0, critRate: 0.05, critDamage: 1.5 },
   ]);
@@ -263,8 +265,16 @@ export default function BalanceValidator({ onClose, showHelp = false, setShowHel
   }, [validations]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 space-y-5 overflow-y-auto overflow-x-hidden flex-1 scrollbar-slim">
+    <PanelShell
+      title="밸런스 검증"
+      subtitle="런칭 전 룰 기반 최종 검증"
+      icon={Shield}
+      iconColor={PANEL_COLOR}
+      onClose={onClose ?? (() => {})}
+      bodyClassName="p-4 space-y-5 overflow-x-hidden scrollbar-slim"
+      actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color={PANEL_COLOR} />}
+    >
+      <>
         {/* 도움말 섹션 */}
         {showHelp && (
           <div className="glass-card p-4 animate-slideDown space-y-4">
@@ -582,7 +592,7 @@ export default function BalanceValidator({ onClose, showHelp = false, setShowHel
             </span>
           </div>
         </div>
-      </div>
-    </div>
+      </>
+    </PanelShell>
   );
 }

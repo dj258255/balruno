@@ -8,8 +8,23 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import type { StoreApi } from 'zustand';
-import type { Column, Row, CellValue, CellStyle, Sticker } from '@/types';
+import type { Column, Row, CellValue, CellStyle, Sticker, ChangeEntry } from '@/types';
 import type { ProjectState } from '../projectStore';
+import { wouldCreateCycle } from '@/lib/linkGraph';
+import { toast } from '@/components/ui/Toast';
+
+/** Track 12 — 현재 사용자 이름 읽기 (usePresence 가 쓰는 키). */
+function getCurrentUserName(): string {
+  if (typeof window === 'undefined') return 'local';
+  return localStorage.getItem('balruno:user-name') ?? 'local';
+}
+
+/** 두 CellValue 가 실질적으로 같은지 (null/'' 취급). */
+function isSameValue(a: CellValue, b: CellValue): boolean {
+  if (a === b) return true;
+  if ((a === null || a === '') && (b === null || b === '')) return true;
+  return false;
+}
 import {
   getProjectDoc,
   addColumnInDoc,
@@ -28,6 +43,7 @@ import {
   addStickerInDoc,
   updateStickerInDoc,
   deleteStickerInDoc,
+  appendChangelogInDoc,
 } from '@/lib/ydoc';
 
 type SetFn = StoreApi<ProjectState>['setState'];
@@ -51,6 +67,19 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
   addColumn: (projectId: string, sheetId: string, column: Omit<Column, 'id'>): string => {
     const id = uuidv4();
     const doc = getProjectDoc(projectId);
+
+    // Track 3 — link/lookup/rollup 사이클 사전 검사. 생성 차단.
+    if (column.type === 'link' || column.type === 'lookup' || column.type === 'rollup') {
+      const state = get();
+      const project = state.projects.find((p) => p.id === projectId);
+      if (project) {
+        const cycle = wouldCreateCycle(project.sheets, sheetId, { ...column, id } as Column);
+        if (cycle.hasCycle) {
+          toast.error(`순환 참조 감지: ${cycle.pathNames.join(' → ')}\n컬럼이 생성되지 않았습니다.`, 6000);
+          return '';
+        }
+      }
+    }
 
     // Track 2 양방향 미러링: link 타입이면 대상 시트에 reverse 컬럼 자동 생성
     if (column.type === 'link' && column.linkedSheetId && !column.isReverseLink) {
@@ -125,11 +154,46 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     columnId: string,
     updates: Partial<Column>
   ) => {
+    // Track 3 — link/lookup/rollup 관련 필드 변경 시 사이클 사전 검사
+    const touchesLink = (
+      'type' in updates || 'linkedSheetId' in updates
+      || 'lookupLinkColumnId' in updates || 'lookupTargetColumnId' in updates
+    );
+    if (touchesLink) {
+      const state = get();
+      const project = state.projects.find((p) => p.id === projectId);
+      const sheet = project?.sheets.find((s) => s.id === sheetId);
+      const existing = sheet?.columns.find((c) => c.id === columnId);
+      if (project && existing) {
+        const merged = { ...existing, ...updates } as Column;
+        if (merged.type === 'link' || merged.type === 'lookup' || merged.type === 'rollup') {
+          const cycle = wouldCreateCycle(project.sheets, sheetId, merged);
+          if (cycle.hasCycle) {
+            toast.error(`순환 참조 감지: ${cycle.pathNames.join(' → ')}\n변경이 적용되지 않았습니다.`, 6000);
+            return;
+          }
+        }
+      }
+    }
     updateColumnInDoc(getProjectDoc(projectId), sheetId, columnId, updates);
   },
 
   deleteColumn: (projectId: string, sheetId: string, columnId: string) => {
-    deleteColumnInDoc(getProjectDoc(projectId), sheetId, columnId);
+    const doc = getProjectDoc(projectId);
+    const state = get();
+    const project = state.projects.find((p) => p.id === projectId);
+    const sourceSheet = project?.sheets.find((s) => s.id === sheetId);
+    const column = sourceSheet?.columns.find((c) => c.id === columnId);
+
+    // Track 2 cascade: link 컬럼 삭제 시 반대편 reverse 컬럼도 삭제
+    if (column?.type === 'link' && column.linkedSheetId && column.reverseColumnId) {
+      doc.transact(() => {
+        deleteColumnInDoc(doc, sheetId, columnId);
+        deleteColumnInDoc(doc, column.linkedSheetId!, column.reverseColumnId!);
+      });
+      return;
+    }
+    deleteColumnInDoc(doc, sheetId, columnId);
   },
 
   reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => {
@@ -208,6 +272,47 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     const sourceSheet = project?.sheets.find((s) => s.id === sheetId);
     const column = sourceSheet?.columns.find((c) => c.id === columnId);
 
+    // Track 12 — 이전 값 snapshot + changelog 기록
+    // (link 양방향 미러링 분기 전에 미리 찍어둠)
+    const prevValue = sourceSheet?.rows.find((r) => r.id === rowId)?.cells[columnId] ?? null;
+    const recordChange = () => {
+      if (isSameValue(prevValue, value)) return; // no-op 스킵
+
+      // 역방향 링크 — 같은 row 의 task-link 셀들이 가리키는 task row IDs 를 수집.
+      // 이걸 저장해두면 task 레코드 열 때 "이 task 와 연결된 변경" 을 역조회 가능.
+      const linkedTaskIds: string[] = [];
+      if (sourceSheet) {
+        const currentRow = sourceSheet.rows.find((r) => r.id === rowId);
+        if (currentRow) {
+          for (const col of sourceSheet.columns) {
+            if (col.type === 'task-link') {
+              const v = currentRow.cells[col.id];
+              if (typeof v === 'string' && v.trim()) {
+                for (const tid of v.split(',').map((s) => s.trim()).filter(Boolean)) {
+                  if (!linkedTaskIds.includes(tid)) linkedTaskIds.push(tid);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 수식 입력 (`=...`) 은 엔진 결과가 아니라 원본 수식이 바뀌어도 의미 있음 — 기록
+      const entry: ChangeEntry = {
+        id: uuidv4(),
+        timestamp: Date.now(),
+        userId: getCurrentUserName(),
+        userName: getCurrentUserName(),
+        sheetId,
+        rowId,
+        columnId,
+        before: prevValue,
+        after: value,
+        ...(linkedTaskIds.length > 0 ? { linkedTaskIds } : {}),
+      };
+      appendChangelogInDoc(doc, entry);
+    };
+
     // Track 2 양방향 미러링: link 타입 셀 업데이트 시 반대쪽도 동기화
     if (
       column?.type === 'link' &&
@@ -227,6 +332,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
 
         doc.transact(() => {
           updateCellInDoc(doc, sheetId, rowId, columnId, value);
+          recordChange();
           // 추가된 target row 의 reverse 컬럼에 현재 rowId 추가
           for (const targetRowId of added) {
             const targetRow = targetSheet.rows.find((r) => r.id === targetRowId);
@@ -257,6 +363,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     }
 
     updateCellInDoc(doc, sheetId, rowId, columnId, value);
+    recordChange();
   },
 
   updateCellStyle: (
