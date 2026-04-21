@@ -9,6 +9,7 @@ import { Folder, ChevronRight, ChevronDown, FileSpreadsheet } from 'lucide-react
 import { cn } from '@/lib/utils';
 import type { Folder as FolderType, Sheet } from '@/types';
 import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
+import DocIconPicker from '@/components/docs/DocIconPicker';
 
 interface FolderItemProps {
   folder: FolderType;
@@ -32,7 +33,7 @@ interface FolderItemProps {
   setEditingFolderId: (id: string | null) => void;
   setEditingSheetId: (id: string | null) => void;
   updateFolder: (projectId: string, folderId: string, updates: { name?: string }) => void;
-  updateSheet: (projectId: string, sheetId: string, updates: { name?: string }) => void;
+  updateSheet: (projectId: string, sheetId: string, updates: { name?: string; icon?: string }) => void;
 
   // 컨텍스트 메뉴
   onFolderContextMenu: (e: React.MouseEvent, projectId: string, folderId: string, folderName: string) => void;
@@ -314,12 +315,19 @@ export function FolderItem({
                 color: currentSheetId === sheet.id ? 'white' : 'var(--text-primary)',
               }}
             >
-              <FileSpreadsheet
-                className="w-4 h-4 flex-shrink-0"
-                style={{
-                  color: currentSheetId === sheet.id ? 'white' : 'var(--accent)',
-                }}
-              />
+              <span
+                className="flex-shrink-0"
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <DocIconPicker
+                  icon={sheet.icon}
+                  onChange={(emoji) => updateSheet(projectId, sheet.id, { icon: emoji })}
+                  fallbackIcon={FileSpreadsheet}
+                  fallbackColor={currentSheetId === sheet.id ? 'white' : 'var(--accent)'}
+                  size="sm"
+                />
+              </span>
               {editingSheetId === sheet.id ? (
                 <input
                   type="text"

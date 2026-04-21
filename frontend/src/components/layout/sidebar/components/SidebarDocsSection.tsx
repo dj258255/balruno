@@ -8,9 +8,10 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { FileText, Plus, ChevronDown, ChevronRight, Trash2, Sparkles } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, Trash2, Sparkles } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { DOC_TEMPLATES } from '@/lib/docTemplates';
+import DocIconPicker from '@/components/docs/DocIconPicker';
 
 interface SidebarDocsSectionProps {
   /** 내부 리스트 영역의 최대 높이 (px). 사이드바 리사이즈 핸들로 동적 조절. */
@@ -27,6 +28,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
   const createDoc = useProjectStore((s) => s.createDoc);
   const deleteDoc = useProjectStore((s) => s.deleteDoc);
+  const updateDoc = useProjectStore((s) => s.updateDoc);
   const [expanded, setExpanded] = useState(true);
   const [showTemplates, setShowTemplates] = useState(false);
   const templateMenuRef = useRef<HTMLDivElement>(null);
@@ -58,6 +60,9 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
     const template = DOC_TEMPLATES.find((t) => t.id === templateId);
     if (!template) return;
     const id = createDoc(currentProjectId, template.name, template.content);
+    if (template.icon) {
+      updateDoc(currentProjectId, id, { icon: template.icon });
+    }
     setCurrentSheet(null);
     setCurrentDoc(id);
     setShowTemplates(false);
@@ -162,10 +167,18 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
               {docs.map((d) => {
                 const isActive = d.id === currentDocId;
                 return (
-                  <button
+                  <div
                     key={d.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleOpen(d.id)}
-                    className="group w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-left transition-colors"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleOpen(d.id);
+                      }
+                    }}
+                    className="group w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-left transition-colors cursor-pointer"
                     style={{
                       background: isActive ? 'var(--bg-tertiary)' : 'transparent',
                       color: 'var(--text-primary)',
@@ -178,20 +191,12 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                       if (!isActive) e.currentTarget.style.background = 'transparent';
                     }}
                   >
-                    {d.icon ? (
-                      <span
-                        className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0 text-[14px]"
-                        style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif', lineHeight: 1 }}
-                        aria-hidden="true"
-                      >
-                        {d.icon}
-                      </span>
-                    ) : (
-                      <FileText
-                        className="w-3.5 h-3.5 flex-shrink-0"
-                        style={{ color: isActive ? 'var(--accent)' : 'var(--text-secondary)' }}
-                      />
-                    )}
+                    <DocIconPicker
+                      icon={d.icon}
+                      onChange={(emoji) => updateDoc(project.id, d.id, { icon: emoji })}
+                      size="sm"
+                      className="flex-shrink-0"
+                    />
                     <span className="flex-1 truncate">{d.name || '(제목 없음)'}</span>
                     <span
                       role="button"
@@ -202,7 +207,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                     >
                       <Trash2 className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
                     </span>
-                  </button>
+                  </div>
                 );
               })}
             </div>

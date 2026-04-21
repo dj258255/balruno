@@ -10,6 +10,8 @@ export interface DocTemplate {
   name: string;
   description: string;
   category: 'genre' | 'systems' | 'release';
+  /** 초기 아이콘 이모지 (장르별 대표) */
+  icon?: string;
   /** 초기 HTML content (tiptap 포맷) */
   content: string;
 }
@@ -230,46 +232,10 @@ const RELEASE_NOTES = `
 `;
 
 export const DOC_TEMPLATES: DocTemplate[] = [
-  {
-    id: 'rpg-gdd',
-    name: 'RPG GDD',
-    description: 'RPG 장르 기본 설계 스켈레톤',
-    category: 'genre',
-    content: RPG_GDD.trim(),
-  },
-  {
-    id: 'fps-gdd',
-    name: 'FPS GDD',
-    description: 'FPS 장르 무기/맵/진행',
-    category: 'genre',
-    content: FPS_GDD.trim(),
-  },
-  {
-    id: 'idle-gdd',
-    name: 'Idle GDD',
-    description: 'Idle · Clicker 경제 중심',
-    category: 'genre',
-    content: IDLE_GDD.trim(),
-  },
-  {
-    id: 'roguelike-gdd',
-    name: 'Roguelike GDD',
-    description: 'Roguelike · 덱빌딩',
-    category: 'genre',
-    content: ROGUELIKE_GDD.trim(),
-  },
-  {
-    id: 'combat-balance',
-    name: '전투 밸런스 설계안',
-    description: '수치 밸런싱 + 자동 Rationale',
-    category: 'systems',
-    content: COMBAT_BALANCE.trim(),
-  },
-  {
-    id: 'release-notes',
-    name: '릴리스 노트',
-    description: '패치 노트 포맷',
-    category: 'release',
-    content: RELEASE_NOTES.trim(),
-  },
+  { id: 'rpg-gdd',        name: 'RPG GDD',         description: 'RPG 장르 기본 설계 스켈레톤',       category: 'genre',   icon: '⚔️', content: RPG_GDD.trim() },
+  { id: 'fps-gdd',        name: 'FPS GDD',         description: 'FPS 장르 무기/맵/진행',             category: 'genre',   icon: '🎯', content: FPS_GDD.trim() },
+  { id: 'idle-gdd',       name: 'Idle GDD',        description: 'Idle · Clicker 경제 중심',          category: 'genre',   icon: '💰', content: IDLE_GDD.trim() },
+  { id: 'roguelike-gdd',  name: 'Roguelike GDD',   description: 'Roguelike · 덱빌딩',                category: 'genre',   icon: '🎴', content: ROGUELIKE_GDD.trim() },
+  { id: 'combat-balance', name: '전투 밸런스 설계안', description: '수치 밸런싱 + 자동 Rationale',       category: 'systems', icon: '⚖️', content: COMBAT_BALANCE.trim() },
+  { id: 'release-notes',  name: '릴리스 노트',      description: '패치 노트 포맷',                     category: 'release', icon: '🚀', content: RELEASE_NOTES.trim() },
 ];

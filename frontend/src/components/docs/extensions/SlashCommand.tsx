@@ -244,6 +244,8 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
                 interactive: true,
                 trigger: 'manual',
                 placement: 'bottom-start',
+                theme: 'balruno',
+                arrow: false,
               });
             },
             onUpdate: (props) => {

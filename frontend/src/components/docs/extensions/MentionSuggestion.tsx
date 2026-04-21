@@ -228,6 +228,8 @@ export function createMentionExtension(getProject: () => Project | null | undefi
               interactive: true,
               trigger: 'manual',
               placement: 'bottom-start',
+              theme: 'balruno',
+              arrow: false,
             });
           },
           onUpdate: (props) => {

@@ -84,8 +84,13 @@ export default function DocView({ projectId, doc, onClose }: Props) {
     <PanelShell
       title="문서"
       subtitle="/ 슬래시 명령 · @ 참조"
-      icon={FileText}
-      iconColor="#3b82f6"
+      iconNode={
+        <DocIconPicker
+          icon={doc.icon}
+          onChange={(emoji) => updateDoc(projectId, doc.id, { icon: emoji })}
+          size="sm"
+        />
+      }
       onClose={onClose}
       bodyClassName="p-0 flex flex-col overflow-hidden"
       actions={

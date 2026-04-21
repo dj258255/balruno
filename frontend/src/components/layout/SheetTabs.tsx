@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, X, Edit2, Copy, Check, LayoutTemplate, GripVertical, ChevronLeft, ChevronRight, XCircle, FileText, FileSpreadsheet } from 'lucide-react';
+import DocIconPicker from '@/components/docs/DocIconPicker';
 import { useProjectStore } from '@/stores/projectStore';
 import type { Project } from '@/types';
 import { TemplateSelector } from '@/components/panels';
@@ -30,6 +31,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     currentDocId,
     setCurrentDoc,
     closeDocTab,
+    updateDoc,
   } = useProjectStore();
 
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
@@ -330,25 +332,28 @@ export default function SheetTabs({ project }: SheetTabsProps) {
               }}
               title={name}
             >
-              <span className="relative w-3.5 h-3.5 flex-shrink-0">
-                {!isSheet && entry.doc.icon ? (
-                  <span
-                    className="absolute inset-0 flex items-center justify-center text-[14px] group-hover:opacity-0 transition-opacity"
-                    style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif', lineHeight: 1 }}
-                    aria-hidden="true"
-                  >
-                    {entry.doc.icon}
-                  </span>
+              {/* 아이콘 — 시트·문서 둘 다 클릭으로 이모지 변경 가능 (각자 fallback 다름) */}
+              <span
+                className="flex-shrink-0"
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                draggable={false}
+              >
+                {isSheet ? (
+                  <DocIconPicker
+                    icon={entry.sheet.icon}
+                    onChange={(emoji) => updateSheet(project.id, entry.id, { icon: emoji })}
+                    fallbackIcon={FileSpreadsheet}
+                    fallbackColor={isActive ? 'var(--accent)' : 'var(--text-secondary)'}
+                    size="sm"
+                  />
                 ) : (
-                  <Icon
-                    className="absolute inset-0 w-3.5 h-3.5 group-hover:opacity-0 transition-opacity"
-                    style={{ color: isActive ? 'var(--accent)' : 'var(--text-secondary)' }}
+                  <DocIconPicker
+                    icon={entry.doc.icon}
+                    onChange={(emoji) => updateDoc(project.id, entry.id, { icon: emoji })}
+                    size="sm"
                   />
                 )}
-                <GripVertical
-                  className="absolute inset-0 w-3.5 h-3.5 opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing transition-opacity"
-                  style={{ color: 'var(--text-tertiary)' }}
-                />
               </span>
 
               {isSheet && editingSheetId === entry.id ? (

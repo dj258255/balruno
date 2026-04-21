@@ -12,6 +12,7 @@ import { useTranslations } from 'next-intl';
 import type { Project, Folder as FolderType } from '@/types';
 import { FolderItem } from './FolderItem';
 import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
+import DocIconPicker from '@/components/docs/DocIconPicker';
 
 interface ProjectListProps {
   projects: Project[];
@@ -52,7 +53,7 @@ interface ProjectListProps {
   handleFinishEdit: () => void;
   setEditingProjectId: (id: string | null) => void;
   setEditingSheetId: (id: string | null) => void;
-  updateSheet: (projectId: string, sheetId: string, updates: { name?: string }) => void;
+  updateSheet: (projectId: string, sheetId: string, updates: { name?: string; icon?: string }) => void;
   reorderProjects: (from: number, to: number) => void;
   reorderSheets: (projectId: string, from: number, to: number) => void;
 
@@ -498,12 +499,19 @@ export function ProjectList({
                         opacity: draggedSheetIndex === index && dragProjectId === project.id ? 0.5 : 1,
                       }}
                     >
-                      <FileSpreadsheet
-                        className="w-4 h-4 flex-shrink-0"
-                        style={{
-                          color: currentSheetId === sheet.id ? 'white' : 'var(--accent)',
-                        }}
-                      />
+                      <span
+                        className="flex-shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        <DocIconPicker
+                          icon={sheet.icon}
+                          onChange={(emoji) => updateSheet(project.id, sheet.id, { icon: emoji })}
+                          fallbackIcon={FileSpreadsheet}
+                          fallbackColor={currentSheetId === sheet.id ? 'white' : 'var(--accent)'}
+                          size="sm"
+                        />
+                      </span>
                       {editingSheetId === sheet.id ? (
                         <input
                           type="text"

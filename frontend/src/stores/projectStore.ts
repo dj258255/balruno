@@ -78,6 +78,7 @@ export interface ProjectState {
     sheetId: string,
     updates: Partial<Pick<Sheet,
       | 'name'
+      | 'icon'
       | 'kind'
       | 'exportClassName'
       | 'activeView'
