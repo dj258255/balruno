@@ -370,6 +370,18 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{t('sidebar.formulaHelper')}</span>
                 <Kbd>⌘⇧F</Kbd>
               </Command.Item>
+              <Command.Item value="preset template library" onSelect={() => runAction(() => emitOpenPanel('preset'))} className="cmdk-item">
+                <CalcIcon className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{t('sidebar.presetComparison')}</span>
+              </Command.Item>
+              <Command.Item value="entity definition level table" onSelect={() => runAction(() => emitOpenPanel('entityDefinition'))} className="cmdk-item">
+                <Users className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{t('bottomTabs.entityDefinition')}</span>
+              </Command.Item>
+              <Command.Item value="difficulty curve stage wall milestone" onSelect={() => runAction(() => emitOpenPanel('difficultyCurve'))} className="cmdk-item">
+                <BarChart3 className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{t('bottomTabs.difficultyCurve')}</span>
+              </Command.Item>
               <Command.Item value="auto balancer ai optimize" onSelect={() => runAction(() => emitOpenPanel('autoBalancer'))} className="cmdk-item">
                 <Sparkles className="w-4 h-4" style={{ color: 'var(--primary-purple)' }} />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>AI Auto-Balancer</span>
