@@ -5,7 +5,8 @@
 'use client';
 
 import { useState } from 'react';
-import { FileSpreadsheet, ChevronRight, ChevronDown } from 'lucide-react';
+import { useEffect } from 'react';
+import { FileSpreadsheet, ChevronRight, ChevronDown, FolderPlus, LayoutTemplate } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import type { Project, Folder as FolderType } from '@/types';
@@ -135,9 +136,24 @@ export function ProjectList({
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [draggedFolderProjectId, setDraggedFolderProjectId] = useState<string | null>(null);
 
+  // 빈 공간 우클릭 컨텍스트 메뉴 (프로젝트/시트 위가 아닌 곳)
+  const [emptyMenu, setEmptyMenu] = useState<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    if (!emptyMenu) return;
+    const onDown = () => setEmptyMenu(null);
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [emptyMenu]);
+  const handleEmptyContextMenu = (e: React.MouseEvent) => {
+    // 프로젝트/시트/폴더 행에서는 이미 stopPropagation 하므로 여기 도달하면 진짜 빈 공간.
+    e.preventDefault();
+    setEmptyMenu({ x: e.clientX, y: e.clientY });
+  };
+
   if (projects.length === 0) {
     return (
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-2" onContextMenu={handleEmptyContextMenu}>
+        {renderEmptyContextMenu(emptyMenu, setEmptyMenu)}
         <div className="text-center py-10 px-4">
           <div className="w-12 h-12 mx-auto mb-3 rounded-lg flex items-center justify-center" style={{
             background: 'var(--accent-light)'
@@ -225,7 +241,8 @@ export function ProjectList({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-2">
+    <div className="flex-1 overflow-y-auto p-2" onContextMenu={handleEmptyContextMenu}>
+      {renderEmptyContextMenu(emptyMenu, setEmptyMenu)}
       <div className="space-y-1.5">
         {projects.map((project, projectIndex) => {
           // 루트 레벨 폴더들 (parentId가 없는 것)
@@ -538,6 +555,54 @@ export function ProjectList({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/**
+ * 사이드바 빈 공간 우클릭 시 뜨는 플로팅 컨텍스트 메뉴.
+ * 액션은 전역 이벤트로 전달 — NewProjectForm / ProjectGalleryModal 이 리슨.
+ */
+function renderEmptyContextMenu(
+  menu: { x: number; y: number } | null,
+  close: (v: null) => void,
+) {
+  if (!menu) return null;
+
+  const trigger = (eventName: string) => {
+    close(null);
+    window.dispatchEvent(new Event(eventName));
+  };
+
+  return (
+    <div
+      className="fixed z-50 min-w-[180px] py-1 rounded-lg shadow-xl border"
+      style={{
+        left: menu.x,
+        top: menu.y,
+        background: 'var(--bg-primary)',
+        borderColor: 'var(--border-primary)',
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        onClick={() => trigger('balruno:open-new-project')}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-[var(--bg-hover)] transition-colors"
+        style={{ color: 'var(--text-primary)' }}
+      >
+        <FolderPlus className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+        새 프로젝트
+      </button>
+      <button
+        type="button"
+        onClick={() => trigger('balruno:open-gallery')}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-[var(--bg-hover)] transition-colors"
+        style={{ color: 'var(--text-primary)' }}
+      >
+        <LayoutTemplate className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+        템플릿 갤러리에서 시작
+      </button>
     </div>
   );
 }

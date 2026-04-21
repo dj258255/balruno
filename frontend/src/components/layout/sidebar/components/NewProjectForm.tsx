@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useEffect } from 'react';
 import { FolderPlus, Check, X, LayoutTemplate } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -23,6 +24,13 @@ export function NewProjectForm({
   onCreateProject,
 }: NewProjectFormProps) {
   const t = useTranslations();
+
+  // 빈 공간 우클릭 메뉴 · CommandPalette 등 외부에서 "새 프로젝트" 열기 요청
+  useEffect(() => {
+    const handler = () => setShowNewProject(true);
+    window.addEventListener('balruno:open-new-project', handler);
+    return () => window.removeEventListener('balruno:open-new-project', handler);
+  }, [setShowNewProject]);
 
   if (!showNewProject) {
     return (
