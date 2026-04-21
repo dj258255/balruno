@@ -137,7 +137,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'build',
     titleKey: 'toolGroups.build',
     color: '#06b6d4',
-    tools: ['calculator', 'formulaHelper', 'preset', 'entityDefinition', 'difficultyCurve'],
+    tools: ['calculator', 'goal', 'formulaHelper', 'preset', 'entityDefinition', 'difficultyCurve'],
   },
   {
     id: 'check',
@@ -161,7 +161,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'auto',
     titleKey: 'toolGroups.auto',
     color: '#f43f5e',
-    tools: ['goal', 'autoBalancer', 'automations', 'aiBehavior'],
+    tools: ['autoBalancer', 'automations', 'aiBehavior'],
   },
   {
     id: 'share',
