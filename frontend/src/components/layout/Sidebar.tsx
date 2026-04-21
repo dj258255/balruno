@@ -89,33 +89,39 @@ export default function Sidebar({
   const state = useSidebarState();
 
   // 문서 섹션 높이 — 프로젝트 섹션과의 리사이즈 핸들로 조절. localStorage 저장.
+  // 스타일/동작은 SidebarResizer (사이드바↔본문) 와 일관되게 pointer event + 글로벌 cursor 사용.
   const [docsHeight, setDocsHeight] = useState<number>(() => {
     if (typeof window === 'undefined') return 240;
     const saved = window.localStorage.getItem('balruno:docs-section-height');
     const n = saved ? parseInt(saved, 10) : 240;
     return Number.isFinite(n) && n > 80 ? n : 240;
   });
-  const resizeStartRef = useRef<{ startY: number; startHeight: number } | null>(null);
-  const handleDocsResizeStart = (e: React.MouseEvent) => {
+  const resizeActiveRef = useRef(false);
+  const handleDocsResizeStart = (e: React.PointerEvent) => {
     e.preventDefault();
-    resizeStartRef.current = { startY: e.clientY, startHeight: docsHeight };
-    const onMove = (ev: MouseEvent) => {
-      if (!resizeStartRef.current) return;
-      // 핸들은 DocsSection '위' 에 있음 — 위로 드래그하면 문서가 커짐 (기준 반전)
-      const delta = resizeStartRef.current.startY - ev.clientY;
-      const next = Math.max(80, Math.min(600, resizeStartRef.current.startHeight + delta));
-      setDocsHeight(next);
+    resizeActiveRef.current = true;
+    const startY = e.clientY;
+    const startHeight = docsHeight;
+    let latestHeight = docsHeight;
+    const onMove = (ev: PointerEvent) => {
+      if (!resizeActiveRef.current) return;
+      // 핸들은 DocsSection '위' 에 있음 — 위로 드래그하면 문서 커짐
+      const delta = startY - ev.clientY;
+      latestHeight = Math.max(80, Math.min(600, startHeight + delta));
+      setDocsHeight(latestHeight);
     };
     const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-      if (resizeStartRef.current) {
-        window.localStorage.setItem('balruno:docs-section-height', String(docsHeight));
-        resizeStartRef.current = null;
-      }
+      resizeActiveRef.current = false;
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.localStorage.setItem('balruno:docs-section-height', String(latestHeight));
     };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
   };
 
   const {
@@ -282,18 +288,15 @@ export default function Sidebar({
           }}
         />
 
-        {/* 프로젝트 / 문서 섹션 사이 리사이즈 핸들 — 드래그로 두 영역의 높이 비율 조정 */}
+        {/* 프로젝트 / 문서 섹션 사이 리사이즈 핸들 — SidebarResizer 와 동일한 시각/동작 */}
         <div
-          onMouseDown={handleDocsResizeStart}
-          className="h-1.5 cursor-ns-resize flex items-center justify-center group hover:bg-[var(--accent)]/10 transition-colors shrink-0"
-          style={{ borderTop: '1px solid var(--border-primary)' }}
+          onPointerDown={handleDocsResizeStart}
+          className="h-1.5 cursor-row-resize hover:bg-[var(--accent)] transition-colors shrink-0"
+          style={{ touchAction: 'none' }}
+          role="separator"
+          aria-label="프로젝트/문서 영역 크기 조절"
           title="드래그로 문서 섹션 높이 조절"
-        >
-          <div
-            className="w-8 h-0.5 rounded-full transition-colors group-hover:bg-[var(--accent)]"
-            style={{ background: 'var(--border-secondary)' }}
-          />
-        </div>
+        />
 
         {/* 문서 섹션 — 현재 프로젝트의 docs. 리사이즈 핸들로 높이 조절 가능 */}
         <SidebarDocsSection maxHeight={docsHeight} />
