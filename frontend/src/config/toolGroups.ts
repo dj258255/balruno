@@ -38,7 +38,8 @@ export type ToolId =
   | 'interfaceDesigner'
   | 'automations'
   | 'sensitivity'
-  | 'changeHistory';
+  | 'changeHistory'
+  | 'fpsSimulation';
 
 export type ToolGroupId =
   | 'build'
@@ -72,7 +73,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'simulate',
     titleKey: 'toolGroups.simulate',
     color: '#e11d48',
-    tools: ['simulation', 'dpsVariance', 'lootSimulator', 'economy'],
+    tools: ['simulation', 'fpsSimulation', 'dpsVariance', 'lootSimulator', 'economy'],
   },
   {
     id: 'compare',
@@ -119,6 +120,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
 
   // simulate — 시뮬
   simulation: 'toolDesc.simulation',           // 1:1/팀 전투 Monte Carlo
+  fpsSimulation: 'toolDesc.fpsSimulation',     // FPS 무기 TTK · BTK · 거리별 DPS
   dpsVariance: 'toolDesc.dpsVariance',         // DPS 분포·백분위·히스토그램
   lootSimulator: 'toolDesc.lootSimulator',     // 가챠 피티·드롭 확률
   economy: 'toolDesc.economy',                 // Faucet/Sink·인플레이션

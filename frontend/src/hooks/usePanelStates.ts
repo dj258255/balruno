@@ -43,6 +43,7 @@ export function usePanelStates(): {
   const [automations, setAutomations] = useState(false);
   const [sensitivity, setSensitivity] = useState(false);
   const [changeHistory, setChangeHistory] = useState(false);
+  const [fpsSimulation, setFpsSimulation] = useState(false);
 
   const panels: Record<ToolId, PanelState> = useMemo(() => ({
     calculator: { show: calculator, setShow: setCalculator },
@@ -68,12 +69,13 @@ export function usePanelStates(): {
     automations: { show: automations, setShow: setAutomations },
     sensitivity: { show: sensitivity, setShow: setSensitivity },
     changeHistory: { show: changeHistory, setShow: setChangeHistory },
+    fpsSimulation: { show: fpsSimulation, setShow: setFpsSimulation },
   }), [
     calculator, comparison, chart, preset, imbalance, goal, balance,
     economy, dpsVariance, curveFitting, formulaHelper, balanceValidator,
     difficultyCurve, simulation, entityDefinition, autoBalancer, lootSimulator,
     powerCurveCompare, comments, interfaceDesigner, automations, sensitivity,
-    changeHistory,
+    changeHistory, fpsSimulation,
   ]);
 
   const openByName = useCallback((name: string) => {

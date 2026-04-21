@@ -32,6 +32,7 @@ const FormulaHelper = dynamic(() => import('@/components/panels/FormulaHelper'),
 const BalanceValidator = dynamic(() => import('@/components/panels/BalanceValidator'), { ssr: false });
 const DifficultyCurve = dynamic(() => import('@/components/panels/DifficultyCurve'), { ssr: false });
 const SimulationPanel = dynamic(() => import('@/components/panels/SimulationPanel'), { ssr: false });
+const FPSSimulationPanel = dynamic(() => import('@/components/panels/FPSSimulationPanel'), { ssr: false });
 const EconomyPanel = dynamic(() => import('@/components/panels/EconomyPanel'), { ssr: false });
 const DPSVariancePanel = dynamic(() => import('@/components/panels/DPSVariancePanel'), { ssr: false });
 const CurveFittingPanel = dynamic(() => import('@/components/panels/CurveFittingPanel'), { ssr: false });
@@ -79,6 +80,7 @@ const TOOL_LABEL_KEYS: Record<ToolId, string> = {
   automations: 'sidebar.automations',
   sensitivity: 'sidebar.sensitivity',
   changeHistory: 'sidebar.changeHistory',
+  fpsSimulation: 'sidebar.fpsSimulation',
 };
 
 function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
@@ -112,6 +114,8 @@ function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
       return <DifficultyCurve onClose={close} />;
     case 'simulation':
       return <SimulationPanel onClose={close} />;
+    case 'fpsSimulation':
+      return <FPSSimulationPanel onClose={close} />;
     case 'entityDefinition':
       return <EntityDefinition onClose={close} />;
     case 'autoBalancer':
