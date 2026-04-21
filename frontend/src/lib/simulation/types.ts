@@ -15,6 +15,15 @@ export interface UnitStats {
   critDamage?: number;  // 크리티컬 데미지 배율 (기본 1.5)
   accuracy?: number;    // 명중률 (0-1, 기본 1)
   evasion?: number;     // 회피율 (0-1, 기본 0)
+
+  // 플레이어/조종자 실력 (composite) — Overwatch/Destiny 밸런싱 문서 방식
+  // 각 0-100, 기본 50 (평균). undefined = 보정 없음 (기존 동작 유지).
+  /** 에임/명중 실력 — accuracy + crit 에 곱 보정 */
+  aimSkill?: number;
+  /** 반응 속도 — evasion + 선공 확률 보정 */
+  reactionSkill?: number;
+  /** 판단 실력 — 스킬 선택 최적성 (팀전/다중 스킬시 효과) */
+  decisionSkill?: number;
 }
 
 // 스킬 정의

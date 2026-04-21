@@ -5,12 +5,61 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Heart, Swords, Shield, Zap, ChevronDown, ChevronUp, Target, Sparkles, Wind } from 'lucide-react';
+import { Heart, Swords, Shield, Zap, ChevronDown, ChevronUp, Target, Sparkles, Wind, Crosshair, Brain, Gauge } from 'lucide-react';
 import type { UnitStats, Skill } from '@/lib/simulation/types';
 import { StatInput } from './StatInput';
 import { UnitPicker } from './UnitPicker';
 import { SkillEditor } from './SkillEditor';
 import { useTranslations } from 'next-intl';
+
+/**
+ * 실력 slider (0-100) — composite skill 입력.
+ * 50 이 중앙 (기본값). 0 약함 (보정 0.6x), 100 강함 (보정 1.4x).
+ */
+function SkillSlider({
+  icon: Icon,
+  label,
+  description,
+  value,
+  onChange,
+  color,
+}: {
+  icon: React.ElementType;
+  label: string;
+  description: string;
+  value: number;
+  onChange: (v: number) => void;
+  color: string;
+}) {
+  const tier =
+    value < 30 ? '초보' : value < 50 ? '평균 이하' : value < 70 ? '평균' : value < 85 ? '숙련' : '전문가';
+  return (
+    <div className="p-2 rounded-md" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}>
+      <div className="flex items-center gap-2 mb-1">
+        <Icon className="w-3.5 h-3.5" style={{ color }} />
+        <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
+          {label}
+        </span>
+        <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+          {description}
+        </span>
+        <span className="ml-auto text-label font-semibold tabular-nums" style={{ color }}>
+          {value} · {tier}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={5}
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value, 10))}
+        className="w-full cursor-pointer"
+        style={{ accentColor: color }}
+      />
+    </div>
+  );
+}
 
 interface UnitStatsPanelProps {
   unitStats: UnitStats;
@@ -204,6 +253,40 @@ export function UnitStatsPanel({
             multiplier={100}
             placeholder="0"
             icon={Wind}
+            color="#9179f2"
+          />
+        </div>
+      </details>
+
+      {/* 조종자 실력 (Composite Skill) — Overwatch/Destiny 밸런싱 방식 */}
+      <details className="mt-3 pt-3 group" style={{ borderTop: '1px solid var(--border-primary)' }}>
+        <summary className="text-sm cursor-pointer list-none flex items-center justify-between" style={{ color: 'var(--text-secondary)' }}>
+          <span>조종자 실력 (에임 · 반응 · 판단)</span>
+          <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" />
+        </summary>
+        <div className="space-y-2 mt-2">
+          <SkillSlider
+            icon={Crosshair}
+            label="에임"
+            description="명중률 · 크리티컬 보정"
+            value={unitStats.aimSkill ?? 50}
+            onChange={(v) => setUnitStats(prev => ({ ...prev, aimSkill: v }))}
+            color="#e86161"
+          />
+          <SkillSlider
+            icon={Gauge}
+            label="반응"
+            description="회피율 · 선공 확률 보정"
+            value={unitStats.reactionSkill ?? 50}
+            onChange={(v) => setUnitStats(prev => ({ ...prev, reactionSkill: v }))}
+            color="#5a9cf5"
+          />
+          <SkillSlider
+            icon={Brain}
+            label="판단"
+            description="스킬 선택 최적성 (팀전/다중 스킬)"
+            value={unitStats.decisionSkill ?? 50}
+            onChange={(v) => setUnitStats(prev => ({ ...prev, decisionSkill: v }))}
             color="#9179f2"
           />
         </div>
