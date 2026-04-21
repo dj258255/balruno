@@ -194,6 +194,7 @@ function sheetToYMap(sheet: Sheet): Y.Map<unknown> {
   const map = new Y.Map();
   map.set('id', sheet.id);
   map.set('name', sheet.name);
+  if (sheet.icon) map.set('icon', sheet.icon);
   if (sheet.kind) map.set('kind', sheet.kind);
   if (sheet.exportClassName) map.set('exportClassName', sheet.exportClassName);
   if (sheet.folderId) map.set('folderId', sheet.folderId);
@@ -226,6 +227,7 @@ function yMapToSheet(map: Y.Map<unknown>): Sheet {
   return {
     id: map.get('id') as string,
     name: map.get('name') as string,
+    icon: map.get('icon') as string | undefined,
     kind: map.get('kind') as Sheet['kind'] | undefined,
     exportClassName: map.get('exportClassName') as string | undefined,
     folderId: map.get('folderId') as string | undefined,
@@ -551,6 +553,7 @@ export function updateSheetInDoc(
   sheetId: string,
   updates: Partial<Pick<Sheet,
     | 'name'
+    | 'icon'
     | 'kind'
     | 'exportClassName'
     | 'folderId'

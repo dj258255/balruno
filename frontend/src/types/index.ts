@@ -85,6 +85,8 @@ export type SheetKind = 'game-data' | 'pm' | 'analysis' | 'reference';
 export interface Sheet {
   id: string;
   name: string;
+  /** 사용자 지정 아이콘 — 유니코드 이모지 문자 (예: "📊", "⚔️"). 없으면 FileSpreadsheet fallback. */
+  icon?: string;
   /** 시트 용도 — 없으면 PM 자동 감지 또는 기본 'game-data'. manual override */
   kind?: SheetKind;
   columns: Column[];

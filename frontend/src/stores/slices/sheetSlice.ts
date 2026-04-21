@@ -76,6 +76,7 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     sheetId: string,
     updates: Partial<Pick<Sheet,
       | 'name'
+      | 'icon'
       | 'kind'
       | 'exportClassName'
       | 'activeView'

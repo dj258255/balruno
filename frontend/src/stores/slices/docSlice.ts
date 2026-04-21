@@ -39,6 +39,9 @@ export const createDocActions = (set: SetFn) => ({
     const newDoc: Doc = {
       id,
       name,
+      // 기본 아이콘 — 사용자가 이모지 피커로 바꿀 때까지 보여줄 fallback.
+      // '📄' (page facing up) 은 문서의 일반적 표현.
+      icon: '📄',
       content: content ?? '',
       createdAt: now,
       updatedAt: now,

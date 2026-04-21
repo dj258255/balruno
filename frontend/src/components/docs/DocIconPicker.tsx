@@ -10,7 +10,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { FileText } from 'lucide-react';
+import { FileText, type LucideIcon } from 'lucide-react';
 
 // emoji-mart 는 꽤 큰 번들이므로 dynamic — 피커 열 때만 로드
 const Picker = dynamic(
@@ -19,7 +19,7 @@ const Picker = dynamic(
 );
 
 interface Props {
-  /** 현재 이모지 (없으면 FileText fallback) */
+  /** 현재 이모지 (없으면 fallbackIcon) */
   icon?: string;
   onChange: (emoji: string | undefined) => void;
   /** 아이콘 표시 크기 — 트리거 버튼 안 */
@@ -28,6 +28,10 @@ interface Props {
   className?: string;
   /** 버튼 스타일 (배경/테두리) */
   buttonStyle?: React.CSSProperties;
+  /** 이모지 미설정 시 보여줄 lucide 아이콘 (기본 FileText) */
+  fallbackIcon?: LucideIcon;
+  /** fallback 아이콘 색상 */
+  fallbackColor?: string;
 }
 
 const SIZE_CLASS = {
@@ -36,7 +40,16 @@ const SIZE_CLASS = {
   lg: 'w-10 h-10 text-[32px]',
 };
 
-export default function DocIconPicker({ icon, onChange, size = 'md', className = '', buttonStyle }: Props) {
+/** 범용 이모지 아이콘 피커 — 문서·시트 양쪽에서 사용 */
+export default function DocIconPicker({
+  icon,
+  onChange,
+  size = 'md',
+  className = '',
+  buttonStyle,
+  fallbackIcon: FallbackIcon = FileText,
+  fallbackColor = 'var(--text-secondary)',
+}: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -72,7 +85,7 @@ export default function DocIconPicker({ icon, onChange, size = 'md', className =
             {icon}
           </span>
         ) : (
-          <FileText size={fallbackIconSize} style={{ color: 'var(--text-secondary)' }} />
+          <FallbackIcon size={fallbackIconSize} style={{ color: fallbackColor }} />
         )}
       </button>
 

@@ -775,6 +775,17 @@ input[type="checkbox"]:checked::after {
     0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 }
 
+/* tippy.js 기본 검은 wrapper 제거 — content(glass-panel) 가 직접 보이도록 */
+.tippy-box[data-theme~='balruno'] {
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+  border-radius: 0;
+}
+.tippy-box[data-theme~='balruno'] .tippy-content {
+  padding: 0;
+}
+
 /* Glass Panel Header */
 .glass-panel-header {
   @apply flex items-center justify-between px-4 py-3 sm:px-5 sm:py-4;

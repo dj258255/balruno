@@ -22,6 +22,8 @@ interface PanelShellProps {
   subtitle?: string;
   icon?: LucideIcon;
   iconColor?: string;
+  /** 아이콘 슬롯을 커스텀 노드로 교체 (예: 이모지 피커). 지정 시 icon prop 무시. */
+  iconNode?: ReactNode;
   onClose: () => void;
   /** 상단 메타 (배지 등) */
   headerExtra?: ReactNode;
@@ -40,6 +42,7 @@ export default function PanelShell({
   subtitle,
   icon: Icon,
   iconColor = 'var(--accent)',
+  iconNode,
   onClose,
   headerExtra,
   actions,
@@ -56,7 +59,7 @@ export default function PanelShell({
         style={{ borderColor: 'var(--border-primary)' }}
       >
         <div className="flex items-center gap-2 min-w-0">
-          {Icon && <Icon size={16} style={{ color: iconColor, flexShrink: 0 }} />}
+          {iconNode ?? (Icon && <Icon size={16} style={{ color: iconColor, flexShrink: 0 }} />)}
           <div className="min-w-0">
             <h3 className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
               {title}
