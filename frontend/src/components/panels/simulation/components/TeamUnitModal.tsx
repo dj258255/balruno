@@ -86,6 +86,46 @@ function StatField({
   );
 }
 
+/** 조종자 실력 0-100 slider (에임/반응/판단) */
+function SkillRow({
+  label,
+  description,
+  value,
+  onChange,
+  color,
+}: {
+  label: string;
+  description: string;
+  value: number;
+  onChange: (v: number) => void;
+  color: string;
+}) {
+  const tier = value < 30 ? '초보' : value < 50 ? '평균↓' : value < 70 ? '평균' : value < 85 ? '숙련' : '전문가';
+  return (
+    <div className="p-2 rounded-md" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}>
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>{label}</span>
+          <span className="text-caption truncate" style={{ color: 'var(--text-tertiary)' }}>{description}</span>
+        </div>
+        <span className="text-label font-semibold tabular-nums shrink-0" style={{ color }}>
+          {value} · {tier}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={5}
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value, 10))}
+        className="w-full cursor-pointer"
+        style={{ accentColor: color }}
+      />
+    </div>
+  );
+}
+
 // 선택적 스탯 입력 (빈 값 허용)
 function OptionalStatInput({
   label,
@@ -321,6 +361,36 @@ export function TeamUnitModal({
                 onChange={(v) => setEditUnit(prev => ({ ...prev, evasion: v }))}
                 multiplier={100}
                 placeholder="0"
+              />
+            </div>
+          </details>
+
+          {/* 조종자 실력 (Composite Skill) */}
+          <details className="group">
+            <summary className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+              조종자 실력 (에임 · 반응 · 판단)
+            </summary>
+            <div className="space-y-2 mt-2">
+              <SkillRow
+                label="에임"
+                description="명중/크리 보정"
+                value={editUnit.aimSkill ?? 50}
+                onChange={(v) => setEditUnit(prev => ({ ...prev, aimSkill: v }))}
+                color="#e86161"
+              />
+              <SkillRow
+                label="반응"
+                description="회피/선공 보정"
+                value={editUnit.reactionSkill ?? 50}
+                onChange={(v) => setEditUnit(prev => ({ ...prev, reactionSkill: v }))}
+                color="#5a9cf5"
+              />
+              <SkillRow
+                label="판단"
+                description="포커스 fire · 스킬 선택"
+                value={editUnit.decisionSkill ?? 50}
+                onChange={(v) => setEditUnit(prev => ({ ...prev, decisionSkill: v }))}
+                color="#9179f2"
               />
             </div>
           </details>

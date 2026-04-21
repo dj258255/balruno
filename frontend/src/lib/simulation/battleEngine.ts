@@ -1100,12 +1100,25 @@ export function simulateTeamBattle(
   }));
 
   // 타겟 선택 함수
+  // attacker.decisionSkill 이 높을수록 mode 를 충실히 따름 (최적 타겟).
+  // 낮으면 판단 실수 확률 ↑ → 랜덤 선택. 50 = 50% 확률로 실수.
   const selectTarget = (
     enemies: UnitState[],
-    mode: import('./types').TeamBattleConfig['targetingMode']
+    mode: import('./types').TeamBattleConfig['targetingMode'],
+    attacker?: UnitState,
   ): UnitState | null => {
     const aliveEnemies = enemies.filter(e => e.alive);
     if (aliveEnemies.length === 0) return null;
+
+    // Decision skill 확률 기반 실수 — 낮은 실력일수록 모드 무시하고 랜덤
+    if (attacker) {
+      const decisionSkill = (attacker as unknown as { decisionSkill?: number }).decisionSkill ?? 50;
+      const mistakeProb = 1 - decisionSkill / 100;  // 0 = 전문가(실수 없음), 100 = 초보(항상 실수)
+      if (Math.random() < mistakeProb * 0.5) {
+        // 판단 실수 — 랜덤 타겟
+        return aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+      }
+    }
 
     switch (mode) {
       case 'lowest_hp':
@@ -1152,7 +1165,7 @@ export function simulateTeamBattle(
     // Team1 공격 계산
     for (const attacker of team1Alive) {
       if (time >= attacker.nextAttackTime) {
-        const target = selectTarget(team2States, cfg.targetingMode);
+        const target = selectTarget(team2States, cfg.targetingMode, attacker);
         if (!target) continue;
 
         const result = calculateDamage(attacker, target, cfg.damageFormula, cfg.defenseFormula, cfg.armorPenetration);
@@ -1170,7 +1183,7 @@ export function simulateTeamBattle(
     // Team2 공격 계산
     for (const attacker of team2Alive) {
       if (time >= attacker.nextAttackTime) {
-        const target = selectTarget(team1States, cfg.targetingMode);
+        const target = selectTarget(team1States, cfg.targetingMode, attacker);
         if (!target) continue;
 
         const result = calculateDamage(attacker, target, cfg.damageFormula, cfg.defenseFormula, cfg.armorPenetration);
@@ -1592,13 +1605,22 @@ export function simulateTeamBattleWithSkills(
   const team1States: UnitState[] = team1.map(u => createUnitState(u, 'team1'));
   const team2States: UnitState[] = team2.map(u => createUnitState(u, 'team2'));
 
-  // 타겟 선택 함수
+  // 타겟 선택 함수 (스킬 포함 버전 — decisionSkill 로 mode 적용률 제어)
   const selectTarget = (
     enemies: UnitState[],
-    mode: import('./types').TeamBattleConfig['targetingMode']
+    mode: import('./types').TeamBattleConfig['targetingMode'],
+    attacker?: UnitState,
   ): UnitState | null => {
     const aliveEnemies = enemies.filter(e => e.alive);
     if (aliveEnemies.length === 0) return null;
+
+    if (attacker) {
+      const decisionSkill = (attacker as unknown as { decisionSkill?: number }).decisionSkill ?? 50;
+      const mistakeProb = 1 - decisionSkill / 100;
+      if (Math.random() < mistakeProb * 0.5) {
+        return aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+      }
+    }
 
     switch (mode) {
       case 'lowest_hp':
@@ -1747,7 +1769,7 @@ export function simulateTeamBattleWithSkills(
 
       switch (skillType) {
         case 'damage': {
-          const target = selectTarget(enemies, cfg.targetingMode);
+          const target = selectTarget(enemies, cfg.targetingMode, attacker);
           if (!target || time < target.invincibleUntil) break;
 
           const baseDamage = skill.damageType === 'flat'
@@ -1921,7 +1943,7 @@ export function simulateTeamBattleWithSkills(
           continue;
         }
 
-        const target = selectTarget(team2States, cfg.targetingMode);
+        const target = selectTarget(team2States, cfg.targetingMode, attacker);
         if (!target) continue;
 
         // 대상 무적 체크
@@ -1951,7 +1973,7 @@ export function simulateTeamBattleWithSkills(
           continue;
         }
 
-        const target = selectTarget(team1States, cfg.targetingMode);
+        const target = selectTarget(team1States, cfg.targetingMode, attacker);
         if (!target) continue;
 
         // 대상 무적 체크

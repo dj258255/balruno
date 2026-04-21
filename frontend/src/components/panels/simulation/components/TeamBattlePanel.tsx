@@ -5,7 +5,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Play, RefreshCw, User, Sparkles, Target, Zap, Clock, BarChart3, Trophy, Skull, ChevronDown, ChevronUp, TrendingUp, Swords } from 'lucide-react';
+import { X, Play, RefreshCw, User, Sparkles, Target, Zap, Clock, BarChart3, Trophy, Skull, ChevronDown, ChevronUp, TrendingUp, Swords, Crosshair, Brain, Gauge } from 'lucide-react';
 import type { UnitStats, TeamBattleConfig, Skill } from '@/lib/simulation/types';
 import type { TeamResult, TeamUnitModalState } from '../hooks/useSimulationState';
 import { UnitPicker } from './UnitPicker';
@@ -16,6 +16,58 @@ import CustomSelect from '@/components/ui/CustomSelect';
 
 interface UnitWithSkills extends UnitStats {
   skills?: Skill[];
+}
+
+/** 팀 유닛들의 평균 composite skill (0-100). 지정 안 된 유닛은 50 기본값. */
+function teamAverageSkills(units: UnitStats[]): { aim: number; reaction: number; decision: number } {
+  if (units.length === 0) return { aim: 50, reaction: 50, decision: 50 };
+  const sum = units.reduce(
+    (acc, u) => ({
+      aim: acc.aim + (u.aimSkill ?? 50),
+      reaction: acc.reaction + (u.reactionSkill ?? 50),
+      decision: acc.decision + (u.decisionSkill ?? 50),
+    }),
+    { aim: 0, reaction: 0, decision: 0 },
+  );
+  return {
+    aim: Math.round(sum.aim / units.length),
+    reaction: Math.round(sum.reaction / units.length),
+    decision: Math.round(sum.decision / units.length),
+  };
+}
+
+/** Team 헤더 옆에 평균 실력 3축 배지 */
+function TeamSkillBadges({ units, color }: { units: UnitStats[]; color: string }) {
+  if (units.length === 0) return null;
+  const avg = teamAverageSkills(units);
+  return (
+    <div className="flex items-center gap-1">
+      <span
+        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium"
+        style={{ background: `${color}15`, color }}
+        title={`평균 에임 실력: ${avg.aim}/100`}
+      >
+        <Crosshair className="w-3 h-3" />
+        {avg.aim}
+      </span>
+      <span
+        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium"
+        style={{ background: `${color}15`, color }}
+        title={`평균 반응 실력: ${avg.reaction}/100`}
+      >
+        <Gauge className="w-3 h-3" />
+        {avg.reaction}
+      </span>
+      <span
+        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium"
+        style={{ background: `${color}15`, color }}
+        title={`평균 판단 실력: ${avg.decision}/100`}
+      >
+        <Brain className="w-3 h-3" />
+        {avg.decision}
+      </span>
+    </div>
+  );
 }
 
 // 유닛 카드 컴포넌트
@@ -34,6 +86,8 @@ function UnitCard({
 }) {
   const hasAdvanced = unit.critRate || unit.critDamage || unit.evasion;
   const hasSkills = unit.skills && unit.skills.length > 0;
+  const hasSkillProfile =
+    unit.aimSkill !== undefined || unit.reactionSkill !== undefined || unit.decisionSkill !== undefined;
 
   return (
     <div
@@ -85,6 +139,29 @@ function UnitCard({
                 )}
                 {unit.evasion !== undefined && unit.evasion > 0 && (
                   <span>회피:{(unit.evasion * 100).toFixed(0)}%</span>
+                )}
+              </div>
+            )}
+            {/* 조종자 실력 composite */}
+            {hasSkillProfile && (
+              <div className="flex items-center gap-2 text-caption mt-0.5 flex-wrap" style={{ color: 'var(--text-secondary)' }}>
+                {unit.aimSkill !== undefined && (
+                  <span className="flex items-center gap-0.5" title="에임">
+                    <Crosshair className="w-3 h-3" style={{ color: '#e86161' }} />
+                    {unit.aimSkill}
+                  </span>
+                )}
+                {unit.reactionSkill !== undefined && (
+                  <span className="flex items-center gap-0.5" title="반응">
+                    <Gauge className="w-3 h-3" style={{ color: '#5a9cf5' }} />
+                    {unit.reactionSkill}
+                  </span>
+                )}
+                {unit.decisionSkill !== undefined && (
+                  <span className="flex items-center gap-0.5" title="판단">
+                    <Brain className="w-3 h-3" style={{ color: '#9179f2' }} />
+                    {unit.decisionSkill}
+                  </span>
                 )}
               </div>
             )}
@@ -155,12 +232,13 @@ export function TeamBattlePanel({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Team 1 */}
         <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)', border: '2px solid var(--primary-blue)' }}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="text-sm font-medium" style={{ color: 'var(--primary-blue)' }}>Team 1</div>
               <span className="text-sm px-1.5 py-0.5 rounded" style={{ background: 'var(--primary-blue)20', color: 'var(--primary-blue)' }}>
                 {team1Units.length}
               </span>
+              <TeamSkillBadges units={team1Units} color="var(--primary-blue)" />
             </div>
             <div className="flex items-center gap-1">
               <button
@@ -202,12 +280,13 @@ export function TeamBattlePanel({
 
         {/* Team 2 */}
         <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)', border: '2px solid var(--primary-red)' }}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="text-sm font-medium" style={{ color: 'var(--primary-red)' }}>Team 2</div>
               <span className="text-sm px-1.5 py-0.5 rounded" style={{ background: 'var(--primary-red)20', color: 'var(--primary-red)' }}>
                 {team2Units.length}
               </span>
+              <TeamSkillBadges units={team2Units} color="var(--primary-red)" />
             </div>
             <div className="flex items-center gap-1">
               <button
