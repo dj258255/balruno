@@ -417,13 +417,43 @@ export function observeProjectDoc(
   doc: Y.Doc,
   onChange: (project: Project) => void
 ): () => void {
-  const handler = () => {
+  // 초기 hydrate 시 y-indexeddb 가 수십~수백 개 update 이벤트를 연속 발행.
+  // 매번 docToProject(O(sheets × rows × cols)) + setState 를 호출하면
+  // 브라우저 메인 스레드가 수 초간 block. 50ms rAF-align 디바운스로 묶어
+  // 한 번만 재구성. 이후에도 cell 편집 burst 시 중간 스냅샷 스킵.
+  let scheduled = false;
+  let rafHandle: number | null = null;
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
+  const flush = () => {
+    scheduled = false;
+    rafHandle = null;
+    timeoutHandle = null;
     if (!isDocHydrated(doc)) return;
     onChange(docToProject(doc));
   };
+
+  const handler = () => {
+    if (!isDocHydrated(doc)) return;
+    if (scheduled) return;
+    scheduled = true;
+    // 50ms 내 연속 update 는 하나로 병합. SSR/테스트 환경도 고려.
+    if (typeof requestAnimationFrame !== 'undefined') {
+      timeoutHandle = setTimeout(() => {
+        rafHandle = requestAnimationFrame(flush);
+      }, 50);
+    } else {
+      timeoutHandle = setTimeout(flush, 50);
+    }
+  };
+
   doc.on('update', handler);
   return () => {
     doc.off('update', handler);
+    if (timeoutHandle !== null) clearTimeout(timeoutHandle);
+    if (rafHandle !== null && typeof cancelAnimationFrame !== 'undefined') {
+      cancelAnimationFrame(rafHandle);
+    }
   };
 }
 
