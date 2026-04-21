@@ -42,6 +42,7 @@ const ReplayTimelinePanel = dynamic(() => import('@/components/panels/ReplayTime
 const SnapshotComparePanel = dynamic(() => import('@/components/panels/SnapshotComparePanel'), { ssr: false });
 const MobaLaningPanel = dynamic(() => import('@/components/panels/MobaLaningPanel'), { ssr: false });
 const RtsBuildOrderPanel = dynamic(() => import('@/components/panels/RtsBuildOrderPanel'), { ssr: false });
+const MmoRaidPanel = dynamic(() => import('@/components/panels/MmoRaidPanel'), { ssr: false });
 const EconomyPanel = dynamic(() => import('@/components/panels/EconomyPanel'), { ssr: false });
 const DPSVariancePanel = dynamic(() => import('@/components/panels/DPSVariancePanel'), { ssr: false });
 const CurveFittingPanel = dynamic(() => import('@/components/panels/CurveFittingPanel'), { ssr: false });
@@ -99,6 +100,7 @@ const TOOL_LABEL_KEYS: Record<ToolId, string> = {
   snapshotCompare: 'sidebar.snapshotCompare',
   mobaLaning: 'sidebar.mobaLaning',
   rtsBuildOrder: 'sidebar.rtsBuildOrder',
+  mmoRaid: 'sidebar.mmoRaid',
 };
 
 function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
@@ -170,6 +172,8 @@ function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
       return <MobaLaningPanel onClose={close} />;
     case 'rtsBuildOrder':
       return <RtsBuildOrderPanel onClose={close} />;
+    case 'mmoRaid':
+      return <MmoRaidPanel onClose={close} />;
   }
 }
 
