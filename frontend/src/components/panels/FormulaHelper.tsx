@@ -22,6 +22,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { availableFunctions, evaluateFormula } from '@/lib/formulaEngine';
+import { convertExcelToBalruno, looksLikeExcel } from '@/lib/formulaConverter';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
@@ -312,8 +313,19 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
                 type="text"
                 value={testFormula}
                 onChange={(e) => setTestFormula(e.target.value)}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData.getData('text');
+                  if (looksLikeExcel(pasted)) {
+                    e.preventDefault();
+                    const r = convertExcelToBalruno(pasted);
+                    setTestFormula(r.converted);
+                    if (r.warnings.length > 0) {
+                      setTestResult('변환 경고: ' + r.warnings.join(' / '));
+                    }
+                  }
+                }}
                 onKeyDown={(e) => e.key === 'Enter' && handleTest()}
-                placeholder={t('formulaHelper.testPlaceholder')}
+                placeholder={t('formulaHelper.testPlaceholder') + ' · Excel 수식 붙여넣기 자동 변환'}
                 className="glass-input flex-1 text-sm"
               />
               <button
@@ -323,6 +335,9 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
                 {t('formulaHelper.test')}
               </button>
             </div>
+            <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+              Excel 에서 <code>=SUM(A1:A10)</code> 같은 수식 복사 후 붙여넣으면 자동으로 <code>SUM(...)</code> 형식으로 변환됩니다 (세미콜론 → 쉼표 · 함수명 대문자 · = 제거). A1/$A$1 참조는 컬럼명으로 수동 매핑 필요.
+            </p>
             {testResult && (
               <div
                 className="px-3 py-2.5 rounded-xl text-sm font-medium"
