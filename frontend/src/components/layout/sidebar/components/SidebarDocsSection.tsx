@@ -12,7 +12,12 @@ import { FileText, Plus, ChevronDown, ChevronRight, Trash2, Sparkles } from 'luc
 import { useProjectStore } from '@/stores/projectStore';
 import { DOC_TEMPLATES } from '@/lib/docTemplates';
 
-export default function SidebarDocsSection() {
+interface SidebarDocsSectionProps {
+  /** 내부 리스트 영역의 최대 높이 (px). 사이드바 리사이즈 핸들로 동적 조절. */
+  maxHeight?: number;
+}
+
+export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSectionProps) {
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
   const project = useProjectStore((s) =>
     s.projects.find((p) => p.id === currentProjectId)
@@ -83,7 +88,7 @@ export default function SidebarDocsSection() {
       </button>
 
       {expanded && (
-        <div className="px-2 pb-2 overflow-y-auto" style={{ maxHeight: '240px' }}>
+        <div className="px-2 pb-2 overflow-y-auto" style={{ maxHeight: `${maxHeight}px` }}>
           <div className="relative mb-1" ref={templateMenuRef}>
             <div className="flex gap-1">
               <button
