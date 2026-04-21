@@ -50,7 +50,8 @@ export type ToolId =
   | 'mobaLaning'
   | 'rtsBuildOrder'
   | 'mmoRaid'
-  | 'autoBattler';
+  | 'autoBattler'
+  | 'hordeSurvivor';
 
 export type ToolGroupId =
   | 'build'
@@ -84,7 +85,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'simulate',
     titleKey: 'toolGroups.simulate',
     color: '#e11d48',
-    tools: ['simulation', 'fpsSimulation', 'fpsTeamSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy', 'replayTimeline', 'mobaLaning', 'rtsBuildOrder', 'mmoRaid', 'autoBattler'],
+    tools: ['simulation', 'fpsSimulation', 'fpsTeamSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy', 'replayTimeline', 'mobaLaning', 'rtsBuildOrder', 'mmoRaid', 'autoBattler', 'hordeSurvivor'],
   },
   {
     id: 'compare',
@@ -135,6 +136,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   rtsBuildOrder: 'toolDesc.rtsBuildOrder',     // SC2/AoE 빌드 오더 경제·병력 타이밍
   mmoRaid: 'toolDesc.mmoRaid',                 // MMO 레이드 DPS race · enrage · 페이즈
   autoBattler: 'toolDesc.autoBattler',         // TFT/HSBG 이자 vs 템포 · 전략 비교
+  hordeSurvivor: 'toolDesc.hordeSurvivor',     // Vampire Survivors 빌드 최적화 · 시너지
 
   // simulate — 시뮬
   simulation: 'toolDesc.simulation',           // 1:1/팀 전투 Monte Carlo

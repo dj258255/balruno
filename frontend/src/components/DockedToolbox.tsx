@@ -44,6 +44,7 @@ const MobaLaningPanel = dynamic(() => import('@/components/panels/MobaLaningPane
 const RtsBuildOrderPanel = dynamic(() => import('@/components/panels/RtsBuildOrderPanel'), { ssr: false });
 const MmoRaidPanel = dynamic(() => import('@/components/panels/MmoRaidPanel'), { ssr: false });
 const AutoBattlerPanel = dynamic(() => import('@/components/panels/AutoBattlerPanel'), { ssr: false });
+const HordeSurvivorPanel = dynamic(() => import('@/components/panels/HordeSurvivorPanel'), { ssr: false });
 const EconomyPanel = dynamic(() => import('@/components/panels/EconomyPanel'), { ssr: false });
 const DPSVariancePanel = dynamic(() => import('@/components/panels/DPSVariancePanel'), { ssr: false });
 const CurveFittingPanel = dynamic(() => import('@/components/panels/CurveFittingPanel'), { ssr: false });
@@ -103,6 +104,7 @@ const TOOL_LABEL_KEYS: Record<ToolId, string> = {
   rtsBuildOrder: 'sidebar.rtsBuildOrder',
   mmoRaid: 'sidebar.mmoRaid',
   autoBattler: 'sidebar.autoBattler',
+  hordeSurvivor: 'sidebar.hordeSurvivor',
 };
 
 function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
@@ -178,6 +180,8 @@ function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
       return <MmoRaidPanel onClose={close} />;
     case 'autoBattler':
       return <AutoBattlerPanel onClose={close} />;
+    case 'hordeSurvivor':
+      return <HordeSurvivorPanel onClose={close} />;
   }
 }
 
