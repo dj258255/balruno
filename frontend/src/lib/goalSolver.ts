@@ -436,6 +436,97 @@ export function findAlternativeSolutions(
   return candidates.slice(0, 3);
 }
 
+// ============================================================================
+// Generic Formula Solver — 임의 mathjs 수식에 대한 bisection 역산.
+// 예: "damage * (1 + critRate * (critDmg - 1)) * aspd" 에서 'damage' 변수 역산.
+// mathjs.parse + evaluate(scope) 사용 — new Function / eval 금지 (보안)
+// ============================================================================
+
+import { create, all } from 'mathjs';
+const mathjs = create(all, {});
+
+export interface GenericSolverInput {
+  /** mathjs 표현식 (예: "atk * (100 / (100 + def))") */
+  expression: string;
+  /** 고정 변수 값 */
+  fixedVars: Record<string, number>;
+  /** 역산할 변수명 */
+  solveFor: string;
+  /** 목표 결과값 */
+  target: number;
+  /** 검색 범위 */
+  lo?: number;
+  hi?: number;
+  tolerance?: number;
+}
+
+export interface GenericSolverResult {
+  success: boolean;
+  value?: number;
+  iterations?: number;
+  error?: string;
+}
+
+export function solveGeneric(input: GenericSolverInput): GenericSolverResult {
+  const { expression, fixedVars, solveFor, target, lo = 0.001, hi = 100000, tolerance = 0.01 } = input;
+
+  let compiled: { evaluate: (scope: Record<string, number>) => unknown };
+  try {
+    // mathjs.parse 는 단일 expression 에 MathNode 반환 — compile() 로 최적화
+    const node = mathjs.parse(expression);
+    compiled = (node as unknown as { compile: () => { evaluate: (scope: Record<string, number>) => unknown } }).compile();
+  } catch (e) {
+    return { success: false, error: `수식 파싱 실패: ${(e as Error).message}` };
+  }
+
+  const evalAt = (x: number): number => {
+    try {
+      const scope = { ...fixedVars, [solveFor]: x };
+      const out = compiled.evaluate(scope);
+      return typeof out === 'number' ? out : NaN;
+    } catch {
+      return NaN;
+    }
+  };
+
+  const fLo = evalAt(lo);
+  const fHi = evalAt(hi);
+  if (!isFinite(fLo) || !isFinite(fHi)) {
+    return { success: false, error: '수식 계산 실패 — 변수명이나 연산을 확인하세요.' };
+  }
+
+  const increasing = fHi > fLo;
+  if (increasing && (target < fLo || target > fHi)) {
+    return { success: false, error: `목표값 ${target} 이 수식의 출력 범위 [${fLo.toFixed(2)}, ${fHi.toFixed(2)}] 밖입니다.` };
+  }
+  if (!increasing && (target > fLo || target < fHi)) {
+    return { success: false, error: `목표값 ${target} 이 수식의 출력 범위 [${fHi.toFixed(2)}, ${fLo.toFixed(2)}] 밖입니다.` };
+  }
+
+  let left = lo;
+  let right = hi;
+  let mid = (left + right) / 2;
+  let fMid = evalAt(mid);
+  const maxIter = 60;
+  let iter = 0;
+  for (; iter < maxIter; iter++) {
+    mid = (left + right) / 2;
+    fMid = evalAt(mid);
+    if (Math.abs(fMid - target) <= tolerance) break;
+    if (right - left < 1e-10) break;
+    if ((increasing && fMid < target) || (!increasing && fMid > target)) left = mid;
+    else right = mid;
+  }
+
+  const err = Math.abs(fMid - target);
+  return {
+    success: err <= tolerance,
+    value: mid,
+    iterations: iter,
+    error: err <= tolerance ? undefined : `수렴 실패 — 최종 오차 ${err.toFixed(4)}`,
+  };
+}
+
 /**
  * 메인 역산 함수
  */
