@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { X, Calculator as CalcIcon, Crosshair, Zap, Shield, TrendingUp, Download, ChevronDown, Grid3X3 } from 'lucide-react';
+import { X, Calculator as CalcIcon, Crosshair, Zap, Shield, TrendingUp, Download, ChevronDown, Grid3X3, Sliders, BarChart3 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { DPS, TTK, EHP, DAMAGE, SCALE } from '@/lib/formulaEngine';
@@ -291,16 +291,16 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
           {/* DPS */}
           {activeTab === 'dps' && (
             <div className="space-y-4">
-              <div className="glass-card p-4" style={{ borderLeft: `3px solid ${tabColor}` }}>
-                <div className="font-semibold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{TAB_HELP.dps.title}</div>
-                <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.dps.description}</div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <GlassInputField label={t('damage1hit')} value={dpsInputs.damage} onChange={(v) => setDpsWithHistory({ ...dpsInputs, damage: v })} />
-                <GlassInputField label={t('attackSpeed')} value={dpsInputs.attackSpeed} onChange={(v) => setDpsWithHistory({ ...dpsInputs, attackSpeed: v })} step={0.1} />
-                <GlassInputField label={t('critRate')} value={dpsInputs.critRate} onChange={(v) => setDpsWithHistory({ ...dpsInputs, critRate: v })} step={0.01} min={0} max={1} />
-                <GlassInputField label={t('critMultiplier')} value={dpsInputs.critDamage} onChange={(v) => setDpsWithHistory({ ...dpsInputs, critDamage: v })} step={0.1} />
-              </div>
+              <CalcSection icon={Sliders} title="설정" color={tabColor}>
+                <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.dps.description}</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <GlassInputField label={t('damage1hit')} value={dpsInputs.damage} onChange={(v) => setDpsWithHistory({ ...dpsInputs, damage: v })} />
+                  <GlassInputField label={t('attackSpeed')} value={dpsInputs.attackSpeed} onChange={(v) => setDpsWithHistory({ ...dpsInputs, attackSpeed: v })} step={0.1} />
+                  <GlassInputField label={t('critRate')} value={dpsInputs.critRate} onChange={(v) => setDpsWithHistory({ ...dpsInputs, critRate: v })} step={0.01} min={0} max={1} />
+                  <GlassInputField label={t('critMultiplier')} value={dpsInputs.critDamage} onChange={(v) => setDpsWithHistory({ ...dpsInputs, critDamage: v })} step={0.1} />
+                </div>
+              </CalcSection>
+              <CalcSection icon={BarChart3} title="결과" color={tabColor}>
               <GlassResultCard label={t('dpsResult')} value={dpsResult.toFixed(2)} color={tabColor} numericValue={dpsResult} extra={`${t('baseDps')}: ${(dpsInputs.damage * dpsInputs.attackSpeed).toFixed(2)} | ${t('critBonus')}: +${((dpsResult / (dpsInputs.damage * dpsInputs.attackSpeed) - 1) * 100).toFixed(1)}%`} />
               <GlassFormulaBox formula="damage x (1 + critRate x (critDamage - 1)) x attackSpeed" hint={t('dpsFormulaHint')} color={tabColor} />
               <GoalSeekBox
@@ -348,21 +348,22 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   { label: '최종 DPS', value: dpsResult, note: 'base × crit 보정' },
                 ]}
               />
+              </CalcSection>
             </div>
           )}
 
           {/* TTK */}
           {activeTab === 'ttk' && (
             <div className="space-y-4">
-              <div className="glass-card p-4" style={{ borderLeft: `3px solid ${tabColor}` }}>
-                <div className="font-semibold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{TAB_HELP.ttk.title}</div>
-                <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.ttk.description}</div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <GlassInputField label={t('targetHp')} value={ttkInputs.targetHP} onChange={(v) => setTtkWithHistory({ ...ttkInputs, targetHP: v })} />
-                <GlassInputField label={t('damage1')} value={ttkInputs.damage} onChange={(v) => setTtkWithHistory({ ...ttkInputs, damage: v })} />
-                <GlassInputField label={t('attackSpeed')} value={ttkInputs.attackSpeed} onChange={(v) => setTtkWithHistory({ ...ttkInputs, attackSpeed: v })} step={0.1} />
-              </div>
+              <CalcSection icon={Sliders} title="설정" color={tabColor}>
+                <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.ttk.description}</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <GlassInputField label={t('targetHp')} value={ttkInputs.targetHP} onChange={(v) => setTtkWithHistory({ ...ttkInputs, targetHP: v })} />
+                  <GlassInputField label={t('damage1')} value={ttkInputs.damage} onChange={(v) => setTtkWithHistory({ ...ttkInputs, damage: v })} />
+                  <GlassInputField label={t('attackSpeed')} value={ttkInputs.attackSpeed} onChange={(v) => setTtkWithHistory({ ...ttkInputs, attackSpeed: v })} step={0.1} />
+                </div>
+              </CalcSection>
+              <CalcSection icon={BarChart3} title="결과" color={tabColor}>
               <div className="grid grid-cols-2 gap-3">
                 <GlassResultCard label={t('ttkResult')} value={ttkResult.ttk === Infinity ? '-' : `${ttkResult.ttk.toFixed(2)}s`} color={tabColor} numericValue={ttkResult.ttk === Infinity ? undefined : ttkResult.ttk} />
                 <GlassResultCard label={t('hitsRequired')} value={`${ttkResult.hitsNeeded}`} color="#e5a440" numericValue={ttkResult.hitsNeeded} />
@@ -418,21 +419,22 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   { label: '최종 TTK ((hits-1) × interval)', value: ttkResult.ttk === Infinity ? '∞' : `${ttkResult.ttk.toFixed(2)}s`, note: '첫 히트는 즉시' },
                 ]}
               />
+              </CalcSection>
             </div>
           )}
 
           {/* EHP */}
           {activeTab === 'ehp' && (
             <div className="space-y-4">
-              <div className="glass-card p-4" style={{ borderLeft: `3px solid ${tabColor}` }}>
-                <div className="font-semibold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{TAB_HELP.ehp.title}</div>
-                <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.ehp.description}</div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <GlassInputField label={t('hp')} value={ehpInputs.hp} onChange={(v) => setEhpWithHistory({ ...ehpInputs, hp: v })} />
-                <GlassInputField label={t('def')} value={ehpInputs.def} onChange={(v) => setEhpWithHistory({ ...ehpInputs, def: v })} />
-                <GlassInputField label={t('damageReduction')} value={ehpInputs.damageReduction} onChange={(v) => setEhpWithHistory({ ...ehpInputs, damageReduction: v })} step={0.01} min={0} max={0.99} />
-              </div>
+              <CalcSection icon={Sliders} title="설정" color={tabColor}>
+                <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.ehp.description}</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <GlassInputField label={t('hp')} value={ehpInputs.hp} onChange={(v) => setEhpWithHistory({ ...ehpInputs, hp: v })} />
+                  <GlassInputField label={t('def')} value={ehpInputs.def} onChange={(v) => setEhpWithHistory({ ...ehpInputs, def: v })} />
+                  <GlassInputField label={t('damageReduction')} value={ehpInputs.damageReduction} onChange={(v) => setEhpWithHistory({ ...ehpInputs, damageReduction: v })} step={0.01} min={0} max={0.99} />
+                </div>
+              </CalcSection>
+              <CalcSection icon={BarChart3} title="결과" color={tabColor}>
               <GlassResultCard label={t('ehpResult')} value={ehpResult.toFixed(0)} color={tabColor} numericValue={ehpResult} extra={`${t('vsOriginal')} ${((ehpResult / ehpInputs.hp) * 100).toFixed(1)}% (x${(ehpResult / ehpInputs.hp).toFixed(2)})`} />
               <GlassFormulaBox formula="hp x (1 + def/100) x (1 / (1 - damageReduction))" hint={t('ehpFormulaHint')} color={tabColor} />
               <GoalSeekBox
@@ -480,56 +482,58 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   { label: '최종 EHP', value: ehpResult, note: 'HP × DEF × DR 보정' },
                 ]}
               />
+              </CalcSection>
             </div>
           )}
 
           {/* DAMAGE */}
           {activeTab === 'damage' && (
             <div className="space-y-4">
-              <div className="glass-card p-4" style={{ borderLeft: `3px solid ${tabColor}` }}>
-                <div className="font-semibold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{TAB_HELP.damage.title}</div>
-                <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.damage.description}</div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <GlassInputField label={t('atk')} value={damageInputs.atk} onChange={(v) => setDamageInputs({ ...damageInputs, atk: v })} />
-                <GlassInputField label={t('def')} value={damageInputs.def} onChange={(v) => setDamageInputs({ ...damageInputs, def: v })} />
-                <GlassInputField label={t('skillMultiplier')} value={damageInputs.multiplier} onChange={(v) => setDamageInputs({ ...damageInputs, multiplier: v })} step={0.1} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <GlassResultCard label={t('finalDamage')} value={damageResult.toFixed(1)} color={tabColor} numericValue={damageResult} />
-                <GlassResultCard label={t('damageReductionRate')} value={`${((1 - 100 / (100 + damageInputs.def)) * 100).toFixed(1)}%`} color="var(--text-secondary)" />
-              </div>
-              <GlassFormulaBox formula="atk x (100 / (100 + def)) x multiplier" hint={t('damageFormulaHint')} color={tabColor} />
+              <CalcSection icon={Sliders} title="설정" color={tabColor}>
+                <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.damage.description}</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <GlassInputField label={t('atk')} value={damageInputs.atk} onChange={(v) => setDamageInputs({ ...damageInputs, atk: v })} />
+                  <GlassInputField label={t('def')} value={damageInputs.def} onChange={(v) => setDamageInputs({ ...damageInputs, def: v })} />
+                  <GlassInputField label={t('skillMultiplier')} value={damageInputs.multiplier} onChange={(v) => setDamageInputs({ ...damageInputs, multiplier: v })} step={0.1} />
+                </div>
+              </CalcSection>
+              <CalcSection icon={BarChart3} title="결과" color={tabColor}>
+                <div className="grid grid-cols-2 gap-3">
+                  <GlassResultCard label={t('finalDamage')} value={damageResult.toFixed(1)} color={tabColor} numericValue={damageResult} />
+                  <GlassResultCard label={t('damageReductionRate')} value={`${((1 - 100 / (100 + damageInputs.def)) * 100).toFixed(1)}%`} color="var(--text-secondary)" />
+                </div>
+                <GlassFormulaBox formula="atk x (100 / (100 + def)) x multiplier" hint={t('damageFormulaHint')} color={tabColor} />
+              </CalcSection>
             </div>
           )}
 
           {/* SCALE */}
           {activeTab === 'scale' && (
             <div className="space-y-4">
-              <div className="glass-card p-4" style={{ borderLeft: `3px solid ${tabColor}` }}>
-                <div className="font-semibold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{TAB_HELP.scale.title}</div>
-                <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.scale.description}</div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <GlassInputField label={t('baseValue')} value={scaleInputs.base} onChange={(v) => setScaleInputs({ ...scaleInputs, base: v })} />
-                <GlassInputField label={t('level')} value={scaleInputs.level} onChange={(v) => setScaleInputs({ ...scaleInputs, level: v })} />
-                <GlassInputField label={t('growthRate')} value={scaleInputs.rate} onChange={(v) => setScaleInputs({ ...scaleInputs, rate: v })} step={0.01} />
-                <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('curveType')}</label>
-                  <CustomSelect
-                    value={scaleInputs.curveType}
-                    onChange={(v) => setScaleInputs({ ...scaleInputs, curveType: v })}
-                    options={[
-                      { value: 'linear', label: t('curveLinear') },
-                      { value: 'exponential', label: t('curveExponential') },
-                      { value: 'logarithmic', label: t('curveLogarithmic') },
-                      { value: 'quadratic', label: t('curveQuadratic') },
-                    ]}
-                    color={tabColor}
-                    size="sm"
-                  />
+              <CalcSection icon={Sliders} title="설정" color={tabColor}>
+                <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.scale.description}</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <GlassInputField label={t('baseValue')} value={scaleInputs.base} onChange={(v) => setScaleInputs({ ...scaleInputs, base: v })} />
+                  <GlassInputField label={t('level')} value={scaleInputs.level} onChange={(v) => setScaleInputs({ ...scaleInputs, level: v })} />
+                  <GlassInputField label={t('growthRate')} value={scaleInputs.rate} onChange={(v) => setScaleInputs({ ...scaleInputs, rate: v })} step={0.01} />
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('curveType')}</label>
+                    <CustomSelect
+                      value={scaleInputs.curveType}
+                      onChange={(v) => setScaleInputs({ ...scaleInputs, curveType: v })}
+                      options={[
+                        { value: 'linear', label: t('curveLinear') },
+                        { value: 'exponential', label: t('curveExponential') },
+                        { value: 'logarithmic', label: t('curveLogarithmic') },
+                        { value: 'quadratic', label: t('curveQuadratic') },
+                      ]}
+                      color={tabColor}
+                      size="sm"
+                    />
+                  </div>
                 </div>
-              </div>
+              </CalcSection>
+              <CalcSection icon={BarChart3} title="결과" color={tabColor}>
               {CURVE_TYPE_HELP[scaleInputs.curveType] && (
                 <div className="glass-section p-3">
                   <div className="flex items-center justify-between mb-2">
@@ -560,6 +564,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   </tbody>
                 </table>
               </div>
+              </CalcSection>
             </div>
           )}
         </div>
@@ -715,6 +720,39 @@ function GlassResultCard({ label, value, color, extra, numericValue }: { label: 
       <div className="text-2xl font-bold" style={{ color }}>{value}</div>
       {extra && <div className="text-sm mt-1.5" style={{ color: 'var(--text-secondary)' }}>{extra}</div>}
     </div>
+  );
+}
+
+/**
+ * CalcSection — Calculator 각 탭 내부의 "설정" / "결과" 섹션 wrapper.
+ * 네모 테두리 카드 + 좌측 accent 로 섹션 구분 확실하게.
+ */
+function CalcSection({
+  icon: Icon,
+  title,
+  color,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  color: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className="rounded-lg p-3 space-y-3"
+      style={{
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-primary)',
+        borderLeft: `3px solid ${color}`,
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <Icon className="w-4 h-4" style={{ color }} />
+        <span className="text-sm font-semibold" style={{ color }}>{title}</span>
+      </div>
+      {children}
+    </section>
   );
 }
 
