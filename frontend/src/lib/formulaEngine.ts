@@ -943,7 +943,7 @@ export function validateFormulaDetailed(
     // 알 수 없는 함수 경고
     const knownFunctions = availableFunctions.map(f => f.name.toUpperCase());
     if (!knownFunctions.includes(funcName) &&
-        !['SUM', 'AVERAGE', 'MIN', 'MAX', 'COUNT', 'IF', 'AND', 'OR', 'NOT'].includes(funcName)) {
+        !['SUM', 'AVERAGE', 'MIN', 'MAX', 'COUNT', 'IF', 'AND', 'OR', 'NOT', 'IFS', 'SWITCH', 'IFERROR', 'LARGE', 'SMALL', 'PERCENTILE', 'RANK', 'ISBLANK', 'ISNUMBER', 'ISERROR', 'CHOOSE'].includes(funcName)) {
       result.warnings.push(`알 수 없는 함수: ${funcName}`);
     }
   }
@@ -1505,6 +1505,86 @@ export const availableFunctions = [
     syntax: 'PREV.ColumnName (또는 이전행.컬럼명)',
     example: 'PREV.CumulativeEXP',
     category: 'ref',
+  },
+
+  // ===== Excel 호환 함수 (자주 쓰이는 것) =====
+  // 수치는 mathjs 에 기본 포함되어 있거나 조합으로 표현 가능 — 레퍼런스 표시 목적
+  {
+    name: 'IFS',
+    description: '다중 조건 체인 (중첩 IF 대체)',
+    syntax: 'IFS(cond1, val1, cond2, val2, ..., default)',
+    example: 'IFS(HP < 30, 1, HP < 70, 2, 3)',
+    category: 'logic',
+  },
+  {
+    name: 'SWITCH',
+    description: '값 비교 분기',
+    syntax: 'SWITCH(expr, case1, val1, case2, val2, default)',
+    example: 'SWITCH(rarity, 1, 10, 2, 50, 3, 200, 0)',
+    category: 'logic',
+  },
+  {
+    name: 'IFERROR',
+    description: '에러 방어 (0으로 나누기 등)',
+    syntax: 'IFERROR(expr, fallback)',
+    example: 'IFERROR(COST / sales, 0)',
+    category: 'logic',
+  },
+  {
+    name: 'LARGE',
+    description: 'N 번째 큰 값',
+    syntax: 'LARGE(array, n)',
+    example: 'LARGE([10, 20, 30, 40], 2) = 30',
+    category: 'stat',
+  },
+  {
+    name: 'SMALL',
+    description: 'N 번째 작은 값',
+    syntax: 'SMALL(array, n)',
+    example: 'SMALL([10, 20, 30], 1) = 10',
+    category: 'stat',
+  },
+  {
+    name: 'PERCENTILE',
+    description: '백분위 값',
+    syntax: 'PERCENTILE(array, k)',
+    example: 'PERCENTILE([...], 0.9)',
+    category: 'stat',
+  },
+  {
+    name: 'RANK',
+    description: '순위',
+    syntax: 'RANK(value, array)',
+    example: 'RANK(80, [90, 80, 70, 60]) = 2',
+    category: 'stat',
+  },
+  {
+    name: 'ISBLANK',
+    description: '빈 셀 체크',
+    syntax: 'ISBLANK(value)',
+    example: 'IF(ISBLANK(HP), 100, HP)',
+    category: 'logic',
+  },
+  {
+    name: 'ISNUMBER',
+    description: '숫자 여부',
+    syntax: 'ISNUMBER(value)',
+    example: 'ISNUMBER(HP)',
+    category: 'logic',
+  },
+  {
+    name: 'ISERROR',
+    description: '에러 여부',
+    syntax: 'ISERROR(expr)',
+    example: 'ISERROR(A / B)',
+    category: 'logic',
+  },
+  {
+    name: 'CHOOSE',
+    description: 'index 기반 값 선택',
+    syntax: 'CHOOSE(index, val1, val2, ...)',
+    example: 'CHOOSE(rarity, "common", "rare", "epic")',
+    category: 'logic',
   },
 ];
 
