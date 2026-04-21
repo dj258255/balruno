@@ -15,7 +15,8 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { X, ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { TOOL_GROUPS, TOOL_DESCRIPTIONS, type ToolGroupId, type ToolId } from '@/config/toolGroups';
+import { TOOL_GROUPS, TOOL_DESCRIPTIONS, TOOL_ICONS, type ToolGroupId, type ToolId } from '@/config/toolGroups';
+import { PanelShellContext } from '@/components/ui/PanelShell';
 
 const WIDTH_KEY = 'balruno:docked-toolbox-width';
 const MIN_W = 280;
@@ -293,13 +294,13 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
         style={{ background: activeGroup.color }}
       />
 
-      {/* 헤더 — 한 줄: 그룹 라벨(메타) + 도구 선택(주) + 닫기 */}
+      {/* 헤더 — 그룹 라벨 + 도구 선택 (아이콘+이름+설명) + 닫기 */}
       <header
-        className="flex items-center gap-2 px-3 py-2 border-b"
+        className="flex items-start gap-2 px-3 py-2 border-b"
         style={{ borderColor: 'var(--border-primary)' }}
       >
         <span
-          className="text-overline flex-shrink-0"
+          className="text-overline flex-shrink-0 mt-1.5"
           style={{ color: activeGroup.color, letterSpacing: '0.08em' }}
         >
           {t(activeGroup.titleKey as 'toolGroups.build')}
@@ -319,17 +320,12 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
             }}
           />
         ) : (
-          <span
-            className="flex-1 text-sm font-semibold truncate"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {t(TOOL_LABEL_KEYS[activeTab] as 'sidebar.calculator')}
-          </span>
+          <SingleToolHeader toolId={activeTab} color={activeGroup.color} />
         )}
 
         <button
           onClick={closeGroup}
-          className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors flex-shrink-0"
+          className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors flex-shrink-0 mt-0.5"
           aria-label={t('common.close')}
           style={{ color: 'var(--text-tertiary)' }}
         >
@@ -337,11 +333,35 @@ export default function DockedToolbox({ panels }: DockedToolboxProps) {
         </button>
       </header>
 
-      {/* 탭 컨텐츠 */}
+      {/* 탭 컨텐츠 — PanelShell 의 내부 헤더는 context 로 자동 숨김 */}
       <div className="flex-1 overflow-auto">
-        {renderToolContent(activeTab, panels)}
+        <PanelShellContext.Provider value={{ hideHeader: true }}>
+          {renderToolContent(activeTab, panels)}
+        </PanelShellContext.Provider>
       </div>
     </aside>
+  );
+}
+
+/** 단일 도구만 있는 그룹 — 아이콘 + 이름 + 설명 (드롭다운 없음) */
+function SingleToolHeader({ toolId, color }: { toolId: ToolId; color: string }) {
+  const t = useTranslations();
+  const Icon = TOOL_ICONS[toolId];
+  const label = t(TOOL_LABEL_KEYS[toolId] as 'sidebar.calculator');
+  const description = t(TOOL_DESCRIPTIONS[toolId] as 'toolDesc.calculator');
+  return (
+    <div className="flex items-center gap-2 flex-1 min-w-0 px-3 py-2 rounded-md"
+      style={{ background: 'var(--bg-secondary)', borderLeft: `3px solid ${color}` }}>
+      {Icon && <Icon size={18} style={{ color, flexShrink: 0 }} />}
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>
+          {label}
+        </div>
+        <div className="text-caption truncate" style={{ color: 'var(--text-secondary)' }}>
+          {description}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -359,7 +379,9 @@ function ToolDropdown({
 }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
+  const CurrentIcon = TOOL_ICONS[current];
   const currentLabel = t(TOOL_LABEL_KEYS[current] as 'sidebar.calculator');
+  const currentDescription = t(TOOL_DESCRIPTIONS[current] as 'toolDesc.calculator');
 
   return (
     <div className="relative flex-1 min-w-0">
@@ -371,12 +393,27 @@ function ToolDropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span
-          className="text-sm font-bold flex-1 truncate"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          {currentLabel}
-        </span>
+        {CurrentIcon && (
+          <CurrentIcon
+            size={18}
+            style={{ color, flexShrink: 0 }}
+            aria-hidden
+          />
+        )}
+        <div className="flex-1 min-w-0">
+          <div
+            className="text-sm font-bold truncate"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {currentLabel}
+          </div>
+          <div
+            className="text-caption truncate"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            {currentDescription}
+          </div>
+        </div>
         <ChevronDown
           className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-180' : ''}`}
           style={{ color: 'var(--text-secondary)' }}
@@ -393,11 +430,12 @@ function ToolDropdown({
           />
           <div
             role="listbox"
-            className="absolute left-0 right-0 top-full mt-1 glass-panel z-50 overflow-hidden p-1"
+            className="absolute left-0 right-0 top-full mt-1 glass-panel z-50 overflow-hidden p-1 max-h-[70vh] overflow-y-auto"
           >
             {tools.map((tid) => {
               const label = t(TOOL_LABEL_KEYS[tid] as 'sidebar.calculator');
               const description = t(TOOL_DESCRIPTIONS[tid] as 'toolDesc.calculator');
+              const Icon = TOOL_ICONS[tid];
               const isActive = tid === current;
               return (
                 <button
@@ -414,10 +452,13 @@ function ToolDropdown({
                   }`}
                   style={{ background: isActive ? `${color}15` : undefined }}
                 >
-                  <span
-                    className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
-                    style={{ background: color }}
-                  />
+                  {Icon && (
+                    <Icon
+                      size={16}
+                      style={{ color: isActive ? color : 'var(--text-secondary)', flexShrink: 0, marginTop: 2 }}
+                      aria-hidden
+                    />
+                  )}
                   <div className="flex-1 min-w-0">
                     <div
                       className="text-sm font-semibold truncate"

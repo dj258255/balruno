@@ -13,9 +13,23 @@
  *       InterfaceDesigner / Automations 6개 패널.
  */
 
-import { ReactNode } from 'react';
+import { ReactNode, createContext, useContext } from 'react';
 import { X, HelpCircle, type LucideIcon } from 'lucide-react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+
+/**
+ * PanelShellContext — DockedToolbox / BottomDock 안에서 열린 PanelShell 은
+ * 자체 헤더를 숨김. 상단 dock 이 이미 아이콘+제목+설명+닫기 다 표시하므로.
+ *
+ * 사용: DockedToolbox 에서 `<PanelShellContext.Provider value={{ hideHeader: true }}>` 로 감쌈.
+ */
+export interface PanelShellContextValue {
+  hideHeader: boolean;
+}
+
+export const PanelShellContext = createContext<PanelShellContextValue>({
+  hideHeader: false,
+});
 
 interface PanelShellProps {
   title: string;
@@ -35,6 +49,8 @@ interface PanelShellProps {
   footer?: ReactNode;
   /** body padding 커스텀 (기본 p-3) */
   bodyClassName?: string;
+  /** 헤더 숨김 override — context 값 무시하고 강제 숨김. */
+  hideHeader?: boolean;
 }
 
 export default function PanelShell({
@@ -49,40 +65,60 @@ export default function PanelShell({
   children,
   footer,
   bodyClassName = 'p-3 space-y-3',
+  hideHeader,
 }: PanelShellProps) {
   useEscapeKey(onClose);
 
+  // Context 값을 읽어 hideHeader 결정. prop 이 명시되면 그 값 우선.
+  const ctx = useContext(PanelShellContext);
+  const shouldHideHeader = hideHeader ?? ctx.hideHeader;
+
+  // actions/headerExtra 는 헤더에 붙어있던 것 — 헤더 숨기면 본문 상단에 합류시켜 노출
+  const hasFloatingActions = shouldHideHeader && (actions || headerExtra);
+
   return (
     <div className="flex flex-col h-full" role="region" aria-label={title}>
-      <div
-        className="flex items-center justify-between p-3 border-b flex-shrink-0"
-        style={{ borderColor: 'var(--border-primary)' }}
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          {iconNode ?? (Icon && <Icon size={16} style={{ color: iconColor, flexShrink: 0 }} />)}
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-              {title}
-            </h3>
-            {subtitle && (
-              <p className="text-caption truncate" style={{ color: 'var(--text-secondary)' }}>
-                {subtitle}
-              </p>
-            )}
+      {!shouldHideHeader && (
+        <div
+          className="flex items-center justify-between p-3 border-b flex-shrink-0"
+          style={{ borderColor: 'var(--border-primary)' }}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            {iconNode ?? (Icon && <Icon size={16} style={{ color: iconColor, flexShrink: 0 }} />)}
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                {title}
+              </h3>
+              {subtitle && (
+                <p className="text-caption truncate" style={{ color: 'var(--text-secondary)' }}>
+                  {subtitle}
+                </p>
+              )}
+            </div>
+            {headerExtra}
           </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {actions}
+            <button
+              onClick={onClose}
+              className="p-1 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
+              aria-label="패널 닫기"
+            >
+              <X size={14} style={{ color: 'var(--text-secondary)' }} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {hasFloatingActions && (
+        <div
+          className="flex items-center justify-end gap-1 px-3 py-1.5 border-b flex-shrink-0"
+          style={{ borderColor: 'var(--border-primary)' }}
+        >
           {headerExtra}
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
           {actions}
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
-            aria-label="패널 닫기"
-          >
-            <X size={14} style={{ color: 'var(--text-secondary)' }} />
-          </button>
         </div>
-      </div>
+      )}
 
       <div className={`flex-1 overflow-y-auto ${bodyClassName}`}>{children}</div>
 
