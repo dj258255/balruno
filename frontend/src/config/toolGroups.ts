@@ -45,7 +45,8 @@ export type ToolId =
   | 'frameData'
   | 'aiBehavior'
   | 'matchupMatrix'
-  | 'replayTimeline';
+  | 'replayTimeline'
+  | 'snapshotCompare';
 
 export type ToolGroupId =
   | 'build'
@@ -97,7 +98,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'share',
     titleKey: 'toolGroups.share',
     color: '#0ea5e9',
-    tools: ['interfaceDesigner', 'changeHistory', 'comments'],
+    tools: ['interfaceDesigner', 'changeHistory', 'comments', 'snapshotCompare'],
   },
 ];
 
@@ -125,6 +126,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   sensitivity: 'toolDesc.sensitivity',         // 변수 민감도 · Tornado/Spider
   matchupMatrix: 'toolDesc.matchupMatrix',     // N×N 매치업 heatmap · Perfect Imbalance
   replayTimeline: 'toolDesc.replayTimeline',   // 전투 로그 scrubber · step-by-step 디버깅
+  snapshotCompare: 'toolDesc.snapshotCompare', // 시뮬 스냅샷 저장 · rebalance 전후 diff
 
   // simulate — 시뮬
   simulation: 'toolDesc.simulation',           // 1:1/팀 전투 Monte Carlo
