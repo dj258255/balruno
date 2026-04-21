@@ -37,6 +37,47 @@ import {
 
 const PANEL_COLOR = '#06b6d4'; // 청록 (cyan-500) — 사용자 선호 톤
 
+// 섹션 카드 — SectionDivider + 컨텐츠를 네모 박스로 감싸 시각적 구분 강화
+function SectionCard({
+  icon: Icon,
+  title,
+  color,
+  collapsible = false,
+  collapsed = false,
+  onToggle,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  color: string;
+  collapsible?: boolean;
+  collapsed?: boolean;
+  onToggle?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className="rounded-lg p-3 space-y-3"
+      style={{
+        background: 'var(--bg-secondary)',
+        border: `1px solid var(--border-primary)`,
+        borderLeft: `3px solid ${color}`,
+      }}
+    >
+      <SectionDivider
+        icon={Icon}
+        title={title}
+        color={color}
+        collapsible={collapsible}
+        collapsed={collapsed}
+        onToggle={onToggle}
+        inCard
+      />
+      {!collapsed && children}
+    </section>
+  );
+}
+
 // 섹션 구분선 컴포넌트 — 접이식(선택) + 한 줄 설명(선택)
 function SectionDivider({
   icon: Icon,
@@ -46,6 +87,7 @@ function SectionDivider({
   collapsible = false,
   collapsed = false,
   onToggle,
+  inCard = false,
 }: {
   icon: React.ElementType;
   title: string;
@@ -54,7 +96,10 @@ function SectionDivider({
   collapsible?: boolean;
   collapsed?: boolean;
   onToggle?: () => void;
+  /** SectionCard 안에 있을 때는 오른쪽 horizontal line 생략 */
+  inCard?: boolean;
 }) {
+  void inCard;
   const content = (
     <>
       <div
@@ -84,7 +129,7 @@ function SectionDivider({
           </p>
         )}
       </div>
-      <div className="flex-1 h-px" style={{ background: 'var(--border-primary)' }} />
+      {!inCard && <div className="flex-1 h-px" style={{ background: 'var(--border-primary)' }} />}
     </>
   );
   if (collapsible) {
@@ -272,12 +317,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
       )}
 
       {/* ===== 섹션 1: 기본 설정 ===== */}
-      <SectionDivider
-        icon={Settings}
-        title={t('sectionBasic')}
-        color={PANEL_COLOR}
-      />
-
+      <SectionCard icon={Settings} title={t('sectionBasic')} color={PANEL_COLOR}>
       <div className="space-y-4">
         <PresetSelector preset={preset} setPreset={setPreset} />
 
@@ -339,13 +379,10 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
           <MaxStageSelector maxStage={maxStage} setMaxStage={setMaxStage} />
         )}
       </div>
+      </SectionCard>
 
       {/* ===== 섹션 2: 시각화 ===== */}
-      <SectionDivider
-        icon={BarChart3}
-        title={t('sectionVisualization')}
-        color="#5a9cf5"
-      />
+      <SectionCard icon={BarChart3} title={t('sectionVisualization')} color={PANEL_COLOR}>
 
       {/* 난이도 곡선 시각화 (항상 보임 — 메인 출력물) */}
       <DifficultyChart
@@ -371,10 +408,10 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
       {/* Playtest (가상 플레이어 시뮬) — King Candy Crush 봇 시뮬 방식 경량화 */}
       <div
         className="p-3 rounded-lg space-y-2"
-        style={{ background: 'var(--bg-tertiary)', borderLeft: '3px solid #06b6d4' }}
+        style={{ background: 'var(--bg-tertiary)', borderLeft: `3px solid ${PANEL_COLOR}` }}
       >
         <div className="flex items-center gap-2">
-          <Users className="w-4 h-4" style={{ color: '#06b6d4' }} />
+          <Users className="w-4 h-4" style={{ color: PANEL_COLOR }} />
           <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
             Playtest — 가상 플레이어 시뮬
           </span>
@@ -393,7 +430,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
               onClick={runPlaytest}
               disabled={playtestRunning || curveData.length === 0}
               className="inline-flex items-center gap-1 px-3 py-1 rounded text-caption font-semibold disabled:opacity-40"
-              style={{ background: '#06b6d4', color: 'white' }}
+              style={{ background: PANEL_COLOR, color: 'white' }}
             >
               <PlayCircle className="w-3.5 h-3.5" />
               {playtestRunning ? '실행 중...' : '재생'}
@@ -429,7 +466,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
               </div>
               <div className="p-2 rounded" style={{ background: 'var(--bg-primary)' }}>
                 <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>평균 플레이타임</div>
-                <div className="text-lg font-bold tabular-nums" style={{ color: '#8b5cf6' }}>
+                <div className="text-lg font-bold tabular-nums" style={{ color: '#0891b2' }}>
                   {playtestResult.avgPlaytimeMin.toFixed(0)}분
                 </div>
                 <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
@@ -461,19 +498,19 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
         )}
       </div>
 
+      </SectionCard>
+
       {/* 고급 설정 — Advanced 모드에서만 */}
       {mode === 'advanced' && (
-        <>
-          <SectionDivider
-            icon={BarChart3}
-            title="고급 분석"
-            color="#06b6d4"
-            collapsible
-            collapsed={collapsedAdvanced}
-            onToggle={() => setCollapsedAdvanced((v) => !v)}
-          />
-          {!collapsedAdvanced && (
-            <div className="space-y-4">
+        <SectionCard
+          icon={BarChart3}
+          title="고급 분석"
+          color={PANEL_COLOR}
+          collapsible
+          collapsed={collapsedAdvanced}
+          onToggle={() => setCollapsedAdvanced((v) => !v)}
+        >
+          <div className="space-y-4">
               <FlowZoneEditor
                 flowZoneConfig={flowZoneConfig}
                 setFlowZoneConfig={setFlowZoneConfig}
@@ -490,8 +527,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
                 onResetSimulation={resetDDASimulation}
               />
             </div>
-          )}
-        </>
+        </SectionCard>
       )}
 
       {/* 전체화면 모달 */}
@@ -520,13 +556,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
 
       {/* ===== 섹션 3: 스테이지 설계 — Advanced 전용 ===== */}
       {mode === 'advanced' && (
-        <>
-          <SectionDivider
-            icon={Wrench}
-            title={t('sectionStageDesign')}
-            color="#3db88a"
-          />
-
+        <SectionCard icon={Wrench} title={t('sectionStageDesign')} color={PANEL_COLOR}>
           <div className="space-y-4">
             <WallStageEditor
               wallStages={wallStages}
@@ -552,7 +582,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
               onUpdate={updateRestPoint}
             />
           </div>
-        </>
+        </SectionCard>
       )}
 
       {/* Simple 모드 안내 footer — "세부 조정 필요 시 고급 모드" */}
