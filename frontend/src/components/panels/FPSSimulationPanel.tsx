@@ -17,6 +17,8 @@ import {
   simulateWeaponTtk,
   simulateFpsDuel,
   calculateDpsCurve,
+  calculateShieldBreakdown,
+  SHIELD_BRACKETS,
   type WeaponStats,
 } from '@/lib/fpsSimulation';
 
@@ -203,10 +205,64 @@ export default function FPSSimulationPanel({ onClose }: Props) {
         </div>
       </div>
 
+      {/* Apex 스타일 쉴드 brackets */}
+      <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+        <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+          쉴드 티어별 BTK / TTK (Apex 방식) · 현재 거리 {distance}m
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <ShieldBreakdownTable weapon={weaponA} distance={distance} name={weaponA.name} />
+          <ShieldBreakdownTable weapon={weaponB} distance={distance} name={weaponB.name} />
+        </div>
+      </div>
+
       <div className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
         TTK = Time to Kill (첫 명중부터 처치까지 밀리초) · BTK = Bullets to Kill · 타겟 기본 HP 100 + 쉴드 50
       </div>
     </PanelShell>
+  );
+}
+
+function ShieldBreakdownTable({ weapon, distance, name }: { weapon: WeaponStats; distance: number; name: string }) {
+  const rows = calculateShieldBreakdown(weapon, distance);
+  return (
+    <div>
+      <div className="text-caption font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+        {name}
+      </div>
+      <div className="space-y-0.5">
+        <div className="grid grid-cols-5 gap-1 text-caption px-1" style={{ color: 'var(--text-tertiary)' }}>
+          <span>티어</span>
+          <span className="text-center">HP+쉴드</span>
+          <span className="text-center">몸 BTK</span>
+          <span className="text-center">헤드 BTK</span>
+          <span className="text-center">TTK(ms)</span>
+        </div>
+        {rows.map((r) => {
+          const bracket = SHIELD_BRACKETS[r.tier];
+          return (
+            <div key={r.tier} className="grid grid-cols-5 gap-1 text-label px-1 py-0.5 rounded" style={{ background: 'var(--bg-primary)' }}>
+              <span className="font-medium inline-flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full" style={{ background: bracket.color }} />
+                {r.label}
+              </span>
+              <span className="text-center tabular-nums" style={{ color: 'var(--text-secondary)' }}>
+                {r.totalHp}
+              </span>
+              <span className="text-center tabular-nums font-semibold" style={{ color: 'var(--text-primary)' }}>
+                {r.btkBody}
+              </span>
+              <span className="text-center tabular-nums font-semibold" style={{ color: '#ef4444' }}>
+                {r.btkHead}
+              </span>
+              <span className="text-center tabular-nums" style={{ color: 'var(--text-secondary)' }}>
+                {Math.round(r.ttkBodyMs)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

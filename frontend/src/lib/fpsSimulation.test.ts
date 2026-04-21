@@ -5,6 +5,8 @@ import {
   simulateWeaponTtk,
   simulateFpsDuel,
   calculateDpsCurve,
+  calculateShieldBreakdown,
+  SHIELD_BRACKETS,
   WEAPON_PRESETS,
 } from './fpsSimulation';
 
@@ -108,5 +110,35 @@ describe('calculateDpsCurve', () => {
     );
     expect(curve[0].effectiveDps).toBeGreaterThan(curve[1].effectiveDps);
     expect(curve[1].effectiveDps).toBeGreaterThan(curve[2].effectiveDps);
+  });
+});
+
+describe('calculateShieldBreakdown (Apex 방식)', () => {
+  it('쉴드 티어 5개 반환 (none/white/blue/purple/red)', () => {
+    const rows = calculateShieldBreakdown(WEAPON_PRESETS[0], 10);
+    expect(rows).toHaveLength(5);
+    expect(rows[0].tier).toBe('none');
+    expect(rows[4].tier).toBe('red');
+  });
+
+  it('쉴드 티어 높을수록 BTK 증가', () => {
+    const rows = calculateShieldBreakdown(WEAPON_PRESETS[0], 10);
+    // totalHp 가 증가하므로 BTK 도 증가
+    expect(rows[0].totalHp).toBe(100); // none
+    expect(rows[4].totalHp).toBe(225); // red (100 + 125)
+    expect(rows[4].btkBody).toBeGreaterThanOrEqual(rows[0].btkBody);
+  });
+
+  it('헤드샷 BTK 는 몸샷 BTK 보다 적음 (헬멧 감소 반영)', () => {
+    const rows = calculateShieldBreakdown(WEAPON_PRESETS[0], 10);
+    for (const row of rows) {
+      expect(row.btkHead).toBeLessThanOrEqual(row.btkBody);
+    }
+  });
+
+  it('SHIELD_BRACKETS 값 검증', () => {
+    expect(SHIELD_BRACKETS.white.shieldHp).toBe(50);
+    expect(SHIELD_BRACKETS.red.shieldHp).toBe(125);
+    expect(SHIELD_BRACKETS.red.headshotReduction).toBe(0.25);
   });
 });
