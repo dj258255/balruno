@@ -130,7 +130,7 @@ function OptionalStatInput({
           }
         }}
         placeholder={placeholder}
-        className="w-full px-2 py-1.5 rounded text-sm"
+        className="w-full input-base"
         style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
       />
     </div>

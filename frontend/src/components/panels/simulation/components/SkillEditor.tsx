@@ -308,7 +308,7 @@ export function SkillEditor({ skills, onSkillsChange, color = 'var(--primary-blu
                         type="text"
                         value={skill.name}
                         onChange={(e) => updateSkill(skill.id, { name: e.target.value })}
-                        className="w-full px-2 py-1.5 rounded text-sm"
+                        className="w-full input-base"
                         style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
                       />
                     </div>
@@ -479,7 +479,7 @@ export function SkillEditor({ skills, onSkillsChange, color = 'var(--primary-blu
                             />
                           ) : (
                             <div
-                              className="w-full px-2 py-1.5 rounded text-sm"
+                              className="w-full input-base"
                               style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)', color: 'var(--text-secondary)' }}
                               title={t('reviveAllyOnlyTeam')}
                             >
