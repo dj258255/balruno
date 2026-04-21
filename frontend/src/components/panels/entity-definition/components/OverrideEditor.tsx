@@ -66,7 +66,7 @@ export default function OverrideEditor({
           min={1}
           max={maxLevel}
           placeholder="레벨"
-          className="w-20 px-3 py-2 rounded-lg text-sm hide-spinner"
+          className="w-20 input-base hide-spinner"
           style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--border-primary)',
@@ -142,7 +142,7 @@ export default function OverrideEditor({
                                 setEditingCell(null);
                               }
                             }}
-                            className="w-20 px-2 py-1 rounded text-right text-sm hide-spinner"
+                            className="w-20 input-base text-right hide-spinner"
                             style={{
                               background: 'var(--bg-primary)',
                               border: '1px solid #9179f2',

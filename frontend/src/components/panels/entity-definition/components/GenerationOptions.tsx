@@ -90,7 +90,7 @@ export default function GenerationOptions({
             value={sheetNamePattern}
             onChange={(e) => onSheetNamePatternChange(e.target.value)}
             placeholder="{entity}_레벨테이블"
-            className="w-full px-3 py-2 rounded-lg text-sm"
+            className="w-full input-base"
             style={{
               background: 'var(--bg-secondary)',
               border: '1px solid var(--border-primary)',

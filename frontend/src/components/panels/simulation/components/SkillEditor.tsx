@@ -167,7 +167,7 @@ function NumberInputWithCell({ label, value, onChange, placeholder }: NumberInpu
               }
             }
           }}
-          className="w-full px-2 py-1.5 pr-7 rounded text-sm"
+          className="w-full input-base pr-7"
           style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
         />
         {isHovered && !cellSelectionMode?.active && (

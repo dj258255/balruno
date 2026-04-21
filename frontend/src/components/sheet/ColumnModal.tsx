@@ -231,7 +231,7 @@ export default function ColumnModal({
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               placeholder={t('column.namePlaceholder')}
-              className="w-full px-3 py-2 border rounded-lg text-sm"
+              className="w-full input-base"
               style={{
                 background: 'var(--bg-primary)',
                 borderColor: 'var(--border-primary)',

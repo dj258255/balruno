@@ -68,7 +68,7 @@ function StatField({
               setInputValue(String(num));
             }
           }}
-          className="w-full px-3 py-2 pr-9 rounded-lg text-sm"
+          className="w-full input-base pr-9"
           style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
         />
         {isHovered && !cellSelectionMode.active && (
@@ -250,7 +250,7 @@ export function TeamUnitModal({
               type="text"
               value={editUnit.name}
               onChange={(e) => setEditUnit(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 py-2 rounded-lg text-sm"
+              className="w-full input-base"
               style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
               placeholder="유닛 이름"
             />

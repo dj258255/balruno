@@ -208,7 +208,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                 onChange={(e) => setEditingName(e.target.value)}
                 onBlur={handleSaveName}
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
-                className="flex-1 px-3 py-2 rounded-lg text-sm"
+                className="flex-1 input-base"
                 style={{
                   background: 'var(--bg-primary)',
                   border: '1px solid var(--border-primary)',

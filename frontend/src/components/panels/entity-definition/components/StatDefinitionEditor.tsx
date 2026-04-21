@@ -110,7 +110,7 @@ export default function StatDefinitionEditor({
             value={newStatName}
             onChange={(e) => setNewStatName(e.target.value.toUpperCase())}
             placeholder="스탯명 (예: SPD, CRIT)"
-            className="flex-1 px-2 py-1.5 rounded text-sm"
+            className="flex-1 input-base"
             style={{
               background: 'var(--bg-primary)',
               border: '1px solid var(--border-primary)',
@@ -211,7 +211,7 @@ export default function StatDefinitionEditor({
                     value={stat.growthRate}
                     onChange={(e) => updateStat(index, { growthRate: parseFloat(e.target.value) || 1 })}
                     step={stat.curveType === 'exponential' ? 0.01 : 1}
-                    className="w-full px-2 py-1.5 rounded text-xs hide-spinner"
+                    className="w-full input-compact hide-spinner"
                     style={{
                       background: 'var(--bg-primary)',
                       border: '1px solid var(--border-primary)',
@@ -230,7 +230,7 @@ export default function StatDefinitionEditor({
                     value={stat.exportName || ''}
                     onChange={(e) => updateStat(index, { exportName: e.target.value })}
                     placeholder={stat.sourceColumn || stat.name}
-                    className="w-full px-2 py-1.5 rounded text-xs"
+                    className="w-full input-compact"
                     style={{
                       background: 'var(--bg-primary)',
                       border: '1px solid var(--border-primary)',
