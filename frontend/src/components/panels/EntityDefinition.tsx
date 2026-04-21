@@ -7,8 +7,8 @@ import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import EmptyState from '@/components/ui/EmptyState';
 
 import { useEntityDefinition } from './entity-definition/hooks/useEntityDefinition';
+import SheetSelector from './SheetSelector';
 import {
-  SheetSelector,
   ColumnMappingSelector,
   StatDefinitionEditor,
   EntitySelector,
@@ -183,12 +183,14 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
           />
 
           <SheetSelector
-            projects={projects}
+            variant="inline"
+            showProjectSelector
             selectedProjectId={selectedProjectId}
-            sheets={availableSheets}
+            onProjectChange={selectProject}
             selectedSheetId={selectedSourceSheetId}
-            onProjectSelect={selectProject}
-            onSheetSelect={selectSourceSheet}
+            onSheetChange={(id) => selectSourceSheet(id || null)}
+            label="엔티티 데이터가 있는 시트"
+            color={PANEL_COLOR}
           />
 
           {/* 프로젝트 선택됐지만 시트 없을 때 */}

@@ -1,4 +1,3 @@
-export { default as SheetSelector } from './SheetSelector';
 export { default as ColumnMappingSelector } from './ColumnMappingSelector';
 export { default as StatDefinitionEditor } from './StatDefinitionEditor';
 export { default as EntitySelector } from './EntitySelector';
