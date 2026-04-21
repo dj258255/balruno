@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { FileSpreadsheet, FolderOpen, ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useProjectStore } from '@/stores/projectStore';
@@ -40,8 +40,25 @@ export default function SheetSelector({
 
   // 프로젝트 선택이 활성화된 경우 선택된 프로젝트 사용, 아니면 현재 프로젝트
   const effectiveProjectId = showProjectSelector && selectedProjectId ? selectedProjectId : currentProjectId;
-  const currentProject = projects.find(p => p.id === effectiveProjectId);
-  const sheets = currentProject?.sheets || [];
+  // 중복 id 방지 — Y.Doc race / 동기화 오류로 같은 프로젝트/시트가 두 번 들어올 수 있음
+  const uniqueProjects = useMemo(() => {
+    const seen = new Set<string>();
+    return projects.filter((p) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+  }, [projects]);
+  const currentProject = uniqueProjects.find(p => p.id === effectiveProjectId);
+  const sheets = useMemo(() => {
+    const raw = currentProject?.sheets || [];
+    const seen = new Set<string>();
+    return raw.filter((s) => {
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    });
+  }, [currentProject]);
 
   const [isProjectOpen, setIsProjectOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -64,7 +81,7 @@ export default function SheetSelector({
   }, []);
 
   // 프로젝트가 없으면 안내 메시지
-  if (projects.length === 0) {
+  if (uniqueProjects.length === 0) {
     return (
       <div className={cn(variant === 'card' ? 'glass-card p-4' : 'p-3 rounded-lg', className)}
         style={variant === 'inline' ? { background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' } : undefined}>
@@ -123,7 +140,7 @@ export default function SheetSelector({
                       borderColor: 'var(--border-primary)',
                     }}
                   >
-                    {projects.map((project) => (
+                    {uniqueProjects.map((project) => (
                       <button
                         key={project.id}
                         type="button"
