@@ -10,6 +10,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { useEscapeKey } from '@/hooks';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import CustomSelect from '@/components/ui/CustomSelect';
+import { useCalculatorStore } from '@/stores/calculatorStore';
 
 const PANEL_COLOR = '#9179f2'; // 소프트 퍼플
 
@@ -188,6 +189,18 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
           </div>
         </div>
 
+        {/* ans 변수 chip — 다른 탭에서 저장한 결과 불러오기 (Desmos ans 패턴) */}
+        <AnsChip tabColor={tabColor} activeTab={activeTab}
+          onApply={(val) => {
+            // 활성 탭의 첫 입력란에 ans 값 주입
+            if (activeTab === 'dps') setDpsInputs((p) => ({ ...p, damage: val }));
+            else if (activeTab === 'ttk') setTtkInputs((p) => ({ ...p, damage: val }));
+            else if (activeTab === 'ehp') setEhpInputs((p) => ({ ...p, hp: val }));
+            else if (activeTab === 'damage') setDamageInputs((p) => ({ ...p, atk: val }));
+            else if (activeTab === 'scale') setScaleInputs((p) => ({ ...p, base: val }));
+          }}
+        />
+
         {/* 선택된 행 데이터 */}
         {selectedRows.length > 0 && (
           <div className="mx-4 mb-3 glass-card p-3" style={{ background: `${tabColor}10` }}>
@@ -246,7 +259,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 <GlassInputField label={t('critRate')} value={dpsInputs.critRate} onChange={(v) => setDpsInputs({ ...dpsInputs, critRate: v })} step={0.01} min={0} max={1} />
                 <GlassInputField label={t('critMultiplier')} value={dpsInputs.critDamage} onChange={(v) => setDpsInputs({ ...dpsInputs, critDamage: v })} step={0.1} />
               </div>
-              <GlassResultCard label={t('dpsResult')} value={dpsResult.toFixed(2)} color={tabColor} extra={`${t('baseDps')}: ${(dpsInputs.damage * dpsInputs.attackSpeed).toFixed(2)} | ${t('critBonus')}: +${((dpsResult / (dpsInputs.damage * dpsInputs.attackSpeed) - 1) * 100).toFixed(1)}%`} />
+              <GlassResultCard label={t('dpsResult')} value={dpsResult.toFixed(2)} color={tabColor} numericValue={dpsResult} extra={`${t('baseDps')}: ${(dpsInputs.damage * dpsInputs.attackSpeed).toFixed(2)} | ${t('critBonus')}: +${((dpsResult / (dpsInputs.damage * dpsInputs.attackSpeed) - 1) * 100).toFixed(1)}%`} />
               <GlassFormulaBox formula="damage x (1 + critRate x (critDamage - 1)) x attackSpeed" hint={t('dpsFormulaHint')} color={tabColor} />
             </div>
           )}
@@ -264,8 +277,8 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 <GlassInputField label={t('attackSpeed')} value={ttkInputs.attackSpeed} onChange={(v) => setTtkInputs({ ...ttkInputs, attackSpeed: v })} step={0.1} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <GlassResultCard label={t('ttkResult')} value={ttkResult.ttk === Infinity ? '-' : `${ttkResult.ttk.toFixed(2)}s`} color={tabColor} />
-                <GlassResultCard label={t('hitsRequired')} value={`${ttkResult.hitsNeeded}`} color="#e5a440" />
+                <GlassResultCard label={t('ttkResult')} value={ttkResult.ttk === Infinity ? '-' : `${ttkResult.ttk.toFixed(2)}s`} color={tabColor} numericValue={ttkResult.ttk === Infinity ? undefined : ttkResult.ttk} />
+                <GlassResultCard label={t('hitsRequired')} value={`${ttkResult.hitsNeeded}`} color="#e5a440" numericValue={ttkResult.hitsNeeded} />
               </div>
               <GlassFormulaBox formula="(ceil(targetHP / damage) - 1) / attackSpeed" hint={t('ttkFormulaHint')} color={tabColor} />
             </div>
@@ -283,7 +296,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 <GlassInputField label={t('def')} value={ehpInputs.def} onChange={(v) => setEhpInputs({ ...ehpInputs, def: v })} />
                 <GlassInputField label={t('damageReduction')} value={ehpInputs.damageReduction} onChange={(v) => setEhpInputs({ ...ehpInputs, damageReduction: v })} step={0.01} min={0} max={0.99} />
               </div>
-              <GlassResultCard label={t('ehpResult')} value={ehpResult.toFixed(0)} color={tabColor} extra={`${t('vsOriginal')} ${((ehpResult / ehpInputs.hp) * 100).toFixed(1)}% (x${(ehpResult / ehpInputs.hp).toFixed(2)})`} />
+              <GlassResultCard label={t('ehpResult')} value={ehpResult.toFixed(0)} color={tabColor} numericValue={ehpResult} extra={`${t('vsOriginal')} ${((ehpResult / ehpInputs.hp) * 100).toFixed(1)}% (x${(ehpResult / ehpInputs.hp).toFixed(2)})`} />
               <GlassFormulaBox formula="hp x (1 + def/100) x (1 / (1 - damageReduction))" hint={t('ehpFormulaHint')} color={tabColor} />
             </div>
           )}
@@ -301,7 +314,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 <GlassInputField label={t('skillMultiplier')} value={damageInputs.multiplier} onChange={(v) => setDamageInputs({ ...damageInputs, multiplier: v })} step={0.1} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <GlassResultCard label={t('finalDamage')} value={damageResult.toFixed(1)} color={tabColor} />
+                <GlassResultCard label={t('finalDamage')} value={damageResult.toFixed(1)} color={tabColor} numericValue={damageResult} />
                 <GlassResultCard label={t('damageReductionRate')} value={`${((1 - 100 / (100 + damageInputs.def)) * 100).toFixed(1)}%`} color="var(--text-secondary)" />
               </div>
               <GlassFormulaBox formula="atk x (100 / (100 + def)) x multiplier" hint={t('damageFormulaHint')} color={tabColor} />
@@ -408,6 +421,23 @@ function GlassInputField({ label, value, onChange, step = 1, min, max }: { label
     startCellSelection(label, (cellValue) => { setInputValue(String(cellValue)); onChange(cellValue); });
   };
 
+  // Scrubbable — 화살표 ↑↓ 로 증감. Shift × 10배, Alt ÷ 10배 (Desmos/Figma 패턴)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    const base = parseFloat(inputValue);
+    if (isNaN(base)) return;
+    const multiplier = e.shiftKey ? 10 : e.altKey ? 0.1 : 1;
+    const delta = step * multiplier * (e.key === 'ArrowUp' ? 1 : -1);
+    let next = base + delta;
+    if (min !== undefined) next = Math.max(min, next);
+    if (max !== undefined) next = Math.min(max, next);
+    // 소수점 누적 오차 방지
+    next = Math.round(next * 1e6) / 1e6;
+    setInputValue(String(next));
+    onChange(next);
+  };
+
   return (
     <div onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
       <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{label}</label>
@@ -418,6 +448,8 @@ function GlassInputField({ label, value, onChange, step = 1, min, max }: { label
           value={inputValue}
           onChange={(e) => { const newValue = e.target.value; if (newValue === '' || /^-?\d*\.?\d*$/.test(newValue)) { setInputValue(newValue); const num = parseFloat(newValue); if (!isNaN(num)) onChange(num); } }}
           onBlur={() => { const num = parseFloat(inputValue); if (isNaN(num) || inputValue === '') { setInputValue(String(min ?? 0)); onChange(min ?? 0); } else { setInputValue(String(num)); } }}
+          onKeyDown={handleKeyDown}
+          title="↑↓ 로 값 조정 · Shift 10배 · Alt 0.1배"
           className="glass-input w-full pr-9 text-sm"
         />
         {isHovered && !cellSelectionMode.active && (
@@ -432,10 +464,67 @@ function GlassInputField({ label, value, onChange, step = 1, min, max }: { label
   );
 }
 
-function GlassResultCard({ label, value, color, extra }: { label: string; value: string; color: string; extra?: string }) {
+function AnsChip({ tabColor, activeTab, onApply }: { tabColor: string; activeTab: string; onApply: (value: number) => void }) {
+  const ans = useCalculatorStore((s) => s.ans);
+  const ansLabel = useCalculatorStore((s) => s.ansLabel);
+  const clear = useCalculatorStore((s) => s.clear);
+  if (ans === null) return null;
   return (
-    <div className="glass-stat">
-      <div className="text-sm mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</div>
+    <div
+      className="mx-4 mb-3 flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+      style={{ background: `${tabColor}10`, border: `1px solid ${tabColor}40` }}
+    >
+      <span className="font-mono font-bold" style={{ color: tabColor }}>ans</span>
+      <span style={{ color: 'var(--text-secondary)' }}>= </span>
+      <span className="font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+        {Math.abs(ans) >= 1000 ? ans.toLocaleString(undefined, { maximumFractionDigits: 2 }) : ans.toFixed(2)}
+      </span>
+      {ansLabel && (
+        <span className="text-caption px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }}>
+          {ansLabel}
+        </span>
+      )}
+      <button
+        onClick={() => onApply(ans)}
+        className="ml-auto px-2 py-0.5 rounded text-caption font-semibold"
+        style={{ background: tabColor, color: 'white' }}
+        title={`${activeTab} 탭의 첫 입력에 적용`}
+      >
+        적용 →
+      </button>
+      <button
+        onClick={clear}
+        className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/5"
+        title="ans 지우기"
+      >
+        <X className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
+      </button>
+    </div>
+  );
+}
+
+function GlassResultCard({ label, value, color, extra, numericValue }: { label: string; value: string; color: string; extra?: string; numericValue?: number }) {
+  const setAns = useCalculatorStore((s) => s.setAns);
+  const copyAns = () => {
+    if (numericValue !== undefined && !isNaN(numericValue)) {
+      setAns(numericValue, label);
+    }
+  };
+  return (
+    <div className="glass-stat group relative">
+      <div className="text-sm mb-1 font-medium flex items-center justify-between" style={{ color: 'var(--text-secondary)' }}>
+        <span>{label}</span>
+        {numericValue !== undefined && (
+          <button
+            onClick={copyAns}
+            className="opacity-0 group-hover:opacity-100 text-caption px-1.5 py-0.5 rounded"
+            style={{ background: `${color}20`, color }}
+            title="이 값을 ans 변수에 저장 (다른 탭 입력에서 불러오기)"
+          >
+            → ans
+          </button>
+        )}
+      </div>
       <div className="text-2xl font-bold" style={{ color }}>{value}</div>
       {extra && <div className="text-sm mt-1.5" style={{ color: 'var(--text-secondary)' }}>{extra}</div>}
     </div>
