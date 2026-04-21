@@ -73,6 +73,10 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
   const [damageInputs, setDamageInputs] = useState({ atk: 150, def: 50, multiplier: 1 });
   const [scaleInputs, setScaleInputs] = useState({ base: 100, level: 10, rate: 1.1, curveType: 'linear' as string });
 
+  // Scenario A/B — 현재 탭 입력 스냅샷 저장/비교 (Raidbots Top Gear / Excel Scenario Manager 패턴)
+  const [scenarioA, setScenarioA] = useState<Record<string, Record<string, number | string>> | null>(null);
+  const [scenarioB, setScenarioB] = useState<Record<string, Record<string, number | string>> | null>(null);
+
   const dpsResult = useMemo(() => DPS(dpsInputs.damage, dpsInputs.attackSpeed, dpsInputs.critRate, dpsInputs.critDamage), [dpsInputs]);
   const ttkResult = useMemo(() => { const ttk = TTK(ttkInputs.targetHP, ttkInputs.damage, ttkInputs.attackSpeed); const hitsNeeded = Math.ceil(ttkInputs.targetHP / ttkInputs.damage); return { ttk, hitsNeeded }; }, [ttkInputs]);
   const ehpResult = useMemo(() => EHP(ehpInputs.hp, ehpInputs.def, ehpInputs.damageReduction), [ehpInputs]);
@@ -278,6 +282,17 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 }}
                 onApply={(k, v) => setDpsInputs({ ...dpsInputs, [k]: v })}
               />
+              <ScenarioCompareBox
+                color={tabColor}
+                tabKey="dps"
+                currentInputs={dpsInputs}
+                computeResult={(o) => DPS(Number(o.damage), Number(o.attackSpeed), Number(o.critRate), Number(o.critDamage))}
+                resultLabel="DPS"
+                scenarioA={scenarioA}
+                scenarioB={scenarioB}
+                setScenarioA={setScenarioA}
+                setScenarioB={setScenarioB}
+              />
             </div>
           )}
 
@@ -312,6 +327,21 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 }}
                 onApply={(k, v) => setTtkInputs({ ...ttkInputs, [k]: v })}
               />
+              <ScenarioCompareBox
+                color={tabColor}
+                tabKey="ttk"
+                currentInputs={ttkInputs}
+                computeResult={(o) => {
+                  const t = TTK(Number(o.targetHP), Number(o.damage), Number(o.attackSpeed));
+                  return t === Infinity ? -1 : t;
+                }}
+                resultLabel="TTK"
+                scenarioA={scenarioA}
+                scenarioB={scenarioB}
+                setScenarioA={setScenarioA}
+                setScenarioB={setScenarioB}
+                formatResult={(v) => v < 0 ? '∞' : `${v.toFixed(2)}s`}
+              />
             </div>
           )}
 
@@ -342,6 +372,18 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   return EHP(o.hp, o.def, o.damageReduction);
                 }}
                 onApply={(k, v) => setEhpInputs({ ...ehpInputs, [k]: v })}
+              />
+              <ScenarioCompareBox
+                color={tabColor}
+                tabKey="ehp"
+                currentInputs={ehpInputs}
+                computeResult={(o) => EHP(Number(o.hp), Number(o.def), Number(o.damageReduction))}
+                resultLabel="EHP"
+                scenarioA={scenarioA}
+                scenarioB={scenarioB}
+                setScenarioA={setScenarioA}
+                setScenarioB={setScenarioB}
+                formatResult={(v) => v.toFixed(0)}
               />
             </div>
           )}
@@ -582,6 +624,137 @@ function GlassFormulaBox({ formula, hint, color }: { formula: string; hint?: str
       <div className="text-sm mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Formula</div>
       <code className="text-sm font-mono font-semibold" style={{ color }}>{formula}</code>
       {hint && <div className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>{hint}</div>}
+    </div>
+  );
+}
+
+/**
+ * ScenarioCompareBox — 현재 탭 입력 2개 시나리오로 저장 + 결과 나란히 비교.
+ * Raidbots Top Gear / Excel Scenario Manager 패턴.
+ */
+function ScenarioCompareBox<T extends Record<string, number | string>>({
+  color,
+  tabKey,
+  currentInputs,
+  computeResult,
+  resultLabel,
+  scenarioA,
+  scenarioB,
+  setScenarioA,
+  setScenarioB,
+  formatResult,
+}: {
+  color: string;
+  tabKey: string;
+  currentInputs: T;
+  computeResult: (inputs: T) => number;
+  resultLabel: string;
+  scenarioA: Record<string, Record<string, number | string>> | null;
+  scenarioB: Record<string, Record<string, number | string>> | null;
+  setScenarioA: (s: Record<string, Record<string, number | string>> | null) => void;
+  setScenarioB: (s: Record<string, Record<string, number | string>> | null) => void;
+  formatResult?: (v: number) => string;
+}) {
+  const snapshotA = scenarioA?.[tabKey] as T | undefined;
+  const snapshotB = scenarioB?.[tabKey] as T | undefined;
+  const fmt = formatResult ?? ((v: number) => v.toFixed(2));
+
+  const saveTo = (which: 'A' | 'B') => {
+    const nextAll = { ...(which === 'A' ? scenarioA : scenarioB) ?? {}, [tabKey]: { ...currentInputs } };
+    (which === 'A' ? setScenarioA : setScenarioB)(nextAll);
+  };
+  const clearSlot = (which: 'A' | 'B') => {
+    const map = { ...(which === 'A' ? scenarioA : scenarioB) ?? {} };
+    delete map[tabKey];
+    (which === 'A' ? setScenarioA : setScenarioB)(Object.keys(map).length ? map : null);
+  };
+
+  const resultA = snapshotA ? computeResult(snapshotA) : null;
+  const resultB = snapshotB ? computeResult(snapshotB) : null;
+  const delta = resultA !== null && resultB !== null ? resultB - resultA : null;
+  const deltaPct = resultA !== null && resultB !== null && resultA !== 0 ? (delta! / Math.abs(resultA)) * 100 : null;
+
+  return (
+    <div className="glass-section p-3" style={{ borderLeft: `3px solid ${color}` }}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-semibold" style={{ color }}>
+          Scenario A/B 비교
+        </span>
+        <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+          입력 세트 저장 + 결과 나란히
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {(['A', 'B'] as const).map((label) => {
+          const snap = label === 'A' ? snapshotA : snapshotB;
+          const res = label === 'A' ? resultA : resultB;
+          return (
+            <div
+              key={label}
+              className="p-2 rounded"
+              style={{ background: 'var(--bg-primary)', border: `1px solid ${snap ? color : 'var(--border-primary)'}` }}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-caption font-bold px-1.5 rounded" style={{ background: color, color: 'white' }}>
+                  {label}
+                </span>
+                {snap ? (
+                  <button
+                    onClick={() => clearSlot(label)}
+                    className="text-caption"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    지우기
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => saveTo(label)}
+                    className="text-caption px-2 py-0.5 rounded"
+                    style={{ background: `${color}20`, color }}
+                  >
+                    현재값 저장
+                  </button>
+                )}
+              </div>
+              {snap && res !== null ? (
+                <>
+                  <div className="text-xl font-bold tabular-nums" style={{ color }}>
+                    {fmt(res)}
+                  </div>
+                  <div className="text-caption mt-0.5 space-y-0" style={{ color: 'var(--text-tertiary)' }}>
+                    {Object.entries(snap).map(([k, v]) => (
+                      <div key={k} className="truncate">
+                        <span className="font-mono">{k}</span>: <span>{String(v)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="text-caption italic py-3 text-center" style={{ color: 'var(--text-tertiary)' }}>
+                  (비어있음)
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {delta !== null && (
+        <div
+          className="mt-2 p-2 rounded flex items-center gap-2"
+          style={{ background: delta === 0 ? 'var(--bg-tertiary)' : delta > 0 ? '#10b98115' : '#ef444415' }}
+        >
+          <span className="text-caption" style={{ color: 'var(--text-secondary)' }}>
+            B vs A {resultLabel} 변화:
+          </span>
+          <span
+            className="font-bold tabular-nums"
+            style={{ color: delta === 0 ? 'var(--text-secondary)' : delta > 0 ? '#10b981' : '#ef4444' }}
+          >
+            {delta > 0 ? '+' : ''}{fmt(delta)}
+            {deltaPct !== null && ` (${deltaPct > 0 ? '+' : ''}${deltaPct.toFixed(1)}%)`}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
