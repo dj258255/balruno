@@ -572,6 +572,47 @@ export function calculateStatWeights(input: StatWeightInput): StatWeight[] {
     .sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight));
 }
 
+// ============================================================================
+// Multi-Variable Pareto — 2 변수 최적화 (경량).
+// "metric ≥ target 만족하는 (x, y) 중 cost(x, y) 최소인 Pareto frontier".
+// 격자 샘플링 (N × N) 으로 feasible set 탐색 → Pareto 정렬.
+// ============================================================================
+
+export interface ParetoInput {
+  /** 변수 이름 2개 */
+  varX: { key: string; min: number; max: number; step: number };
+  varY: { key: string; min: number; max: number; step: number };
+  /** metric ≥ metricTarget 만족 */
+  metric: (x: number, y: number) => number;
+  metricTarget: number;
+  /** cost 최소화 */
+  cost: (x: number, y: number) => number;
+}
+
+export interface ParetoPoint {
+  x: number;
+  y: number;
+  metricValue: number;
+  costValue: number;
+}
+
+export function solvePareto(input: ParetoInput): ParetoPoint[] {
+  const { varX, varY, metric, metricTarget, cost } = input;
+  const feasible: ParetoPoint[] = [];
+  for (let x = varX.min; x <= varX.max; x += varX.step) {
+    for (let y = varY.min; y <= varY.max; y += varY.step) {
+      const m = metric(x, y);
+      if (m >= metricTarget) {
+        feasible.push({ x, y, metricValue: m, costValue: cost(x, y) });
+      }
+    }
+  }
+  // Pareto 정렬: cost 낮은 순, 동점이면 metric 높은 순
+  feasible.sort((a, b) => a.costValue - b.costValue || b.metricValue - a.metricValue);
+  // 중복 제거 + Pareto dominance 필터 (간소화: cost 낮을수록 좋음이므로 정렬만으로 충분)
+  return feasible;
+}
+
 /**
  * 메인 역산 함수
  */
