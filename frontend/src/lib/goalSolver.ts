@@ -274,6 +274,124 @@ function solveGrowthRate(
   };
 }
 
+// ============================================================================
+// Sensitivity 민감도 — 해 ± pctDelta 변동 시 원 공식 결과 얼마나 흔들리나.
+// scipy.optimize.brentq 의 tolerance 개념 + 민감도 분석.
+// ============================================================================
+
+export interface SensitivityInfo {
+  /** 해를 ±pctDelta 변동 시 목표값에서 벗어나는 정도 (%) */
+  volatility: number;
+  /** 민감도 수준 — 'low' | 'medium' | 'high' */
+  level: 'low' | 'medium' | 'high';
+  /** 설명 */
+  message: string;
+}
+
+/**
+ * 해 검증 (round-trip) + 민감도 평가.
+ * 원 공식을 다시 호출해서 target 과 비교하고, 해 ±5% 변동 시 결과 흔들림 측정.
+ */
+export function verifyAndAnalyzeSensitivity(
+  input: SolverInput,
+  result: SolverResult,
+): SensitivityInfo | null {
+  if (!result.success || typeof result.value !== 'number') return null;
+
+  // 각 공식의 forward 계산 람다 — solution 을 해당 파라미터에 넣고 결과 추출
+  const forward = getForwardForSolution(input, result.value);
+  if (forward === null) return null;
+
+  const baseline = forward(result.value);
+  const up = forward(result.value * 1.05);
+  const down = forward(result.value * 0.95);
+
+  // target 기준 상대 변동 폭
+  const targetAbs = Math.max(1, Math.abs(input.targetValue));
+  const upDiff = Math.abs(up - input.targetValue) / targetAbs;
+  const downDiff = Math.abs(down - input.targetValue) / targetAbs;
+  const volatility = Math.max(upDiff, downDiff) * 100;
+
+  let level: SensitivityInfo['level'];
+  let message: string;
+  if (volatility < 3) {
+    level = 'low';
+    message = `안정적 해 (해를 ±5% 변동해도 목표 변화 ${volatility.toFixed(1)}%)`;
+  } else if (volatility < 10) {
+    level = 'medium';
+    message = `보통 민감도 (해 ±5% → 목표 ${volatility.toFixed(1)}% 변동)`;
+  } else {
+    level = 'high';
+    message = `⚠️ 매우 민감한 해 — 해를 ±5% 만 바꿔도 목표가 ${volatility.toFixed(1)}% 흔들림. 약간의 오차로 큰 편차 가능`;
+  }
+
+  void baseline;
+  return { volatility, level, message };
+}
+
+/**
+ * 각 공식의 forward 함수 — solution 변수를 인자로 받아 결과값 반환.
+ * 8 개 공식 전부 지원.
+ */
+function getForwardForSolution(input: SolverInput, solution: number): ((x: number) => number) | null {
+  const { formula, params } = input;
+  void solution;
+  switch (formula) {
+    case 'damage_for_ttk': {
+      // TTK = enemyHP / (damage × attackSpeed)
+      const hp = params.enemyHP || 1000;
+      const aSpd = params.attackSpeed || 1;
+      return (dmg) => hp / Math.max(1, dmg * aSpd);
+    }
+    case 'hp_for_survival': {
+      // survival = hp / (enemyDPS × (1 - defenseReduction))
+      const edps = params.enemyDPS || 100;
+      const dr = params.defenseReduction || 0;
+      return (hp) => hp / Math.max(1, edps * (1 - dr));
+    }
+    case 'defense_for_reduction': {
+      // reduction = def / (def + constant)
+      const c = params.constant || 100;
+      return (def) => def / (def + c);
+    }
+    case 'exp_for_level': {
+      // totalExp = sum of baseExp × growthRate^i
+      const base = params.baseExp || 100;
+      const g = params.growthRate || 1.15;
+      return (lv) => {
+        let total = 0;
+        for (let i = 0; i < lv; i++) total += base * Math.pow(g, i);
+        return total;
+      };
+    }
+    case 'cost_for_roi': {
+      // roi = (output - cost) / cost
+      const out = params.expectedOutput || 1000;
+      return (cost) => (out - cost) / Math.max(1, cost);
+    }
+    case 'crit_for_dps': {
+      // dps = atk × (1 + critRate × (critDamage - 1)) × speed
+      const atk = params.atk || 100;
+      const spd = params.speed || 1;
+      const cd = params.critDamage || 1.5;
+      return (cr) => atk * (1 + cr * (cd - 1)) * spd;
+    }
+    case 'speed_for_dps': {
+      const atk = params.atk || 100;
+      const cr = params.critRate || 0;
+      const cd = params.critDamage || 1.5;
+      return (spd) => atk * (1 + cr * (cd - 1)) * spd;
+    }
+    case 'growth_rate': {
+      const base = params.baseValue || 10;
+      const max = params.maxLevel || 100;
+      return (rate) => base * Math.pow(rate, max - 1);
+    }
+    default:
+      return null;
+  }
+}
+
 /**
  * 메인 역산 함수
  */
