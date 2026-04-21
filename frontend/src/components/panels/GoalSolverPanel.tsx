@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { X, Target, Calculator, AlertTriangle, Check, Copy, ChevronDown, HelpCircle, Search, Activity, Clock, Trash2, XCircle } from 'lucide-react';
-import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, findAlternativeSolutions, solveGeneric, calculateStatWeights, solvePareto, type SolverFormula, type GenericSolverResult } from '@/lib/goalSolver';
+import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, findAlternativeSolutions, solveGeneric, calculateStatWeights, solvePareto, solveMonteCarlo, type SolverFormula, type GenericSolverResult, type MCSolverResult } from '@/lib/goalSolver';
 import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip as RTooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useTranslations } from 'next-intl';
@@ -505,6 +505,9 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
         {/* Pareto 최적화 (Phase 6) — 2변수 cost 최소 */}
         <ParetoBox />
 
+        {/* Monte Carlo 역산 (Phase 7) — 확률 포함 수식 */}
+        <MonteCarloBox />
+
         {/* 최근 역산 기록 (History) */}
         <GoalSolverHistoryPanel
           onReload={(entry) => {
@@ -634,6 +637,121 @@ function GenericSolverBox() {
                 <AlertTriangle className="w-4 h-4" style={{ color: '#ef4444' }} />
                 <span style={{ color: '#ef4444' }}>{result.error}</span>
               </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MonteCarloBox() {
+  // 기본 시나리오: crit 확률 0.2, crit 배율 2.5, attackSpeed 1.2 고정.
+  // 역산할 변수: damage. 목표 평균 DPS 500.
+  const [targetMean, setTargetMean] = useState(500);
+  const [critRate, setCritRate] = useState(0.2);
+  const [critDmg, setCritDmg] = useState(2.5);
+  const [aSpd, setASpd] = useState(1.2);
+  const [trials, setTrials] = useState(500);
+  const [result, setResult] = useState<MCSolverResult | null>(null);
+  const [running, setRunning] = useState(false);
+
+  const run = () => {
+    setRunning(true);
+    setTimeout(() => {
+      const r = solveMonteCarlo({
+        trial: (damage) => {
+          const isCrit = Math.random() < critRate;
+          const hitDmg = isCrit ? damage * critDmg : damage;
+          return hitDmg * aSpd; // 1초당 1 hit 가정, aSpd 배율
+        },
+        lo: 1,
+        hi: 5000,
+        targetMean,
+        tolerance: targetMean * 0.01,
+        trialsPerStep: trials,
+      });
+      setResult(r);
+      setRunning(false);
+    }, 50);
+  };
+
+  return (
+    <div className="glass-card rounded-lg overflow-hidden mt-3">
+      <div className="p-3 space-y-3" style={{ background: `${PANEL_COLOR}08` }}>
+        <div className="flex items-center gap-2">
+          <Target className="w-4 h-4" style={{ color: PANEL_COLOR }} />
+          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            Monte Carlo 역산 — 확률 포함 수식
+          </span>
+          <span className="text-caption ml-auto" style={{ color: 'var(--text-tertiary)' }}>
+            bisection × random sampling
+          </span>
+        </div>
+        <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
+          시나리오: crit 확률 포함 DPS 에서 <strong>damage 역산</strong>. 각 x 후보마다 N 회 랜덤 시뮬 → 평균이 목표에 수렴하는 damage.
+        </p>
+        <div className="grid grid-cols-4 gap-2">
+          <div>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>목표 평균 DPS</label>
+            <input type="number" value={targetMean} onChange={(e) => setTargetMean(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>crit 확률</label>
+            <input type="number" step="0.05" value={critRate} onChange={(e) => setCritRate(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>crit 배율</label>
+            <input type="number" step="0.1" value={critDmg} onChange={(e) => setCritDmg(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>공격 속도</label>
+            <input type="number" step="0.1" value={aSpd} onChange={(e) => setASpd(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-caption" style={{ color: 'var(--text-tertiary)' }}>trials/step</label>
+          <input type="number" step="100" value={trials} onChange={(e) => setTrials(parseInt(e.target.value) || 100)} className="glass-input hide-spinner w-24 px-2 py-1 text-sm" />
+          <button
+            onClick={run}
+            disabled={running}
+            className="flex-1 py-1.5 rounded-lg font-medium text-sm"
+            style={{ background: PANEL_COLOR, color: 'white', opacity: running ? 0.6 : 1 }}
+          >
+            {running ? 'MC 실행 중...' : 'Monte Carlo 실행'}
+          </button>
+        </div>
+        {result && (
+          <div
+            className="p-2 rounded-lg space-y-1 text-sm"
+            style={{
+              background: result.success ? `${PANEL_COLOR}15` : 'rgba(239,68,68,0.1)',
+              borderLeft: `3px solid ${result.success ? PANEL_COLOR : '#ef4444'}`,
+            }}
+          >
+            {result.success ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4" style={{ color: PANEL_COLOR }} />
+                  <span style={{ color: 'var(--text-secondary)' }}>필요 damage =</span>
+                  <span className="font-bold tabular-nums" style={{ color: PANEL_COLOR }}>
+                    {result.value!.toFixed(2)}
+                  </span>
+                  <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                    {result.iterations} iter · {trials} trials/step
+                  </span>
+                </div>
+                <div className="text-caption grid grid-cols-3 gap-2" style={{ color: 'var(--text-tertiary)' }}>
+                  <span>관측 평균: <span className="font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>{result.observedMean!.toFixed(2)}</span></span>
+                  <span>표준편차: <span className="font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>{result.stdev!.toFixed(2)}</span></span>
+                  <span>99% CI: <span className="font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>±{result.ci99!.toFixed(2)}</span></span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" style={{ color: '#ef4444' }} />
+                <span style={{ color: '#ef4444' }}>{result.error}</span>
+              </div>
             )}
           </div>
         )}
