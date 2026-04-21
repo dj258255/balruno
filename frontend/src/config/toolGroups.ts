@@ -44,7 +44,8 @@ export type ToolId =
   | 'deckSimulation'
   | 'frameData'
   | 'aiBehavior'
-  | 'matchupMatrix';
+  | 'matchupMatrix'
+  | 'replayTimeline';
 
 export type ToolGroupId =
   | 'build'
@@ -78,7 +79,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'simulate',
     titleKey: 'toolGroups.simulate',
     color: '#e11d48',
-    tools: ['simulation', 'fpsSimulation', 'fpsTeamSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy'],
+    tools: ['simulation', 'fpsSimulation', 'fpsTeamSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy', 'replayTimeline'],
   },
   {
     id: 'compare',
@@ -123,6 +124,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   balanceValidator: 'toolDesc.balanceValidator', // 런칭 전 룰 기반 최종 검증
   sensitivity: 'toolDesc.sensitivity',         // 변수 민감도 · Tornado/Spider
   matchupMatrix: 'toolDesc.matchupMatrix',     // N×N 매치업 heatmap · Perfect Imbalance
+  replayTimeline: 'toolDesc.replayTimeline',   // 전투 로그 scrubber · step-by-step 디버깅
 
   // simulate — 시뮬
   simulation: 'toolDesc.simulation',           // 1:1/팀 전투 Monte Carlo
