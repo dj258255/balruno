@@ -17,6 +17,7 @@ import { useComments } from '@/hooks/useComments';
 import { usePresence } from '@/hooks/usePresence';
 import PanelShell from '@/components/ui/PanelShell';
 import Checkbox from '@/components/ui/Checkbox';
+import { TextAreaWithMentions, type MentionCandidate } from '@/components/sheet/MentionAutocomplete';
 import type { CellComment } from '@/lib/cellComments';
 
 interface Props {
@@ -36,6 +37,17 @@ export default function CommentsPanel({ onClose }: Props) {
   const [anchorColId, setAnchorColId] = useState<string>('');
   const [filter, setFilter] = useState<'all' | 'open' | 'mentions'>('all');
   const [showResolved, setShowResolved] = useState(false);
+
+  // @mention 후보 = 접속자 + 자기 자신 + 코멘트 작성자
+  const mentionCandidates: MentionCandidate[] = useMemo(() => {
+    const map = new Map<string, MentionCandidate>();
+    map.set(myName, { name: myName, color: myColor });
+    for (const p of peers) map.set(p.name, { name: p.name, color: p.color });
+    for (const c of comments) {
+      if (!map.has(c.author)) map.set(c.author, { name: c.author, color: c.authorColor });
+    }
+    return Array.from(map.values());
+  }, [peers, myName, myColor, comments]);
 
   // 시트 변경 시 anchor 초기화
   useEffect(() => {
@@ -178,6 +190,7 @@ export default function CommentsPanel({ onClose }: Props) {
                   thread={thread}
                   myName={myName}
                   myColor={myColor}
+                  candidates={mentionCandidates}
                   onUpdate={update}
                   onDelete={remove}
                   onReply={(text) => {
@@ -228,19 +241,13 @@ export default function CommentsPanel({ onClose }: Props) {
               </select>
             </div>
             <div className="flex items-end gap-1.5">
-              <textarea
+              <TextAreaWithMentions
                 value={newText}
-                onChange={(e) => setNewText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                    e.preventDefault();
-                    submit();
-                  }
-                }}
+                onChange={setNewText}
+                candidates={mentionCandidates}
                 placeholder="@사용자 멘션 가능 · ⌘Enter 로 전송"
                 rows={2}
-                className="flex-1 px-2 py-1 text-xs rounded border bg-transparent resize-none"
-                style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+                onSubmit={submit}
               />
               <button
                 onClick={submit}
@@ -278,11 +285,12 @@ export default function CommentsPanel({ onClose }: Props) {
 }
 
 function CommentThread({
-  thread, myName, myColor, onUpdate, onDelete, onReply,
+  thread, myName, myColor, candidates, onUpdate, onDelete, onReply,
 }: {
   thread: { root: CellComment; replies: CellComment[] };
   myName: string;
   myColor: string;
+  candidates: MentionCandidate[];
   onUpdate: (id: string, patch: Partial<Pick<CellComment, 'text' | 'resolved'>>) => void;
   onDelete: (id: string) => void;
   onReply: (text: string) => void;
@@ -310,6 +318,7 @@ function CommentThread({
         comment={thread.root}
         isReply={false}
         myName={myName}
+        candidates={candidates}
         onUpdate={onUpdate}
         onDelete={onDelete}
         onReplyClick={() => setShowReply((v) => !v)}
@@ -321,6 +330,7 @@ function CommentThread({
           comment={reply}
           isReply
           myName={myName}
+          candidates={candidates}
           onUpdate={onUpdate}
           onDelete={onDelete}
         />
@@ -328,19 +338,13 @@ function CommentThread({
       {showReply && (
         <div className="border-t p-2 space-y-1.5" style={{ borderColor: 'var(--border-primary)' }}>
           <div className="flex items-end gap-1.5">
-            <textarea
+            <TextAreaWithMentions
               value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault();
-                  sendReply();
-                }
-              }}
+              onChange={setReplyText}
+              candidates={candidates}
               placeholder={`답글 작성 (${myName})`}
               rows={2}
-              className="flex-1 px-2 py-1 text-xs rounded border bg-transparent resize-none"
-              style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+              onSubmit={sendReply}
             />
             <button
               onClick={sendReply}
@@ -361,11 +365,12 @@ function CommentThread({
 }
 
 function CommentItem({
-  comment, isReply, myName, onUpdate, onDelete, onReplyClick, onResolveToggle,
+  comment, isReply, myName, candidates, onUpdate, onDelete, onReplyClick, onResolveToggle,
 }: {
   comment: CellComment;
   isReply: boolean;
   myName: string;
+  candidates: MentionCandidate[];
   onUpdate: (id: string, patch: Partial<Pick<CellComment, 'text' | 'resolved'>>) => void;
   onDelete: (id: string) => void;
   onReplyClick?: () => void;
@@ -428,12 +433,12 @@ function CommentItem({
       </div>
       {editing ? (
         <div className="flex items-end gap-1">
-          <textarea
+          <TextAreaWithMentions
             value={editText}
-            onChange={(e) => setEditText(e.target.value)}
+            onChange={setEditText}
+            candidates={candidates}
             rows={2}
-            className="flex-1 px-2 py-1 text-xs rounded border bg-transparent resize-none"
-            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+            onSubmit={save}
           />
           <button onClick={save} className="px-2 py-1 text-caption rounded" style={{ background: 'var(--accent)', color: 'white' }}>저장</button>
           <button onClick={() => { setEditing(false); setEditText(comment.text); }} className="px-2 py-1 text-caption rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>취소</button>
