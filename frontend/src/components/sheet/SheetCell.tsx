@@ -64,6 +64,14 @@ export interface SheetCellProps {
 
   // 기본 스타일
   defaultFontSize: number;
+
+  /** Track 1 — checkbox/rating 등 display 모드에서 클릭 가능한 인라인 컨트롤. 제공 시 displayValue 텍스트 대체 */
+  inlineControl?: React.ReactNode;
+
+  /** Track 8B — peer cursor 색상 (다른 유저가 현재 이 셀 선택 중). undefined = 없음. */
+  peerCursorColor?: string;
+  /** peer 이름 (툴팁) */
+  peerCursorName?: string;
 }
 
 // 커스텀 비교 함수 - 필요한 props만 비교하여 리렌더링 최소화
@@ -90,6 +98,9 @@ function arePropsEqual(prevProps: SheetCellProps, nextProps: SheetCellProps): bo
   if (prevProps.cellHasFormula !== nextProps.cellHasFormula) return false;
   if (prevProps.cellMemo !== nextProps.cellMemo) return false;
   if (prevProps.isCopyMode !== nextProps.isCopyMode) return false;
+
+  // 인라인 컨트롤 — value 변경 시 자동 재계산되므로 별도 비교 X
+  // (inlineControl 은 매 렌더 새 ReactNode 라 비교가 무의미)
 
   return true;
 }
@@ -124,6 +135,9 @@ const SheetCell = memo(function SheetCell({
   onMemoClick,
   dragToFillText,
   defaultFontSize,
+  inlineControl,
+  peerCursorColor,
+  peerCursorName,
 }: SheetCellProps) {
   /**
    * Pointer Events 핸들러
@@ -173,6 +187,8 @@ const SheetCell = memo(function SheetCell({
     if (isFillPreview) return '2px dashed var(--primary-green)';
     if (isSelected) return '2px solid var(--primary-blue)';
     if (isMultiSelected) return '1px solid var(--primary-blue)';
+    // Track 8B — peer cursor (로컬 선택 없을 때만)
+    if (peerCursorColor) return `2px solid ${peerCursorColor}`;
     return 'none';
   };
 
@@ -187,6 +203,10 @@ const SheetCell = memo(function SheetCell({
   return (
     <div
       data-cell-id={cellKey}
+      role="gridcell"
+      aria-selected={isSelected}
+      aria-readonly={isLocked}
+      tabIndex={isSelected ? 0 : -1}
       onPointerDown={handlePointerDown}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
@@ -207,24 +227,36 @@ const SheetCell = memo(function SheetCell({
         touchAction: 'none',
       }}
     >
-      <span
-        className="truncate flex-1 min-w-0"
-        style={{
-          display: 'block',
-          fontWeight: cellStyle?.bold ? 700 : undefined,
-          fontStyle: cellStyle?.italic ? 'italic' : undefined,
-          textDecoration: [
-            cellStyle?.underline ? 'underline' : '',
-            cellStyle?.strikethrough ? 'line-through' : '',
-          ].filter(Boolean).join(' ') || undefined,
-          fontSize: `${cellStyle?.fontSize || defaultFontSize}px`,
-          color: cellStyle?.fontColor || undefined,
-          textAlign: cellStyle?.hAlign || DEFAULT_CELL_STYLE.hAlign,
-          transform: cellStyle?.textRotation ? `rotate(${cellStyle.textRotation}deg)` : undefined,
-        }}
-      >
-        {displayValue}
-      </span>
+      {inlineControl ? (
+        <div
+          className="flex-1 min-w-0 flex items-center"
+          style={{ justifyContent: cellStyle?.hAlign === 'right' ? 'flex-end' : cellStyle?.hAlign === 'center' ? 'center' : 'flex-start' }}
+          // 컨트롤 클릭이 셀 selection 으로 새지 않게
+          onPointerDown={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+        >
+          {inlineControl}
+        </div>
+      ) : (
+        <span
+          className="truncate flex-1 min-w-0"
+          style={{
+            display: 'block',
+            fontWeight: cellStyle?.bold ? 700 : undefined,
+            fontStyle: cellStyle?.italic ? 'italic' : undefined,
+            textDecoration: [
+              cellStyle?.underline ? 'underline' : '',
+              cellStyle?.strikethrough ? 'line-through' : '',
+            ].filter(Boolean).join(' ') || undefined,
+            fontSize: `${cellStyle?.fontSize || defaultFontSize}px`,
+            color: cellStyle?.fontColor || undefined,
+            textAlign: cellStyle?.hAlign || DEFAULT_CELL_STYLE.hAlign,
+            transform: cellStyle?.textRotation ? `rotate(${cellStyle.textRotation}deg)` : undefined,
+          }}
+        >
+          {displayValue}
+        </span>
+      )}
 
       {/* 잠금 표시 아이콘 */}
       {isLocked && (
@@ -248,6 +280,16 @@ const SheetCell = memo(function SheetCell({
       {!isLocked && hasCellOverride && isFormulaColumn && !cellHasFormula && (
         <span className="absolute right-1 top-1 text-xs opacity-0 group-hover:opacity-100" style={{ color: 'var(--warning)' }}>
           ✎
+        </span>
+      )}
+
+      {/* Track 8B — peer cursor 뱃지 (이름) */}
+      {peerCursorColor && peerCursorName && !isSelected && (
+        <span
+          className="absolute -top-4 left-0 px-1 rounded text-[9px] font-semibold text-white z-30 whitespace-nowrap pointer-events-none"
+          style={{ background: peerCursorColor }}
+        >
+          {peerCursorName}
         </span>
       )}
 

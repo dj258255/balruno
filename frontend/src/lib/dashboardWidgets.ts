@@ -1,0 +1,404 @@
+/**
+ * Track 9 — Interface Designer 위젯 정의 + 데이터 어댑터.
+ *
+ * 위젯 종류:
+ *   - metric:     단일 숫자 (sheet 의 cell or aggregate)
+ *   - chart-line: 시트의 X/Y 컬럼 → 미니 라인 차트
+ *   - text:       마크다운 텍스트
+ *   - sheet-table: 시트 미니 미리보기 (top N rows)
+ *   - distribution: 한 컬럼의 distribution (히스토그램)
+ *
+ * 모든 데이터는 sheets state 에서 derive — 별도 저장 없음.
+ */
+
+import type { Sheet, CellValue } from '@/types';
+import { computeSheetRows } from './formulaEngine';
+
+export type WidgetType =
+  | 'metric'
+  | 'chart-line'
+  | 'chart-bar'
+  | 'chart-pie'
+  | 'chart-scatter'
+  | 'text'
+  | 'sheet-table'
+  | 'distribution'
+  | 'button'
+  | 'image'
+  | 'filter-control'
+  | 'retention-curve'      // 게임 메트릭: D1/D7/D30 코호트 잔존
+  | 'funnel'               // 게임 메트릭: 다단계 전환율
+  | 'whale-curve'          // 게임 메트릭: 파레토 매출 분포
+  | 'liveops-kpi';         // 게임 메트릭: DAU/MAU/Stickiness/ARPDAU 프리셋
+
+export interface WidgetBase {
+  id: string;
+  type: WidgetType;
+  title: string;
+}
+
+export interface MetricWidget extends WidgetBase {
+  type: 'metric';
+  config: {
+    sheetId: string;
+    column: string;
+    /** sum / avg / min / max / count / cell */
+    aggregate: 'sum' | 'avg' | 'min' | 'max' | 'count' | 'cell';
+    /** aggregate=cell 일 때 행 인덱스 */
+    rowIndex?: number;
+    suffix?: string;
+  };
+}
+
+export interface ChartLineWidget extends WidgetBase {
+  type: 'chart-line';
+  config: {
+    sheetId: string;
+    xColumn: string;
+    yColumn: string;
+    color?: string;
+  };
+}
+
+export interface TextWidget extends WidgetBase {
+  type: 'text';
+  config: {
+    body: string;
+  };
+}
+
+export interface SheetTableWidget extends WidgetBase {
+  type: 'sheet-table';
+  config: {
+    sheetId: string;
+    rowLimit: number;
+    columnIds?: string[];
+  };
+}
+
+export interface DistributionWidget extends WidgetBase {
+  type: 'distribution';
+  config: {
+    sheetId: string;
+    column: string;
+    bins?: number;
+  };
+}
+
+export interface ChartBarWidget extends WidgetBase {
+  type: 'chart-bar';
+  config: {
+    sheetId: string;
+    categoryColumn: string;
+    valueColumn: string;
+    color?: string;
+    /** 상위 N개만 (기본 10) */
+    limit?: number;
+  };
+}
+
+export interface ChartPieWidget extends WidgetBase {
+  type: 'chart-pie';
+  config: {
+    sheetId: string;
+    categoryColumn: string;
+    valueColumn: string;
+  };
+}
+
+export interface ChartScatterWidget extends WidgetBase {
+  type: 'chart-scatter';
+  config: {
+    sheetId: string;
+    xColumn: string;
+    yColumn: string;
+    color?: string;
+  };
+}
+
+export interface ButtonWidget extends WidgetBase {
+  type: 'button';
+  config: {
+    label: string;
+    /** 클릭 시 실행할 automation id (Track 10 연동) */
+    automationId?: string;
+    color?: string;
+  };
+}
+
+export interface ImageWidget extends WidgetBase {
+  type: 'image';
+  config: {
+    /** sheetId + urlColumn + rowIndex 조합 또는 staticUrl */
+    sheetId?: string;
+    urlColumn?: string;
+    rowIndex?: number;
+    staticUrl?: string;
+    fit?: 'cover' | 'contain';
+  };
+}
+
+export interface FilterControlWidget extends WidgetBase {
+  type: 'filter-control';
+  config: {
+    /** 필터 이름 (다른 위젯이 구독하는 키) — filterKey */
+    filterKey: string;
+    /** select 옵션 */
+    options: string[];
+    defaultValue?: string;
+  };
+}
+
+export interface RetentionCurveWidget extends WidgetBase {
+  type: 'retention-curve';
+  config: {
+    /** D1 잔존율 (0-1). localStorage / 수동 입력. */
+    day1: number;
+    /** 감소 지수 (멱함수 p) */
+    p: number;
+    /** 표시 기간 (일) */
+    days: number;
+    color?: string;
+  };
+}
+
+export interface FunnelWidget extends WidgetBase {
+  type: 'funnel';
+  config: {
+    steps: { label: string; rate: number }[];  // rate: 직전 단계 대비 통과율 (0-1)
+    color?: string;
+  };
+}
+
+export interface WhaleCurveWidget extends WidgetBase {
+  type: 'whale-curve';
+  config: {
+    /** 상위 topPercent 유저가 shareOfRevenue 를 차지 (호요버스/파레토 계수 계산용) */
+    topPercent: number;    // 기본 0.1
+    shareOfRevenue: number; // 기본 0.5
+    color?: string;
+  };
+}
+
+export interface LiveopsKpiWidget extends WidgetBase {
+  type: 'liveops-kpi';
+  config: {
+    dau: number;
+    mau: number;
+    revenue: number;       // 하루 매출 ($)
+    payingUsers: number;
+    newUsers: number;
+    adSpend: number;
+  };
+}
+
+export type DashboardWidget =
+  | MetricWidget
+  | ChartLineWidget
+  | ChartBarWidget
+  | ChartPieWidget
+  | ChartScatterWidget
+  | TextWidget
+  | SheetTableWidget
+  | DistributionWidget
+  | ButtonWidget
+  | ImageWidget
+  | FilterControlWidget
+  | RetentionCurveWidget
+  | FunnelWidget
+  | WhaleCurveWidget
+  | LiveopsKpiWidget;
+
+export interface DashboardLayout {
+  widgets: DashboardWidget[];
+  /** react-grid-layout 호환 layout */
+  positions: Array<{ i: string; x: number; y: number; w: number; h: number }>;
+}
+
+const STORAGE_KEY_PREFIX = 'balruno:dashboard:';
+
+export function loadDashboard(projectId: string): DashboardLayout {
+  if (typeof window === 'undefined') return { widgets: [], positions: [] };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PREFIX + projectId);
+    if (!raw) return { widgets: [], positions: [] };
+    return JSON.parse(raw) as DashboardLayout;
+  } catch {
+    return { widgets: [], positions: [] };
+  }
+}
+
+export function saveDashboard(projectId: string, layout: DashboardLayout): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(layout));
+}
+
+/** 시트의 한 컬럼 값들을 숫자 배열로 추출 (formula 컬럼은 computed 사용). */
+export function getColumnNumbers(sheet: Sheet, sheets: Sheet[], columnName: string): number[] {
+  const computed = computeSheetRows(sheet, sheets);
+  return computed
+    .map((row) => Number(row[columnName]))
+    .filter((n) => !isNaN(n) && isFinite(n));
+}
+
+export function computeMetric(
+  widget: MetricWidget,
+  sheets: Sheet[],
+): { value: number | string; valid: boolean } {
+  const sheet = sheets.find((s) => s.id === widget.config.sheetId);
+  if (!sheet) return { value: 'N/A', valid: false };
+
+  if (widget.config.aggregate === 'cell') {
+    const computed = computeSheetRows(sheet, sheets);
+    const row = computed[widget.config.rowIndex ?? 0];
+    if (!row) return { value: 'N/A', valid: false };
+    const v = row[widget.config.column];
+    return { value: v as CellValue ?? 'N/A', valid: v !== undefined };
+  }
+
+  const nums = getColumnNumbers(sheet, sheets, widget.config.column);
+  if (nums.length === 0) return { value: 'N/A', valid: false };
+
+  switch (widget.config.aggregate) {
+    case 'sum': return { value: nums.reduce((a, b) => a + b, 0), valid: true };
+    case 'avg': return { value: nums.reduce((a, b) => a + b, 0) / nums.length, valid: true };
+    case 'min': return { value: Math.min(...nums), valid: true };
+    case 'max': return { value: Math.max(...nums), valid: true };
+    case 'count': return { value: nums.length, valid: true };
+  }
+}
+
+export function computeChartLine(widget: ChartLineWidget, sheets: Sheet[]): { x: number; y: number }[] {
+  const sheet = sheets.find((s) => s.id === widget.config.sheetId);
+  if (!sheet) return [];
+  const computed = computeSheetRows(sheet, sheets);
+  return computed
+    .map((row) => {
+      const x = Number(row[widget.config.xColumn]);
+      const y = Number(row[widget.config.yColumn]);
+      if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) return null;
+      return { x, y };
+    })
+    .filter((p): p is { x: number; y: number } => p !== null)
+    .sort((a, b) => a.x - b.x);
+}
+
+/** bar/pie 공통 — category 별 합계. */
+export function computeCategoryValues(
+  sheets: Sheet[],
+  sheetId: string,
+  categoryColumn: string,
+  valueColumn: string,
+): Array<{ category: string; value: number }> {
+  const sheet = sheets.find((s) => s.id === sheetId);
+  if (!sheet) return [];
+  const computed = computeSheetRows(sheet, sheets);
+  const map = new Map<string, number>();
+  for (const row of computed) {
+    const cat = String(row[categoryColumn] ?? '(빈값)');
+    const val = Number(row[valueColumn]);
+    if (isNaN(val)) continue;
+    map.set(cat, (map.get(cat) ?? 0) + val);
+  }
+  return Array.from(map.entries())
+    .map(([category, value]) => ({ category, value }))
+    .sort((a, b) => b.value - a.value);
+}
+
+export function computeScatter(widget: ChartScatterWidget, sheets: Sheet[]): Array<{ x: number; y: number }> {
+  return computeChartLine(widget as unknown as ChartLineWidget, sheets);
+}
+
+export function computeDistribution(
+  widget: DistributionWidget,
+  sheets: Sheet[],
+): { bins: number[]; min: number; max: number } {
+  const sheet = sheets.find((s) => s.id === widget.config.sheetId);
+  if (!sheet) return { bins: [], min: 0, max: 0 };
+  const nums = getColumnNumbers(sheet, sheets, widget.config.column);
+  if (nums.length === 0) return { bins: [], min: 0, max: 0 };
+
+  const binCount = widget.config.bins ?? 10;
+  const min = Math.min(...nums);
+  const max = Math.max(...nums);
+  const range = max - min || 1;
+  const binSize = range / binCount;
+  const bins = new Array(binCount).fill(0);
+  for (const n of nums) {
+    const idx = Math.min(binCount - 1, Math.floor((n - min) / binSize));
+    bins[idx]++;
+  }
+  return { bins, min, max };
+}
+
+let widgetIdCounter = 0;
+export function generateWidgetId(): string {
+  widgetIdCounter++;
+  return `w_${Date.now()}_${widgetIdCounter}`;
+}
+
+// ─────── 게임 메트릭 위젯 계산 ───────
+
+export function computeRetentionCurve(
+  widget: RetentionCurveWidget,
+): Array<{ day: number; retention: number }> {
+  const { day1, p, days } = widget.config;
+  const rows: Array<{ day: number; retention: number }> = [];
+  for (let d = 1; d <= days; d++) {
+    const retention = d <= 1 ? day1 : day1 * Math.pow(d, -p);
+    rows.push({ day: d, retention });
+  }
+  return rows;
+}
+
+export function computeFunnel(
+  widget: FunnelWidget,
+): Array<{ label: string; rate: number; cumulative: number }> {
+  let cum = 1;
+  return widget.config.steps.map((step) => {
+    cum = cum * Math.max(0, Math.min(1, step.rate));
+    return { label: step.label, rate: step.rate, cumulative: cum };
+  });
+}
+
+export function computeWhaleCurve(
+  widget: WhaleCurveWidget,
+  points: number = 20,
+): Array<{ percentile: number; cumShare: number }> {
+  const { topPercent, shareOfRevenue } = widget.config;
+  // F(x) = x^α, α = log(share)/log(topPercent).
+  // 조건 F(topPercent)=shareOfRevenue, F(0)=0, F(1)=1 만족.
+  const alpha = Math.log(shareOfRevenue) / Math.log(topPercent);
+  const rows: Array<{ percentile: number; cumShare: number }> = [];
+  for (let i = 0; i <= points; i++) {
+    const percentile = i / points;
+    const cumShare = Math.pow(percentile, alpha);
+    rows.push({ percentile: percentile * 100, cumShare: cumShare * 100 });
+  }
+  return rows;
+}
+
+export interface LiveopsKpiComputed {
+  dau: number;
+  mau: number;
+  stickiness: number;
+  arpu: number;
+  arpdau: number;
+  arppu: number;
+  cac: number;
+  roas: number;
+  payback: number;
+}
+
+export function computeLiveopsKpi(widget: LiveopsKpiWidget): LiveopsKpiComputed {
+  const { dau, mau, revenue, payingUsers, newUsers, adSpend } = widget.config;
+  const safe = (n: number, d: number) => (d > 0 ? n / d : 0);
+  const stickiness = Math.min(1, safe(dau, mau));
+  const arpu = safe(revenue * 30, mau); // 월간 추정
+  const arpdau = safe(revenue, dau);
+  const arppu = safe(revenue, payingUsers);
+  const cac = safe(adSpend, newUsers);
+  const roas = safe(revenue, adSpend);
+  const payback = arpdau > 0 ? cac / arpdau : Infinity;
+  return { dau, mau, stickiness, arpu, arpdau, arppu, cac, roas, payback };
+}

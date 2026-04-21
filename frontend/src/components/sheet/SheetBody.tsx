@@ -17,6 +17,7 @@ import { VirtualItem } from '@tanstack/react-virtual';
 import { cn } from '@/lib/utils';
 import type { Row, Column, CellValue, CellStyle } from '@/types';
 import SheetCell from './SheetCell';
+import { InlineCheckbox, InlineRating } from './InlineCellControls';
 import { cellKey, formatDisplayValue, type DisplayContext } from './utils';
 
 interface SheetBodyProps {
@@ -68,6 +69,9 @@ interface SheetBodyProps {
   // 번역
   noDataText: string;
   dragToFillText: string;
+
+  /** Track 1 인라인 컨트롤 — checkbox 토글, rating 별 클릭. */
+  onInlineCellUpdate?: (rowId: string, columnId: string, value: CellValue) => void;
 }
 
 const SheetBody = memo(function SheetBody({
@@ -102,6 +106,7 @@ const SheetBody = memo(function SheetBody({
   onResizeContextMenu,
   noDataText,
   dragToFillText,
+  onInlineCellUpdate,
 }: SheetBodyProps) {
   // 빈 데이터 표시
   if (rows.length === 0) {
@@ -293,6 +298,28 @@ const SheetBody = memo(function SheetBody({
                     cellKey={cellKeyStr}
                     value={rawValue}
                     displayValue={formatDisplayValue(displayValue, column, displayContext, rowData)}
+                    inlineControl={(() => {
+                      if (!onInlineCellUpdate || column.locked || rowData.locked) return undefined;
+                      if (column.type === 'checkbox') {
+                        return (
+                          <InlineCheckbox
+                            value={rawValue}
+                            onChange={(next) => onInlineCellUpdate(rowData.id, columnId, next ? 1 : 0)}
+                          />
+                        );
+                      }
+                      if (column.type === 'rating') {
+                        const max = (column as { ratingMax?: number }).ratingMax ?? 5;
+                        return (
+                          <InlineRating
+                            value={rawValue}
+                            max={max}
+                            onChange={(next) => onInlineCellUpdate(rowData.id, columnId, next)}
+                          />
+                        );
+                      }
+                      return undefined;
+                    })()}
                     cellStyle={cellStyle}
                     cellMemo={cellMemo}
                     isSelected={isSelected}

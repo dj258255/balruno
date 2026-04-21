@@ -8,11 +8,13 @@ import type {
   Sticker,
   CellStyle,
   Folder,
+  Doc,
 } from '@/types';
 import { createProjectActions } from './slices/projectSlice';
 import { createSheetActions } from './slices/sheetSlice';
 import { createCellActions } from './slices/cellSlice';
 import { createSelectionActions } from './slices/selectionSlice';
+import { createDocActions } from './slices/docSlice';
 
 // ==== 보조 타입 ====
 
@@ -68,7 +70,19 @@ export interface ProjectState {
   updateSheet: (
     projectId: string,
     sheetId: string,
-    updates: Partial<Pick<Sheet, 'name' | 'exportClassName' | 'activeView' | 'viewGroupColumnId'>>
+    updates: Partial<Pick<Sheet,
+      | 'name'
+      | 'exportClassName'
+      | 'activeView'
+      | 'viewGroupColumnId'
+      | 'viewKanbanCoverColumnId'
+      | 'viewKanbanFieldIds'
+      | 'viewCalendarEndColumnId'
+      | 'viewGanttEndColumnId'
+      | 'viewGanttDependsColumnId'
+      | 'savedViews'
+      | 'activeSavedViewId'
+    >>
   ) => void;
   deleteSheet: (projectId: string, sheetId: string) => void;
   setCurrentSheet: (id: string | null) => void;
@@ -168,6 +182,17 @@ export interface ProjectState {
   completeCellSelection: (value: number, rowId?: string, columnId?: string) => void;
   cancelCellSelection: () => void;
 
+  // 문서 액션 (Phase A — Doc 계층)
+  currentDocId: string | null;
+  createDoc: (projectId: string, name: string, content?: string) => string;
+  updateDoc: (
+    projectId: string,
+    docId: string,
+    updates: Partial<Pick<Doc, 'name' | 'content'>>
+  ) => void;
+  deleteDoc: (projectId: string, docId: string) => void;
+  setCurrentDoc: (docId: string | null) => void;
+
   // 폴더 액션
   createFolder: (projectId: string, name: string, parentId?: string) => string;
   updateFolder: (
@@ -199,10 +224,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   lastSaved: null,
   selectedRows: [],
   cellSelectionMode: { active: false, fieldLabel: '', callback: null },
+  currentDocId: null,
 
   // 액션은 슬라이스에서 주입
   ...createProjectActions(set, get),
   ...createSheetActions(set, get),
   ...createCellActions(set, get),
   ...createSelectionActions(set, get),
+  ...createDocActions(set),
 }));

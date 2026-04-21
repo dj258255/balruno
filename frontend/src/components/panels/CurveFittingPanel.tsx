@@ -7,8 +7,9 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import CustomSelect from '@/components/ui/CustomSelect';
+import Checkbox from '@/components/ui/Checkbox';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { useEscapeKey } from '@/hooks';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { cn } from '@/lib/utils';
 
 function removeTokenBackgrounds(style: Record<string, React.CSSProperties>): Record<string, React.CSSProperties> {
@@ -58,9 +59,11 @@ const CURVE_NAMES: Record<CurveType, string> = {
   sigmoid: 'Sigmoid'
 };
 
-export default function CurveFittingPanel({ onClose, showHelp, setShowHelp }: CurveFittingPanelProps) {
+export default function CurveFittingPanel({ onClose, showHelp: externalShowHelp, setShowHelp: externalSetShowHelp }: CurveFittingPanelProps) {
   const t = useTranslations('curveFitting');
-  useEscapeKey(onClose ?? (() => {}), !!onClose);
+  const [internalShowHelp, setInternalShowHelp] = useState(false);
+  const showHelp = externalShowHelp ?? internalShowHelp;
+  const setShowHelp = externalSetShowHelp ?? setInternalShowHelp;
   const { theme } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [points, setPoints] = useState<Point[]>([]);
@@ -366,7 +369,15 @@ export default function CurveFittingPanel({ onClose, showHelp, setShowHelp }: Cu
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <PanelShell
+      title="곡선 피팅"
+      subtitle="데이터 → 수식 역산 (회귀)"
+      icon={PenTool}
+      iconColor="#6366f1"
+      onClose={onClose ?? (() => {})}
+      bodyClassName="p-0 flex flex-col overflow-hidden"
+      actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color="#6366f1" />}
+    >
       <div className="p-4 space-y-5 overflow-y-auto overflow-x-hidden flex-1 scrollbar-slim">
         {/* Help Section */}
         {showHelp && (
@@ -577,12 +588,10 @@ export default function CurveFittingPanel({ onClose, showHelp, setShowHelp }: Cu
           <div className="flex items-center gap-3">
             <TrendingUp className="w-4 h-4" style={{ color: PANEL_COLOR }} />
             <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('fittedCurves')}</span>
-            <label className="flex items-center gap-1.5 text-sm ml-auto" style={{ color: 'var(--text-secondary)' }}>
-              <input
-                type="checkbox"
+            <label className="flex items-center gap-1.5 text-sm ml-auto cursor-pointer select-none" style={{ color: 'var(--text-secondary)' }}>
+              <Checkbox
                 checked={showAllCurves}
                 onChange={(e) => setShowAllCurves(e.target.checked)}
-                className="rounded"
               />
               {t('showAll')}
             </label>
@@ -797,6 +806,6 @@ export default function CurveFittingPanel({ onClose, showHelp, setShowHelp }: Cu
           </div>
         </div>
       )}
-    </div>
+    </PanelShell>
   );
 }

@@ -8,6 +8,7 @@ import { DPS, TTK, EHP, DAMAGE, SCALE } from '@/lib/formulaEngine';
 import { useProjectStore } from '@/stores/projectStore';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useEscapeKey } from '@/hooks';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import CustomSelect from '@/components/ui/CustomSelect';
 
 const PANEL_COLOR = '#9179f2'; // 소프트 퍼플
@@ -121,30 +122,26 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
     }
   };
 
-  const wrapperClass = isPanel ? "flex flex-col h-full" : "fixed inset-0 modal-overlay flex items-center justify-center z-[1100] p-2 sm:p-4";
-  const cardClass = isPanel ? "flex flex-col h-full" : "card w-full max-w-2xl max-h-[95vh] sm:max-h-[85vh] flex flex-col animate-fadeIn";
   const tabColor = TAB_COLORS[activeTab];
 
-  return (
-    <div className={wrapperClass}>
-      <div className={cardClass}>
-        {/* 헤더 - 모달일 때만 */}
-        {!isPanel && (
-          <div className="flex items-center justify-between shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b" style={{ borderColor: 'var(--border-primary)' }}>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="rounded-xl flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10" style={{ background: `linear-gradient(135deg, ${PANEL_COLOR}, ${PANEL_COLOR}cc)` }}>
-                <CalcIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('fullTitle')}</h2>
-                <p className="text-sm sm:text-sm hidden sm:block" style={{ color: 'var(--text-secondary)' }}>{t('subtitle')}</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="rounded-lg transition-colors p-2" style={{ color: 'var(--text-secondary)' }}><X className="w-5 h-5" /></button>
-          </div>
-        )}
+  const modalHeader = (
+    <div className="flex items-center justify-between shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b" style={{ borderColor: 'var(--border-primary)' }}>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="rounded-xl flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10" style={{ background: `linear-gradient(135deg, ${PANEL_COLOR}, ${PANEL_COLOR}cc)` }}>
+          <CalcIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        </div>
+        <div>
+          <h2 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('fullTitle')}</h2>
+          <p className="text-sm sm:text-sm hidden sm:block" style={{ color: 'var(--text-secondary)' }}>{t('subtitle')}</p>
+        </div>
+      </div>
+      <button onClick={onClose} className="rounded-lg transition-colors p-2" style={{ color: 'var(--text-secondary)' }}><X className="w-5 h-5" /></button>
+    </div>
+  );
 
-        {/* 수식 선택 드롭다운 */}
+  const body = (
+    <>
+      {/* 수식 선택 드롭다운 */}
         <div className="flex items-center gap-2 px-4 py-3">
           <div className="relative flex-1">
             <button
@@ -371,6 +368,30 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
             </div>
           )}
         </div>
+    </>
+  );
+
+  if (isPanel) {
+    return (
+      <PanelShell
+        title={t('fullTitle')}
+        subtitle={t('subtitle')}
+        icon={CalcIcon}
+        iconColor={PANEL_COLOR}
+        onClose={onClose}
+        bodyClassName="p-0 flex flex-col overflow-hidden"
+        actions={setShowHelp ? <HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color={PANEL_COLOR} /> : undefined}
+      >
+        {body}
+      </PanelShell>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 modal-overlay flex items-center justify-center z-[1100] p-2 sm:p-4">
+      <div className="card w-full max-w-2xl max-h-[95vh] sm:max-h-[85vh] flex flex-col animate-fadeIn">
+        {modalHeader}
+        {body}
       </div>
     </div>
   );

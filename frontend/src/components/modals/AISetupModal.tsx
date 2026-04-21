@@ -140,9 +140,9 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
               value={workType}
               onChange={(v) => setWorkType(v as typeof workType)}
               options={[
-                { value: 'balancing', label: '⚔️  밸런싱 (수치 시트)' },
-                { value: 'pm', label: '📋  팀 PM (스프린트 / 버그 / 로드맵)' },
-                { value: 'design-doc', label: '📝  기획 문서 (베타)' },
+                { value: 'balancing', label: '밸런싱 (수치 시트)' },
+                { value: 'pm', label: '팀 PM (스프린트 / 버그 / 로드맵)' },
+                { value: 'design-doc', label: '기획 문서 (베타)' },
               ]}
               size="md"
             />
@@ -268,7 +268,7 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
                     style={{ background: 'var(--bg-primary)' }}
                   >
                     <div className="text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
-                      📋 {s.name}
+                      {s.name}
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {s.columns.map((col, j) => (

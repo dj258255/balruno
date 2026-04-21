@@ -11,6 +11,5 @@ export { default as EconomyPanel } from './EconomyPanel';
 export { default as DPSVariancePanel } from './DPSVariancePanel';
 export { default as CurveFittingPanel } from './CurveFittingPanel';
 export { default as FormulaHelper } from './FormulaHelper';
-export { default as FormulaPresetPicker } from './FormulaPresetPicker';
 export { default as TemplateSelector } from './TemplateSelector';
 export { default as EntityDefinition } from './EntityDefinition';

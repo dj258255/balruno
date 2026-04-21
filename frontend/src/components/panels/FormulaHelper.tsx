@@ -22,7 +22,7 @@ import {
 import { availableFunctions, evaluateFormula } from '@/lib/formulaEngine';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
-import { useEscapeKey } from '@/hooks';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 
 // 카테고리 정의
 const CATEGORY_IDS = ['all', 'combat', 'economy', 'stage', 'util', 'ref', 'math', 'stat', 'trig', 'logic'] as const;
@@ -59,9 +59,11 @@ interface FormulaHelperProps {
 
 const PANEL_COLOR = '#5a9cf5'; // 소프트 블루
 
-export default function FormulaHelper({ onClose, showHelp = false, setShowHelp }: FormulaHelperProps) {
+export default function FormulaHelper({ onClose, showHelp: externalShowHelp, setShowHelp: externalSetShowHelp }: FormulaHelperProps) {
   const t = useTranslations();
-  useEscapeKey(onClose ?? (() => {}), !!onClose);
+  const [internalShowHelp, setInternalShowHelp] = useState(false);
+  const showHelp = externalShowHelp ?? internalShowHelp;
+  const setShowHelp = externalSetShowHelp ?? setInternalShowHelp;
   const [testFormula, setTestFormula] = useState('');
   const [testResult, setTestResult] = useState<string | null>(null);
   const [copiedFunction, setCopiedFunction] = useState<string | null>(null);
@@ -139,7 +141,15 @@ export default function FormulaHelper({ onClose, showHelp = false, setShowHelp }
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <PanelShell
+      title="수식 도우미"
+      subtitle="90+ 함수 레퍼런스 검색"
+      icon={BookOpen}
+      iconColor="#8b5cf6"
+      onClose={onClose ?? (() => {})}
+      bodyClassName="p-0 flex flex-col overflow-hidden"
+      actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color="#8b5cf6" />}
+    >
       <div className="p-4 space-y-5 overflow-y-auto overflow-x-hidden flex-1 scrollbar-slim">
         {/* 도움말 섹션 */}
         {showHelp && (
@@ -398,6 +408,6 @@ export default function FormulaHelper({ onClose, showHelp = false, setShowHelp }
           </div>
         </div>
       </div>
-    </div>
+    </PanelShell>
   );
 }

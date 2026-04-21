@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { X, Target, Calculator, AlertTriangle, Check, Copy, ChevronDown, HelpCircle } from 'lucide-react';
 import { solve, SOLVER_FORMULAS, type SolverFormula } from '@/lib/goalSolver';
-import { useEscapeKey } from '@/hooks/useEscapeKey';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useTranslations } from 'next-intl';
 
 const PANEL_COLOR = '#3db8a8'; // 소프트 틸
@@ -27,8 +27,7 @@ const hideSpinnerStyle = `
 `;
 
 export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, setShowHelp: externalSetShowHelp }: GoalSolverPanelProps) {
-  // ESC 키로 패널 닫기
-  useEscapeKey(onClose);
+  // PanelShell 이 ESC 담당
   const t = useTranslations('goalSolver');
 
   const [expandedFormulas, setExpandedFormulas] = useState<Set<SolverFormula>>(new Set());
@@ -119,10 +118,17 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <PanelShell
+      title="목표 역산"
+      subtitle="목표값 → 필요 입력 역산"
+      icon={Target}
+      iconColor="#14b8a6"
+      onClose={onClose}
+      bodyClassName="p-0 flex flex-col overflow-hidden"
+      actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color="#14b8a6" />}
+    >
       <style>{hideSpinnerStyle}</style>
 
-      {/* 내용 */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-2">
         {/* 도움말 패널 */}
         {showHelp && (
@@ -320,6 +326,6 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
           );
         })}
       </div>
-    </div>
+    </PanelShell>
   );
 }

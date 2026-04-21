@@ -23,6 +23,7 @@ export type FormulaCategory =
   | 'combat'      // 전투 계산
   | 'growth'      // 성장/레벨업
   | 'economy'     // 재화/경제
+  | 'liveops'     // F2P 라이브 서비스 지표 (LTV/ARPU/Retention 등)
   | 'probability' // 확률 계산
   | 'stat'        // 스탯 계산
   | 'utility';    // 유틸리티
@@ -32,6 +33,7 @@ export const FORMULA_CATEGORIES: Record<FormulaCategory, { name: string; color: 
   combat: { name: '전투', color: 'var(--primary-red)' },
   growth: { name: '성장', color: 'var(--primary-green)' },
   economy: { name: '경제', color: 'var(--primary-yellow)' },
+  liveops: { name: '라이브옵스', color: 'var(--primary-purple)' },
   probability: { name: '확률', color: 'var(--primary-purple)' },
   stat: { name: '스탯', color: 'var(--primary-blue)' },
   utility: { name: '유틸리티', color: 'var(--text-secondary)' },
@@ -345,6 +347,239 @@ export const FORMULA_PRESETS: FormulaPreset[] = [
       { name: 'DIGITS', description: '소수점 자릿수', defaultValue: '2' },
     ],
   },
+
+  // ───── 라이브옵스 (F2P 경제) ─────
+  {
+    id: 'ltv',
+    name: 'LTV (Lifetime Value)',
+    category: 'liveops',
+    formula: '=LTV({ARPDAU}, {CHURN_DAILY})',
+    description: '유저 1명의 이탈 전까지 예상 매출. ARPDAU / 일일 이탈률.',
+    example: 'ARPDAU $0.20, daily churn 5% → LTV $4.00',
+    params: [
+      { name: 'ARPDAU', description: '일일 유저당 매출 ($)', defaultValue: 'B2' },
+      { name: 'CHURN_DAILY', description: '일일 이탈률 (0-1)', defaultValue: '0.05' },
+    ],
+  },
+  {
+    id: 'arpu',
+    name: 'ARPU (Average Revenue Per User)',
+    category: 'liveops',
+    formula: '=ARPU({REVENUE}, {USERS})',
+    description: '기간 총 매출 / 유저 수.',
+    params: [
+      { name: 'REVENUE', description: '총 매출', defaultValue: 'B2' },
+      { name: 'USERS', description: '유저 수', defaultValue: 'C2' },
+    ],
+  },
+  {
+    id: 'arpdau',
+    name: 'ARPDAU',
+    category: 'liveops',
+    formula: '=ARPDAU({DAILY_REVENUE}, {DAU})',
+    description: '일일 매출 / DAU. F2P 수익성 핵심.',
+    params: [
+      { name: 'DAILY_REVENUE', description: '일일 매출', defaultValue: 'B2' },
+      { name: 'DAU', description: '일일 활성 유저', defaultValue: 'C2' },
+    ],
+  },
+  {
+    id: 'arppu',
+    name: 'ARPPU (결제 유저당 매출)',
+    category: 'liveops',
+    formula: '=ARPPU({REVENUE}, {PAYING_USERS})',
+    description: '매출 / 결제 유저. 과금 심도 지표.',
+    params: [
+      { name: 'REVENUE', description: '총 매출', defaultValue: 'B2' },
+      { name: 'PAYING_USERS', description: '결제 유저 수', defaultValue: 'C2' },
+    ],
+  },
+  {
+    id: 'stickiness',
+    name: 'Stickiness (DAU/MAU)',
+    category: 'liveops',
+    formula: '=STICKINESS({DAU}, {MAU})',
+    description: '유저 접속 빈도 지표. 0.2 일반, 0.3 좋음, 0.5+ 훌륭.',
+    params: [
+      { name: 'DAU', description: '일일 활성 유저', defaultValue: 'B2' },
+      { name: 'MAU', description: '월간 활성 유저', defaultValue: 'C2' },
+    ],
+  },
+  {
+    id: 'retention',
+    name: 'Retention (N일차 잔존율)',
+    category: 'liveops',
+    formula: '=RETENTION({DAY1}, {N}, {LAMBDA})',
+    description: '지수 감소 모델: R(n) = D1 × exp(-λ(n-1)).',
+    params: [
+      { name: 'DAY1', description: 'D1 잔존율 (0-1)', defaultValue: '0.4' },
+      { name: 'N', description: '일차', defaultValue: '7' },
+      { name: 'LAMBDA', description: '감소 상수', defaultValue: '0.05' },
+    ],
+  },
+  {
+    id: 'churn_rate',
+    name: 'Churn Rate (이탈률)',
+    category: 'liveops',
+    formula: '=CHURN_RATE({RETENTION})',
+    description: '1 - 잔존율.',
+    params: [
+      { name: 'RETENTION', description: '잔존율 (0-1)', defaultValue: 'B2' },
+    ],
+  },
+  {
+    id: 'k_factor',
+    name: 'K-Factor (바이럴 계수)',
+    category: 'liveops',
+    formula: '=K_FACTOR({INVITES}, {CONV_RATE})',
+    description: '유저 1명 평균 초대 수 × 초대 전환율. K≥1 이면 바이럴 성장.',
+    params: [
+      { name: 'INVITES', description: '평균 초대 수', defaultValue: '3' },
+      { name: 'CONV_RATE', description: '초대 전환율 (0-1)', defaultValue: '0.2' },
+    ],
+  },
+  {
+    id: 'payback_period',
+    name: 'Payback Period (회수 기간)',
+    category: 'liveops',
+    formula: '=PAYBACK_PERIOD({CAC}, {ARPDAU})',
+    description: 'CAC / ARPDAU. 광고비 회수까지 걸리는 일수.',
+    params: [
+      { name: 'CAC', description: '고객 획득 비용', defaultValue: 'B2' },
+      { name: 'ARPDAU', description: '일일 유저당 매출', defaultValue: 'C2' },
+    ],
+  },
+  {
+    id: 'cac',
+    name: 'CAC (고객 획득 비용)',
+    category: 'liveops',
+    formula: '=CAC({AD_SPEND}, {NEW_USERS})',
+    description: '광고비 / 신규 유저.',
+    params: [
+      { name: 'AD_SPEND', description: '광고비', defaultValue: 'B2' },
+      { name: 'NEW_USERS', description: '신규 유저', defaultValue: 'C2' },
+    ],
+  },
+  {
+    id: 'roas',
+    name: 'ROAS (광고비 대비 매출)',
+    category: 'liveops',
+    formula: '=ROAS({REVENUE}, {AD_SPEND})',
+    description: '매출 / 광고비. 1.0 = 손익분기.',
+    params: [
+      { name: 'REVENUE', description: '매출', defaultValue: 'B2' },
+      { name: 'AD_SPEND', description: '광고비', defaultValue: 'C2' },
+    ],
+  },
+  {
+    id: 'conversion_rate',
+    name: 'Conversion Rate (전환율)',
+    category: 'liveops',
+    formula: '=CONVERSION_RATE({CONVERTED}, {TOTAL})',
+    description: '전환 수 / 전체. 0-1로 클램프.',
+    params: [
+      { name: 'CONVERTED', description: '전환 수', defaultValue: 'B2' },
+      { name: 'TOTAL', description: '전체 수', defaultValue: 'C2' },
+    ],
+  },
+  {
+    id: 'whale_curve',
+    name: 'Whale Curve (고래 곡선)',
+    category: 'liveops',
+    formula: '=WHALE_CURVE({PERCENTILE}, {TOP_PCT}, {SHARE})',
+    description: '파레토 분포. 상위 percentile 유저가 기여하는 누적 매출.',
+    example: 'percentile 0.1, top 10%, share 50% → 50%',
+    params: [
+      { name: 'PERCENTILE', description: '상위 비율 (0-1)', defaultValue: '0.1' },
+      { name: 'TOP_PCT', description: '기준 상위 비율', defaultValue: '0.1' },
+      { name: 'SHARE', description: '기준 매출 점유율', defaultValue: '0.5' },
+    ],
+  },
+  {
+    id: 'funnel_conversion',
+    name: 'Funnel Conversion (퍼널 전환)',
+    category: 'liveops',
+    formula: '=FUNNEL_CONVERSION({STEP1}, {STEP2}, {STEP3})',
+    description: '각 단계 통과율의 곱.',
+    params: [
+      { name: 'STEP1', description: '1단계 전환율', defaultValue: '0.5' },
+      { name: 'STEP2', description: '2단계 전환율', defaultValue: '0.3' },
+      { name: 'STEP3', description: '3단계 전환율', defaultValue: '0.1' },
+    ],
+  },
+  {
+    id: 'cohort_retention',
+    name: 'Cohort Retention (멱함수)',
+    category: 'liveops',
+    formula: '=COHORT_RETENTION({DAY1}, {DAY}, {P})',
+    description: '멱함수 감소 모델. D1 × n^(-p). 모바일 p=0.5~0.7.',
+    params: [
+      { name: 'DAY1', description: 'D1 잔존율', defaultValue: '0.4' },
+      { name: 'DAY', description: '일차', defaultValue: '30' },
+      { name: 'P', description: '감소 지수', defaultValue: '0.6' },
+    ],
+  },
+  {
+    id: 'payback_curve',
+    name: 'Payback Curve (누적 수익)',
+    category: 'liveops',
+    formula: '=PAYBACK_CURVE({ARPDAU}, {DAY1}, {DAYS}, {P})',
+    description: 'N일까지 누적 ARPU × retention 합산.',
+    params: [
+      { name: 'ARPDAU', description: '일일 유저당 매출', defaultValue: '0.2' },
+      { name: 'DAY1', description: 'D1 잔존율', defaultValue: '0.4' },
+      { name: 'DAYS', description: '기간(일)', defaultValue: '30' },
+      { name: 'P', description: '감소 지수', defaultValue: '0.6' },
+    ],
+  },
+  {
+    id: 'engagement_score',
+    name: 'Engagement Score (참여도)',
+    category: 'liveops',
+    formula: '=ENGAGEMENT_SCORE({SESSION_MIN}, {SESSIONS_PER_DAY}, {DEPTH})',
+    description: '세션 길이 × 빈도 × 깊이의 정규화 점수 (0-100).',
+    params: [
+      { name: 'SESSION_MIN', description: '세션 분', defaultValue: '15' },
+      { name: 'SESSIONS_PER_DAY', description: '하루 세션 수', defaultValue: '3' },
+      { name: 'DEPTH', description: '깊이 점수 (0-10)', defaultValue: '5' },
+    ],
+  },
+  {
+    id: 'elasticity',
+    name: 'Price Elasticity (가격 탄력성)',
+    category: 'liveops',
+    formula: '=ELASTICITY({Q1}, {Q2}, {P1}, {P2})',
+    description: '절댓값 >1 이면 탄력적 (가격 변화에 민감).',
+    params: [
+      { name: 'Q1', description: '기존 수량', defaultValue: '1000' },
+      { name: 'Q2', description: '변경 후 수량', defaultValue: '800' },
+      { name: 'P1', description: '기존 가격', defaultValue: '5' },
+      { name: 'P2', description: '변경 후 가격', defaultValue: '7' },
+    ],
+  },
+  {
+    id: 'virality',
+    name: 'Virality (바이럴 누적)',
+    category: 'liveops',
+    formula: '=VIRALITY({SEED}, {K}, {GENERATIONS})',
+    description: '초기 시드에서 K세대 후 누적 유저 수. k<1이면 수렴.',
+    params: [
+      { name: 'SEED', description: '초기 유저', defaultValue: '100' },
+      { name: 'K', description: 'K-factor', defaultValue: '0.5' },
+      { name: 'GENERATIONS', description: '세대 수', defaultValue: '10' },
+    ],
+  },
+  {
+    id: 'margin',
+    name: 'Margin (마진율)',
+    category: 'liveops',
+    formula: '=MARGIN({REVENUE}, {COST})',
+    description: '(매출 - 비용) / 매출.',
+    params: [
+      { name: 'REVENUE', description: '매출', defaultValue: 'B2' },
+      { name: 'COST', description: '비용', defaultValue: 'C2' },
+    ],
+  },
 ];
 
 /**
@@ -355,6 +590,7 @@ export function getPresetsByCategory(): Record<FormulaCategory, FormulaPreset[]>
     combat: [],
     growth: [],
     economy: [],
+    liveops: [],
     probability: [],
     stat: [],
     utility: [],

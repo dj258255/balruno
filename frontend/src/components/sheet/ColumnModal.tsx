@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { useEscapeKey } from '@/hooks';
 import FormulaAutocomplete from './FormulaAutocomplete';
 import CustomSelect from '@/components/ui/CustomSelect';
+import Checkbox from '@/components/ui/Checkbox';
 import type {
   Column,
   ColumnType,
@@ -84,6 +85,19 @@ export default function ColumnModal({
   const [rollupAggregate, setRollupAggregate] = useState<
     'SUM' | 'AVG' | 'MIN' | 'MAX' | 'COUNT' | 'CONCAT'
   >(column?.rollupAggregate ?? 'SUM');
+  // Track 12 — task-link
+  const [taskSheetId, setTaskSheetId] = useState(column?.taskSheetId ?? '');
+  const [taskStatusColumnId, setTaskStatusColumnId] = useState(
+    column?.taskStatusColumnId ?? ''
+  );
+  const [taskAssigneeColumnId, setTaskAssigneeColumnId] = useState(
+    column?.taskAssigneeColumnId ?? ''
+  );
+  // Track 13 — stat-snapshot
+  const [snapshotSheetId, setSnapshotSheetId] = useState(column?.snapshotSheetId ?? '');
+  const [snapshotColumnIds, setSnapshotColumnIds] = useState<string[]>(
+    column?.snapshotColumnIds ?? []
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -121,6 +135,11 @@ export default function ColumnModal({
       lookupLinkColumnId?: string;
       lookupTargetColumnId?: string;
       rollupAggregate?: 'SUM' | 'AVG' | 'MIN' | 'MAX' | 'COUNT' | 'CONCAT';
+      taskSheetId?: string;
+      taskStatusColumnId?: string;
+      taskAssigneeColumnId?: string;
+      snapshotSheetId?: string;
+      snapshotColumnIds?: string[];
     } = {
       name: name.trim(),
       type,
@@ -155,6 +174,15 @@ export default function ColumnModal({
       if (lookupLinkColumnId) data.lookupLinkColumnId = lookupLinkColumnId;
       if (lookupTargetColumnId) data.lookupTargetColumnId = lookupTargetColumnId;
       if (type === 'rollup') data.rollupAggregate = rollupAggregate;
+    }
+    if (type === 'task-link') {
+      if (taskSheetId) data.taskSheetId = taskSheetId;
+      if (taskStatusColumnId) data.taskStatusColumnId = taskStatusColumnId;
+      if (taskAssigneeColumnId) data.taskAssigneeColumnId = taskAssigneeColumnId;
+    }
+    if (type === 'stat-snapshot') {
+      if (snapshotSheetId) data.snapshotSheetId = snapshotSheetId;
+      if (snapshotColumnIds.length > 0) data.snapshotColumnIds = snapshotColumnIds;
     }
 
     if (showValidation) {
@@ -247,17 +275,20 @@ export default function ColumnModal({
               onChange={(v) => setType(v as ColumnType)}
               options={[
                 { value: 'general', label: t('column.typeGeneral') },
-                { value: 'formula', label: `ƒ  ${t('column.typeFormula')}` },
-                { value: 'checkbox', label: '☑  Checkbox' },
-                { value: 'select', label: '◆  Select' },
-                { value: 'multiSelect', label: '◆◆  Multi-select' },
-                { value: 'date', label: '📅  Date' },
-                { value: 'url', label: '🔗  URL' },
-                { value: 'currency', label: '₩  Currency' },
-                { value: 'rating', label: '★  Rating' },
-                { value: 'link', label: '🔗  Link (Track 2)' },
-                { value: 'lookup', label: '⤴  Lookup (Track 3)' },
-                { value: 'rollup', label: 'Σ  Rollup (Track 3)' },
+                { value: 'formula', label: t('column.typeFormula') },
+                { value: 'checkbox', label: 'Checkbox' },
+                { value: 'select', label: 'Select' },
+                { value: 'multiSelect', label: 'Multi-select' },
+                { value: 'date', label: 'Date' },
+                { value: 'url', label: 'URL' },
+                { value: 'currency', label: 'Currency' },
+                { value: 'rating', label: 'Rating' },
+                { value: 'link', label: 'Link (Track 2)' },
+                { value: 'lookup', label: 'Lookup (Track 3)' },
+                { value: 'rollup', label: 'Rollup (Track 3)' },
+                { value: 'task-link', label: 'Task Link (Track 12)' },
+                { value: 'person', label: 'Person / @mention' },
+                { value: 'stat-snapshot', label: 'Stat Snapshot (Track 13)' },
               ]}
               size="md"
             />
@@ -298,9 +329,8 @@ export default function ColumnModal({
                   size="sm"
                 />
               )}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <Checkbox
                   checked={linkedMultiple}
                   onChange={(e) => setLinkedMultiple(e.target.checked)}
                 />
@@ -365,6 +395,109 @@ export default function ColumnModal({
                   size="sm"
                 />
               )}
+            </div>
+          )}
+
+          {/* Track 13 — stat-snapshot 설정 */}
+          {type === 'stat-snapshot' && (
+            <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+              <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                Snapshot 대상 시트 (entity 소스)
+              </label>
+              <CustomSelect
+                value={snapshotSheetId}
+                onChange={(v) => {
+                  setSnapshotSheetId(v);
+                  setSnapshotColumnIds([]);
+                }}
+                options={[
+                  { value: '', label: '— 시트 선택 —' },
+                  ...sheets
+                    .filter((s) => s.id !== currentSheetId)
+                    .map((s) => ({ value: s.id, label: s.name })),
+                ]}
+                size="sm"
+              />
+              {snapshotSheetId && (() => {
+                const targetSheet = sheets.find((s) => s.id === snapshotSheetId);
+                const toggle = (id: string) => {
+                  setSnapshotColumnIds((prev) =>
+                    prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+                  );
+                };
+                return (
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                      캡처할 stats (체크)
+                    </label>
+                    <div className="grid grid-cols-2 gap-1 max-h-32 overflow-y-auto">
+                      {targetSheet?.columns.map((c) => (
+                        <label key={c.id} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={snapshotColumnIds.includes(c.id)}
+                            onChange={() => toggle(c.id)}
+                          />
+                          <span style={{ color: 'var(--text-primary)' }}>{c.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+              <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                Playtest 세션 row 에서 캡처 버튼 → 선택된 stats 가 JSON 으로 고정 저장됩니다.
+              </p>
+            </div>
+          )}
+
+          {/* Track 12 — task-link 설정 */}
+          {type === 'task-link' && (
+            <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+              <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                Task/Sprint 시트 선택 + 상태·담당자 컬럼
+              </label>
+              <CustomSelect
+                value={taskSheetId}
+                onChange={(v) => {
+                  setTaskSheetId(v);
+                  setTaskStatusColumnId('');
+                  setTaskAssigneeColumnId('');
+                }}
+                options={[
+                  { value: '', label: '— task 시트 선택 —' },
+                  ...sheets
+                    .filter((s) => s.id !== currentSheetId)
+                    .map((s) => ({ value: s.id, label: s.name })),
+                ]}
+                size="sm"
+              />
+              {taskSheetId && (() => {
+                const targetSheet = sheets.find((s) => s.id === taskSheetId);
+                const colOpts = [
+                  { value: '', label: '— 선택 안 함 —' },
+                  ...(targetSheet?.columns.map((c) => ({ value: c.id, label: c.name })) ?? []),
+                ];
+                return (
+                  <>
+                    <CustomSelect
+                      value={taskStatusColumnId}
+                      onChange={setTaskStatusColumnId}
+                      options={colOpts}
+                      size="sm"
+                    />
+                    <CustomSelect
+                      value={taskAssigneeColumnId}
+                      onChange={setTaskAssigneeColumnId}
+                      options={colOpts}
+                      size="sm"
+                    />
+                    <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                      위: 상태 컬럼 (Kanban status 표시). 아래: 담당자 컬럼 (이름/avatar 표시).
+                    </p>
+                  </>
+                );
+              })()}
             </div>
           )}
 

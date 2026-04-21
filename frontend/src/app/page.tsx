@@ -5,15 +5,16 @@ import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { useProjectHistory, useTour, useYDocSync } from '@/hooks';
+import { usePanelStates } from '@/hooks/usePanelStates';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { useGlobalEvents } from '@/hooks/useGlobalEvents';
+import { useGlobalKeybinds } from '@/hooks/useGlobalKeybinds';
+import { useAutomationObserver } from '@/hooks/useAutomationObserver';
 import { getTourByProjectId } from '@/data/tourSteps';
-import {
-  loadProjects,
-  saveAllProjects,
-  startAutoSave,
-  stopAutoSave,
-  startAutoBackup,
-  stopAutoBackup,
-} from '@/lib/storage';
+import { loadProjects } from '@/lib/storage';
+import { recordRecentSheet } from '@/lib/recentSheets';
+import { initErrorReporting } from '@/lib/errorReporting';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // Layout components
 import { Sidebar, SheetTabs } from '@/components/layout';
@@ -31,6 +32,7 @@ import KanbanView from '@/components/views/KanbanView';
 import CalendarView from '@/components/views/CalendarView';
 import GalleryView from '@/components/views/GalleryView';
 import GanttView from '@/components/views/GanttView';
+import DiagramView from '@/components/views/DiagramView';
 import type { ViewType } from '@/types';
 
 // Modal components - Dynamic imports for code splitting
@@ -39,6 +41,10 @@ import { useOnboardingStatus } from '@/components/modals';
 const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ssr: false });
 const AISetupModal = dynamic(() => import('@/components/modals/AISetupModal'), { ssr: false });
 const ShareModal = dynamic(() => import('@/components/modals/ShareModal'), { ssr: false });
+const KeyboardShortcuts = dynamic(() => import('@/components/modals/KeyboardShortcuts'), { ssr: false });
+const ToastContainer = dynamic(() => import('@/components/ui/Toast'), { ssr: false });
+const ProjectDedupeModal = dynamic(() => import('@/components/modals/ProjectDedupeModal'), { ssr: false });
+const ProjectGalleryModal = dynamic(() => import('@/components/modals/ProjectGalleryModal'), { ssr: false });
 const SettingsModal = dynamic(() => import('@/components/modals/SettingsModal'), { ssr: false });
 const ReferencesModal = dynamic(() => import('@/components/modals/ReferencesModal'), { ssr: false });
 const OnboardingGuide = dynamic(() => import('@/components/modals/OnboardingGuide'), { ssr: false });
@@ -65,12 +71,15 @@ import { InteractiveTour } from '@/components/tour';
 
 // Sub-components
 import LoadingScreen from './components/LoadingScreen';
-import WelcomeScreen from './components/WelcomeScreen';
+import HomeScreen from '@/components/home/HomeScreen';
+import DocView from '@/components/docs/DocView';
+import AICopilotPanel from '@/components/ai/AICopilotPanel';
 import MobileHeader from './components/MobileHeader';
+import MobileNotice from './components/MobileNotice';
 import MobileSidebar from './components/MobileSidebar';
 import SheetHeader from './components/SheetHeader';
 import BottomDock from '@/components/BottomDock';
-import EmptySheetView from './components/EmptySheetView';
+import ProjectMenu from './components/ProjectMenu';
 import DockedToolbox from '@/components/DockedToolbox';
 import SidebarResizer from './components/SidebarResizer';
 
@@ -82,8 +91,11 @@ export default function Home() {
     projects,
     currentProjectId,
     currentSheetId,
+    currentDocId,
+    setCurrentDoc,
     loadProjects: setProjects,
     setLastSaved,
+    createProject,
     createSheet,
     addSticker,
     addColumn,
@@ -92,8 +104,12 @@ export default function Home() {
     updateSheet,
   } = useProjectStore();
 
+  const { toggleTheme } = useTheme();
+
   // Track 0 Phase 2: Y.Doc ↔ Zustand 양방향 브릿지 (모든 편집이 Y.Doc 경유)
   useYDocSync();
+
+  // (useAutomationObserver 는 아래 currentProjectId 바인딩 이후 호출)
 
   // Tour hook
   const { startTour } = useTour();
@@ -114,7 +130,11 @@ export default function Home() {
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showAISetup, setShowAISetup] = useState(false);
+  const [showAICopilot, setShowAICopilot] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [showDedupeModal, setShowDedupeModal] = useState(false);
 
   // Modal state
   const [showSettings, setShowSettings] = useState(false);
@@ -123,24 +143,40 @@ export default function Home() {
   const [showImportModal, setShowImportModal] = useState(false);
   const { showOnboarding, setShowOnboarding } = useOnboardingStatus();
 
-  // Floating panel state
-  const [showCalculator, setShowCalculator] = useState(false);
-  const [showComparison, setShowComparison] = useState(false);
-  const [showChart, setShowChart] = useState(false);
-  const [showPresetComparison, setShowPresetComparison] = useState(false);
-  const [showImbalanceDetector, setShowImbalanceDetector] = useState(false);
-  const [showGoalSolver, setShowGoalSolver] = useState(false);
-  const [showBalanceAnalysis, setShowBalanceAnalysis] = useState(false);
-  const [showEconomy, setShowEconomy] = useState(false);
-  const [showDpsVariance, setShowDpsVariance] = useState(false);
-  const [showCurveFitting, setShowCurveFitting] = useState(false);
+  // 21개 툴 패널 상태 — 단일 hook 으로 통합 (page.tsx 분해)
+  const { panels: toolPanels } = usePanelStates();
 
-  // Bottom panel state
-  const [showFormulaHelper, setShowFormulaHelper] = useState(false);
-  const [showBalanceValidator, setShowBalanceValidator] = useState(false);
-  const [showDifficultyCurve, setShowDifficultyCurve] = useState(false);
-  const [showSimulation, setShowSimulation] = useState(false);
-  const [showEntityDefinition, setShowEntityDefinition] = useState(false);
+  // Track 10 — 활성 자동화의 cell-changed / row-added trigger 자동 발동
+  useAutomationObserver(currentProjectId);
+
+  // 중복 프로젝트 자동 감지 — 세션당 1회, 초기 로드 후
+  useEffect(() => {
+    if (isLoading || projects.length < 2) return;
+    const dismissed = typeof window !== 'undefined'
+      ? sessionStorage.getItem('balruno:dedupe-dismissed') === '1'
+      : true;
+    if (dismissed) return;
+
+    // 동적 import (초기 번들 가볍게)
+    import('@/lib/projectDedupe').then(({ detectDuplicates, totalDuplicateCount }) => {
+      const groups = detectDuplicates(projects);
+      const count = totalDuplicateCount(groups);
+      if (count > 0) {
+        import('@/components/ui/Toast').then(({ toast }) => {
+          // 토스트는 클릭 액션이 없으므로 warning 으로 알림 + 사용자가 명령 팔레트 / 이벤트로 열기
+          toast.warning(`중복 프로젝트 ${count}개 감지됨. ⌘K 에서 "중복 정리" 검색`, 8000);
+        });
+        sessionStorage.setItem('balruno:dedupe-dismissed', '1');
+      }
+    });
+  }, [isLoading, projects]);
+
+  // 중복 정리 모달 이벤트 (CommandPalette / Sidebar 에서 발행)
+  useEffect(() => {
+    const handler = () => setShowDedupeModal(true);
+    window.addEventListener('balruno:open-dedupe', handler);
+    return () => window.removeEventListener('balruno:open-dedupe', handler);
+  }, []);
 
   // Refs
   const sheetContainerRef = useRef<HTMLDivElement>(null);
@@ -148,6 +184,7 @@ export default function Home() {
   // Derived state
   const currentProject = projects.find((p) => p.id === currentProjectId) || null;
   const currentSheet = currentProject?.sheets.find((s) => s.id === currentSheetId) || null;
+  const currentDoc = currentProject?.docs?.find((d) => d.id === currentDocId) || null;
   const isModalOpen = showOnboarding || showReferences || showExportModal || showImportModal;
 
   // Track projects that have shown tour (using project creation time as marker)
@@ -155,6 +192,9 @@ export default function Home() {
 
   // Initial data load — Y.Doc hydrate 는 useYDocSync 가 projects 변경에 반응해 자동 처리
   useEffect(() => {
+    // 에러 리포팅 초기화 — NEXT_PUBLIC_SENTRY_DSN 설정 시에만 Sentry 활성
+    initErrorReporting();
+
     const init = async () => {
       try {
         const savedProjects = await loadProjects();
@@ -170,57 +210,32 @@ export default function Home() {
     init();
   }, [setProjects]);
 
-  // Auto save setup
+  // Auto save / 자동 백업 / 변경 디바운스 — useAutoSave hook
+  useAutoSave(isLoading, projects);
+
+  // 최근 시트 기록 (CommandPalette 의 "최근" 그룹 + 향후 사이드바용)
   useEffect(() => {
-    if (!isLoading) {
-      startAutoSave(
-        () => useProjectStore.getState().projects,
-        () => setLastSaved(Date.now()),
-        30000
-      );
-      startAutoBackup(
-        () => useProjectStore.getState().projects,
-        () => console.log('Backup created'),
-        300000
-      );
-      return () => {
-        stopAutoSave();
-        stopAutoBackup();
-      };
+    if (currentProjectId && currentSheetId) {
+      recordRecentSheet(currentProjectId, currentSheetId);
     }
-  }, [isLoading, setLastSaved]);
+  }, [currentProjectId, currentSheetId]);
 
-  // Save on project change
-  useEffect(() => {
-    if (!isLoading && projects.length > 0) {
-      const timeout = setTimeout(() => {
-        saveAllProjects(projects);
-        setLastSaved(Date.now());
-      }, 1000);
-      return () => clearTimeout(timeout);
-    }
-  }, [projects, isLoading, setLastSaved]);
-
-  // Track 7: WelcomeScreen → ImportModal 열기 이벤트
-  useEffect(() => {
-    const handler = () => setShowImportModal(true);
-    window.addEventListener('balruno:open-import-modal', handler);
-    return () => window.removeEventListener('balruno:open-import-modal', handler);
-  }, []);
-
-  // Track 11: WelcomeScreen → AISetupModal 열기 이벤트
-  useEffect(() => {
-    const handler = () => setShowAISetup(true);
-    window.addEventListener('balruno:open-ai-setup', handler);
-    return () => window.removeEventListener('balruno:open-ai-setup', handler);
-  }, []);
-
-  // Track 8: ShareModal 열기 이벤트
-  useEffect(() => {
-    const handler = () => setShowShare(true);
-    window.addEventListener('balruno:open-share', handler);
-    return () => window.removeEventListener('balruno:open-share', handler);
-  }, []);
+  // 모달 오픈 이벤트 (WelcomeScreen / Sidebar / CommandPalette 등에서 dispatch)
+  useGlobalEvents({
+    onOpenImport: () => setShowImportModal(true),
+    onOpenExport: () => setShowExportModal(true),
+    onOpenAISetup: () => setShowAISetup(true),
+    onOpenShare: () => setShowShare(true),
+    onOpenShortcuts: () => setShowShortcutsHelp(true),
+    onOpenGallery: () => setShowGallery(true),
+    onOpenSettings: () => setShowSettings(true),
+    onOpenAICopilot: () => setShowAICopilot(true),
+    onSetView: (view: string) => {
+      if (currentProjectId && currentSheetId) {
+        updateSheet(currentProjectId, currentSheetId, { activeView: view as never });
+      }
+    },
+  });
 
   // Track 8: URL hash `?room=xxx` 자동 감지 → 활성 프로젝트에 attachWebrtc
   // (받는 쪽 link 클릭 흐름 — 기존 로컬 프로젝트와 매칭되어야 sync 가능)
@@ -236,49 +251,16 @@ export default function Home() {
     });
   }, [currentProjectId]);
 
-  // Track 5: Cmd/Ctrl+K → Command Palette 토글
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        // 인풋/텍스트에서 이미 포커스된 경우에도 팔레트 우선
-        e.preventDefault();
-        setShowCommandPalette((v) => !v);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
-
-  // Track 5: CommandPalette → 각 도구 패널 열기 이벤트 라우팅
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ panel: string }>).detail;
-      if (!detail?.panel) return;
-      const panelSetters: Record<string, (v: boolean) => void> = {
-        calculator: setShowCalculator,
-        comparison: setShowComparison,
-        chart: setShowChart,
-        preset: setShowPresetComparison,
-        imbalance: setShowImbalanceDetector,
-        goal: setShowGoalSolver,
-        balance: setShowBalanceAnalysis,
-        economy: setShowEconomy,
-        dpsVariance: setShowDpsVariance,
-        curveFitting: setShowCurveFitting,
-        formulaHelper: setShowFormulaHelper,
-        balanceValidator: setShowBalanceValidator,
-        difficultyCurve: setShowDifficultyCurve,
-        simulation: setShowSimulation,
-        entityDefinition: setShowEntityDefinition,
-      };
-      const setter = panelSetters[detail.panel];
-      if (setter) {
-        setter(true);
-      }
-    };
-    window.addEventListener('balruno:open-panel', handler);
-    return () => window.removeEventListener('balruno:open-panel', handler);
-  }, []);
+  // 전역 단축키 — Linear 수준 키보드 조작감
+  useGlobalKeybinds({
+    toggleCommandPalette: () => setShowCommandPalette((v) => !v),
+    toggleShortcutsHelp: () => setShowShortcutsHelp((v) => !v),
+    onNewProject: () => createProject(t('sidebar.newProject')),
+    onNewSheet: () => {
+      if (currentProjectId) createSheet(currentProjectId, t('sheet.newSheet'));
+    },
+    onToggleTheme: toggleTheme,
+  });
 
   // History panel outside click
   useEffect(() => {
@@ -293,9 +275,11 @@ export default function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showHistoryPanel]);
 
-  // Start tour for sample projects when first opened
+  // Start tour for sample projects when first opened.
+  // 온보딩 중복 방지: OnboardingGuide 열려있으면 tour 자동 실행 X (사용자가 닫은 후에만).
   useEffect(() => {
     if (!currentProject || !currentSheet || isLoading) return;
+    if (showOnboarding) return; // OnboardingGuide 와 동시 실행 방지
 
     // Check if this project was just created (within last 2 seconds)
     const isNewProject = Date.now() - currentProject.createdAt < 2000;
@@ -327,30 +311,31 @@ export default function Home() {
         }
       }
     }
-  }, [currentProject, currentSheet, isLoading, startTour]);
+  }, [currentProject, currentSheet, isLoading, startTour, showOnboarding]);
 
   // Sidebar callbacks — 도킹 모드에서는 각 도구의 show state 토글만
+  const toggle = (id: keyof typeof toolPanels) => () => toolPanels[id].setShow(!toolPanels[id].show);
   const sidebarCallbacks = {
     onShowHelp: () => setShowOnboarding(true),
     onShowReferences: () => setShowReferences(true),
     onShowSettings: () => setShowSettings(true),
     onShowExportModal: () => setShowExportModal(true),
     onShowImportModal: () => setShowImportModal(true),
-    onShowCalculator: () => setShowCalculator(!showCalculator),
-    onShowComparison: () => setShowComparison(!showComparison),
-    onShowChart: () => setShowChart(!showChart),
-    onShowPresetComparison: () => setShowPresetComparison(!showPresetComparison),
-    onShowImbalanceDetector: () => setShowImbalanceDetector(!showImbalanceDetector),
-    onShowGoalSolver: () => setShowGoalSolver(!showGoalSolver),
-    onShowBalanceAnalysis: () => setShowBalanceAnalysis(!showBalanceAnalysis),
-    onShowEconomy: () => setShowEconomy(!showEconomy),
-    onShowDpsVariance: () => setShowDpsVariance(!showDpsVariance),
-    onShowCurveFitting: () => setShowCurveFitting(!showCurveFitting),
-    onToggleFormulaHelper: () => setShowFormulaHelper(!showFormulaHelper),
-    onToggleBalanceValidator: () => setShowBalanceValidator(!showBalanceValidator),
-    onToggleDifficultyCurve: () => setShowDifficultyCurve(!showDifficultyCurve),
-    onToggleSimulation: () => setShowSimulation(!showSimulation),
-    onToggleEntityDefinition: () => setShowEntityDefinition(!showEntityDefinition),
+    onShowCalculator: toggle('calculator'),
+    onShowComparison: toggle('comparison'),
+    onShowChart: toggle('chart'),
+    onShowPresetComparison: toggle('preset'),
+    onShowImbalanceDetector: toggle('imbalance'),
+    onShowGoalSolver: toggle('goal'),
+    onShowBalanceAnalysis: toggle('balance'),
+    onShowEconomy: toggle('economy'),
+    onShowDpsVariance: toggle('dpsVariance'),
+    onShowCurveFitting: toggle('curveFitting'),
+    onToggleFormulaHelper: toggle('formulaHelper'),
+    onToggleBalanceValidator: toggle('balanceValidator'),
+    onToggleDifficultyCurve: toggle('difficultyCurve'),
+    onToggleSimulation: toggle('simulation'),
+    onToggleEntityDefinition: toggle('entityDefinition'),
   };
 
   // Add memo handler
@@ -374,8 +359,9 @@ export default function Home() {
 
   return (
     <main className="h-screen flex" style={{ background: 'var(--bg-secondary)' }}>
-      {/* Mobile Header */}
+      {/* Mobile Header + 조회 전용 안내 배너 */}
       <MobileHeader onMenuClick={() => setShowMobileSidebar(true)} />
+      <MobileNotice />
 
       {/* Mobile Sidebar */}
       <MobileSidebar
@@ -383,103 +369,44 @@ export default function Home() {
         onClose={() => setShowMobileSidebar(false)}
         callbacks={{
           ...sidebarCallbacks,
-          onShowChart: () => {
-            setShowChart(true);
-            setShowMobileSidebar(false);
-          },
-          onShowHelp: () => {
-            setShowOnboarding(true);
-            setShowMobileSidebar(false);
-          },
-          onShowCalculator: () => {
-            setShowCalculator(true);
-            setShowMobileSidebar(false);
-          },
-          onShowComparison: () => {
-            setShowComparison(true);
-            setShowMobileSidebar(false);
-          },
-          onShowReferences: () => {
-            setShowReferences(true);
-            setShowMobileSidebar(false);
-          },
-          onShowPresetComparison: () => {
-            setShowPresetComparison(true);
-            setShowMobileSidebar(false);
-          },
-          onShowImbalanceDetector: () => {
-            setShowImbalanceDetector(true);
-            setShowMobileSidebar(false);
-          },
-          onShowGoalSolver: () => {
-            setShowGoalSolver(true);
-            setShowMobileSidebar(false);
-          },
-          onShowBalanceAnalysis: () => {
-            setShowBalanceAnalysis(true);
-            setShowMobileSidebar(false);
-          },
-          onShowEconomy: () => {
-            setShowEconomy(true);
-            setShowMobileSidebar(false);
-          },
-          onShowDpsVariance: () => {
-            setShowDpsVariance(true);
-            setShowMobileSidebar(false);
-          },
-          onShowCurveFitting: () => {
-            setShowCurveFitting(true);
-            setShowMobileSidebar(false);
-          },
-          onShowSettings: () => {
-            setShowSettings(true);
-            setShowMobileSidebar(false);
-          },
-          onShowExportModal: () => {
-            setShowExportModal(true);
-            setShowMobileSidebar(false);
-          },
-          onShowImportModal: () => {
-            setShowImportModal(true);
-            setShowMobileSidebar(false);
-          },
-          onToggleFormulaHelper: () => {
-            setShowFormulaHelper(true);
-            setShowMobileSidebar(false);
-          },
-          onToggleBalanceValidator: () => {
-            setShowBalanceValidator(true);
-            setShowMobileSidebar(false);
-          },
-          onToggleDifficultyCurve: () => {
-            setShowDifficultyCurve(true);
-            setShowMobileSidebar(false);
-          },
-          onToggleSimulation: () => {
-            setShowSimulation(true);
-            setShowMobileSidebar(false);
-          },
-          onToggleEntityDefinition: () => {
-            setShowEntityDefinition(true);
-            setShowMobileSidebar(false);
-          },
+          // 모바일에서는 패널 열고 사이드바 닫기 (한 번에)
+          onShowChart: () => { toolPanels.chart.setShow(true); setShowMobileSidebar(false); },
+          onShowHelp: () => { setShowOnboarding(true); setShowMobileSidebar(false); },
+          onShowCalculator: () => { toolPanels.calculator.setShow(true); setShowMobileSidebar(false); },
+          onShowComparison: () => { toolPanels.comparison.setShow(true); setShowMobileSidebar(false); },
+          onShowReferences: () => { setShowReferences(true); setShowMobileSidebar(false); },
+          onShowPresetComparison: () => { toolPanels.preset.setShow(true); setShowMobileSidebar(false); },
+          onShowImbalanceDetector: () => { toolPanels.imbalance.setShow(true); setShowMobileSidebar(false); },
+          onShowGoalSolver: () => { toolPanels.goal.setShow(true); setShowMobileSidebar(false); },
+          onShowBalanceAnalysis: () => { toolPanels.balance.setShow(true); setShowMobileSidebar(false); },
+          onShowEconomy: () => { toolPanels.economy.setShow(true); setShowMobileSidebar(false); },
+          onShowDpsVariance: () => { toolPanels.dpsVariance.setShow(true); setShowMobileSidebar(false); },
+          onShowCurveFitting: () => { toolPanels.curveFitting.setShow(true); setShowMobileSidebar(false); },
+          onShowSettings: () => { setShowSettings(true); setShowMobileSidebar(false); },
+          onShowExportModal: () => { setShowExportModal(true); setShowMobileSidebar(false); },
+          onShowImportModal: () => { setShowImportModal(true); setShowMobileSidebar(false); },
+          onToggleFormulaHelper: () => { toolPanels.formulaHelper.setShow(true); setShowMobileSidebar(false); },
+          onToggleBalanceValidator: () => { toolPanels.balanceValidator.setShow(true); setShowMobileSidebar(false); },
+          onToggleDifficultyCurve: () => { toolPanels.difficultyCurve.setShow(true); setShowMobileSidebar(false); },
+          onToggleSimulation: () => { toolPanels.simulation.setShow(true); setShowMobileSidebar(false); },
+          onToggleEntityDefinition: () => { toolPanels.entityDefinition.setShow(true); setShowMobileSidebar(false); },
         }}
         activeTools={{
-          calculator: showCalculator,
-          comparison: showComparison,
-          chart: showChart,
-          presetComparison: showPresetComparison,
-          imbalanceDetector: showImbalanceDetector,
-          goalSolver: showGoalSolver,
-          balanceAnalysis: showBalanceAnalysis,
-          economy: showEconomy,
-          dpsVariance: showDpsVariance,
-          curveFitting: showCurveFitting,
-          formulaHelper: showFormulaHelper,
-          balanceValidator: showBalanceValidator,
-          difficultyCurve: showDifficultyCurve,
-          simulation: showSimulation,
-          entityDefinition: showEntityDefinition,
+          calculator: toolPanels.calculator.show,
+          comparison: toolPanels.comparison.show,
+          chart: toolPanels.chart.show,
+          presetComparison: toolPanels.preset.show,
+          imbalanceDetector: toolPanels.imbalance.show,
+          goalSolver: toolPanels.goal.show,
+          balanceAnalysis: toolPanels.balance.show,
+          economy: toolPanels.economy.show,
+          dpsVariance: toolPanels.dpsVariance.show,
+          curveFitting: toolPanels.curveFitting.show,
+          formulaHelper: toolPanels.formulaHelper.show,
+          balanceValidator: toolPanels.balanceValidator.show,
+          difficultyCurve: toolPanels.difficultyCurve.show,
+          simulation: toolPanels.simulation.show,
+          entityDefinition: toolPanels.entityDefinition.show,
         }}
       />
 
@@ -488,21 +415,21 @@ export default function Home() {
         <Sidebar
           {...sidebarCallbacks}
           activeTools={{
-            calculator: showCalculator,
-            comparison: showComparison,
-            chart: showChart,
-            presetComparison: showPresetComparison,
-            imbalanceDetector: showImbalanceDetector,
-            goalSolver: showGoalSolver,
-            balanceAnalysis: showBalanceAnalysis,
-            economy: showEconomy,
-            dpsVariance: showDpsVariance,
-            curveFitting: showCurveFitting,
-            formulaHelper: showFormulaHelper,
-            balanceValidator: showBalanceValidator,
-            difficultyCurve: showDifficultyCurve,
-            simulation: showSimulation,
-            entityDefinition: showEntityDefinition,
+            calculator: toolPanels.calculator.show,
+            comparison: toolPanels.comparison.show,
+            chart: toolPanels.chart.show,
+            presetComparison: toolPanels.preset.show,
+            imbalanceDetector: toolPanels.imbalance.show,
+            goalSolver: toolPanels.goal.show,
+            balanceAnalysis: toolPanels.balance.show,
+            economy: toolPanels.economy.show,
+            dpsVariance: toolPanels.dpsVariance.show,
+            curveFitting: toolPanels.curveFitting.show,
+            formulaHelper: toolPanels.formulaHelper.show,
+            balanceValidator: toolPanels.balanceValidator.show,
+            difficultyCurve: toolPanels.difficultyCurve.show,
+            simulation: toolPanels.simulation.show,
+            entityDefinition: toolPanels.entityDefinition.show,
           }}
         />
       </div>
@@ -514,20 +441,31 @@ export default function Home() {
       <div className="flex-1 flex flex-col overflow-hidden pt-14 md:pt-0">
         {currentProject ? (
           <>
-            <div className="flex items-center justify-between border-b" style={{ borderColor: 'var(--border-primary)' }}>
+            <div
+              className="flex items-center justify-between border-b"
+              style={{
+                borderColor: 'var(--border-primary)',
+                // SheetTabs 와 같은 톤으로 통일 (이전엔 우측에 배경이 없어 투톤 현상)
+                background: 'var(--bg-tertiary)',
+              }}
+            >
               <div className="flex-1 min-w-0">
                 <SheetTabs project={currentProject} />
               </div>
-              <div className="flex-shrink-0 hidden md:flex items-center gap-2 px-3">
+              <div className="flex-shrink-0 hidden md:flex items-center gap-1 px-3">
                 <PresenceIndicator projectId={currentProject.id} />
                 <button
                   onClick={() => setShowShare(true)}
-                  className="px-3 py-1 text-xs rounded-lg font-medium transition-colors"
-                  style={{ background: '#3b82f6', color: 'white' }}
+                  className="px-3 py-1 text-xs rounded-lg font-medium transition-colors hover:opacity-90"
+                  style={{ background: 'var(--accent)', color: 'white' }}
                   title="협업 공유"
                 >
                   공유
                 </button>
+                <ProjectMenu
+                  onShowExport={() => setShowExportModal(true)}
+                  onShowImport={() => setShowImportModal(true)}
+                />
               </div>
             </div>
 
@@ -535,7 +473,7 @@ export default function Home() {
               {currentSheet ? (
                 <div
                   ref={sheetContainerRef}
-                  className="flex-1 flex flex-col p-3 sm:p-4 lg:p-6 pb-0 min-h-0 overflow-hidden relative"
+                  className="flex-1 flex flex-col p-3 sm:p-4 lg:p-6 pb-[140px] min-h-0 overflow-hidden relative"
                 >
                   <StickerLayer containerRef={sheetContainerRef} />
 
@@ -543,12 +481,10 @@ export default function Home() {
                     sheet={currentSheet}
                   />
 
-                  {/* Track 4: 뷰 스위처 */}
+                  {/* Track 4: 뷰 스위처 (저장된 뷰 + 기본 뷰 6종) */}
                   <ViewSwitcher
-                    activeView={currentSheet.activeView ?? 'grid'}
-                    onChange={(view) =>
-                      updateSheet(currentProject.id, currentSheet.id, { activeView: view })
-                    }
+                    projectId={currentProject.id}
+                    sheet={currentSheet}
                   />
 
                   <div className="flex-1 min-h-0 overflow-hidden">
@@ -567,19 +503,30 @@ export default function Home() {
                           return <GalleryView projectId={currentProject.id} sheet={currentSheet} />;
                         case 'gantt':
                           return <GanttView projectId={currentProject.id} sheet={currentSheet} />;
+                        case 'diagram':
+                          return <DiagramView projectId={currentProject.id} sheet={currentSheet} />;
                       }
                     })()}
                   </div>
                 </div>
+              ) : currentDoc ? (
+                <DocView
+                  projectId={currentProject.id}
+                  doc={currentDoc}
+                  onClose={() => setCurrentDoc(null)}
+                />
               ) : (
-                <EmptySheetView onCreateSheet={() => createSheet(currentProject.id, t('sheet.newSheet'))} />
+                <HomeScreen />
               )}
             </div>
           </>
         ) : (
-          <WelcomeScreen />
+          <HomeScreen />
         )}
       </div>
+
+      {/* AI Copilot Panel (overlay) */}
+      {showAICopilot && <AICopilotPanel onClose={() => setShowAICopilot(false)} />}
 
       {/* Modals */}
       {showOnboarding && <OnboardingGuide onClose={() => setShowOnboarding(false)} />}
@@ -593,55 +540,26 @@ export default function Home() {
       )}
       {showAISetup && <AISetupModal onClose={() => setShowAISetup(false)} />}
       {showShare && <ShareModal onClose={() => setShowShare(false)} />}
+      {showGallery && <ProjectGalleryModal onClose={() => setShowGallery(false)} />}
 
-      {/* Track 6: Docked Toolbox — 우측 사이드 도킹 영역 (플로팅 ToolPanels 대체) */}
-      <DockedToolbox
-        panels={{
-          calculator: { show: showCalculator, setShow: setShowCalculator },
-          comparison: { show: showComparison, setShow: setShowComparison },
-          chart: { show: showChart, setShow: setShowChart },
-          preset: { show: showPresetComparison, setShow: setShowPresetComparison },
-          imbalance: { show: showImbalanceDetector, setShow: setShowImbalanceDetector },
-          goal: { show: showGoalSolver, setShow: setShowGoalSolver },
-          balance: { show: showBalanceAnalysis, setShow: setShowBalanceAnalysis },
-          economy: { show: showEconomy, setShow: setShowEconomy },
-          dpsVariance: { show: showDpsVariance, setShow: setShowDpsVariance },
-          curveFitting: { show: showCurveFitting, setShow: setShowCurveFitting },
-          formulaHelper: { show: showFormulaHelper, setShow: setShowFormulaHelper },
-          balanceValidator: { show: showBalanceValidator, setShow: setShowBalanceValidator },
-          difficultyCurve: { show: showDifficultyCurve, setShow: setShowDifficultyCurve },
-          simulation: { show: showSimulation, setShow: setShowSimulation },
-          entityDefinition: { show: showEntityDefinition, setShow: setShowEntityDefinition },
-        }}
-      />
-
-      {/* Track 6 후속: 9 그룹 하단 독바 (진입점 통일) */}
-      <BottomDock
-        panels={{
-          calculator: { show: showCalculator, setShow: setShowCalculator },
-          comparison: { show: showComparison, setShow: setShowComparison },
-          chart: { show: showChart, setShow: setShowChart },
-          preset: { show: showPresetComparison, setShow: setShowPresetComparison },
-          imbalance: { show: showImbalanceDetector, setShow: setShowImbalanceDetector },
-          goal: { show: showGoalSolver, setShow: setShowGoalSolver },
-          balance: { show: showBalanceAnalysis, setShow: setShowBalanceAnalysis },
-          economy: { show: showEconomy, setShow: setShowEconomy },
-          dpsVariance: { show: showDpsVariance, setShow: setShowDpsVariance },
-          curveFitting: { show: showCurveFitting, setShow: setShowCurveFitting },
-          formulaHelper: { show: showFormulaHelper, setShow: setShowFormulaHelper },
-          balanceValidator: { show: showBalanceValidator, setShow: setShowBalanceValidator },
-          difficultyCurve: { show: showDifficultyCurve, setShow: setShowDifficultyCurve },
-          simulation: { show: showSimulation, setShow: setShowSimulation },
-          entityDefinition: { show: showEntityDefinition, setShow: setShowEntityDefinition },
-        }}
-        isModalOpen={isModalOpen}
-      />
+      {/* Track 6: Docked Toolbox — 우측 사이드 도킹 + 하단 독바. usePanelStates hook 으로 단일화. */}
+      <DockedToolbox panels={toolPanels} />
+      <BottomDock panels={toolPanels} isModalOpen={isModalOpen} />
 
       {/* Track 5: Command Palette (⌘K) */}
       <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />
 
+      {/* 키보드 단축키 (⌘/) */}
+      <KeyboardShortcuts open={showShortcutsHelp} onClose={() => setShowShortcutsHelp(false)} />
+
+      {/* 중복 프로젝트 정리 */}
+      <ProjectDedupeModal isOpen={showDedupeModal} onClose={() => setShowDedupeModal(false)} />
+
       {/* Interactive Tour */}
       <InteractiveTour tableContainerRef={sheetContainerRef} />
+
+      {/* 전역 Toast */}
+      <ToastContainer />
     </main>
   );
 }

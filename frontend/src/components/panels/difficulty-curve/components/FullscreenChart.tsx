@@ -257,7 +257,7 @@ export function FullscreenChart({
                                segment.flowZone === 'flow' ? t('flow') : t('anxiety')}
                               {segment.isRestPoint && (
                                 <span style={{ marginLeft: 6, color: '#e5a440' }}>
-                                  ☕ {t('restPoint')}
+                                  {t('restPoint')}
                                 </span>
                               )}
                             </div>

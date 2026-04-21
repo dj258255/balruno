@@ -1,6 +1,13 @@
 'use client';
 
-import { FileSpreadsheet, Plus } from 'lucide-react';
+/**
+ * EmptySheetView — 프로젝트는 선택됐으나 표시할 시트가 없을 때.
+ *
+ * HomeEmptyState 와 같은 디자인 언어 (glass-card CTA 3개, gradient 아이콘)
+ * 로 일관성 유지. 시트 닫고 돌아왔을 때 Home 과 이질감 없이 연결.
+ */
+
+import { FileSpreadsheet, Plus, Wand2, FolderPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface EmptySheetViewProps {
@@ -10,28 +17,89 @@ interface EmptySheetViewProps {
 export default function EmptySheetView({ onCreateSheet }: EmptySheetViewProps) {
   const t = useTranslations();
 
+  const openAiSetup = () => window.dispatchEvent(new Event('balruno:open-ai-setup'));
+  const openGallery = () => window.dispatchEvent(new Event('balruno:open-gallery'));
+  const openImport = () => window.dispatchEvent(new Event('balruno:open-import-modal'));
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center">
-      <div
-        className="w-16 h-16 rounded-xl flex items-center justify-center mb-4"
-        style={{ background: 'var(--accent-light)' }}
-      >
-        <FileSpreadsheet className="w-8 h-8" style={{ color: 'var(--accent)' }} />
+    <div
+      className="flex-1 overflow-y-auto p-6 sm:p-8 flex items-center justify-center"
+      style={{ background: 'var(--bg-primary)' }}
+    >
+      <div className="max-w-2xl w-full text-center space-y-6">
+        <div className="space-y-2">
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl"
+            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}
+          >
+            <FileSpreadsheet className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            {t('sheet.noSheets')}
+          </h1>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            {t('sheet.createSheetDesc')}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            onClick={onCreateSheet}
+            className="glass-card p-5 text-left hover:shadow-md transition-all"
+            style={{ borderLeft: '3px solid #3b82f6' }}
+          >
+            <Plus className="w-6 h-6 mb-2" style={{ color: '#3b82f6' }} />
+            <div className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+              {t('sheet.createSheet')}
+            </div>
+            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              빈 시트로 바로 시작
+            </div>
+          </button>
+
+          <button
+            onClick={openAiSetup}
+            className="glass-card p-5 text-left hover:shadow-md transition-all"
+            style={{ borderLeft: '3px solid #8b5cf6' }}
+          >
+            <Wand2 className="w-6 h-6 mb-2" style={{ color: '#8b5cf6' }} />
+            <div className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+              AI 로 시작
+            </div>
+            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              요구사항 → 자동 생성
+            </div>
+          </button>
+
+          <button
+            onClick={openGallery}
+            className="glass-card p-5 text-left hover:shadow-md transition-all"
+            style={{ borderLeft: '3px solid #10b981' }}
+          >
+            <FolderPlus className="w-6 h-6 mb-2" style={{ color: '#10b981' }} />
+            <div className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+              템플릿 둘러보기
+            </div>
+            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              RPG · FPS · 팀 PM
+            </div>
+          </button>
+
+          <button
+            onClick={openImport}
+            className="glass-card p-5 text-left hover:shadow-md transition-all"
+            style={{ borderLeft: '3px solid #f59e0b' }}
+          >
+            <FileSpreadsheet className="w-6 h-6 mb-2" style={{ color: '#f59e0b' }} />
+            <div className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+              Excel 가져오기
+            </div>
+            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              기존 시트에서 시작
+            </div>
+          </button>
+        </div>
       </div>
-      <p className="text-lg font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-        {t('sheet.noSheets')}
-      </p>
-      <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>
-        {t('sheet.createSheetDesc')}
-      </p>
-      <button
-        onClick={onCreateSheet}
-        className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-colors"
-        style={{ background: 'var(--accent)', color: 'white' }}
-      >
-        <Plus className="w-4 h-4" />
-        {t('sheet.createSheet')}
-      </button>
     </div>
   );
 }

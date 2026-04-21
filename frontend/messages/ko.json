@@ -34,6 +34,14 @@
     "economy": "경제 시뮬레이터",
     "dpsVariance": "DPS 분산 분석",
     "curveFitting": "곡선 피팅",
+    "autoBalancer": "AI Auto-Balancer",
+    "lootSimulator": "루트/가챠 시뮬",
+    "powerCurveCompare": "파워 곡선 비교",
+    "comments": "코멘트 / 멘션",
+    "interfaceDesigner": "대시보드",
+    "automations": "자동화",
+    "sensitivity": "민감도 분석",
+    "changeHistory": "변경 히스토리",
     "references": "참고 자료",
     "settings": "설정",
     "help": "사용 가이드",
@@ -362,6 +370,26 @@
       "name": "가챠 확률 계산",
       "description": "등급별 확률, 천장, 기대 비용 계산"
     },
+    "fpsArena": {
+      "name": "FPS 슈터",
+      "description": "무기 (AR/SMG/Sniper/Shotgun) × 적 티어 × 어태치먼트 — TTK/헤드샷 밸런스"
+    },
+    "moba": {
+      "name": "MOBA 챔피언",
+      "description": "챔피언 포지션별 스탯 성장 × 아이템 Gold Efficiency"
+    },
+    "strategy": {
+      "name": "Strategy / RTS",
+      "description": "유닛 팩션 × 테크트리 × 자원 수급 밸런스"
+    },
+    "idle": {
+      "name": "Idle 클리커",
+      "description": "Generator 수익 곡선 × Prestige 배율 × LiveOps 리텐션"
+    },
+    "roguelike": {
+      "name": "Roguelike 덱빌더",
+      "description": "Relic 희귀도 × 층 난이도 스케일 × 런 데이터"
+    },
     "sprintBoard": {
       "name": "스프린트 보드",
       "description": "5단 칸반 (Backlog/Todo/Doing/Review/Done) + 우선순위 / 역할 / 담당자"
@@ -373,6 +401,10 @@
     "epicRoadmap": {
       "name": "에픽 로드맵",
       "description": "Pre-production → Launch 페이즈 Gantt 타임라인"
+    },
+    "playtestSessions": {
+      "name": "플레이테스트 세션",
+      "description": "밸런스 변경 → 플레이테스트 → 피드백 → 액션 아이템의 전 사이클을 한 곳에서"
     },
     "stickers": {
       "rpgCharacter": {
@@ -713,6 +745,7 @@
     "calendar": "캘린더",
     "gallery": "갤러리",
     "gantt": "간트",
+    "diagram": "다이어그램",
     "formHeading": "{name} 레코드 추가",
     "formEmpty": "편집 가능한 컬럼이 없습니다. 먼저 컬럼을 추가하세요.",
     "formAdd": "추가",
@@ -730,15 +763,37 @@
     "ganttDateColumn": "날짜 컬럼"
   },
   "toolGroups": {
-    "formulaWorkbench": "수식 작업대",
-    "balanceInsights": "밸런스 인사이트",
-    "simulation": "시뮬레이션",
-    "charts": "차트",
-    "economy": "이코노미",
-    "curveFitting": "곡선 피팅",
-    "entityGenerator": "엔티티 생성",
-    "difficultyCurve": "난이도 곡선",
-    "goalSolver": "목표 역산"
+    "build": "만들기",
+    "check": "점검",
+    "simulate": "시뮬",
+    "compare": "비교",
+    "auto": "자동",
+    "share": "공유"
+  },
+  "toolDesc": {
+    "calculator": "수치 입력 → DPS/TTK/EHP 즉시 계산",
+    "formulaHelper": "90+ 함수 레퍼런스 검색",
+    "preset": "완성된 수식 프리셋 시트에 붙이기",
+    "entityDefinition": "시트 → 레벨 테이블 자동 생성",
+    "difficultyCurve": "스테이지 벽·마일스톤 설계",
+    "balance": "매치업 매트릭스·Perfect Imbalance",
+    "imbalance": "Z-score 통계적 이상치 자동 탐지",
+    "balanceValidator": "런칭 전 룰 기반 최종 검증",
+    "sensitivity": "변수 민감도·Tornado/Spider",
+    "simulation": "1:1/팀 전투 Monte Carlo",
+    "dpsVariance": "DPS 분포·백분위·히스토그램",
+    "lootSimulator": "가챠 피티·드롭 확률",
+    "economy": "Faucet/Sink·인플레이션",
+    "comparison": "여러 엔티티 레이더 차트",
+    "chart": "성장 곡선 라인차트",
+    "powerCurveCompare": "여러 시트 곡선 오버레이",
+    "curveFitting": "데이터 → 수식 역산 (회귀)",
+    "goal": "목표값 → 필요 입력 역산",
+    "autoBalancer": "여러 엔티티 일괄 자동 조정",
+    "automations": "트리거·조건·액션 파이프라인",
+    "interfaceDesigner": "대시보드·KPI 위젯 조립",
+    "changeHistory": "셀 변경 히스토리·사유",
+    "comments": "셀 코멘트·논의 스레드"
   },
   "commandPalette": {
     "title": "명령 팔레트",

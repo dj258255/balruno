@@ -47,12 +47,16 @@ export interface Peer {
   id: number;
   name: string;
   color: string;
+  /** 현재 선택/편집 중인 셀 (Track 8B 셀 커서) */
+  activeCell?: { sheetId: string; rowId: string; columnId: string } | null;
 }
 
 export function usePresence(projectId: string | null): {
   peers: Peer[];
   myName: string;
   myColor: string;
+  /** 내 선택 셀을 peer 에게 publish */
+  publishActiveCell: (cell: { sheetId: string; rowId: string; columnId: string } | null) => void;
 } {
   const [identityVersion, setIdentityVersion] = useState(0);
 
@@ -104,11 +108,15 @@ export function usePresence(projectId: string | null): {
       const next: Peer[] = [];
       provider.awareness.getStates().forEach((state, id) => {
         if (id === myId) return;
-        const user = (state as { user?: { name?: string; color?: string } }).user;
+        const s = state as {
+          user?: { name?: string; color?: string };
+          activeCell?: { sheetId: string; rowId: string; columnId: string } | null;
+        };
         next.push({
           id,
-          name: user?.name ?? 'Anonymous',
-          color: user?.color ?? '#94a3b8',
+          name: s.user?.name ?? 'Anonymous',
+          color: s.user?.color ?? '#94a3b8',
+          activeCell: s.activeCell ?? null,
         });
       });
       setPeers(next);
@@ -122,5 +130,16 @@ export function usePresence(projectId: string | null): {
     };
   }, [projectId, myName, myColor]);
 
-  return { peers, myName, myColor };
+  const publishActiveCell = (cell: { sheetId: string; rowId: string; columnId: string } | null) => {
+    if (!projectId) return;
+    const provider = getWebrtc(projectId);
+    if (!provider) return;
+    const prev = provider.awareness.getLocalState() as { user?: unknown; activeCell?: unknown } | null;
+    provider.awareness.setLocalState({
+      user: prev?.user ?? { name: myName, color: myColor },
+      activeCell: cell,
+    });
+  };
+
+  return { peers, myName, myColor, publishActiveCell };
 }

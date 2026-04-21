@@ -58,7 +58,19 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
   updateSheet: (
     projectId: string,
     sheetId: string,
-    updates: Partial<Pick<Sheet, 'name' | 'exportClassName' | 'activeView' | 'viewGroupColumnId'>>
+    updates: Partial<Pick<Sheet,
+      | 'name'
+      | 'exportClassName'
+      | 'activeView'
+      | 'viewGroupColumnId'
+      | 'viewKanbanCoverColumnId'
+      | 'viewKanbanFieldIds'
+      | 'viewCalendarEndColumnId'
+      | 'viewGanttEndColumnId'
+      | 'viewGanttDependsColumnId'
+      | 'savedViews'
+      | 'activeSavedViewId'
+    >>
   ) => {
     updateSheetInDoc(getProjectDoc(projectId), sheetId, updates);
   },

@@ -89,8 +89,17 @@ export function FolderItem({
   const [isDragOver, setIsDragOver] = useState(false);
   const [isFolderDragOver, setIsFolderDragOver] = useState(false);
 
-  // 이 폴더에 속한 시트들
-  const folderSheets = sheets.filter(s => s.folderId === folder.id);
+  // 이 폴더에 속한 시트들 — 구버전 저장 데이터의 id 중복 방어
+  const folderSheets = (() => {
+    const seen = new Set<string>();
+    return sheets
+      .filter(s => s.folderId === folder.id)
+      .filter(s => {
+        if (seen.has(s.id)) return false;
+        seen.add(s.id);
+        return true;
+      });
+  })();
 
   // 이 폴더의 하위 폴더들
   const childFolders = folders.filter(f => f.parentId === folder.id);

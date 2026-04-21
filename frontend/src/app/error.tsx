@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCw } from 'lucide-react';
+import { reportError } from '@/lib/errorReporting';
 
 export default function Error({
   error,
@@ -11,7 +12,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('[App Error]', error);
+    reportError(error, { source: 'app-error', extra: { digest: error.digest } });
   }, [error]);
 
   const isDev = process.env.NODE_ENV === 'development';

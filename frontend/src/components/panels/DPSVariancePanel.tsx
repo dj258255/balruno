@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { useProjectStore } from '@/stores/projectStore';
 import { Tooltip } from '@/components/ui/Tooltip';
-import { useEscapeKey } from '@/hooks';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import {
   simulateDPSVariance,
   simulateTTKVariance,
@@ -159,10 +159,12 @@ function InputFieldSimple({
   );
 }
 
-export default function DPSVariancePanel({ onClose, isPanel, showHelp, setShowHelp }: DPSVariancePanelProps) {
+export default function DPSVariancePanel({ onClose, isPanel, showHelp: externalShowHelp, setShowHelp: externalSetShowHelp }: DPSVariancePanelProps) {
   const t = useTranslations('dpsVariance');
   const tCommon = useTranslations('common');
-  useEscapeKey(onClose);
+  const [internalShowHelp, setInternalShowHelp] = useState(false);
+  const showHelp = externalShowHelp ?? internalShowHelp;
+  const setShowHelp = externalSetShowHelp ?? setInternalShowHelp;
 
   const [mode, setMode] = useState<SimMode>('dps');
 
@@ -329,7 +331,15 @@ export default function DPSVariancePanel({ onClose, isPanel, showHelp, setShowHe
   const selectFromCellText = t('selectFromCell');
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <PanelShell
+      title="DPS 분산"
+      subtitle="DPS 분포·백분위·히스토그램"
+      icon={BarChart2}
+      iconColor="#5a9cf5"
+      onClose={onClose}
+      bodyClassName="p-0 flex flex-col overflow-hidden"
+      actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color="#5a9cf5" />}
+    >
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-5 scrollbar-slim">
         {/* Help Content */}
         {showHelp && (
@@ -846,6 +856,6 @@ export default function DPSVariancePanel({ onClose, isPanel, showHelp, setShowHe
           </div>
         </div>
       )}
-    </div>
+    </PanelShell>
   );
 }

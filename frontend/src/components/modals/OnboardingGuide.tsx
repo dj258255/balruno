@@ -63,6 +63,14 @@ const sampleCategoryColors: Record<string, { bg: string; border: string; text: s
   economy: { bg: 'var(--warning-light)', border: 'var(--warning)', text: 'var(--warning)' },
   progression: { bg: 'var(--success-light)', border: 'var(--success)', text: 'var(--success)' },
   gacha: { bg: 'var(--primary-purple-light)', border: 'var(--primary-purple)', text: 'var(--primary-purple)' },
+  'team-pm': { bg: 'var(--primary-blue-light)', border: 'var(--primary-blue)', text: 'var(--primary-blue)' },
+};
+
+// 매핑 누락 카테고리 fallback
+const DEFAULT_CATEGORY_COLOR = {
+  bg: 'var(--bg-tertiary)',
+  border: 'var(--border-primary)',
+  text: 'var(--text-secondary)',
 };
 
 // Helper function to get guidelines data with translations
@@ -431,7 +439,10 @@ export default function OnboardingGuide({ onClose }: OnboardingGuideProps) {
                   purple: { bg: 'var(--primary-purple-light)', border: 'var(--primary-purple)', text: 'var(--primary-purple)', icon: 'var(--primary-purple)' },
                   blue: { bg: 'var(--primary-blue-light)', border: 'var(--primary-blue)', text: 'var(--primary-blue)', icon: 'var(--primary-blue)' },
                 };
-                const style = colorStyles[category.color];
+                const style = colorStyles[category.color] ?? {
+                  bg: 'var(--bg-tertiary)', border: 'var(--border-primary)',
+                  text: 'var(--text-secondary)', icon: 'var(--text-secondary)',
+                };
                 return (
                   <div
                     key={category.id}
@@ -467,7 +478,10 @@ export default function OnboardingGuide({ onClose }: OnboardingGuideProps) {
                   yellow: { bg: 'var(--warning-light)', border: 'var(--warning)', text: 'var(--warning)', icon: 'var(--warning)' },
                   rose: { bg: 'var(--error-light)', border: 'var(--error)', text: 'var(--error)', icon: 'var(--error)' },
                 };
-                const style = colorStyles[category.color];
+                const style = colorStyles[category.color] ?? {
+                  bg: 'var(--bg-tertiary)', border: 'var(--border-primary)',
+                  text: 'var(--text-secondary)', icon: 'var(--text-secondary)',
+                };
                 return (
                   <div
                     key={category.id}
@@ -497,7 +511,7 @@ export default function OnboardingGuide({ onClose }: OnboardingGuideProps) {
               <div className="grid grid-cols-2 gap-3">
                 {SAMPLE_PROJECTS.map((sample) => {
                   const IconComponent = sampleIconMap[sample.icon] || Swords;
-                  const colors = sampleCategoryColors[sample.category];
+                  const colors = sampleCategoryColors[sample.category] ?? DEFAULT_CATEGORY_COLOR;
                   const isSelected = selectedSample === sample.id;
 
                   return (
@@ -594,7 +608,6 @@ export default function OnboardingGuide({ onClose }: OnboardingGuideProps) {
               </div>
 
               <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                <span>📦</span>
                 <span>{t('onboarding.steps.survey.openSource')}</span>
                 <a
                   href="https://github.com/dj258255/balruno"

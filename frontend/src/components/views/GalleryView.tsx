@@ -12,6 +12,7 @@ import { formatDisplayValue } from '@/components/sheet/utils';
 import { useProjectStore } from '@/stores/projectStore';
 import type { Sheet } from '@/types';
 import RecordEditor from './RecordEditor';
+import RecordContextMenu, { type RecordContextMenuState } from './RecordContextMenu';
 
 interface GalleryViewProps {
   projectId: string;
@@ -20,8 +21,10 @@ interface GalleryViewProps {
 
 export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<RecordContextMenuState | null>(null);
   const selectedRow = selectedRowId ? sheet.rows.find((r) => r.id === selectedRowId) : null;
   const addRow = useProjectStore((s) => s.addRow);
+  const deleteRow = useProjectStore((s) => s.deleteRow);
 
   const handleAddRow = () => {
     const rowId = addRow(projectId, sheet.id);
@@ -38,17 +41,28 @@ export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
   return (
     <div className="flex-1 flex overflow-hidden">
     <div className="flex-1 overflow-auto p-4">
-      <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
+      <div
+        className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]"
+        role="list"
+        aria-label={`${sheet.name} 갤러리`}
+      >
         {sheet.rows.map((row) => {
           const imgSrc = urlCol ? row.cells[urlCol.id] : null;
           const isImage =
             typeof imgSrc === 'string' && /\.(png|jpe?g|gif|webp|svg)$/i.test(imgSrc);
+          const titleRaw = titleCol ? String(row.cells[titleCol.id] ?? '').trim() : '';
           return (
             <button
               type="button"
               key={row.id}
+              role="listitem"
+              aria-label={titleRaw || '레코드'}
               onClick={() => setSelectedRowId(row.id)}
-              className="rounded-lg overflow-hidden text-left hover:ring-2 hover:ring-[var(--accent)]/40 transition-all"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setCtxMenu({ rowId: row.id, x: e.clientX, y: e.clientY });
+              }}
+              className="rounded-lg overflow-hidden text-left hover:ring-2 hover:ring-[var(--accent)]/40 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none transition-all"
               style={{
                 background: 'var(--bg-primary)',
                 border: '1px solid var(--border-primary)',
@@ -138,6 +152,19 @@ export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
         onClose={() => setSelectedRowId(null)}
       />
     )}
+    <RecordContextMenu
+      state={ctxMenu}
+      onClose={() => setCtxMenu(null)}
+      onEdit={(rowId) => setSelectedRowId(rowId)}
+      onDuplicate={(rowId) => {
+        const src = sheet.rows.find((r) => r.id === rowId);
+        if (src) addRow(projectId, sheet.id, { ...src.cells });
+      }}
+      onDelete={(rowId) => {
+        deleteRow(projectId, sheet.id, rowId);
+        if (selectedRowId === rowId) setSelectedRowId(null);
+      }}
+    />
     </div>
   );
 }

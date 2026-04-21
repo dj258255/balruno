@@ -169,6 +169,8 @@ export function docToProject(doc: Y.Doc): Project {
   const meta = doc.getMap('meta');
   const sheets = doc.getArray<Y.Map<unknown>>('sheets');
   const folders = doc.getArray<Y.Map<unknown>>('folders');
+  const docs = doc.getArray<Y.Map<unknown>>('docs');
+  const changelog = doc.getArray<Y.Map<unknown>>('changelog');
 
   return {
     id: meta.get('id') as string,
@@ -180,6 +182,8 @@ export function docToProject(doc: Y.Doc): Project {
     syncRoomId: meta.get('syncRoomId') as string | undefined,
     sheets: sheets.toArray().map(yMapToSheet),
     folders: folders.length > 0 ? folders.toArray().map(yMapToFolder) : undefined,
+    docs: docs.length > 0 ? docs.toArray().map(yMapToDoc) : undefined,
+    changelog: changelog.length > 0 ? changelog.toArray().map((m) => m.toJSON() as ChangeEntry) : undefined,
   };
 }
 
@@ -444,8 +448,8 @@ export async function initializeProjectDoc(project: Project): Promise<Project> {
 // observer 는 transact 종료 시 1회 fire.
 // ============================================================================
 
-/** 특정 시트의 Y.Map 과 인덱스를 반환 (내부 헬퍼). */
-function findSheetMap(
+/** 특정 시트의 Y.Map 과 인덱스를 반환 (내부 헬퍼 — cellComments 등 외부에서도 사용). */
+export function findSheetMap(
   doc: Y.Doc,
   sheetId: string
 ): { sheet: Y.Map<unknown>; index: number } | null {
@@ -496,7 +500,7 @@ function findFolderMap(
   return null;
 }
 
-function touchSheet(sheet: Y.Map<unknown>): void {
+export function touchSheet(sheet: Y.Map<unknown>): void {
   sheet.set('updatedAt', Date.now());
 }
 
@@ -512,7 +516,20 @@ export function addSheetInDoc(doc: Y.Doc, sheet: Sheet): void {
 export function updateSheetInDoc(
   doc: Y.Doc,
   sheetId: string,
-  updates: Partial<Pick<Sheet, 'name' | 'exportClassName' | 'folderId' | 'activeView' | 'viewGroupColumnId'>>
+  updates: Partial<Pick<Sheet,
+    | 'name'
+    | 'exportClassName'
+    | 'folderId'
+    | 'activeView'
+    | 'viewGroupColumnId'
+    | 'viewKanbanCoverColumnId'
+    | 'viewKanbanFieldIds'
+    | 'viewCalendarEndColumnId'
+    | 'viewGanttEndColumnId'
+    | 'viewGanttDependsColumnId'
+    | 'savedViews'
+    | 'activeSavedViewId'
+  >>
 ): void {
   doc.transact(() => {
     const found = findSheetMap(doc, sheetId);
@@ -1116,4 +1133,102 @@ function rebuildGenericYMap(obj: Record<string, unknown>): Y.Map<unknown> {
     map.set(k, v);
   }
   return map;
+}
+
+// ============================================================================
+// Changelog — Track 12 내부 기록. UI 는 아직 미완이지만 cellSlice 가 매 cell
+// 업데이트 시 append 하므로 여기서 최소 구현을 제공.
+// ============================================================================
+
+import type { ChangeEntry, Doc } from '@/types';
+
+// ---- Doc (GDD · 설계안) ----
+
+function docToYMap(d: Doc): Y.Map<unknown> {
+  const map = new Y.Map();
+  map.set('id', d.id);
+  map.set('name', d.name);
+  map.set('content', d.content);
+  map.set('createdAt', d.createdAt);
+  map.set('updatedAt', d.updatedAt);
+  return map;
+}
+
+function yMapToDoc(map: Y.Map<unknown>): Doc {
+  return {
+    id: map.get('id') as string,
+    name: map.get('name') as string,
+    content: (map.get('content') as string) ?? '',
+    createdAt: map.get('createdAt') as number,
+    updatedAt: map.get('updatedAt') as number,
+  };
+}
+
+export function addDocInDoc(doc: Y.Doc, newDoc: Doc): void {
+  doc.transact(() => {
+    const docs = doc.getArray<Y.Map<unknown>>('docs');
+    docs.push([docToYMap(newDoc)]);
+  });
+}
+
+export function updateDocInDoc(
+  doc: Y.Doc,
+  docId: string,
+  updates: Partial<Pick<Doc, 'name' | 'content'>>
+): void {
+  doc.transact(() => {
+    const docs = doc.getArray<Y.Map<unknown>>('docs');
+    for (let i = 0; i < docs.length; i++) {
+      const d = docs.get(i);
+      if (d.get('id') === docId) {
+        for (const [k, v] of Object.entries(updates)) {
+          if (v === undefined) d.delete(k);
+          else d.set(k, v);
+        }
+        d.set('updatedAt', Date.now());
+        return;
+      }
+    }
+  });
+}
+
+export function deleteDocInDoc(doc: Y.Doc, docId: string): void {
+  doc.transact(() => {
+    const docs = doc.getArray<Y.Map<unknown>>('docs');
+    for (let i = 0; i < docs.length; i++) {
+      if (docs.get(i).get('id') === docId) {
+        docs.delete(i, 1);
+        return;
+      }
+    }
+  });
+}
+
+export function appendChangelogInDoc(doc: Y.Doc, entry: ChangeEntry): void {
+  doc.transact(() => {
+    const log = doc.getArray<Y.Map<unknown>>('changelog');
+    const map = new Y.Map();
+    for (const [k, v] of Object.entries(entry)) {
+      map.set(k, v);
+    }
+    log.push([map]);
+    // 메모리 관리: 최근 500개만 유지
+    const MAX = 500;
+    if (log.length > MAX) {
+      log.delete(0, log.length - MAX);
+    }
+  });
+}
+
+export function updateChangelogReason(doc: Y.Doc, entryId: string, reason: string): void {
+  doc.transact(() => {
+    const log = doc.getArray<Y.Map<unknown>>('changelog');
+    for (let i = 0; i < log.length; i++) {
+      const entry = log.get(i);
+      if (entry.get('id') === entryId) {
+        entry.set('reason', reason);
+        return;
+      }
+    }
+  });
 }

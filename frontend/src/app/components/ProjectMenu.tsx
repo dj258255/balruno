@@ -1,0 +1,127 @@
+'use client';
+
+/**
+ * 프로젝트 레벨 액션 드롭다운 — SheetTabs 바 우측에 배치.
+ *
+ * 항목:
+ *  - 복제
+ *  - 내보내기 ▸ (전체 / 엑셀 / 게임 엔진 SDK)
+ *  - 가져오기
+ *  - 삭제 (confirm 2-step)
+ *
+ * Sidebar Footer 의 Export/Import 버튼을 대체.
+ */
+
+import { useEffect, useRef, useState } from 'react';
+import { MoreHorizontal, Copy, Download, Upload, Trash2 } from 'lucide-react';
+import { useProjectStore } from '@/stores/projectStore';
+import { toast } from '@/components/ui/Toast';
+
+interface ProjectMenuProps {
+  onShowExport: () => void;
+  onShowImport: () => void;
+}
+
+export default function ProjectMenu({ onShowExport, onShowImport }: ProjectMenuProps) {
+  const [open, setOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const { projects, currentProjectId, duplicateProject, deleteProject } = useProjectStore();
+  const currentProject = projects.find((p) => p.id === currentProjectId);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setConfirmDelete(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  if (!currentProject) return null;
+
+  const run = (fn: () => void) => () => {
+    fn();
+    setOpen(false);
+  };
+
+  const handleDuplicate = run(() => {
+    duplicateProject(currentProject.id);
+    toast.success('프로젝트를 복제했습니다');
+  });
+
+  const handleDelete = () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      setTimeout(() => setConfirmDelete(false), 3000);
+      return;
+    }
+    deleteProject(currentProject.id);
+    toast.info('프로젝트를 삭제했습니다');
+    setOpen(false);
+    setConfirmDelete(false);
+  };
+
+  const Item = ({
+    icon: Icon, label, onClick, danger,
+  }: {
+    icon: typeof Copy;
+    label: string;
+    onClick: () => void;
+    danger?: boolean;
+  }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-left hover:bg-[var(--bg-tertiary)] transition-colors"
+      style={{ color: danger ? '#ef4444' : 'var(--text-primary)' }}
+    >
+      <Icon size={12} className="flex-shrink-0" />
+      <span className="flex-1">{label}</span>
+    </button>
+  );
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="p-1.5 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors"
+        aria-label="프로젝트 메뉴"
+        title="프로젝트 메뉴"
+      >
+        <MoreHorizontal size={16} style={{ color: 'var(--text-secondary)' }} />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-1 z-30 w-48 rounded-lg shadow-xl border py-1 overflow-hidden"
+          style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-primary)' }}
+          role="menu"
+        >
+          <div className="px-2.5 py-1.5 text-[10px] uppercase tracking-wider font-semibold truncate" style={{ color: 'var(--text-tertiary)' }}>
+            {currentProject.name}
+          </div>
+          <div className="h-px mx-1 my-1" style={{ background: 'var(--border-primary)' }} />
+
+          <Item icon={Copy} label="복제" onClick={handleDuplicate} />
+          <Item icon={Download} label="내보내기" onClick={run(onShowExport)} />
+          <Item icon={Upload} label="가져오기" onClick={run(onShowImport)} />
+
+          <div className="h-px mx-1 my-1" style={{ background: 'var(--border-primary)' }} />
+
+          <Item
+            icon={Trash2}
+            label={confirmDelete ? '다시 클릭해 삭제 확정' : '삭제'}
+            onClick={handleDelete}
+            danger
+          />
+        </div>
+      )}
+    </div>
+  );
+}

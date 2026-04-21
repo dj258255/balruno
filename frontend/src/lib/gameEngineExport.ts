@@ -64,9 +64,14 @@ function computeSheetValues(sheet: Sheet, project?: Project): Record<string, Cel
 export type ExportFormat =
   | 'unity_scriptable'    // Unity ScriptableObject
   | 'unity_json'          // Unity용 JSON
+  | 'unity_full'          // ScriptableObject + Editor Importer + JSON (v2 풀세트)
   | 'unreal_datatable'    // Unreal DataTable
   | 'unreal_struct'       // Unreal Struct
-  | 'godot_resource';     // Godot Resource
+  | 'unreal_full'         // Struct + CSV + Enum 헤더 (v2)
+  | 'godot_resource'      // Godot Resource (GDScript 클래스)
+  | 'godot_tres'          // Godot .tres 파일 (데이터 베이킹)
+  | 'bevy_rust'           // Rust + Bevy 컴포넌트 + serde
+  | 'typescript';         // TypeScript interface + JSON (PlayCanvas/Three.js)
 
 // C# 타입 매핑
 function toCSharpType(column: Column, sampleValue: CellValue): string {
@@ -471,9 +476,310 @@ export function exportForGameEngine(
         },
       ];
 
+    case 'unity_full':
+      return [
+        {
+          filename: `${baseName}Data.cs`,
+          content: generateUnityScriptableObject(sheet, className, project),
+          type: 'text/plain',
+        },
+        {
+          filename: `Editor/${baseName}DataImporter.cs`,
+          content: generateUnityEditorImporter(sheet, className),
+          type: 'text/plain',
+        },
+        {
+          filename: `${baseName}Data.json`,
+          content: generateUnityJson(sheet, project),
+          type: 'application/json',
+        },
+      ];
+
+    case 'unreal_full': {
+      const outputs: { filename: string; content: string; type: string }[] = [
+        {
+          filename: `F${baseName}Row.h`,
+          content: generateUnrealDataTable(sheet, `F${baseName}Row`, project),
+          type: 'text/plain',
+        },
+        {
+          filename: `${baseName}.csv`,
+          content: generateUnrealCsv(sheet, project),
+          type: 'text/csv',
+        },
+      ];
+      const enumCode = generateUnrealEnums(sheet);
+      if (enumCode) {
+        outputs.push({
+          filename: `${toPascalCase(sheet.name)}Enums.h`,
+          content: enumCode,
+          type: 'text/plain',
+        });
+      }
+      return outputs;
+    }
+
+    case 'godot_tres':
+      return [
+        {
+          filename: `${baseName}Data.gd`,
+          content: generateGodotResource(sheet, className, project),
+          type: 'text/plain',
+        },
+        {
+          filename: `${baseName}Data.tres`,
+          content: generateGodotTres(sheet, className, project),
+          type: 'text/plain',
+        },
+      ];
+
+    case 'bevy_rust':
+      return [
+        {
+          filename: `${baseName.toLowerCase()}.rs`,
+          content: generateBevyRust(sheet, baseName, project),
+          type: 'text/plain',
+        },
+        {
+          filename: `${baseName}.json`,
+          content: generateUnityJson(sheet, project),
+          type: 'application/json',
+        },
+      ];
+
+    case 'typescript':
+      return [
+        {
+          filename: `${baseName}.ts`,
+          content: generateTypeScript(sheet, baseName, project),
+          type: 'text/plain',
+        },
+        {
+          filename: `${baseName}.json`,
+          content: generateUnityJson(sheet, project),
+          type: 'application/json',
+        },
+      ];
+
     default:
       return [];
   }
+}
+
+/**
+ * v2: Unity Editor Importer — ScriptableObject 를 JSON 에서 자동 생성.
+ * 사용자가 에디터에서 Menu/Tools 통해 1클릭 Import 가능.
+ */
+export function generateUnityEditorImporter(sheet: Sheet, className?: string): string {
+  const rawName = className || toPascalCase(sheet.name);
+  const baseName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+  const dataName = baseName.endsWith('Data') ? baseName : baseName + 'Data';
+
+  return `// Assets/Editor/${dataName}Importer.cs
+// 자동 생성 — Balruno export v2
+#if UNITY_EDITOR
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+public static class ${dataName}Importer
+{
+    [MenuItem("Tools/Balruno/Import ${dataName}")]
+    public static void Import()
+    {
+        var path = EditorUtility.OpenFilePanel("Select ${dataName}.json", "", "json");
+        if (string.IsNullOrEmpty(path)) return;
+
+        var json = File.ReadAllText(path);
+        var asset = ScriptableObject.CreateInstance<${dataName}>();
+        JsonUtility.FromJsonOverwrite(json, asset);
+
+        var savePath = "Assets/${dataName}.asset";
+        AssetDatabase.CreateAsset(asset, savePath);
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Selection.activeObject = asset;
+        Debug.Log($"[Balruno] Imported {asset.items.Count} items to {savePath}");
+    }
+}
+#endif
+`;
+}
+
+/**
+ * v2: Unreal Enum 생성 — select 타입 컬럼의 options 를 UENUM 으로.
+ */
+export function generateUnrealEnums(sheet: Sheet): string {
+  const selectColumns = getExportableColumns(sheet).filter(
+    (c) => c.type === 'select' && c.selectOptions && c.selectOptions.length > 0
+  );
+  if (selectColumns.length === 0) return '';
+
+  let code = `#pragma once
+#include "CoreMinimal.h"
+#include "${toPascalCase(sheet.name)}Enums.generated.h"
+
+`;
+
+  for (const col of selectColumns) {
+    const enumName = `E${toPascalCase(col.name)}`;
+    code += `UENUM(BlueprintType)
+enum class ${enumName} : uint8
+{
+`;
+    for (const opt of col.selectOptions || []) {
+      const enumValue = toPascalCase(opt.label);
+      code += `    ${enumValue} UMETA(DisplayName = "${opt.label}"),\n`;
+    }
+    code += `};\n\n`;
+  }
+
+  return code;
+}
+
+/**
+ * v2: Godot .tres 파일 — 데이터를 Resource 파일로 베이킹.
+ */
+export function generateGodotTres(sheet: Sheet, className?: string, project?: Project): string {
+  const rawName = className || toPascalCase(sheet.name);
+  const baseName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+  const resName = baseName.endsWith('Data') ? baseName : baseName + 'Data';
+
+  const computedRows = computeSheetValues(sheet, project);
+  const exportableColumns = getExportableColumns(sheet);
+
+  let tres = `[gd_resource type="Resource" script_class="${resName}" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://${resName}.gd" id="1"]
+
+`;
+
+  // 각 아이템을 sub_resource 로
+  const subResources: string[] = [];
+  const itemRefs: string[] = [];
+  computedRows.forEach((row, idx) => {
+    const subId = `SubResource_${idx}`;
+    let sub = `[sub_resource type="Resource" id="${subId}"]\n`;
+    sub += `script = ExtResource("1")\n`;
+    for (const col of exportableColumns) {
+      const fieldName = getExportFieldName(col, 'camel').replace(/^_/, '');
+      const val = row[col.id];
+      let encoded: string;
+      if (val === null || val === undefined) encoded = '""';
+      else if (typeof val === 'number') encoded = String(val);
+      else if (typeof val === 'boolean') encoded = String(val);
+      else encoded = `"${String(val).replace(/"/g, '\\"')}"`;
+      sub += `${fieldName} = ${encoded}\n`;
+    }
+    subResources.push(sub);
+    itemRefs.push(`SubResource("${subId}")`);
+  });
+
+  tres += subResources.join('\n');
+  tres += `\n[resource]
+script = ExtResource("1")
+items = Array[Resource]([${itemRefs.join(', ')}])
+`;
+
+  return tres;
+}
+
+/**
+ * v2: Bevy / Rust struct export — serde + Component derive.
+ */
+export function generateBevyRust(sheet: Sheet, structName?: string, project?: Project): string {
+  const name = structName || toPascalCase(sheet.name);
+  const computedRows = computeSheetValues(sheet, project);
+  const sampleRow = computedRows[0];
+  const exportableColumns = getExportableColumns(sheet);
+
+  const rustType = (col: Column, v: CellValue): string => {
+    if (col.name.toLowerCase().includes('id')) return 'String';
+    if (typeof v === 'number') {
+      if (Number.isInteger(v)) return 'i32';
+      return 'f32';
+    }
+    if (typeof v === 'boolean') return 'bool';
+    return 'String';
+  };
+
+  let code = `// ${name}.rs — Balruno export v2
+use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(Component, Serialize, Deserialize, Debug, Clone)]
+pub struct ${name} {
+`;
+
+  for (const col of exportableColumns) {
+    const fieldName = getExportFieldName(col, 'camel').replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`).replace(/^_/, '');
+    const ty = rustType(col, sampleRow?.[col.id]);
+    code += `    pub ${fieldName}: ${ty},\n`;
+  }
+  code += `}
+
+#[derive(Resource, Serialize, Deserialize, Debug, Clone)]
+pub struct ${name}Table {
+    pub items: Vec<${name}>,
+}
+
+impl ${name}Table {
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
+    }
+
+    pub fn get_by_id(&self, id: &str) -> Option<&${name}> {
+        self.items.iter().find(|i| i.id == id)
+    }
+}
+`;
+
+  return code;
+}
+
+/**
+ * v2: TypeScript interface export — JS 엔진 (PlayCanvas / Three.js / Phaser) 용.
+ */
+export function generateTypeScript(sheet: Sheet, typeName?: string, project?: Project): string {
+  const name = typeName || toPascalCase(sheet.name);
+  const computedRows = computeSheetValues(sheet, project);
+  const sampleRow = computedRows[0];
+  const exportableColumns = getExportableColumns(sheet);
+
+  const tsType = (col: Column, v: CellValue): string => {
+    if (typeof v === 'number') return 'number';
+    if (typeof v === 'boolean') return 'boolean';
+    if (col.type === 'select' && col.selectOptions) {
+      return col.selectOptions.map((o) => `'${o.id}'`).join(' | ');
+    }
+    return 'string';
+  };
+
+  let code = `// ${name}.ts — Balruno export v2
+export interface ${name} {
+`;
+  for (const col of exportableColumns) {
+    const fieldName = getExportFieldName(col, 'camel');
+    code += `  ${fieldName}: ${tsType(col, sampleRow?.[col.id])};\n`;
+  }
+  code += `}
+
+export interface ${name}Table {
+  items: ${name}[];
+}
+
+export async function load${name}Table(url: string): Promise<${name}Table> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(\`Failed to load \${url}: \${res.status}\`);
+  return res.json();
+}
+
+export function getById(table: ${name}Table, id: string): ${name} | undefined {
+  return table.items.find((it) => (it as ${name} & { id: string }).id === id);
+}
+`;
+
+  return code;
 }
 
 /**
@@ -498,6 +804,12 @@ export const EXPORT_FORMATS: {
     description: 'JsonUtility 호환 JSON 파일',
   },
   {
+    id: 'unity_full',
+    name: 'Unity Full (v2)',
+    engine: 'Unity',
+    description: 'ScriptableObject + Editor Importer + JSON 세트',
+  },
+  {
     id: 'unreal_datatable',
     name: 'DataTable',
     engine: 'Unreal',
@@ -510,9 +822,33 @@ export const EXPORT_FORMATS: {
     description: 'USTRUCT 헤더 파일만',
   },
   {
+    id: 'unreal_full',
+    name: 'Unreal Full (v2)',
+    engine: 'Unreal',
+    description: 'Struct + CSV + Enum 헤더 (select 컬럼 지원)',
+  },
+  {
     id: 'godot_resource',
-    name: 'Resource',
+    name: 'Resource (GDScript)',
     engine: 'Godot',
     description: 'Resource 클래스 + JSON 데이터',
+  },
+  {
+    id: 'godot_tres',
+    name: 'Resource (.tres v2)',
+    engine: 'Godot',
+    description: '데이터 베이킹된 .tres + GDScript 클래스',
+  },
+  {
+    id: 'bevy_rust',
+    name: 'Bevy / Rust (v2)',
+    engine: 'Bevy',
+    description: 'Bevy Component + serde derive + Rust struct',
+  },
+  {
+    id: 'typescript',
+    name: 'TypeScript (v2)',
+    engine: 'Web (PlayCanvas/Three.js/Phaser)',
+    description: 'TypeScript interface + load helper',
   },
 ];

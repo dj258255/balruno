@@ -21,9 +21,43 @@ export interface Project {
   updatedAt: number;
   sheets: Sheet[];
   folders?: Folder[];       // 폴더 목록
+  docs?: Doc[];             // GDD · 설계안 문서 (Phase A)
+  changelog?: ChangeEntry[]; // Track 12 변경 이력 (내부 기록)
   // 동기화 설정
   syncMode?: ProjectSyncMode;  // 'local' (기본) | 'cloud'
   syncRoomId?: string;         // 클라우드 모드 시 협업 룸 ID
+}
+
+// GDD · 설계안 문서 (Tiptap 기반)
+export interface Doc {
+  id: string;
+  name: string;
+  content: string;  // Tiptap JSON 또는 HTML 직렬화
+  createdAt: number;
+  updatedAt: number;
+}
+
+// stat-snapshot 컬럼에 저장되는 값 (JSON 직렬화)
+export interface StatSnapshotValue {
+  capturedAt: number;
+  sourceRowId: string;
+  stats: Record<string, string | number>;
+  label?: string;
+}
+
+// 저장된 뷰 — Track 4 확장. Kanban/Gantt/Calendar 설정 포함
+export interface SavedView {
+  id: string;
+  name: string;
+  /** 뷰 종류 — ViewSwitcher 의 기존 코드와 호환 위해 'type' 유지 */
+  type: ViewType;
+  groupColumnId?: string;
+  kanbanCoverColumnId?: string;
+  kanbanFieldIds?: string[];
+  calendarEndColumnId?: string;
+  ganttEndColumnId?: string;
+  ganttDependsColumnId?: string;
+  createdAt?: number;
 }
 
 // 스티커 타입
@@ -40,7 +74,7 @@ export interface Sticker {
 }
 
 // Track 4 — 뷰 타입
-export type ViewType = 'grid' | 'form' | 'kanban' | 'calendar' | 'gallery' | 'gantt';
+export type ViewType = 'grid' | 'form' | 'kanban' | 'calendar' | 'gallery' | 'gantt' | 'diagram';
 
 // 시트 타입
 export interface Sheet {
@@ -55,6 +89,20 @@ export interface Sheet {
   activeView?: ViewType;
   /** Track 4: Kanban/Calendar/Gallery 뷰에서 그룹/날짜 기준 컬럼 ID */
   viewGroupColumnId?: string;
+  /** Kanban 카드 커버로 쓸 컬럼 ID (image 등) */
+  viewKanbanCoverColumnId?: string;
+  /** Kanban 카드에 표시할 필드 컬럼 ID 목록 */
+  viewKanbanFieldIds?: string[];
+  /** Calendar 종료일 컬럼 ID (기간 표시용) */
+  viewCalendarEndColumnId?: string;
+  /** Gantt 종료일 컬럼 ID */
+  viewGanttEndColumnId?: string;
+  /** Gantt 의존성 컬럼 ID (link 타입) */
+  viewGanttDependsColumnId?: string;
+  /** 저장된 뷰 목록 */
+  savedViews?: SavedView[];
+  /** 현재 활성화된 저장된 뷰 ID */
+  activeSavedViewId?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -73,9 +121,12 @@ export type ColumnType =
   | 'url'
   | 'currency'
   | 'rating'
-  | 'link'      // Track 2: 다른 시트 레코드 참조 (단방향 MVP)
-  | 'lookup'    // Track 3: link 통해 연결된 레코드의 특정 컬럼 값 가져오기
-  | 'rollup';   // Track 3: link 통해 연결된 레코드들 집계 (SUM/AVG/MIN/MAX/COUNT)
+  | 'link'           // Track 2: 다른 시트 레코드 참조
+  | 'lookup'         // Track 3: link 경유 값 가져오기
+  | 'rollup'         // Track 3: link 경유 집계
+  | 'task-link'      // Track PM: 셀 → 태스크 시트 레코드 연결
+  | 'stat-snapshot'  // Track PM: 밸런스 스냅샷 참조 (PM 이력용)
+  | 'person';        // Track PM: 담당자 (multi-user pick)
 
 // 선택 옵션 (select / multiSelect 공용)
 export interface SelectOption {
@@ -136,6 +187,18 @@ export interface Column {
   lookupTargetColumnId?: string;
   /** type='rollup': 집계 함수 */
   rollupAggregate?: 'SUM' | 'AVG' | 'MIN' | 'MAX' | 'COUNT' | 'CONCAT';
+
+  // Track PM — task-link / stat-snapshot
+  /** type='task-link': 연결할 태스크 시트 ID */
+  taskSheetId?: string;
+  /** type='task-link': 태스크 시트 내 status 컬럼 ID (배지 표시용) */
+  taskStatusColumnId?: string;
+  /** type='task-link': 태스크 시트 내 assignee 컬럼 ID (아바타용) */
+  taskAssigneeColumnId?: string;
+  /** type='stat-snapshot': 스냅샷 원본 시트 ID */
+  snapshotSheetId?: string;
+  /** type='stat-snapshot': 스냅샷에 포함할 컬럼 ID 목록 */
+  snapshotColumnIds?: string[];
 }
 
 // 행 타입
@@ -288,4 +351,19 @@ export interface SheetMetadata {
   type?: 'standard' | 'entity-definition' | 'level-table';
   sourceEntityIds?: string[];  // 레벨 테이블인 경우: 원본 엔티티 ID들
   generatedAt?: number;
+}
+
+// 변경 이력 엔트리 (Track 12 — 내부 기록용, UI 는 아직 미완)
+export interface ChangeEntry {
+  id: string;
+  timestamp: number;
+  userId: string;
+  userName: string;
+  sheetId: string;
+  rowId: string;
+  columnId: string;
+  before: CellValue;
+  after: CellValue;
+  reason?: string;
+  linkedTaskIds?: string[];
 }

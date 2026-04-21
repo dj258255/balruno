@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <em>Codecks meets Airtable, designed for indie game studios (5–30 team members)</em>
+  <em>Codecks meets Airtable — for game studios from solo creators to 30+ teams</em>
 </p>
 
 <p align="center">
@@ -45,7 +45,7 @@
 
 ### What is Balruno?
 
-An integrated workspace for indie game studios. **Balance data + agile project management in a single tool** — manage your spreadsheets, sprint boards, bug trackers, and epic roadmaps together.
+An integrated workspace for game studios — from solo creators to 30+ member teams. **Balance data + agile project management in a single tool** — manage your spreadsheets, sprint boards, bug trackers, and epic roadmaps together.
 
 - **Designers**: 70+ game formulas, Monte Carlo sim, engine export (Unity/Godot/Unreal)
 - **PMs**: Kanban sprints, bug tracker, Gantt epic roadmap
@@ -211,7 +211,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ### Balruno란?
 
-인디 게임 스튜디오를 위한 **통합 워크스페이스**. 밸런싱 데이터와 애자일 프로젝트 관리를 **한 툴**에서 — 스프레드시트, 스프린트 보드, 버그 트래커, 에픽 로드맵을 함께 관리합니다.
+게임 스튜디오를 위한 **통합 워크스페이스** — 1인 개발자부터 30명+ 팀까지. 밸런싱 데이터와 애자일 프로젝트 관리를 **한 툴**에서 — 스프레드시트, 스프린트 보드, 버그 트래커, 에픽 로드맵을 함께 관리합니다.
 
 - **기획자**: 70+ 게임 수식, 몬테카를로 시뮬, 엔진 export (Unity/Godot/Unreal)
 - **PM**: 칸반 스프린트, 버그 트래커, Gantt 에픽 로드맵
@@ -313,5 +313,5 @@ MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일 참조
 ---
 
 <p align="center">
-  Made with ❤️ for indie game developers
+  Made with ❤️ for game studios — from solo designers to 30+ member teams
 </p>

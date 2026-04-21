@@ -1,16 +1,16 @@
 'use client';
 
 /**
- * Track 5 — ⌘K Command Palette.
+ * ⌘K Command Palette — cmdk 라이브러리 기반 전역 명령 팔레트.
  *
- * 전역 단축키 (Cmd/Ctrl+K) 로 호출. cmdk 라이브러리의 fuzzy 매칭 + 키보드 네비 활용.
- *
- * 카테고리:
- *  - Navigate: 프로젝트 / 시트 빠른 전환
- *  - Create: 새 프로젝트 / 새 시트
- *  - Functions: 수식 함수 검색 (availableFunctions 리스트)
- *  - Tools: 도구 패널 열기 (balruno:open-panel-* 이벤트)
- *  - Settings: 테마 전환 / 언어 전환
+ * 그룹:
+ *  - Recent: 최근 접근 시트 (localStorage `balruno:recent-sheets`)
+ *  - Navigate: 전체 프로젝트/시트
+ *  - Create: 새 프로젝트/시트/AI 시작
+ *  - Views: 뷰 전환 (Grid/Kanban/Calendar/Gallery/Gantt/Form)
+ *  - Tools: 패널 열기 (balruno:open-panel-* 이벤트)
+ *  - Functions: 수식 함수 검색 → Formula Helper 연동
+ *  - Settings: 테마 / 중복 정리 / 단축키 도움말
  */
 
 import { useEffect, useState, useMemo } from 'react';
@@ -28,10 +28,23 @@ import {
   Sun,
   FunctionSquare,
   Users,
+  Clock,
+  Wand2,
+  Grid3x3,
+  Kanban,
+  Calendar,
+  Image,
+  GanttChart,
+  ClipboardList,
+  Download,
+  Upload,
+  Keyboard,
+  Trash2,
 } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { useTheme } from '@/contexts/ThemeContext';
 import { availableFunctions } from '@/lib/formulaEngine';
+import { loadRecent, type RecentEntry } from '@/lib/recentSheets';
 
 type FunctionEntry = {
   name: string;
@@ -46,6 +59,23 @@ interface CommandPaletteProps {
   onClose: () => void;
 }
 
+/** 키보드 힌트 표시. */
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd
+      className="text-[10px] px-1.5 py-0.5 rounded ml-auto shrink-0"
+      style={{
+        background: 'var(--bg-tertiary)',
+        color: 'var(--text-tertiary)',
+        border: '1px solid var(--border-primary)',
+        fontFamily: 'var(--font-mono, ui-monospace)',
+      }}
+    >
+      {children}
+    </kbd>
+  );
+}
+
 export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const t = useTranslations();
   const { theme, toggleTheme } = useTheme();
@@ -55,12 +85,17 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const createProject = useProjectStore((s) => s.createProject);
   const createSheet = useProjectStore((s) => s.createSheet);
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
+  const currentSheetId = useProjectStore((s) => s.currentSheetId);
 
   const [search, setSearch] = useState('');
+  const [recent, setRecent] = useState<RecentEntry[]>([]);
 
-  // Cmd/Ctrl+K 전역 리스너는 부모에서 open 토글. 이 컴포넌트는 닫히면 search 리셋.
   useEffect(() => {
-    if (!open) setSearch('');
+    if (!open) {
+      setSearch('');
+    } else {
+      setRecent(loadRecent());
+    }
   }, [open]);
 
   // 모든 시트 flatten (프로젝트당 시트들)
@@ -75,8 +110,27 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
     );
   }, [projects]);
 
+  const sheetLookup = useMemo(() => {
+    const map = new Map<string, { projectId: string; projectName: string; sheetName: string }>();
+    allSheets.forEach((s) => {
+      map.set(s.sheetId, { projectId: s.projectId, projectName: s.projectName, sheetName: s.sheetName });
+    });
+    return map;
+  }, [allSheets]);
+
+  const recentItems = useMemo(() => {
+    return recent
+      .map((e) => ({ ...e, meta: sheetLookup.get(e.sheetId) }))
+      .filter((e): e is RecentEntry & { meta: NonNullable<ReturnType<typeof sheetLookup.get>> } => Boolean(e.meta))
+      .filter((e) => e.sheetId !== currentSheetId);
+  }, [recent, sheetLookup, currentSheetId]);
+
   const emitOpenPanel = (panel: string) => {
     window.dispatchEvent(new CustomEvent('balruno:open-panel', { detail: { panel } }));
+  };
+
+  const emitSetView = (view: string) => {
+    window.dispatchEvent(new CustomEvent('balruno:set-view', { detail: { view } }));
   };
 
   const runAction = (fn: () => void) => {
@@ -111,26 +165,46 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
               style={{ color: 'var(--text-primary)' }}
               autoFocus
             />
-            <kbd
-              className="text-xs px-1.5 py-0.5 rounded"
-              style={{
-                background: 'var(--bg-tertiary)',
-                color: 'var(--text-tertiary)',
-                border: '1px solid var(--border-primary)',
-              }}
-            >
-              ESC
-            </kbd>
+            <Kbd>ESC</Kbd>
           </div>
 
-          <Command.List className="max-h-[50vh] overflow-y-auto p-2">
+          <Command.List className="max-h-[55vh] overflow-y-auto p-2">
             <Command.Empty className="py-6 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
               {t('commandPalette.noResults')}
             </Command.Empty>
 
-            {/* Navigate */}
+            {/* Recent */}
+            {recentItems.length > 0 && !search && (
+              <Command.Group heading="최근">
+                {recentItems.map((item) => (
+                  <Command.Item
+                    key={`recent-${item.sheetId}`}
+                    value={`recent ${item.meta.sheetName} ${item.meta.projectName}`}
+                    onSelect={() =>
+                      runAction(() => {
+                        setCurrentProject(item.projectId);
+                        setCurrentSheet(item.sheetId);
+                      })
+                    }
+                    className="cmdk-item"
+                  >
+                    <Clock className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                      <span className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                        {item.meta.sheetName}
+                      </span>
+                      <span className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
+                        {item.meta.projectName}
+                      </span>
+                    </div>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
+
+            {/* Navigate — 모든 시트 */}
             {allSheets.length > 0 && (
-              <Command.Group heading={t('commandPalette.navigate')} className="cmdk-group">
+              <Command.Group heading={t('commandPalette.navigate')}>
                 {allSheets.map((item) => (
                   <Command.Item
                     key={`sheet-${item.sheetId}`}
@@ -160,43 +234,73 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
             {/* Create */}
             <Command.Group heading={t('commandPalette.create')}>
               <Command.Item
-                value="new project"
-                onSelect={() =>
-                  runAction(() => {
-                    createProject(t('sidebar.newProject'));
-                  })
-                }
+                value="new project create"
+                onSelect={() => runAction(() => createProject(t('sidebar.newProject')))}
                 className="cmdk-item"
               >
                 <FolderPlus className="w-4 h-4" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
                   {t('commandPalette.newProject')}
                 </span>
+                <Kbd>⌘⇧N</Kbd>
               </Command.Item>
               {currentProjectId && (
                 <Command.Item
-                  value="new sheet"
-                  onSelect={() =>
-                    runAction(() => {
-                      createSheet(currentProjectId, t('sheet.newSheet'));
-                    })
-                  }
+                  value="new sheet create"
+                  onSelect={() => runAction(() => createSheet(currentProjectId, t('sheet.newSheet')))}
                   className="cmdk-item"
                 >
                   <Plus className="w-4 h-4" />
                   <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
                     {t('commandPalette.newSheet')}
                   </span>
+                  <Kbd>⌘N</Kbd>
                 </Command.Item>
               )}
+              <Command.Item
+                value="ai setup start new project wizard"
+                onSelect={() => runAction(() => window.dispatchEvent(new Event('balruno:open-ai-setup')))}
+                className="cmdk-item"
+              >
+                <Wand2 className="w-4 h-4" style={{ color: 'var(--primary-purple)' }} />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                  AI 로 시작 (자연어 → 시트)
+                </span>
+              </Command.Item>
+              <Command.Item
+                value="gallery template sample projects 템플릿"
+                onSelect={() => runAction(() => window.dispatchEvent(new Event('balruno:open-gallery')))}
+                className="cmdk-item"
+              >
+                <FolderPlus className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                  템플릿 갤러리 (샘플 프로젝트)
+                </span>
+              </Command.Item>
+              <Command.Item
+                value="import excel csv data"
+                onSelect={() => runAction(() => window.dispatchEvent(new Event('balruno:open-import-modal')))}
+                className="cmdk-item"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                  CSV / Excel 가져오기
+                </span>
+              </Command.Item>
+              <Command.Item
+                value="export data json csv engine"
+                onSelect={() => runAction(() => window.dispatchEvent(new Event('balruno:open-export-modal')))}
+                className="cmdk-item"
+              >
+                <Download className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                  내보내기 (JSON / CSV / 엔진 코드)
+                </span>
+              </Command.Item>
               {currentProjectId && (
                 <Command.Item
                   value="share collaborate"
-                  onSelect={() =>
-                    runAction(() => {
-                      window.dispatchEvent(new Event('balruno:open-share'));
-                    })
-                  }
+                  onSelect={() => runAction(() => window.dispatchEvent(new Event('balruno:open-share')))}
                   className="cmdk-item"
                 >
                   <Users className="w-4 h-4" />
@@ -206,6 +310,42 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
                 </Command.Item>
               )}
             </Command.Group>
+
+            {/* Views */}
+            {currentSheetId && (
+              <Command.Group heading="뷰 전환">
+                <Command.Item value="view grid sheet table" onSelect={() => runAction(() => emitSetView('grid'))} className="cmdk-item">
+                  <Grid3x3 className="w-4 h-4" />
+                  <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Grid</span>
+                  <Kbd>G</Kbd>
+                </Command.Item>
+                <Command.Item value="view kanban board" onSelect={() => runAction(() => emitSetView('kanban'))} className="cmdk-item">
+                  <Kanban className="w-4 h-4" />
+                  <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Kanban</span>
+                  <Kbd>K</Kbd>
+                </Command.Item>
+                <Command.Item value="view calendar date" onSelect={() => runAction(() => emitSetView('calendar'))} className="cmdk-item">
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Calendar</span>
+                  <Kbd>C</Kbd>
+                </Command.Item>
+                <Command.Item value="view gallery cards" onSelect={() => runAction(() => emitSetView('gallery'))} className="cmdk-item">
+                  <Image className="w-4 h-4" />
+                  <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Gallery</span>
+                  <Kbd>Y</Kbd>
+                </Command.Item>
+                <Command.Item value="view gantt timeline" onSelect={() => runAction(() => emitSetView('gantt'))} className="cmdk-item">
+                  <GanttChart className="w-4 h-4" />
+                  <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Gantt</span>
+                  <Kbd>T</Kbd>
+                </Command.Item>
+                <Command.Item value="view form survey" onSelect={() => runAction(() => emitSetView('form'))} className="cmdk-item">
+                  <ClipboardList className="w-4 h-4" />
+                  <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Form</span>
+                  <Kbd>F</Kbd>
+                </Command.Item>
+              </Command.Group>
+            )}
 
             {/* Tools */}
             <Command.Group heading={t('commandPalette.tools')}>
@@ -221,22 +361,47 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
                 <BarChart3 className="w-4 h-4" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{t('sidebar.chart')}</span>
               </Command.Item>
-              <Command.Item value="imbalance detector" onSelect={() => runAction(() => emitOpenPanel('imbalance'))} className="cmdk-item">
+              <Command.Item value="imbalance detector outlier" onSelect={() => runAction(() => emitOpenPanel('imbalance'))} className="cmdk-item">
                 <Sparkles className="w-4 h-4" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{t('sidebar.imbalanceDetector')}</span>
               </Command.Item>
-              <Command.Item value="formula helper" onSelect={() => runAction(() => emitOpenPanel('formulaHelper'))} className="cmdk-item">
+              <Command.Item value="formula helper functions" onSelect={() => runAction(() => emitOpenPanel('formulaHelper'))} className="cmdk-item">
                 <FunctionSquare className="w-4 h-4" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{t('sidebar.formulaHelper')}</span>
+                <Kbd>⌘⇧F</Kbd>
+              </Command.Item>
+              <Command.Item value="auto balancer ai optimize" onSelect={() => runAction(() => emitOpenPanel('autoBalancer'))} className="cmdk-item">
+                <Sparkles className="w-4 h-4" style={{ color: 'var(--primary-purple)' }} />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>AI Auto-Balancer</span>
+              </Command.Item>
+              <Command.Item value="loot gacha simulator monte carlo" onSelect={() => runAction(() => emitOpenPanel('lootSimulator'))} className="cmdk-item">
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Loot / Gacha Simulator</span>
+              </Command.Item>
+              <Command.Item value="power curve compare overlay" onSelect={() => runAction(() => emitOpenPanel('powerCurveCompare'))} className="cmdk-item">
+                <BarChart3 className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Power Curve Compare</span>
+              </Command.Item>
+              <Command.Item value="comments mentions thread team" onSelect={() => runAction(() => emitOpenPanel('comments'))} className="cmdk-item">
+                <Users className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>코멘트 / 멘션</span>
+              </Command.Item>
+              <Command.Item value="interface designer dashboard widgets" onSelect={() => runAction(() => emitOpenPanel('interfaceDesigner'))} className="cmdk-item">
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Interface Designer</span>
+              </Command.Item>
+              <Command.Item value="automations workflow trigger" onSelect={() => runAction(() => emitOpenPanel('automations'))} className="cmdk-item">
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Automations</span>
               </Command.Item>
             </Command.Group>
 
-            {/* Functions (수식) */}
+            {/* Functions — 수식 */}
             <Command.Group heading={t('commandPalette.functions')}>
-              {(availableFunctions as FunctionEntry[]).slice(0, 50).map((fn) => (
+              {(availableFunctions as FunctionEntry[]).slice(0, 80).map((fn) => (
                 <Command.Item
                   key={`fn-${fn.name}`}
-                  value={`${fn.name} ${fn.description ?? ''} ${fn.syntax ?? ''}`}
+                  value={`${fn.name} ${fn.description ?? ''} ${fn.syntax ?? ''} ${fn.category ?? ''}`}
                   onSelect={() =>
                     runAction(() => {
                       emitOpenPanel('formulaHelper');
@@ -258,6 +423,17 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
                       </span>
                     )}
                   </div>
+                  {fn.category && (
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 rounded shrink-0"
+                      style={{
+                        background: 'var(--bg-tertiary)',
+                        color: 'var(--text-tertiary)',
+                      }}
+                    >
+                      {fn.category}
+                    </span>
+                  )}
                 </Command.Item>
               ))}
             </Command.Group>
@@ -265,13 +441,35 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
             {/* Settings */}
             <Command.Group heading={t('commandPalette.settings')}>
               <Command.Item
-                value="toggle theme dark light"
+                value="toggle theme dark light mode"
                 onSelect={() => runAction(toggleTheme)}
                 className="cmdk-item"
               >
                 {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
                   {t('commandPalette.toggleTheme')}
+                </span>
+                <Kbd>⌘⇧L</Kbd>
+              </Command.Item>
+              <Command.Item
+                value="keyboard shortcuts help"
+                onSelect={() => runAction(() => window.dispatchEvent(new Event('balruno:open-shortcuts')))}
+                className="cmdk-item"
+              >
+                <Keyboard className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                  키보드 단축키
+                </span>
+                <Kbd>?</Kbd>
+              </Command.Item>
+              <Command.Item
+                value="dedupe duplicate projects cleanup 중복 정리"
+                onSelect={() => runAction(() => window.dispatchEvent(new CustomEvent('balruno:open-dedupe')))}
+                className="cmdk-item"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                  중복 프로젝트 정리
                 </span>
               </Command.Item>
             </Command.Group>

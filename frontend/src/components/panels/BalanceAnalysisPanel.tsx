@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { GitBranch, TrendingUp, BarChart2, AlertTriangle, Target, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useEscapeKey } from '@/hooks/useEscapeKey';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import SheetSelector from './SheetSelector';
 
 // 커스텀 스크롤바 스타일
@@ -49,10 +50,12 @@ export default function BalanceAnalysisPanel({
   showHelp: externalShowHelp,
   setShowHelp: externalSetShowHelp
 }: BalanceAnalysisPanelProps) {
-  // ESC 키로 패널 닫기
-  useEscapeKey(onClose);
+  // PanelShell 이 useEscapeKey 담당
+  const [internalShowHelp, setInternalShowHelp] = useState(false);
+  const showHelpVal = externalShowHelp ?? internalShowHelp;
+  const setShowHelpVal = externalSetShowHelp ?? setInternalShowHelp;
 
-  const state = useBalanceAnalysisState(externalShowHelp, externalSetShowHelp);
+  const state = useBalanceAnalysisState(showHelpVal, setShowHelpVal);
 
   const {
     activeTab,
@@ -92,7 +95,15 @@ export default function BalanceAnalysisPanel({
   ];
 
   return (
-    <div className="flex flex-col h-full">
+    <PanelShell
+      title="밸런스 분석"
+      subtitle="매치업·파워커브·상관·데드존"
+      icon={GitBranch}
+      iconColor="#7c7ff2"
+      onClose={onClose}
+      bodyClassName="p-0 flex flex-col overflow-hidden"
+      actions={<HelpToggle active={showHelpVal} onToggle={() => setShowHelpVal(!showHelpVal)} color="#7c7ff2" />}
+    >
       <style>{customScrollStyle}</style>
 
       {/* 전체화면 모달 */}
@@ -242,6 +253,6 @@ export default function BalanceAnalysisPanel({
           <CurveGenerator />
         )}
       </div>
-    </div>
+    </PanelShell>
   );
 }

@@ -34,6 +34,14 @@
     "economy": "Economy Simulator",
     "dpsVariance": "DPS Variance",
     "curveFitting": "Curve Fitting",
+    "autoBalancer": "AI Auto-Balancer",
+    "lootSimulator": "Loot / Gacha Sim",
+    "powerCurveCompare": "Power Curve Compare",
+    "comments": "Comments / Mentions",
+    "interfaceDesigner": "Dashboard",
+    "automations": "Automations",
+    "sensitivity": "Sensitivity Analysis",
+    "changeHistory": "Change History",
     "references": "References",
     "settings": "Settings",
     "help": "User Guide",
@@ -221,29 +229,156 @@
     "localModeDescription": "Currently in local mode. All data is stored in your browser. Set a server URL to enable cloud sync."
   },
   "calculator": {
-    "title": "Game Balance Calculator",
-    "description": "Calculate essential values for game balancing like TTK, DPS, EHP.",
-    "dps": "DPS",
-    "dpsDesc": "Damage per second",
-    "ttk": "TTK",
-    "ttkDesc": "Time to kill",
-    "ehp": "EHP",
-    "ehpDesc": "Effective HP",
-    "damage": "Damage",
-    "scale": "Scale",
-    "attackSpeed": "Attack Speed",
-    "critRate": "Crit Rate",
-    "critDamage": "Crit Damage",
-    "targetHP": "Target HP",
+    "title": "Calculator",
+    "fullTitle": "Game Balance Calculator",
+    "subtitle": "Quick TTK, DPS, EHP calculation",
+    "helpTitle": "Game Balance Calculator",
+    "helpDesc": "Calculate core metrics for game balancing: TTK, DPS, EHP, etc.",
+    "helpDps": "DPS: Damage per second, TTK: Time to kill",
+    "helpEhp": "EHP: Effective HP, SCALE: Growth curves",
+    "helpTip": "Use ? button in each tab for detailed help",
+    "tabTooltip": {
+      "dps": "Calculate damage per second",
+      "ttk": "Calculate time to kill",
+      "ehp": "Calculate effective HP",
+      "damage": "Calculate final damage",
+      "scale": "Calculate level-based growth"
+    },
+    "useCase": "Use case",
+    "formula": "Formula",
+    "example": "Example",
+    "selectedData": "Selected Data",
+    "deselectAll": "Deselect All",
+    "load": "Load",
+    "damage1hit": "Damage (per hit)",
+    "attackSpeed": "Attack Speed (per sec)",
+    "critRate": "Critical Rate (0~1)",
+    "critMultiplier": "Critical Multiplier",
+    "dpsResult": "DPS Result",
+    "baseDps": "Base DPS",
+    "critBonus": "Critical bonus",
+    "dpsFormulaHint": "critRate: 0~1 (30%=0.3), critDamage: multiplier (2=200% damage)",
+    "targetHp": "Target HP",
+    "damage1": "Damage (per hit)",
+    "ttkResult": "TTK (Time to Kill)",
+    "hitsRequired": "Hits Required",
+    "ttkFormulaHint": "ceil: round up. -1 because no wait time after final hit",
     "hp": "HP",
-    "def": "Defense",
-    "damageReduction": "Damage Reduction",
-    "atk": "Attack",
-    "multiplier": "Multiplier",
+    "def": "Defense (DEF)",
+    "damageReduction": "Damage Reduction (0~0.99)",
+    "ehpResult": "Effective HP (EHP)",
+    "ehpFormulaHint": "def 100 = 50% damage reduction. damageReduction is additional % (0.3 = 30%)",
+    "vsOriginal": "vs Original HP",
+    "atk": "Attack (ATK)",
+    "skillMultiplier": "Skill Multiplier",
+    "finalDamage": "Final Damage",
+    "damageReductionRate": "Damage Reduction Rate",
+    "damageFormulaHint": "Higher def = smaller 100/(100+def) = less damage taken",
     "baseValue": "Base Value",
     "level": "Level",
     "growthRate": "Growth Rate",
-    "curveType": "Curve Type"
+    "curveType": "Curve Type",
+    "curveLinear": "Linear",
+    "curveExponential": "Exponential",
+    "curveLogarithmic": "Logarithmic",
+    "curveQuadratic": "Quadratic",
+    "levelStat": "Level {level} Stat",
+    "value": "Value",
+    "dps": {
+      "title": "DPS (Damage Per Second)",
+      "desc": "Total damage you can deal to enemy per second.",
+      "formula": "damage × (1 + critRate × (critDamage - 1)) × attackSpeed",
+      "damage": "Damage",
+      "damageDesc": "Damage per attack",
+      "attackSpeed": "Attack Speed",
+      "attackSpeedDesc": "Attacks per second",
+      "critRate": "Critical Rate",
+      "critRateDesc": "Crit chance (0~1)",
+      "critDamage": "Critical Damage",
+      "critDamageDesc": "Crit damage multiplier",
+      "example": "Sword A: 100×1.0=100 DPS, Sword B: 50×2.5=125 DPS",
+      "useCase": "Weapon comparison, build optimization"
+    },
+    "ttk": {
+      "title": "TTK (Time To Kill)",
+      "desc": "Time required to defeat an enemy.",
+      "formula": "(ceil(targetHP / damage) - 1) / attackSpeed",
+      "targetHp": "Target HP",
+      "targetHpDesc": "Enemy health",
+      "damage": "Damage",
+      "damageDesc": "Damage per attack",
+      "attackSpeed": "Attack Speed",
+      "attackSpeedDesc": "Attacks per second",
+      "example": "HP 1000, Damage 100, AS 2.0 → TTK: 4.5 sec",
+      "useCase": "FPS weapon balancing, PvP tuning"
+    },
+    "ehp": {
+      "title": "EHP (Effective HP)",
+      "desc": "Actual health considering defense.",
+      "formula": "hp × (1 + def/100) × (1 / (1 - damageReduction))",
+      "hp": "HP",
+      "hpDesc": "Base health",
+      "def": "Defense",
+      "defDesc": "Damage reduction stat",
+      "reduction": "Damage Reduction",
+      "reductionDesc": "% damage reduction (0~1)",
+      "example": "HP 1000, Defense 100 → EHP: 2000",
+      "useCase": "Tank survivability comparison"
+    },
+    "damageCalc": {
+      "title": "DAMAGE (Final Damage)",
+      "desc": "Calculate damage reduced by defense.",
+      "formula": "atk × (100 / (100 + def)) × multiplier",
+      "atk": "Attack",
+      "atkDesc": "Base damage",
+      "def": "Defense",
+      "defDesc": "Defense stat",
+      "multiplier": "Skill Multiplier",
+      "multiplierDesc": "Damage multiplier",
+      "example": "ATK 100 vs DEF 100 → Damage: 50",
+      "useCase": "Combat damage prediction"
+    },
+    "scale": {
+      "title": "SCALE (Growth Calculation)",
+      "desc": "Calculate stat increase per level.",
+      "formula": "Varies by curve (Linear: base + rate × level)",
+      "base": "Base Value",
+      "baseDesc": "Level 1 stat",
+      "level": "Level",
+      "levelDesc": "Target level",
+      "rate": "Growth Rate",
+      "rateDesc": "Increase rate per level",
+      "curveType": "Curve Type",
+      "curveTypeDesc": "Linear/Exp/Log/Quadratic",
+      "example": "Base 100, Level 50, Rate 1.1 → 11,739",
+      "useCase": "Level table design"
+    },
+    "curveHelp": {
+      "linear": {
+        "name": "Linear",
+        "formula": "base + (level - 1) × rate",
+        "desc": "Same increase per level. Predictable and intuitive.",
+        "useCase": "Casual games, beginner-friendly balance. Same stat increase from level 1→50."
+      },
+      "exponential": {
+        "name": "Exponential",
+        "formula": "base × (rate ^ (level - 1))",
+        "desc": "Rapid increase at higher levels. Hardcore late-game feel.",
+        "useCase": "XP tables, enhancement costs, MMO endgame. Big gap between high and low level players."
+      },
+      "logarithmic": {
+        "name": "Logarithmic",
+        "formula": "base + rate × log(level)",
+        "desc": "Fast early growth, slows down later.",
+        "useCase": "Reduce level gap, catch-up systems. Keep stat difference small between high levels."
+      },
+      "quadratic": {
+        "name": "Quadratic",
+        "formula": "base + rate × level²",
+        "desc": "Slow early, accelerates over time.",
+        "useCase": "Skill damage scaling, mid-late power spikes. RPG skill coefficients."
+      }
+    }
   },
   "comparison": {
     "title": "Comparison Analysis",
@@ -257,40 +392,109 @@
   },
   "presetComparison": {
     "title": "Preset Comparison",
-    "description": "Compare differences between two sheets or snapshots.",
+    "subtitle": "Analyze differences between two sheets or snapshots",
+    "helpDesc": "Compare differences between two sheets or snapshots.",
+    "helpSnapshotTitle": "Snapshot",
+    "helpSnapshot": "Save the current state of a sheet for later comparison. Create a snapshot before making balance adjustments.",
+    "helpCompareTitle": "Compare",
+    "helpCompare": "Select two sheets/snapshots and compare to see changed values, added/removed rows.",
+    "helpExportTitle": "Export",
+    "helpExport": "Save comparison results as a JSON file for record keeping or sharing with your team.",
+    "helpMatchingTitle": "Auto Matching",
+    "helpMatching": "Matches by column name and row name. Even different IDs will match if names are the same.",
+    "helpUseCase": "Use cases: Balance patch before/after comparison, seasonal change tracking, A/B test result analysis",
     "before": "Before",
     "after": "After",
-    "compare": "Compare",
+    "select": "Select...",
+    "sheet": "Sheet",
     "snapshot": "Snapshot",
     "createSnapshot": "Create Snapshot",
-    "exportResult": "Export Result",
+    "runComparison": "Run Comparison",
+    "changeSummary": "Change Summary",
     "totalRows": "Total Rows",
     "modified": "Modified",
     "added": "Added",
     "removed": "Removed",
-    "showUnchanged": "Show Unchanged Rows"
+    "columnAvgChange": "Column Average Changes",
+    "noNumericColumns": "No numeric columns",
+    "detailedChanges": "Detailed Changes",
+    "showUnchanged": "Show unchanged rows",
+    "cellsChanged": "{count} changed",
+    "noChanges": "No changes",
+    "noSheets": "No sheets in project.",
+    "noSheetsDesc": "Create sheets to compare.",
+    "exportResults": "Export Results"
   },
   "imbalanceDetector": {
     "title": "Imbalance Detector",
-    "description": "Automatically scan sheet data to find and warn about potential balance issues.",
-    "analyze": "Analyze",
-    "analyzing": "Analyzing...",
-    "noIssues": "No issues detected",
+    "selectSheet": "Please select a sheet",
+    "helpTitle": "Imbalance Detector (Auto Warning)",
+    "helpDesc": "Scans sheet data to automatically find and warn about potential issues.",
     "outlier": "Outlier",
     "powerCreep": "Power Creep",
     "cliff": "Cliff",
     "variance": "Variance",
+    "helpOutlier": "Detects extreme values far from others",
+    "helpPowerCreep": "Detects values that surge rapidly in late game",
+    "helpCliff": "Detects sharp changes between consecutive values",
+    "helpVariance": "Detects large deviations within the same group",
+    "helpVsAnalysis": "vs Balance Analysis: Analysis is deep pattern analysis, Detector is immediate issue finding",
+    "settings": "Detection Settings",
+    "settingsTooltip": "Lower values = more sensitive detection. Too low = false positives, too high = miss issues.",
+    "outlierThreshold": "Outlier Threshold (Z-score)",
+    "outlierTooltipTitle": "Outlier Detection",
+    "outlierTooltipDesc": "Measures deviation from average.",
+    "outlierSensitive": "2.0: Sensitive (top 2.3% detected)",
+    "outlierNormal": "2.5: Normal (top 0.6% detected) - Recommended",
+    "outlierInsensitive": "3.0: Insensitive (top 0.1% detected)",
+    "powerCreepThreshold": "Power Creep Threshold (multiplier)",
+    "powerCreepTooltipTitle": "Power Creep Detection",
+    "powerCreepTooltipDesc": "Checks how much stronger late units are vs early.",
+    "powerCreepStrict": "2.0: Strict (warn at 2x)",
+    "powerCreepNormal": "3.0: Normal (warn at 3x) - Recommended",
+    "powerCreepLenient": "5.0: Lenient (warn only at 5x)",
+    "varianceThreshold": "Variance Threshold (CV)",
+    "varianceTooltipTitle": "Variance Detection",
+    "varianceTooltipDesc": "Measures stat deviation in same level/grade units. (CV = std/mean)",
+    "varianceStrict": "0.2: Strict (20% deviation warning)",
+    "varianceNormal": "0.3: Normal (30% deviation warning) - Recommended",
+    "varianceLenient": "0.5: Lenient (50% deviation only)",
+    "cliffThreshold": "Cliff Threshold (multiplier)",
+    "cliffTooltipTitle": "Difficulty Cliff Detection",
+    "cliffTooltipDesc": "Detects sharp stat changes between consecutive levels.",
+    "cliffStrict": "1.5: Strict (50% increase warning)",
+    "cliffNormal": "2.0: Normal (100% increase warning) - Recommended",
+    "cliffLenient": "3.0: Lenient (200% increase only)",
+    "recommendedSettings": "Recommended Settings",
+    "recommendedSettingsDesc": "Use defaults when starting. If too many false positives, increase values. If missing issues, decrease values.",
+    "analyzing": "Analyzing...",
+    "runAnalysis": "Run Imbalance Analysis",
+    "noIssues": "No Issues",
+    "noIssuesDesc": "No imbalance patterns detected",
+    "issuesFound": "{count} issues detected",
+    "all": "All",
     "critical": "Critical",
     "warning": "Warning",
-    "info": "Info"
+    "info": "Info",
+    "rowsAffected": "{count} rows affected",
+    "suggestion": "Suggestion"
   },
   "goalSolver": {
     "title": "Goal Solver",
-    "description": "Reverse calculate required input values from desired results.",
-    "selectFormula": "Select Formula",
-    "targetValue": "Target Value",
+    "helpTitle": "Goal Solver (Reverse Calculator)",
+    "helpDesc": "Calculate the required input value from your desired result.",
+    "helpExample1": "e.g., \"3 sec kill → Required DPS?\"",
+    "helpExample2": "e.g., \"50% damage reduction → Required DEF?\"",
+    "helpExample3": "e.g., \"Target DPS → Required ATK?\"",
+    "helpVsFormula": "vs Formula Helper: Formula is forward (input→result), Solver is reverse (result→input)",
+    "selectType": "Select solver type",
+    "targetPlaceholder": "Enter target value",
     "calculate": "Calculate",
-    "result": "Result"
+    "calculationComplete": "Calculation Complete",
+    "requiredValue": "Required Value",
+    "copied": "Copied!",
+    "copy": "Copy",
+    "calculationFailed": "Calculation Failed"
   },
   "balanceAnalysis": {
     "title": "Balance Analysis",
@@ -362,6 +566,26 @@
       "name": "Gacha Rate Calculator",
       "description": "Calculate rates, pity, and expected costs by grade"
     },
+    "fpsArena": {
+      "name": "FPS Shooter",
+      "description": "Weapons (AR/SMG/Sniper/Shotgun) × enemy tiers × attachments — TTK / headshot balance"
+    },
+    "moba": {
+      "name": "MOBA Champions",
+      "description": "Champion stat growth per role × item Gold Efficiency"
+    },
+    "strategy": {
+      "name": "Strategy / RTS",
+      "description": "Unit factions × tech tree × resource economy"
+    },
+    "idle": {
+      "name": "Idle Clicker",
+      "description": "Generator income curves × Prestige multipliers × LiveOps retention"
+    },
+    "roguelike": {
+      "name": "Roguelike Deckbuilder",
+      "description": "Relic rarity × floor difficulty scaling × run analytics"
+    },
     "sprintBoard": {
       "name": "Sprint Board",
       "description": "5-stage Kanban (Backlog/Todo/Doing/Review/Done) + priority / role / assignee"
@@ -373,6 +597,10 @@
     "epicRoadmap": {
       "name": "Epic Roadmap",
       "description": "Pre-production → Launch phase Gantt timeline"
+    },
+    "playtestSessions": {
+      "name": "Playtest Sessions",
+      "description": "Balance change → playtest → feedback → action items — full loop in one place"
     },
     "stickers": {
       "rpgCharacter": {
@@ -506,7 +734,6 @@
     "newColumn": "New Column",
     "confirmDeleteColumn": "Are you sure you want to delete the \"{name}\" column?",
     "confirmDeleteRow": "Are you sure you want to delete row {index}?",
-    "deleteRow": "Delete Row",
     "defaultFormula": "Default formula: {formula}",
     "noFormula": "None",
     "dragToFill": "Drag to fill formula/value",
@@ -713,6 +940,7 @@
     "calendar": "Calendar",
     "gallery": "Gallery",
     "gantt": "Gantt",
+    "diagram": "Diagram",
     "formHeading": "Add record to {name}",
     "formEmpty": "No editable columns. Add a column first.",
     "formAdd": "Add",
@@ -730,15 +958,37 @@
     "ganttDateColumn": "Date column"
   },
   "toolGroups": {
-    "formulaWorkbench": "Formula Workbench",
-    "balanceInsights": "Balance Insights",
-    "simulation": "Simulation",
-    "charts": "Charts",
-    "economy": "Economy",
-    "curveFitting": "Curve Fitting",
-    "entityGenerator": "Entity Generator",
-    "difficultyCurve": "Difficulty Curve",
-    "goalSolver": "Goal Solver"
+    "build": "Build",
+    "check": "Check",
+    "simulate": "Simulate",
+    "compare": "Compare",
+    "auto": "Auto",
+    "share": "Share"
+  },
+  "toolDesc": {
+    "calculator": "Instant DPS/TTK/EHP from numeric input",
+    "formulaHelper": "Search 90+ function reference",
+    "preset": "Drop ready-made formula into sheet",
+    "entityDefinition": "Sheet → level table auto-generate",
+    "difficultyCurve": "Stage walls · milestones design",
+    "balance": "Matchup matrix · Perfect Imbalance",
+    "imbalance": "Z-score statistical outlier detection",
+    "balanceValidator": "Pre-launch rule-based validation",
+    "sensitivity": "Tornado/Spider variable sensitivity",
+    "simulation": "1v1/team battle Monte Carlo",
+    "dpsVariance": "DPS distribution · percentile",
+    "lootSimulator": "Gacha pity · drop probability",
+    "economy": "Faucet/Sink · inflation",
+    "comparison": "Radar chart for multi-entity",
+    "chart": "Growth curve line chart",
+    "powerCurveCompare": "Overlay curves from many sheets",
+    "curveFitting": "Data → formula regression",
+    "goal": "Target value → required input solve",
+    "autoBalancer": "Bulk auto-tune across entities",
+    "automations": "Trigger · condition · action pipeline",
+    "interfaceDesigner": "Dashboard · KPI widgets",
+    "changeHistory": "Cell change log · reasons",
+    "comments": "Cell comments · discussion threads"
   },
   "commandPalette": {
     "title": "Command Palette",
@@ -845,7 +1095,7 @@
   },
   "difficultyCurve": {
     "title": "Difficulty Curve Design",
-    "helpTitle": "Difficulty Curve Design",
+    "helpTitle": "Difficulty Curve Design Guide",
     "helpDesc": "Design stage difficulty and milestones.",
     "helpWall": "Wall",
     "helpWallDesc": "Difficulty spike sections",
@@ -856,7 +1106,7 @@
     "helpGraphEnemy": "Enemy Power: Enemy's total combat power at that stage (starts at 100)",
     "helpGraphRatio": "Ratio >= 1 = clearable, < 1 = wall (need to grow)",
     "helpGraphGrowth": "Growth Rate: Power multiplied per stage (e.g., 1.10 = +10% per stage)",
-    "wallCount": "{count} walls",
+    "wallCount": "",
     "presetLabel": "Difficulty Preset",
     "playtimeLabel": "Daily Playtime Target",
     "autoPlace": "Auto Place",
@@ -896,7 +1146,6 @@
       "4hr": "4hr/day",
       "wallInterval": "Wall interval {interval}"
     },
-    "helpTitle": "Difficulty Curve Design Guide",
     "helpOverview": "Overview",
     "helpOverviewDesc": "Difficulty Curve Design visualizes player vs enemy power balance across stages and helps design 'wall' sections and content unlock timing.",
     "helpUsage": "How to Use",
@@ -933,11 +1182,9 @@
     "wallStage": "Wall Stage",
     "dragToMove": "Drag to move",
     "scrollToZoom": "Scroll to zoom",
-
     "curveType": "Curve Type",
     "sawtoothPeriod": "Sawtooth Period",
     "stages": "stages",
-
     "flowZone": "Flow Zone",
     "flowZoneNote": "Reflected in chart below. Shows boredom (green), flow (blue), and anxiety (red) zones on background based on player/enemy power ratio.",
     "visible": "Visible",
@@ -950,7 +1197,6 @@
     "anxietyThreshold": "Anxiety Threshold",
     "boredomThresholdDesc": "Above this ratio = too easy",
     "anxietyThresholdDesc": "Below this ratio = too hard",
-
     "restPoints": "Rest Points",
     "restPointsDesc": "Pre-boss rest, new mechanic learning",
     "restPoint": "Rest",
@@ -961,7 +1207,6 @@
     "restDuration": "Duration",
     "restDurationDesc": "Number of stages the rest lasts",
     "stagesUnit": "stg",
-
     "dda": "Dynamic Difficulty",
     "enabled": "Enabled",
     "disabled": "Disabled",
@@ -978,7 +1223,6 @@
     "win": "W",
     "loss": "L",
     "reset": "Reset",
-
     "helpCurveTypes": "Curve Types",
     "helpLinear": "Linear",
     "helpLinearDesc": "Constant difficulty increase. For predictable progression.",
@@ -990,26 +1234,21 @@
     "helpSigmoidDesc": "S-curve. For story games with mid-game climax.",
     "helpSawtooth": "Sawtooth",
     "helpSawtoothDesc": "Periodic rise/fall. Lowers difficulty for new mechanic learning.",
-
     "helpFlowZone": "Flow Zone (Flow Theory)",
     "helpFlowZoneDesc": "Based on Csikszentmihalyi's Flow Theory. Visualizes player engagement state.",
     "helpBoredomDesc": "Player too strong. Lacks challenge.",
     "helpFlowDesc": "Ideal engagement. Proper challenge and satisfaction.",
     "helpAnxietyDesc": "Player too weak. Risk of frustration.",
-
     "helpRestPoints": "Rest Points",
     "helpRestPointsDesc": "Pre-boss rest or new mechanic learning zones. Pauses difficulty increase.",
     "helpDDA": "Dynamic Difficulty (DDA)",
     "helpDDADesc": "Auto-adjusts difficulty on win/loss streaks. Prevents player churn.",
-
     "sectionBasic": "Basic Settings",
     "sectionVisualization": "Visualization",
     "sectionStageDesign": "Stage Design",
     "sectionSimulation": "Simulation",
     "ddaSimulationNote": "Reflected in chart below. Preview how difficulty curve changes under win/loss streak scenarios. Not automatically applied to your game.",
     "ddaSimulationBadge": "Simulation",
-
-    "wallCount": "",
     "totalStuckTime": "Total Est. Stuck Time",
     "hours": "h",
     "wallType": "Wall Type",
@@ -1027,7 +1266,6 @@
       "level": "Level up required. XP farming.",
       "time": "Soft gate. Wait for a period of time."
     },
-
     "helpWallTypes": "Wall Types",
     "helpBossWall": "Boss Wall",
     "helpBossWallDesc": "Combat against powerful boss. High intensity (1.5~2.0×) tests player skill and gear.",
@@ -1045,7 +1283,7 @@
     "unit2": "Unit 2 (Defender)",
     "select": "Select...",
     "loadFromSheet": "Load from Sheet",
-    "newUnit": "New Unit",
+    "newUnit": "Add New Unit",
     "clickNewUnitOrSheet": "Add a new unit or load from sheet",
     "runs": "Iterations",
     "damageFormula": "Damage Formula",
@@ -1141,7 +1379,6 @@
     "teamWinRate": "Team Win Rate",
     "avgSurvivors": "Avg Survivors",
     "edit": "Edit Unit",
-    "newUnit": "Add New Unit",
     "skills": "Skills",
     "noSkills": "No skills - click buttons above to add",
     "skillName": "Skill Name",
@@ -1673,324 +1910,9 @@
       "rSquared": "Coefficient of Determination (R-squared)"
     }
   },
-  "goalSolver": {
-    "title": "Goal Solver",
-    "helpTitle": "Goal Solver (Reverse Calculator)",
-    "helpDesc": "Calculate the required input value from your desired result.",
-    "helpExample1": "e.g., \"3 sec kill → Required DPS?\"",
-    "helpExample2": "e.g., \"50% damage reduction → Required DEF?\"",
-    "helpExample3": "e.g., \"Target DPS → Required ATK?\"",
-    "helpVsFormula": "vs Formula Helper: Formula is forward (input→result), Solver is reverse (result→input)",
-    "selectType": "Select solver type",
-    "targetPlaceholder": "Enter target value",
-    "calculate": "Calculate",
-    "calculationComplete": "Calculation Complete",
-    "requiredValue": "Required Value",
-    "copied": "Copied!",
-    "copy": "Copy",
-    "calculationFailed": "Calculation Failed"
-  },
-  "imbalanceDetector": {
-    "title": "Imbalance Detector",
-    "selectSheet": "Sheet to analyze",
-    "helpTitle": "Imbalance Detector (Auto Warning)",
-    "helpDesc": "Scans sheet data to automatically find and warn about potential issues.",
-    "outlier": "Outlier",
-    "powerCreep": "Power Creep",
-    "cliff": "Cliff",
-    "variance": "Variance",
-    "helpOutlier": "Detects extreme values far from others",
-    "helpPowerCreep": "Detects values that surge rapidly in late game",
-    "helpCliff": "Detects sharp changes between consecutive values",
-    "helpVariance": "Detects large deviations within the same group",
-    "helpVsAnalysis": "vs Balance Analysis: Analysis is deep pattern analysis, Detector is immediate issue finding",
-    "settings": "Detection Settings",
-    "settingsTooltip": "Lower values = more sensitive detection. Too low = false positives, too high = miss issues.",
-    "outlierThreshold": "Outlier Threshold (Z-score)",
-    "outlierTooltipTitle": "Outlier Detection",
-    "outlierTooltipDesc": "Measures deviation from average.",
-    "outlierSensitive": "2.0: Sensitive (top 2.3% detected)",
-    "outlierNormal": "2.5: Normal (top 0.6% detected) - Recommended",
-    "outlierInsensitive": "3.0: Insensitive (top 0.1% detected)",
-    "powerCreepThreshold": "Power Creep Threshold (multiplier)",
-    "powerCreepTooltipTitle": "Power Creep Detection",
-    "powerCreepTooltipDesc": "Checks how much stronger late units are vs early.",
-    "powerCreepStrict": "2.0: Strict (warn at 2x)",
-    "powerCreepNormal": "3.0: Normal (warn at 3x) - Recommended",
-    "powerCreepLenient": "5.0: Lenient (warn only at 5x)",
-    "varianceThreshold": "Variance Threshold (CV)",
-    "varianceTooltipTitle": "Variance Detection",
-    "varianceTooltipDesc": "Measures stat deviation in same level/grade units. (CV = std/mean)",
-    "varianceStrict": "0.2: Strict (20% deviation warning)",
-    "varianceNormal": "0.3: Normal (30% deviation warning) - Recommended",
-    "varianceLenient": "0.5: Lenient (50% deviation only)",
-    "cliffThreshold": "Cliff Threshold (multiplier)",
-    "cliffTooltipTitle": "Difficulty Cliff Detection",
-    "cliffTooltipDesc": "Detects sharp stat changes between consecutive levels.",
-    "cliffStrict": "1.5: Strict (50% increase warning)",
-    "cliffNormal": "2.0: Normal (100% increase warning) - Recommended",
-    "cliffLenient": "3.0: Lenient (200% increase only)",
-    "recommendedSettings": "Recommended Settings",
-    "recommendedSettingsDesc": "Use defaults when starting. If too many false positives, increase values. If missing issues, decrease values.",
-    "analyzing": "Analyzing...",
-    "runAnalysis": "Run Imbalance Analysis",
-    "noIssues": "No Issues",
-    "noIssuesDesc": "No imbalance patterns detected",
-    "issuesFound": "{count} issues detected",
-    "all": "All",
-    "critical": "Critical",
-    "warning": "Warning",
-    "info": "Info",
-    "rowsAffected": "{count} rows affected",
-    "suggestion": "Suggestion",
-    "selectSheet": "Please select a sheet"
-  },
-  "calculator": {
-    "title": "Calculator",
-    "fullTitle": "Game Balance Calculator",
-    "subtitle": "Quick TTK, DPS, EHP calculation",
-    "helpTitle": "Game Balance Calculator",
-    "helpDesc": "Calculate core metrics for game balancing: TTK, DPS, EHP, etc.",
-    "helpDps": "DPS: Damage per second, TTK: Time to kill",
-    "helpEhp": "EHP: Effective HP, SCALE: Growth curves",
-    "helpTip": "Use ? button in each tab for detailed help",
-    "tabTooltip": {
-      "dps": "Calculate damage per second",
-      "ttk": "Calculate time to kill",
-      "ehp": "Calculate effective HP",
-      "damage": "Calculate final damage",
-      "scale": "Calculate level-based growth"
-    },
-    "useCase": "Use case",
-    "formula": "Formula",
-    "example": "Example",
-    "selectedData": "Selected Data",
-    "deselectAll": "Deselect All",
-    "load": "Load",
-    "damage1hit": "Damage (per hit)",
-    "attackSpeed": "Attack Speed (per sec)",
-    "critRate": "Critical Rate (0~1)",
-    "critMultiplier": "Critical Multiplier",
-    "dpsResult": "DPS Result",
-    "baseDps": "Base DPS",
-    "critBonus": "Critical bonus",
-    "dpsFormulaHint": "critRate: 0~1 (30%=0.3), critDamage: multiplier (2=200% damage)",
-    "targetHp": "Target HP",
-    "damage1": "Damage (per hit)",
-    "ttkResult": "TTK (Time to Kill)",
-    "hitsRequired": "Hits Required",
-    "ttkFormulaHint": "ceil: round up. -1 because no wait time after final hit",
-    "hp": "HP",
-    "def": "Defense (DEF)",
-    "damageReduction": "Damage Reduction (0~0.99)",
-    "ehpResult": "Effective HP (EHP)",
-    "ehpFormulaHint": "def 100 = 50% damage reduction. damageReduction is additional % (0.3 = 30%)",
-    "vsOriginal": "vs Original HP",
-    "atk": "Attack (ATK)",
-    "skillMultiplier": "Skill Multiplier",
-    "finalDamage": "Final Damage",
-    "damageReductionRate": "Damage Reduction Rate",
-    "damageFormulaHint": "Higher def = smaller 100/(100+def) = less damage taken",
-    "baseValue": "Base Value",
-    "level": "Level",
-    "growthRate": "Growth Rate",
-    "curveType": "Curve Type",
-    "curveLinear": "Linear",
-    "curveExponential": "Exponential",
-    "curveLogarithmic": "Logarithmic",
-    "curveQuadratic": "Quadratic",
-    "levelStat": "Level {level} Stat",
-    "value": "Value",
-    "dps": {
-      "title": "DPS (Damage Per Second)",
-      "desc": "Total damage you can deal to enemy per second.",
-      "formula": "damage × (1 + critRate × (critDamage - 1)) × attackSpeed",
-      "damage": "Damage",
-      "damageDesc": "Damage per attack",
-      "attackSpeed": "Attack Speed",
-      "attackSpeedDesc": "Attacks per second",
-      "critRate": "Critical Rate",
-      "critRateDesc": "Crit chance (0~1)",
-      "critDamage": "Critical Damage",
-      "critDamageDesc": "Crit damage multiplier",
-      "example": "Sword A: 100×1.0=100 DPS, Sword B: 50×2.5=125 DPS",
-      "useCase": "Weapon comparison, build optimization"
-    },
-    "ttk": {
-      "title": "TTK (Time To Kill)",
-      "desc": "Time required to defeat an enemy.",
-      "formula": "(ceil(targetHP / damage) - 1) / attackSpeed",
-      "targetHp": "Target HP",
-      "targetHpDesc": "Enemy health",
-      "damage": "Damage",
-      "damageDesc": "Damage per attack",
-      "attackSpeed": "Attack Speed",
-      "attackSpeedDesc": "Attacks per second",
-      "example": "HP 1000, Damage 100, AS 2.0 → TTK: 4.5 sec",
-      "useCase": "FPS weapon balancing, PvP tuning"
-    },
-    "ehp": {
-      "title": "EHP (Effective HP)",
-      "desc": "Actual health considering defense.",
-      "formula": "hp × (1 + def/100) × (1 / (1 - damageReduction))",
-      "hp": "HP",
-      "hpDesc": "Base health",
-      "def": "Defense",
-      "defDesc": "Damage reduction stat",
-      "reduction": "Damage Reduction",
-      "reductionDesc": "% damage reduction (0~1)",
-      "example": "HP 1000, Defense 100 → EHP: 2000",
-      "useCase": "Tank survivability comparison"
-    },
-    "damageCalc": {
-      "title": "DAMAGE (Final Damage)",
-      "desc": "Calculate damage reduced by defense.",
-      "formula": "atk × (100 / (100 + def)) × multiplier",
-      "atk": "Attack",
-      "atkDesc": "Base damage",
-      "def": "Defense",
-      "defDesc": "Defense stat",
-      "multiplier": "Skill Multiplier",
-      "multiplierDesc": "Damage multiplier",
-      "example": "ATK 100 vs DEF 100 → Damage: 50",
-      "useCase": "Combat damage prediction"
-    },
-    "scale": {
-      "title": "SCALE (Growth Calculation)",
-      "desc": "Calculate stat increase per level.",
-      "formula": "Varies by curve (Linear: base + rate × level)",
-      "base": "Base Value",
-      "baseDesc": "Level 1 stat",
-      "level": "Level",
-      "levelDesc": "Target level",
-      "rate": "Growth Rate",
-      "rateDesc": "Increase rate per level",
-      "curveType": "Curve Type",
-      "curveTypeDesc": "Linear/Exp/Log/Quadratic",
-      "example": "Base 100, Level 50, Rate 1.1 → 11,739",
-      "useCase": "Level table design"
-    },
-    "curveHelp": {
-      "linear": {
-        "name": "Linear",
-        "formula": "base + (level - 1) × rate",
-        "desc": "Same increase per level. Predictable and intuitive.",
-        "useCase": "Casual games, beginner-friendly balance. Same stat increase from level 1→50."
-      },
-      "exponential": {
-        "name": "Exponential",
-        "formula": "base × (rate ^ (level - 1))",
-        "desc": "Rapid increase at higher levels. Hardcore late-game feel.",
-        "useCase": "XP tables, enhancement costs, MMO endgame. Big gap between high and low level players."
-      },
-      "logarithmic": {
-        "name": "Logarithmic",
-        "formula": "base + rate × log(level)",
-        "desc": "Fast early growth, slows down later.",
-        "useCase": "Reduce level gap, catch-up systems. Keep stat difference small between high levels."
-      },
-      "quadratic": {
-        "name": "Quadratic",
-        "formula": "base + rate × level²",
-        "desc": "Slow early, accelerates over time.",
-        "useCase": "Skill damage scaling, mid-late power spikes. RPG skill coefficients."
-      }
-    }
-  },
-  "presetComparison": {
-    "title": "Preset Comparison",
-    "subtitle": "Analyze differences between two sheets or snapshots",
-    "helpDesc": "Compare differences between two sheets or snapshots.",
-    "helpSnapshotTitle": "Snapshot",
-    "helpSnapshot": "Save the current state of a sheet for later comparison. Create a snapshot before making balance adjustments.",
-    "helpCompareTitle": "Compare",
-    "helpCompare": "Select two sheets/snapshots and compare to see changed values, added/removed rows.",
-    "helpExportTitle": "Export",
-    "helpExport": "Save comparison results as a JSON file for record keeping or sharing with your team.",
-    "helpMatchingTitle": "Auto Matching",
-    "helpMatching": "Matches by column name and row name. Even different IDs will match if names are the same.",
-    "helpUseCase": "Use cases: Balance patch before/after comparison, seasonal change tracking, A/B test result analysis",
-    "before": "Before",
-    "after": "After",
-    "select": "Select...",
-    "sheet": "Sheet",
-    "snapshot": "Snapshot",
-    "createSnapshot": "Create Snapshot",
-    "runComparison": "Run Comparison",
-    "changeSummary": "Change Summary",
-    "totalRows": "Total Rows",
-    "modified": "Modified",
-    "added": "Added",
-    "removed": "Removed",
-    "columnAvgChange": "Column Average Changes",
-    "noNumericColumns": "No numeric columns",
-    "detailedChanges": "Detailed Changes",
-    "showUnchanged": "Show unchanged rows",
-    "cellsChanged": "{count} changed",
-    "noChanges": "No changes",
-    "noSheets": "No sheets in project.",
-    "noSheetsDesc": "Create sheets to compare.",
-    "exportResults": "Export Results"
-  },
   "growthCurve": {
     "title": "Growth Curve Chart",
     "graphTitle": "Growth Curve Graph",
-    "help": "Help",
-    "helpDesc": "Curves that determine how much stats increase when leveling up. Completely changes the growth feel.",
-    "linearHelp": {
-      "name": "Linear",
-      "formula": "base + (level-1) × rate",
-      "desc": "Same increase every level. Predictable and intuitive. Casual games, beginner-friendly."
-    },
-    "exponentialHelp": {
-      "name": "Exponential",
-      "formula": "base × rate^(level-1)",
-      "desc": "Explosive late-game increase. Idle/clicker games, XP tables, enhancement costs."
-    },
-    "logarithmicHelp": {
-      "name": "Logarithmic",
-      "formula": "base + rate × log(level)",
-      "desc": "Fast early growth, slows later. Reduce level gap, catch-up systems, mastery."
-    },
-    "quadraticHelp": {
-      "name": "Quadratic",
-      "formula": "base + rate × level²",
-      "desc": "Slow start, accelerates. Gentler than exponential. RPG skill coefficients, mid-late power spikes."
-    },
-    "sCurveHelp": {
-      "name": "S-Curve (Sigmoid)",
-      "formula": "base + max/(1+e^(-k×(x-mid)))",
-      "desc": "Slow early/late, fast mid-growth. Natural growth feel. RPGs with level caps, stat ceilings."
-    },
-    "helpTip": "Tip: HP/DEF → Linear/Log, ATK/Gold → Exp/Quadratic, Capped stats → S-curve recommended",
-    "basicSettings": "Basic Settings",
-    "baseValue": "Base Value",
-    "rate": "Growth Rate",
-    "maxLevel": "Max Level",
-    "curvesToShow": "Curves to Show",
-    "linear": "Linear",
-    "exponential": "Exponential",
-    "logarithmic": "Logarithmic",
-    "quadratic": "Quadratic",
-    "customCurve": "Custom Curve",
-    "customSettings": "Custom Curve Settings",
-    "curveTypeLabel": "Curve Type",
-    "sCurve": "S-Curve",
-    "enlargeGraph": "Enlarge Graph",
-    "levelPreview": "Preview value at level:",
-    "levelUnit": "Level",
-    "segmentedCurve": "Segmented Growth",
-    "segmentSettings": "Segment Settings",
-    "addSegment": "Add Segment",
-    "segment": "Segment",
-    "startLevel": "Start Level",
-    "endLevel": "End Level",
-    "segmentedDesc": "Apply different growth curves to each segment. Design patterns like early rapid growth → mid stable → late gradual.",
-    "interpolationSettings": "Segment Transition",
-    "interpolation_none": "None",
-    "interpolation_linear": "Linear",
-    "interpolation_smooth": "Smooth",
-    "transitionWidth": "Transition Width (levels)",
     "help": {
       "curveTypes": "Curve Type Guide",
       "advancedFeatures": "Advanced Features",
@@ -2054,12 +1976,70 @@
         "desc": "Reverse calculate required parameters from desired result. Answers questions like \"What growth rate for 10,000 HP at level 50?\"",
         "example": "Ex: Target level 50, value 10000 → Linear Rate=198, Exponential Rate=1.0959 needed"
       }
-    }
+    },
+    "helpDesc": "Curves that determine how much stats increase when leveling up. Completely changes the growth feel.",
+    "linearHelp": {
+      "name": "Linear",
+      "formula": "base + (level-1) × rate",
+      "desc": "Same increase every level. Predictable and intuitive. Casual games, beginner-friendly."
+    },
+    "exponentialHelp": {
+      "name": "Exponential",
+      "formula": "base × rate^(level-1)",
+      "desc": "Explosive late-game increase. Idle/clicker games, XP tables, enhancement costs."
+    },
+    "logarithmicHelp": {
+      "name": "Logarithmic",
+      "formula": "base + rate × log(level)",
+      "desc": "Fast early growth, slows later. Reduce level gap, catch-up systems, mastery."
+    },
+    "quadraticHelp": {
+      "name": "Quadratic",
+      "formula": "base + rate × level²",
+      "desc": "Slow start, accelerates. Gentler than exponential. RPG skill coefficients, mid-late power spikes."
+    },
+    "sCurveHelp": {
+      "name": "S-Curve (Sigmoid)",
+      "formula": "base + max/(1+e^(-k×(x-mid)))",
+      "desc": "Slow early/late, fast mid-growth. Natural growth feel. RPGs with level caps, stat ceilings."
+    },
+    "helpTip": "Tip: HP/DEF → Linear/Log, ATK/Gold → Exp/Quadratic, Capped stats → S-curve recommended",
+    "basicSettings": "Basic Settings",
+    "baseValue": "Base Value",
+    "rate": "Growth Rate",
+    "maxLevel": "Max Level",
+    "curvesToShow": "Curves to Show",
+    "linear": "Linear",
+    "exponential": "Exponential",
+    "logarithmic": "Logarithmic",
+    "quadratic": "Quadratic",
+    "customCurve": "Custom Curve",
+    "customSettings": "Custom Curve Settings",
+    "curveTypeLabel": "Curve Type",
+    "sCurve": "S-Curve",
+    "enlargeGraph": "Enlarge Graph",
+    "levelPreview": "Preview value at level:",
+    "levelUnit": "Level",
+    "segmentedCurve": "Segmented Growth",
+    "segmentSettings": "Segment Settings",
+    "addSegment": "Add Segment",
+    "segment": "Segment",
+    "startLevel": "Start Level",
+    "endLevel": "End Level",
+    "segmentedDesc": "Apply different growth curves to each segment. Design patterns like early rapid growth → mid stable → late gradual.",
+    "interpolationSettings": "Segment Transition",
+    "interpolation_none": "None",
+    "interpolation_linear": "Linear",
+    "interpolation_smooth": "Smooth",
+    "transitionWidth": "Transition Width (levels)",
+    "description": "Visualizes per-level stat growth trends based on sheet data.",
+    "help2": "Compare multiple stats in a single chart.",
+    "help3": "Identify growth patterns (linear / exponential / logarithmic)."
   },
   "comparisonChart": {
     "title": "Comparison Analysis",
     "fullTitle": "Data Comparison & Analysis",
-    "selectSheet": "Sheet to analyze",
+    "selectSheet": "Please select a sheet",
     "helpDesc": "Visually compare stats of characters, weapons, and items.",
     "radar": "Radar Chart",
     "bar": "Bar Chart",
@@ -2089,7 +2069,6 @@
     "range": "Range",
     "selectPrompt": "Select targets and items to compare on the left",
     "minTargets": "Minimum 1 target, 3+ items recommended",
-    "selectSheet": "Please select a sheet",
     "noSheetSelected": "No sheet selected",
     "selectSheetToCompare": "Select a sheet from the sheet list to compare data",
     "close": "Close",
@@ -2157,49 +2136,121 @@
       "ttk": {
         "title": "TTK (Time To Kill)",
         "items": {
-          "fps": { "label": "FPS/Shooter", "value": "0.3~1.5 sec", "desc": "Fast combat, high tension" },
-          "moba": { "label": "MOBA", "value": "3~8 sec", "desc": "Team coordination time" },
-          "mmorpg": { "label": "MMO/RPG", "value": "5~30 sec", "desc": "Strategic skill usage" }
+          "fps": {
+            "label": "FPS/Shooter",
+            "value": "0.3~1.5 sec",
+            "desc": "Fast combat, high tension"
+          },
+          "moba": {
+            "label": "MOBA",
+            "value": "3~8 sec",
+            "desc": "Team coordination time"
+          },
+          "mmorpg": {
+            "label": "MMO/RPG",
+            "value": "5~30 sec",
+            "desc": "Strategic skill usage"
+          }
         }
       },
       "damage": {
         "title": "Damage Formula",
         "items": {
-          "minDamage": { "label": "Min Damage", "value": "10~20% of ATK", "desc": "Prevent 0 damage" },
-          "defReduction": { "label": "DEF Reduction Cap", "value": "50~70% cap", "desc": "Tanks can still die" },
-          "ehpRatio": { "label": "EHP Ratio", "value": "Tank 2~3x", "desc": "Tank survival vs DPS" }
+          "minDamage": {
+            "label": "Min Damage",
+            "value": "10~20% of ATK",
+            "desc": "Prevent 0 damage"
+          },
+          "defReduction": {
+            "label": "DEF Reduction Cap",
+            "value": "50~70% cap",
+            "desc": "Tanks can still die"
+          },
+          "ehpRatio": {
+            "label": "EHP Ratio",
+            "value": "Tank 2~3x",
+            "desc": "Tank survival vs DPS"
+          }
         }
       },
       "growth": {
         "title": "Growth Curves",
         "items": {
-          "linear": { "label": "Linear", "value": "+5~10% per level", "desc": "Predictable, weak late" },
-          "exponential": { "label": "Exponential", "value": "1.05~1.15 ratio", "desc": "Rapid late growth" },
-          "logarithmic": { "label": "Logarithmic", "value": "ln(level) coefficient", "desc": "Fast early, slow late" }
+          "linear": {
+            "label": "Linear",
+            "value": "+5~10% per level",
+            "desc": "Predictable, weak late"
+          },
+          "exponential": {
+            "label": "Exponential",
+            "value": "1.05~1.15 ratio",
+            "desc": "Rapid late growth"
+          },
+          "logarithmic": {
+            "label": "Logarithmic",
+            "value": "ln(level) coefficient",
+            "desc": "Fast early, slow late"
+          }
         }
       },
       "economy": {
         "title": "Economy System",
         "items": {
-          "faucetSink": { "label": "Faucet-Sink Ratio", "value": "Gain:Spend = 1:0.7~0.9", "desc": "Allow slight surplus" },
-          "currencyRate": { "label": "Currency Exchange", "value": "Premium 1 = Regular 100", "desc": "Payment value perception" },
-          "inflation": { "label": "Inflation Rate", "value": "2~5% per week", "desc": "Long-term operation" }
+          "faucetSink": {
+            "label": "Faucet-Sink Ratio",
+            "value": "Gain:Spend = 1:0.7~0.9",
+            "desc": "Allow slight surplus"
+          },
+          "currencyRate": {
+            "label": "Currency Exchange",
+            "value": "Premium 1 = Regular 100",
+            "desc": "Payment value perception"
+          },
+          "inflation": {
+            "label": "Inflation Rate",
+            "value": "2~5% per week",
+            "desc": "Long-term operation"
+          }
         }
       },
       "gacha": {
         "title": "Gacha/Draw System",
         "items": {
-          "topRate": { "label": "Top Tier Rate", "value": "0.5~3%", "desc": "Maintain rarity" },
-          "pity": { "label": "Pity System", "value": "70~100 pulls", "desc": "Industry standard" },
-          "expectedCost": { "label": "Expected Cost", "value": "$50~100 per top", "desc": "Monetization baseline" }
+          "topRate": {
+            "label": "Top Tier Rate",
+            "value": "0.5~3%",
+            "desc": "Maintain rarity"
+          },
+          "pity": {
+            "label": "Pity System",
+            "value": "70~100 pulls",
+            "desc": "Industry standard"
+          },
+          "expectedCost": {
+            "label": "Expected Cost",
+            "value": "$50~100 per top",
+            "desc": "Monetization baseline"
+          }
         }
       },
       "flow": {
         "title": "Flow Theory",
         "items": {
-          "difficultyRate": { "label": "Difficulty Increase", "value": "5~15% per stage", "desc": "Gradual challenge" },
-          "failCount": { "label": "Failure Tolerance", "value": "2~3 times", "desc": "Retry before frustration" },
-          "rewardInterval": { "label": "Reward Interval", "value": "3~5 minutes", "desc": "Maintain small victories" }
+          "difficultyRate": {
+            "label": "Difficulty Increase",
+            "value": "5~15% per stage",
+            "desc": "Gradual challenge"
+          },
+          "failCount": {
+            "label": "Failure Tolerance",
+            "value": "2~3 times",
+            "desc": "Retry before frustration"
+          },
+          "rewardInterval": {
+            "label": "Reward Interval",
+            "value": "3~5 minutes",
+            "desc": "Maintain small victories"
+          }
         }
       }
     },

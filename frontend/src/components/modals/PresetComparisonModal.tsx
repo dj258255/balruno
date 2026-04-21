@@ -9,6 +9,7 @@ import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { useTranslations } from 'next-intl';
 import CustomSelect from '@/components/ui/CustomSelect';
 import SheetSelector from '@/components/panels/SheetSelector';
+import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 
 interface PresetComparisonModalProps {
   onClose: () => void;
@@ -124,47 +125,11 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
     URL.revokeObjectURL(url);
   };
 
-  // 공통 wrapper 클래스
-  const wrapperClass = isPanel
-    ? "flex flex-col h-full min-w-0"
-    : "fixed inset-0 modal-overlay flex items-center justify-center z-[1100] p-4";
-
-  const cardClass = isPanel
-    ? "flex flex-col h-full overflow-hidden"
-    : "card w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-scaleIn";
-
-  return (
-    <div className={wrapperClass}>
-      <div className={cardClass}>
-        {/* 헤더 - 모달일 때만 표시 */}
-        {!isPanel && (
-          <div
-            className="flex items-center justify-between shrink-0 relative z-20 px-6 py-4 border-b"
-            style={{ borderColor: 'var(--border-primary)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-light)' }}>
-                <GitCompare className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('title')}</h2>
-                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>{t('subtitle')}</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="rounded-lg transition-colors hover:bg-[var(--bg-hover)] p-2"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        )}
-
-        {/* 내용 */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 sm:space-y-6">
-          {/* 도움말 패널 - 패널 모드에서 내부에서 토글 */}
-          {isPanel && showHelp && (
+  // 본문 — 모달/패널 공통으로 사용하는 내용부
+  const body = (
+    <>
+      {/* 도움말 패널 */}
+      {showHelp && (
             <div className="mb-4 p-3 rounded-lg animate-slideDown" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}>
               <div className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
                 {t('helpDesc')}
@@ -514,35 +479,120 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
             </div>
           )}
 
-          {/* 시트가 없을 때 - 비교 대상 선택 영역 아래에 안내 메시지 */}
-          {sheets.length === 0 && (
+      {/* 시트가 없을 때 - 비교 대상 선택 영역 아래에 안내 메시지 */}
+      {sheets.length === 0 && (
+        <div
+          className="rounded-xl p-4 text-center"
+          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}
+        >
+          <GitCompare className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--text-tertiary)' }} />
+          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+            {t('noSheets')}<br />
+            {t('noSheetsDesc')}
+          </p>
+        </div>
+      )}
+    </>
+  );
+
+  const footer = result ? (
+    <div className="flex items-center justify-end gap-3">
+      <button
+        onClick={handleExport}
+        className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+        style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+      >
+        <Download className="w-4 h-4" />
+        {t('exportResults')}
+      </button>
+    </div>
+  ) : null;
+
+  // Panel 모드 — PanelShell 로 통합 (도움말 토글 + 닫기 버튼)
+  if (isPanel) {
+    return (
+      <PanelShell
+        title={t('title')}
+        subtitle={t('subtitle')}
+        icon={GitCompare}
+        iconColor="#8b5cf6"
+        onClose={onClose}
+        bodyClassName="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-x-hidden scrollbar-slim"
+        actions={
+          <HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color="#8b5cf6" />
+        }
+        footer={footer ?? undefined}
+      >
+        {/* 스냅샷 inline hint — 도움말 토글 안 켜도 이건 상시 노출 */}
+        <div
+          className="flex items-start gap-2 p-2.5 rounded-lg text-[11px]"
+          style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+        >
+          <Camera className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: '#8b5cf6' }} />
+          <div>
+            <b style={{ color: 'var(--text-primary)' }}>스냅샷</b> = 시트의 현재 상태를 고정해 복사본으로 보관.
+            원본이 바뀌어도 스냅샷은 그대로라 &ldquo;밸런스 패치 전 vs 후&rdquo; 비교 가능.
+            시트 옆 <Camera className="w-3 h-3 inline mb-0.5" /> 버튼으로 생성.
+          </div>
+        </div>
+        {body}
+      </PanelShell>
+    );
+  }
+
+  // 모달 모드 — 기존 카드 구조
+  return (
+    <div className="fixed inset-0 modal-overlay flex items-center justify-center z-[1100] p-4">
+      <div className="card w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-scaleIn">
+        <div
+          className="flex items-center justify-between shrink-0 relative z-20 px-6 py-4 border-b"
+          style={{ borderColor: 'var(--border-primary)' }}
+        >
+          <div className="flex items-center gap-3">
             <div
-              className="rounded-xl p-4 text-center"
-              style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}
+              className="w-10 h-10 rounded-lg flex items-center justify-center"
+              style={{ background: 'var(--accent-light)' }}
             >
-              <GitCompare className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--text-tertiary)' }} />
+              <GitCompare className="w-5 h-5" style={{ color: 'var(--accent)' }} />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                {t('title')}
+              </h2>
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                {t('noSheets')}<br />
-                {t('noSheetsDesc')}
+                {t('subtitle')}
               </p>
             </div>
-          )}
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-hover)]"
+              aria-label={showHelp ? '도움말 숨기기' : '도움말 보기'}
+              style={{ color: showHelp ? 'var(--accent)' : 'var(--text-tertiary)' }}
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-hover)]"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* 푸터 */}
-        {result && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t" style={{ borderColor: 'var(--border-primary)' }}>
-            <button
-              onClick={handleExport}
-              className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
-              style={{
-                background: 'var(--bg-tertiary)',
-                color: 'var(--text-secondary)'
-              }}
-            >
-              <Download className="w-4 h-4" />
-              {t('exportResults')}
-            </button>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 sm:space-y-6">
+          {body}
+        </div>
+
+        {footer && (
+          <div
+            className="border-t px-6 py-4"
+            style={{ borderColor: 'var(--border-primary)' }}
+          >
+            {footer}
           </div>
         )}
       </div>

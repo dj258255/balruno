@@ -48,6 +48,8 @@ import {
 // 컴포넌트
 import SheetCell from './SheetCell';
 import { CellEditor } from './CellEditor';
+import { InlineCheckbox, InlineRating, InlineTaskLink } from './InlineCellControls';
+import InlineStatSnapshot from './InlineStatSnapshot';
 import FormulaBar from './FormulaBar';
 import FormulaAutocomplete, { type FormulaAutocompleteRef } from './FormulaAutocomplete';
 import ActionButtons from './ActionButtons';
@@ -63,6 +65,7 @@ import { ConfirmDialog } from '@/components/ui';
 import { cellKey, rafThrottle, formatDisplayValue } from './utils';
 import { evaluateFormula } from '@/lib/formulaEngine';
 import { cn } from '@/lib/utils';
+import { usePresence } from '@/hooks/usePresence';
 
 export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTableProps) {
   const t = useTranslations();
@@ -86,6 +89,10 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
   } = useProjectStore();
 
   const { pushState } = useHistoryStore();
+
+  // Track 8B — 셀 cursor presence
+  const { peers, publishActiveCell } = usePresence(projectId);
+  // selectedCell 바인딩은 아래 useSheetSelection 에서 나오므로 이후 effect 에서 publish
   const { zoomLevel, setCurrentCellStyle, columnHeaderFontSize, rowHeaderFontSize, rowHeaderWidth } = useSheetUIStore();
 
   // Refs
@@ -198,6 +205,17 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
     selectRow,
     selectAllCells,
   } = useSheetSelection({ projectId, sheet, computedRows });
+
+  // Track 8B — selectedCell 변경 시 peer 에게 publish
+  useEffect(() => {
+    if (selectedCell) {
+      publishActiveCell({ sheetId: sheet.id, rowId: selectedCell.rowId, columnId: selectedCell.columnId });
+    } else {
+      publishActiveCell(null);
+    }
+    // unmount 시 cleanup
+    return () => publishActiveCell(null);
+  }, [selectedCell, sheet.id, publishActiveCell]);
 
   // 편집 훅
   const {
@@ -386,10 +404,16 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
     setEditorPosition(newPosition);
 
     setTimeout(() => {
-      if (overlayInputRef.current) {
-        overlayInputRef.current.focus();
-        const len = overlayInputRef.current.value.length;
-        overlayInputRef.current.setSelectionRange(len, len);
+      const input = overlayInputRef.current;
+      if (!input) return;
+      input.focus();
+      // date/number/email/url 등 일부 input type 은 setSelectionRange 미지원 → try/catch.
+      // 참고: https://html.spec.whatwg.org/multipage/input.html#do-not-apply
+      try {
+        const len = input.value.length;
+        input.setSelectionRange(len, len);
+      } catch {
+        /* ignore — unsupported input type */
       }
     }, 0);
   }, [editingCell, refreshEditorPosition]);
@@ -899,6 +923,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                 selectOptions={editingColumn?.selectOptions}
                 linkedSheet={linkedSheet}
                 linkedDisplayColumnId={editingColumn?.linkedDisplayColumnId}
+                linkedMultiple={editingColumn?.linkedMultiple}
                 onChange={(value) => {
                   setEditValue(value);
                   setFormulaBarValue(value);
@@ -977,16 +1002,18 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
             }}
           >
             <table
+              role="grid"
+              aria-label="스프레드시트 데이터 그리드"
+              aria-rowcount={sheet?.rows.length ?? 0}
+              aria-colcount={sheet?.columns.length ?? 0}
               className="border-collapse table-fixed"
               style={{
                 width: tableWidth,
                 minWidth: tableWidth,
                 transform: `scale(${zoomLevel})`,
                 transformOrigin: '0 0',
-                // GPU 가속 및 렌더링 최적화
                 willChange: 'transform',
                 backfaceVisibility: 'hidden',
-                // 서브픽셀 안티앨리어싱 개선
                 WebkitFontSmoothing: 'antialiased',
                 MozOsxFontSmoothing: 'grayscale',
               }}
@@ -1375,6 +1402,65 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                                 { sheets: currentProject?.sheets ?? [], currentSheet: sheet },
                                 rowData
                               )}
+                              peerCursorColor={(() => {
+                                const peer = peers.find((p) => p.activeCell?.sheetId === sheet.id && p.activeCell?.rowId === rowData.id && p.activeCell?.columnId === columnId);
+                                return peer?.color;
+                              })()}
+                              peerCursorName={(() => {
+                                const peer = peers.find((p) => p.activeCell?.sheetId === sheet.id && p.activeCell?.rowId === rowData.id && p.activeCell?.columnId === columnId);
+                                return peer?.name;
+                              })()}
+                              inlineControl={(() => {
+                                if (column.locked || rowData.locked) return undefined;
+                                if (column.type === 'checkbox') {
+                                  return (
+                                    <InlineCheckbox
+                                      value={rawValue}
+                                      onChange={(next) => updateCell(projectId, sheet.id, rowData.id, columnId, next ? 1 : 0)}
+                                    />
+                                  );
+                                }
+                                if (column.type === 'rating') {
+                                  const max = (column as { ratingMax?: number }).ratingMax ?? 5;
+                                  return (
+                                    <InlineRating
+                                      value={rawValue}
+                                      max={max}
+                                      onChange={(next) => updateCell(projectId, sheet.id, rowData.id, columnId, next)}
+                                    />
+                                  );
+                                }
+                                if (column.type === 'task-link' && column.taskSheetId) {
+                                  const taskSheet = currentProject?.sheets.find((s) => s.id === column.taskSheetId);
+                                  return (
+                                    <InlineTaskLink
+                                      value={rawValue}
+                                      column={column}
+                                      taskSheet={taskSheet}
+                                      onOpen={(rid) => {
+                                        useProjectStore.getState().setCurrentSheet(column.taskSheetId!);
+                                        window.dispatchEvent(
+                                          new CustomEvent('balruno:focus-cell', {
+                                            detail: { sheetId: column.taskSheetId, rowId: rid, columnId: '' },
+                                          })
+                                        );
+                                      }}
+                                    />
+                                  );
+                                }
+                                if (column.type === 'stat-snapshot' && column.snapshotSheetId) {
+                                  const sourceSheet = currentProject?.sheets.find((s) => s.id === column.snapshotSheetId);
+                                  return (
+                                    <InlineStatSnapshot
+                                      value={rawValue}
+                                      column={column}
+                                      sourceSheet={sourceSheet}
+                                      onCapture={(json) => updateCell(projectId, sheet.id, rowData.id, columnId, json)}
+                                    />
+                                  );
+                                }
+                                return undefined;
+                              })()}
                               cellStyle={cellStyle}
                               cellMemo={cellMemo}
                               isSelected={isSelected}
