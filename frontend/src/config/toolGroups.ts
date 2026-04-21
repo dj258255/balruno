@@ -70,6 +70,68 @@ export interface ToolGroupConfig {
   tools: ToolId[];
 }
 
+// ============================================================================
+// TOOL_ICONS — 각 도구의 lucide 아이콘 (ToolDropdown · PanelShell 공용)
+// centralize 해서 드롭다운 트리거/옵션 + Panel 헤더가 같은 아이콘 쓰게.
+// dynamic import 는 bundle 사이즈 낭비라 직접 import.
+// ============================================================================
+
+import {
+  Calculator as CalculatorIcon,
+  PieChart, TrendingUp, Layers, AlertTriangle, Target, GitBranch, Coins, BarChart2,
+  PenTool, BookOpen, Shield, Swords, Users, Wand2, Dice5, MessageCircle, LayoutGrid,
+  Workflow, Sliders, History, Crosshair, UsersRound, Zap, Brain, GitCompare, Play,
+  Camera, Factory, Sword, Dices, Skull, TestTube, Sigma,
+  type LucideIcon,
+} from 'lucide-react';
+
+export const TOOL_ICONS: Record<ToolId, LucideIcon> = {
+  // build
+  calculator: CalculatorIcon,
+  formulaHelper: BookOpen,
+  preset: Layers,
+  entityDefinition: Users,
+  difficultyCurve: TrendingUp,
+  // check
+  balance: GitBranch,
+  imbalance: AlertTriangle,
+  balanceValidator: Shield,
+  sensitivity: Sliders,
+  matchupMatrix: GitCompare,
+  aiPlaytest: TestTube,
+  formulaVerifier: Sigma,
+  // simulate
+  simulation: Swords,
+  fpsSimulation: Crosshair,
+  fpsTeamSimulation: UsersRound,
+  deckSimulation: Layers,
+  frameData: Zap,
+  aiBehavior: Brain,
+  dpsVariance: BarChart2,
+  lootSimulator: Dice5,
+  economy: Coins,
+  replayTimeline: Play,
+  mobaLaning: Swords,
+  rtsBuildOrder: Factory,
+  mmoRaid: Sword,
+  autoBattler: Dices,
+  hordeSurvivor: Skull,
+  // compare
+  comparison: PieChart,
+  chart: TrendingUp,
+  powerCurveCompare: Layers,
+  curveFitting: PenTool,
+  // auto
+  goal: Target,
+  autoBalancer: Wand2,
+  automations: Workflow,
+  // share
+  interfaceDesigner: LayoutGrid,
+  changeHistory: History,
+  comments: MessageCircle,
+  snapshotCompare: Camera,
+};
+
 export const TOOL_GROUPS: ToolGroupConfig[] = [
   {
     id: 'build',
