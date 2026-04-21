@@ -35,7 +35,7 @@ import {
   HelpPanel,
 } from './difficulty-curve/components';
 
-const PANEL_COLOR = '#a855f7';
+const PANEL_COLOR = '#06b6d4'; // 청록 (cyan-500) — 사용자 선호 톤
 
 // 섹션 구분선 컴포넌트 — 접이식(선택) + 한 줄 설명(선택)
 function SectionDivider({
@@ -275,7 +275,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
       <SectionDivider
         icon={Settings}
         title={t('sectionBasic')}
-        color="#9179f2"
+        color={PANEL_COLOR}
       />
 
       <div className="space-y-4">
