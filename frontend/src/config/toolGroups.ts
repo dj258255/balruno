@@ -46,7 +46,8 @@ export type ToolId =
   | 'aiBehavior'
   | 'matchupMatrix'
   | 'replayTimeline'
-  | 'snapshotCompare';
+  | 'snapshotCompare'
+  | 'mobaLaning';
 
 export type ToolGroupId =
   | 'build'
@@ -80,7 +81,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'simulate',
     titleKey: 'toolGroups.simulate',
     color: '#e11d48',
-    tools: ['simulation', 'fpsSimulation', 'fpsTeamSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy', 'replayTimeline'],
+    tools: ['simulation', 'fpsSimulation', 'fpsTeamSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy', 'replayTimeline', 'mobaLaning'],
   },
   {
     id: 'compare',
@@ -127,6 +128,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   matchupMatrix: 'toolDesc.matchupMatrix',     // N×N 매치업 heatmap · Perfect Imbalance
   replayTimeline: 'toolDesc.replayTimeline',   // 전투 로그 scrubber · step-by-step 디버깅
   snapshotCompare: 'toolDesc.snapshotCompare', // 시뮬 스냅샷 저장 · rebalance 전후 diff
+  mobaLaning: 'toolDesc.mobaLaning',           // LoL/Dota 라인전 CS/gold/XP 곡선
 
   // simulate — 시뮬
   simulation: 'toolDesc.simulation',           // 1:1/팀 전투 Monte Carlo
