@@ -543,7 +543,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{CURVE_TYPE_HELP[scaleInputs.curveType].description}</p>
                 </div>
               )}
-              <GlassResultCard label={t('levelStat', { level: scaleInputs.level })} value={scaleResult.toFixed(1)} color={tabColor} />
+              <GlassResultCard label={t('levelStat', { level: scaleInputs.level })} value={scaleResult.toFixed(1)} color={tabColor} numericValue={scaleResult} />
               <div className="glass-card overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
@@ -564,6 +564,49 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   </tbody>
                 </table>
               </div>
+              <GoalSeekBox
+                color={tabColor}
+                targetLabel={`Lv ${scaleInputs.level} 값`}
+                variables={[
+                  { key: 'base', label: '기본값', min: 1, max: 100000 },
+                  { key: 'rate', label: '성장률', min: 0.01, max: 5 },
+                ]}
+                computeWithOverride={(k, v) => {
+                  const o = { ...scaleInputs, [k]: v };
+                  return SCALE(o.base, o.level, o.rate, o.curveType);
+                }}
+                onApply={(k, v) => setScaleInputs({ ...scaleInputs, [k]: v })}
+              />
+              <ScenarioCompareBox
+                color={tabColor}
+                tabKey="scale"
+                currentInputs={scaleInputs}
+                computeResult={(o) => SCALE(Number(o.base), Number(o.level), Number(o.rate), String(o.curveType))}
+                resultLabel={`Lv ${scaleInputs.level} 값`}
+                scenarioA={scenarioA}
+                scenarioB={scenarioB}
+                setScenarioA={setScenarioA}
+                setScenarioB={setScenarioB}
+                formatResult={(v) => v.toFixed(1)}
+              />
+              <SensitivityTornado
+                color={tabColor}
+                inputs={scaleInputs}
+                variables={[
+                  { key: 'base', label: '기본값' },
+                  { key: 'level', label: '레벨' },
+                  { key: 'rate', label: '성장률' },
+                ]}
+                computeResult={(o) => SCALE(Number(o.base), Number(o.level), Number(o.rate), String(o.curveType))}
+              />
+              <BreakdownBox
+                color={tabColor}
+                steps={[
+                  { label: '기본값 (base)', value: scaleInputs.base },
+                  { label: `곡선 타입 · ${CURVE_TYPE_HELP[scaleInputs.curveType]?.name ?? scaleInputs.curveType}`, value: CURVE_TYPE_HELP[scaleInputs.curveType]?.formula ?? '—' },
+                  { label: `레벨 ${scaleInputs.level} 적용 · 성장률 ${scaleInputs.rate}`, value: scaleResult, note: `SCALE(${scaleInputs.base}, ${scaleInputs.level}, ${scaleInputs.rate}, ${scaleInputs.curveType})` },
+                ]}
+              />
               </CalcSection>
             </div>
           )}
