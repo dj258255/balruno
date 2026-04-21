@@ -28,6 +28,22 @@ export interface FrameData {
   damage: number;
   /** 필살기 분류 (light/medium/heavy/special/super) */
   category?: 'light' | 'medium' | 'heavy' | 'special' | 'super';
+  /**
+   * 무적 프레임 — 기술 시작부터 N 프레임 동안 피격 불가 (invulnerable).
+   * Street Fighter 승룡권 1-6f, DP 공통 패턴.
+   * 예: 승룡권 = 6 → startup 1-6f 까지 무적
+   */
+  invincibleFrames?: number;
+  /** 무적 타입 — strike(타격)/throw(잡기)/full(둘 다) */
+  invincibleType?: 'strike' | 'throw' | 'full';
+  /**
+   * 카운터-히트 피해 배율 — 상대 공격 startup 중에 맞췄을 때.
+   * SF6 표준: 1.2x (일반), 카운터 전용 기술은 1.5~2.0x.
+   * 기본 1.2 (없으면).
+   */
+  counterHitMultiplier?: number;
+  /** 카운터 히트 시 추가 hitstun (+프레임) — 콤보 라우트 확장에 쓰임 */
+  counterHitExtraHitstun?: number;
 }
 
 export interface MoveAnalysis {
@@ -40,6 +56,12 @@ export interface MoveAnalysis {
   /** 유리 프레임 tier */
   advantageHit: 'heavily-plus' | 'plus' | 'neutral' | 'minus' | 'heavily-minus';
   advantageBlock: 'heavily-plus' | 'plus' | 'neutral' | 'minus' | 'heavily-minus';
+  /** 카운터 히트 시 피해 (counterHitMultiplier 반영) */
+  counterHitDamage: number;
+  /** 카운터 히트 시 onHit 프레임 (확장 hitstun 반영) */
+  counterHitOnHit: number;
+  /** 무적 구간 프레임 범위 (startup 1부터 N까지). 없으면 null */
+  invincibleRange: { from: number; to: number; type: 'strike' | 'throw' | 'full' } | null;
 }
 
 export interface ComboLink {
@@ -81,10 +103,22 @@ function advantageTier(
 
 export function analyzeMove(move: FrameData): MoveAnalysis {
   const total = move.startup + move.active + move.recovery;
-  // 공격이 끝난 뒤 남은 프레임 (recovery) 이 hitstun 보다 짧으면 유리
-  // 상대 hitstun 이 N → N - recovery 가 유리 프레임
   const onHit = move.hitstun - move.recovery;
   const onBlock = move.blockstun - move.recovery;
+
+  const chMul = move.counterHitMultiplier ?? 1.2;
+  const chExtra = move.counterHitExtraHitstun ?? 2;
+  const counterHitDamage = Math.round(move.damage * chMul);
+  const counterHitOnHit = onHit + chExtra;
+
+  const invincibleRange = move.invincibleFrames
+    ? {
+        from: 1,
+        to: move.invincibleFrames,
+        type: move.invincibleType ?? 'full',
+      }
+    : null;
+
   return {
     move,
     total,
@@ -93,6 +127,9 @@ export function analyzeMove(move: FrameData): MoveAnalysis {
     punishableOnBlock: onBlock <= -5,
     advantageHit: advantageTier(onHit),
     advantageBlock: advantageTier(onBlock),
+    counterHitDamage,
+    counterHitOnHit,
+    invincibleRange,
   };
 }
 
@@ -100,17 +137,17 @@ export function analyzeMove(move: FrameData): MoveAnalysis {
 // 콤보 연결 검증 (hitstun ≥ next.startup 이면 연결됨)
 // ============================================================================
 
-export function checkComboLink(from: FrameData, to: FrameData): ComboLink {
-  // 맞춘 후: from.recovery 프레임이 지나야 다음 입력 가능 → 하지만 cancel 은 여기서 단순화
-  // hitstun 에서 남은 프레임 = from.hitstun - from.recovery
-  const remaining = from.hitstun - from.recovery;
+export function checkComboLink(from: FrameData, to: FrameData, counterHit = false): ComboLink {
+  const chExtra = counterHit ? (from.counterHitExtraHitstun ?? 2) : 0;
+  const remaining = from.hitstun + chExtra - from.recovery;
   const frameGap = remaining - to.startup;
+  const fromDamage = counterHit ? Math.round(from.damage * (from.counterHitMultiplier ?? 1.2)) : from.damage;
   return {
     from,
     to,
     connects: frameGap >= 0,
     frameGap,
-    totalDamage: from.damage + to.damage,
+    totalDamage: fromDamage + to.damage,
   };
 }
 
@@ -155,7 +192,8 @@ export const MOVE_PRESETS: FrameData[] = [
   { id: 'hk', name: '강 K', category: 'heavy', startup: 11, active: 5, recovery: 23, hitstun: 22, blockstun: 16, damage: 100 },
   // Special
   { id: 'hadouken', name: '파동권', category: 'special', startup: 13, active: 2, recovery: 35, hitstun: 20, blockstun: 15, damage: 60 },
-  { id: 'shoryuken', name: '승룡권', category: 'special', startup: 3, active: 14, recovery: 35, hitstun: 30, blockstun: 20, damage: 120 },
-  // Super
-  { id: 'super', name: '수퍼', category: 'super', startup: 7, active: 6, recovery: 40, hitstun: 40, blockstun: 25, damage: 350 },
+  // 승룡권: SF6 기준 startup 3, 1-6f 무적 (공식 프레임 데이터)
+  { id: 'shoryuken', name: '승룡권', category: 'special', startup: 3, active: 14, recovery: 35, hitstun: 30, blockstun: 20, damage: 120, invincibleFrames: 6, invincibleType: 'full', counterHitMultiplier: 1.2 },
+  // Super: 일반적 1-10f 무적 + CH 1.5x
+  { id: 'super', name: '수퍼', category: 'super', startup: 7, active: 6, recovery: 40, hitstun: 40, blockstun: 25, damage: 350, invincibleFrames: 10, invincibleType: 'full', counterHitMultiplier: 1.5 },
 ];

@@ -23,14 +23,24 @@ export default function DeckSimulationPanel({ onClose }: Props) {
   const [runs, setRuns] = useState(2000);
 
   // Slay the Spire Act 1 기본 몹 근사 (공식 위키 참고)
+  // attackDamage: Cultist 6-turn 0 → 1/2 → 3/4 → 5... 단순화로 평균값 채용
   const [enemies, setEnemies] = useState<EnemyMob[]>([
-    { id: 'cultist', name: 'Cultist', hp: 50 },
-    { id: 'jaw-worm', name: 'Jaw Worm', hp: 42 },
+    { id: 'cultist', name: 'Cultist', hp: 50, attackDamage: 6, attackInterval: 1 },
+    { id: 'jaw-worm', name: 'Jaw Worm', hp: 42, attackDamage: 11, attackInterval: 1 },
   ]);
+  const [playerHp, setPlayerHp] = useState(80);
+  const [survivalMode, setSurvivalMode] = useState(true);
 
   const cfg: DeckConfig = useMemo(
-    () => ({ cards, handSize, baseEnergy, turnsPerCombat: turns, enemies }),
-    [cards, handSize, baseEnergy, turns, enemies],
+    () => ({
+      cards,
+      handSize,
+      baseEnergy,
+      turnsPerCombat: turns,
+      enemies,
+      ...(survivalMode && { player: { maxHp: playerHp } }),
+    }),
+    [cards, handSize, baseEnergy, turns, enemies, survivalMode, playerHp],
   );
   const result = useMemo(() => simulateDeck(cfg, runs), [cfg, runs]);
 
@@ -75,6 +85,42 @@ export default function DeckSimulationPanel({ onClose }: Props) {
         <Stat label="최악(P10)~최선(P90)" value={`${result.p10Dpt.toFixed(0)}~${result.p90Dpt.toFixed(0)}`} sub="80% 신뢰 구간" color="#3b82f6" />
         <Stat label="Dead Hand" value={`${Math.round(result.deadHandRate * 100)}%`} sub="플레이 불가 턴 비율" color="#f59e0b" />
         <Stat label="에너지 낭비" value={`${Math.round(result.avgEnergyWaste * 100)}%`} sub="미사용 에너지 비율" color="#10b981" />
+      </div>
+
+      {/* 생존 시뮬 스위치 + 생존률 stats */}
+      <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+        <div className="flex items-center justify-between mb-2">
+          <label className="flex items-center gap-2 text-label font-medium cursor-pointer" style={{ color: 'var(--text-primary)' }}>
+            <input type="checkbox" checked={survivalMode} onChange={(e) => setSurvivalMode(e.target.checked)} />
+            생존 시뮬 모드 (몹 공격 받음)
+          </label>
+          {survivalMode && (
+            <div className="flex items-center gap-2">
+              <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>플레이어 HP</span>
+              <input
+                type="number"
+                value={playerHp}
+                min={1}
+                onChange={(e) => setPlayerHp(parseInt(e.target.value) || 1)}
+                className="input-compact hide-spinner"
+                style={{ width: 70 }}
+              />
+            </div>
+          )}
+        </div>
+        {survivalMode && result.survivalRate !== undefined && (
+          <div className="grid grid-cols-4 gap-2">
+            <Stat
+              label="생존률"
+              value={`${Math.round(result.survivalRate * 100)}%`}
+              sub={`HP ${playerHp} 기준`}
+              color={result.survivalRate >= 0.7 ? '#10b981' : result.survivalRate >= 0.3 ? '#f59e0b' : '#ef4444'}
+            />
+            <Stat label="평균 종료 HP" value={result.avgEndHp!.toFixed(1)} sub={`/ ${playerHp}`} color="#3b82f6" />
+            <Stat label="평균 피격" value={result.avgDamageTaken!.toFixed(1)} sub="실제 HP 손실" color="#ef4444" />
+            <Stat label="평균 차단" value={result.avgDamageBlocked!.toFixed(1)} sub="block 흡수" color="#8b5cf6" />
+          </div>
+        )}
       </div>
 
       {/* 몹 킬 통계 (enemies 있을 때만) */}
@@ -137,6 +183,18 @@ export default function DeckSimulationPanel({ onClose }: Props) {
                   onChange={(e) => updateEnemy(idx, 'hp', parseInt(e.target.value) || 1)}
                   className="input-compact hide-spinner"
                   style={{ width: 70 }}
+                />
+                <label className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                  ATK
+                </label>
+                <input
+                  type="number"
+                  value={enemy.attackDamage ?? 0}
+                  min={0}
+                  onChange={(e) => updateEnemy(idx, 'attackDamage', parseInt(e.target.value) || 0)}
+                  className="input-compact hide-spinner"
+                  style={{ width: 60 }}
+                  title="턴당 공격력"
                 />
                 <span
                   className="text-caption tabular-nums w-12 text-right font-semibold"

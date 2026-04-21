@@ -37,6 +37,37 @@ describe('checkComboLink', () => {
   });
 });
 
+describe('무적 / 카운터-히트', () => {
+  it('승룡권 analyzeMove 에 invincibleRange 1-6f', () => {
+    const shoryu = MOVE_PRESETS.find((m) => m.id === 'shoryuken')!;
+    const a = analyzeMove(shoryu);
+    expect(a.invincibleRange).not.toBeNull();
+    expect(a.invincibleRange!.from).toBe(1);
+    expect(a.invincibleRange!.to).toBe(6);
+    expect(a.invincibleRange!.type).toBe('full');
+  });
+
+  it('카운터-히트 피해는 원본 × multiplier', () => {
+    const shoryu = MOVE_PRESETS.find((m) => m.id === 'shoryuken')!;
+    const a = analyzeMove(shoryu);
+    expect(a.counterHitDamage).toBe(Math.round(120 * 1.2));
+  });
+
+  it('카운터-히트 onHit 는 일반보다 큼', () => {
+    const lp = MOVE_PRESETS[0];
+    const a = analyzeMove(lp);
+    expect(a.counterHitOnHit).toBeGreaterThan(a.onHit);
+  });
+
+  it('카운터 히트 combo link 는 추가 hitstun 덕분에 더 쉽게 연결', () => {
+    const from = MOVE_PRESETS[2]; // MP
+    const to = MOVE_PRESETS[4];   // HP
+    const normal = checkComboLink(from, to, false);
+    const ch = checkComboLink(from, to, true);
+    expect(ch.frameGap).toBeGreaterThanOrEqual(normal.frameGap);
+  });
+});
+
 describe('analyzeComboRoute', () => {
   it('전체 피해는 각 기술 피해 합', () => {
     const route = analyzeComboRoute([MOVE_PRESETS[0], MOVE_PRESETS[2]]);
