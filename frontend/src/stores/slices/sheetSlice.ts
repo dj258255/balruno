@@ -60,6 +60,7 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     sheetId: string,
     updates: Partial<Pick<Sheet,
       | 'name'
+      | 'kind'
       | 'exportClassName'
       | 'activeView'
       | 'viewGroupColumnId'

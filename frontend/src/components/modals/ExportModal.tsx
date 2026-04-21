@@ -7,6 +7,8 @@ import { useProjectStore } from '@/stores/projectStore';
 import { exportForGameEngine, EXPORT_FORMATS, type ExportFormat } from '@/lib/gameEngineExport';
 import { exportToJSON, exportSheetToCSV } from '@/lib/storage';
 import { downloadFile } from '@/lib/utils';
+import { isEngineExportable, resolveSheetKind } from '@/lib/sheetKind';
+import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -90,12 +92,33 @@ export default function ExportModal({ onClose }: ExportModalProps) {
   const sheets = selectedProject?.sheets || [];
   const selectedSheets = sheets.filter(s => selectedSheetIds.includes(s.id));
 
-  // 형식 선택
+  // 게임 엔진 포맷인지 — 엔진 포맷은 game-data 시트만 export 가능
+  const isEngineFormat = (format: ExportType | null): boolean =>
+    !!format && format !== 'json' && format !== 'csv';
+
+  // 현재 선택된 포맷 기준으로 이 시트를 export 할 수 있는지
+  const isSheetExportableForFormat = (sheet: Sheet): boolean => {
+    if (!isEngineFormat(selectedFormat)) return true;
+    return isEngineExportable(sheet);
+  };
+
+  // 형식 선택 — 엔진 포맷 전환 시 비게임데이터 시트 자동 제거
   const handleSelectFormat = (format: ExportType) => {
     setSelectedFormat(format);
     setPreviewFiles([]);
     setExpandedFile(null);
     setIsGenerated(false);
+
+    if (isEngineFormat(format)) {
+      const project = projects.find((p) => p.id === selectedProjectId);
+      if (project) {
+        const still = selectedSheetIds.filter((id) => {
+          const s = project.sheets.find((sh) => sh.id === id);
+          return s ? isEngineExportable(s) : false;
+        });
+        if (still.length !== selectedSheetIds.length) setSelectedSheetIds(still);
+      }
+    }
   };
 
   // 프로젝트 확장/축소 토글
@@ -105,19 +128,22 @@ export default function ExportModal({ onClose }: ExportModalProps) {
     } else {
       setExpandedProjectId(projectId);
       setSelectedProjectId(projectId);
-      // 해당 프로젝트의 시트로 선택 초기화
       const project = projects.find(p => p.id === projectId);
       if (project) {
-        setSelectedSheetIds(project.sheets.map(s => s.id));
+        const eligible = project.sheets.filter((s) => isSheetExportableForFormat(s));
+        setSelectedSheetIds(eligible.map((s) => s.id));
       }
     }
     setPreviewFiles([]);
     setIsGenerated(false);
   };
 
-  // 시트 선택 토글
+  // 시트 선택 토글 — export 불가 시트는 클릭 차단
   const handleSheetToggle = (sheetId: string, projectId: string) => {
-    // 다른 프로젝트의 시트 선택 시 프로젝트 변경
+    const project = projects.find((p) => p.id === projectId);
+    const sheet = project?.sheets.find((s) => s.id === sheetId);
+    if (sheet && !isSheetExportableForFormat(sheet)) return;
+
     if (selectedProjectId !== projectId) {
       setSelectedProjectId(projectId);
       setExpandedProjectId(projectId);
@@ -133,22 +159,19 @@ export default function ExportModal({ onClose }: ExportModalProps) {
     setIsGenerated(false);
   };
 
-  // 전체 선택/해제
+  // 전체 선택/해제 — 엔진 포맷이면 exportable 만 대상
   const handleSelectAllSheets = (projectId: string) => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
+    const eligible = project.sheets.filter((s) => isSheetExportableForFormat(s));
 
     if (selectedProjectId !== projectId) {
       setSelectedProjectId(projectId);
       setExpandedProjectId(projectId);
-      setSelectedSheetIds(project.sheets.map(s => s.id));
+      setSelectedSheetIds(eligible.map(s => s.id));
     } else {
-      const allSelected = project.sheets.every(s => selectedSheetIds.includes(s.id));
-      if (allSelected) {
-        setSelectedSheetIds([]);
-      } else {
-        setSelectedSheetIds(project.sheets.map(s => s.id));
-      }
+      const allSelected = eligible.length > 0 && eligible.every(s => selectedSheetIds.includes(s.id));
+      setSelectedSheetIds(allSelected ? [] : eligible.map(s => s.id));
     }
     setPreviewFiles([]);
     setIsGenerated(false);
@@ -517,15 +540,23 @@ export default function ExportModal({ onClose }: ExportModalProps) {
                                     const excluded = excludedColumns[sheet.id] || new Set();
                                     const excludedCount = excluded.size;
                                     const isColumnSettingsOpen = showColumnSettings === sheet.id;
+                                    const isDisabled = !isSheetExportableForFormat(sheet);
+                                    const kindMeta = resolveSheetKind(sheet);
                                     return (
                                       <div key={sheet.id}>
                                         <div
                                           className="w-full pl-12 pr-3 py-1.5 text-left text-sm flex items-center gap-2 hover:bg-[var(--bg-hover)] transition-colors"
-                                          style={{ color: 'var(--text-primary)' }}
+                                          style={{
+                                            color: isDisabled ? 'var(--text-tertiary)' : 'var(--text-primary)',
+                                            opacity: isDisabled ? 0.5 : 1,
+                                            cursor: isDisabled ? 'not-allowed' : 'default',
+                                          }}
+                                          title={isDisabled ? `${kindMeta.label} 시트는 게임 엔진 포맷으로 export 할 수 없습니다 — JSON 으로만 백업 가능` : undefined}
                                         >
                                           <button
                                             onClick={() => handleSheetToggle(sheet.id, project.id)}
-                                            className="shrink-0"
+                                            disabled={isDisabled}
+                                            className="shrink-0 disabled:cursor-not-allowed"
                                           >
                                             {isSheetSelected ? (
                                               <CheckSquare className="w-4 h-4" style={{ color: 'var(--primary-blue)' }} />
@@ -534,11 +565,13 @@ export default function ExportModal({ onClose }: ExportModalProps) {
                                             )}
                                           </button>
                                           <span
-                                            className="flex-1 truncate cursor-pointer"
-                                            onClick={() => handleSheetToggle(sheet.id, project.id)}
+                                            className="flex-1 truncate"
+                                            style={{ cursor: isDisabled ? 'not-allowed' : 'pointer' }}
+                                            onClick={() => !isDisabled && handleSheetToggle(sheet.id, project.id)}
                                           >
                                             {sheet.name}
                                           </span>
+                                          <SheetKindBadge sheet={sheet} showDefault size="xs" />
                                           {/* 컬럼 설정 버튼 */}
                                           {isSheetSelected && (
                                             <button

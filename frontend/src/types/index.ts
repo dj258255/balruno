@@ -76,10 +76,15 @@ export interface Sticker {
 // Track 4 — 뷰 타입
 export type ViewType = 'grid' | 'form' | 'kanban' | 'calendar' | 'gallery' | 'gantt' | 'diagram';
 
+/** 시트 용도 — export 정책, 사이드바 분류, AI 컨텍스트 가중치 결정 */
+export type SheetKind = 'game-data' | 'pm' | 'analysis' | 'reference';
+
 // 시트 타입
 export interface Sheet {
   id: string;
   name: string;
+  /** 시트 용도 — 없으면 PM 자동 감지 또는 기본 'game-data'. manual override */
+  kind?: SheetKind;
   columns: Column[];
   rows: Row[];
   stickers?: Sticker[];  // 스티커 목록

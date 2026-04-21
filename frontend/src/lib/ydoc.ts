@@ -193,6 +193,7 @@ function sheetToYMap(sheet: Sheet): Y.Map<unknown> {
   const map = new Y.Map();
   map.set('id', sheet.id);
   map.set('name', sheet.name);
+  if (sheet.kind) map.set('kind', sheet.kind);
   if (sheet.exportClassName) map.set('exportClassName', sheet.exportClassName);
   if (sheet.folderId) map.set('folderId', sheet.folderId);
   // Track 4 — 뷰 스위처 상태
@@ -224,6 +225,7 @@ function yMapToSheet(map: Y.Map<unknown>): Sheet {
   return {
     id: map.get('id') as string,
     name: map.get('name') as string,
+    kind: map.get('kind') as Sheet['kind'] | undefined,
     exportClassName: map.get('exportClassName') as string | undefined,
     folderId: map.get('folderId') as string | undefined,
     activeView: map.get('activeView') as Sheet['activeView'] | undefined,
@@ -518,6 +520,7 @@ export function updateSheetInDoc(
   sheetId: string,
   updates: Partial<Pick<Sheet,
     | 'name'
+    | 'kind'
     | 'exportClassName'
     | 'folderId'
     | 'activeView'

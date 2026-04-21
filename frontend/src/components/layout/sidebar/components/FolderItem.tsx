@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Folder, ChevronRight, ChevronDown, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Folder as FolderType, Sheet } from '@/types';
+import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
 
 interface FolderItemProps {
   folder: FolderType;
@@ -348,12 +349,15 @@ export function FolderItem({
                   autoFocus
                 />
               ) : (
-                <span className="truncate flex-1">
-                  {sheet.name}
-                  {sheet.exportClassName && (
-                    <span style={{ color: 'var(--text-tertiary)' }}> | {sheet.exportClassName}</span>
-                  )}
-                </span>
+                <>
+                  <span className="truncate flex-1">
+                    {sheet.name}
+                    {sheet.exportClassName && (
+                      <span style={{ color: 'var(--text-tertiary)' }}> | {sheet.exportClassName}</span>
+                    )}
+                  </span>
+                  <SheetKindBadge sheet={sheet} />
+                </>
               )}
             </div>
           ))}

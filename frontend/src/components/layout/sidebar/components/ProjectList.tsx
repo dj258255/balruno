@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import type { Project, Folder as FolderType } from '@/types';
 import { FolderItem } from './FolderItem';
+import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
 
 interface ProjectListProps {
   projects: Project[];
@@ -515,12 +516,15 @@ export function ProjectList({
                           autoFocus
                         />
                       ) : (
-                        <span className="truncate flex-1">
-                          {sheet.name}
-                          {sheet.exportClassName && (
-                            <span style={{ color: 'var(--text-tertiary)' }}> | {sheet.exportClassName}</span>
-                          )}
-                        </span>
+                        <>
+                          <span className="truncate flex-1">
+                            {sheet.name}
+                            {sheet.exportClassName && (
+                              <span style={{ color: 'var(--text-tertiary)' }}> | {sheet.exportClassName}</span>
+                            )}
+                          </span>
+                          <SheetKindBadge sheet={sheet} />
+                        </>
                       )}
                     </div>
                   ))}
