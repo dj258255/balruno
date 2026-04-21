@@ -44,6 +44,12 @@ export interface FrameData {
   counterHitMultiplier?: number;
   /** 카운터 히트 시 추가 hitstun (+프레임) — 콤보 라우트 확장에 쓰임 */
   counterHitExtraHitstun?: number;
+  /**
+   * 캔슬 가능한 기술 id 목록 — 이 기술 명중 후 recovery 무시하고 이 목록의 기술로 전환 가능.
+   * SF6 gatling/target combo (LP→LP→MP→HP), Fei Long rekka, MvC magic series 등.
+   * 빈 배열 또는 미설정 = 캔슬 불가 (일반 link 만).
+   */
+  cancelsInto?: string[];
 }
 
 export interface MoveAnalysis {
@@ -75,6 +81,17 @@ export interface ComboLink {
   frameGap: number;
   /** 총 피해 */
   totalDamage: number;
+  /** 캔슬로 연결됨 (recovery 생략) — true 면 link 는 무조건 연결 */
+  cancel?: boolean;
+}
+
+export interface CancelRoute {
+  /** 연속 순서 */
+  moves: FrameData[];
+  /** 총 피해 */
+  totalDamage: number;
+  /** 이 루트의 마지막 기술 */
+  terminal: FrameData;
 }
 
 export interface ComboRoute {
@@ -137,17 +154,33 @@ export function analyzeMove(move: FrameData): MoveAnalysis {
 // 콤보 연결 검증 (hitstun ≥ next.startup 이면 연결됨)
 // ============================================================================
 
-export function checkComboLink(from: FrameData, to: FrameData, counterHit = false): ComboLink {
+export function checkComboLink(
+  from: FrameData,
+  to: FrameData,
+  options: { counterHit?: boolean; cancel?: boolean } | boolean = false,
+): ComboLink {
+  // 옵션 하위호환 — 2번째 인자가 boolean 이면 counterHit 로 간주
+  const opts = typeof options === 'boolean' ? { counterHit: options } : options;
+  const counterHit = opts.counterHit ?? false;
+  const cancel = opts.cancel ?? false;
+
   const chExtra = counterHit ? (from.counterHitExtraHitstun ?? 2) : 0;
-  const remaining = from.hitstun + chExtra - from.recovery;
+  // 캔슬 시: recovery 무시 (활성화된 hit frame 에서 즉시 전환)
+  const recoveryCost = cancel ? 0 : from.recovery;
+  const remaining = from.hitstun + chExtra - recoveryCost;
   const frameGap = remaining - to.startup;
   const fromDamage = counterHit ? Math.round(from.damage * (from.counterHitMultiplier ?? 1.2)) : from.damage;
+
+  // 캔슬 요청했는데 whitelist 에 없으면 — 연결은 link rule 대로 판단하되 cancel=false
+  const cancelWhitelisted = cancel && (from.cancelsInto?.includes(to.id) ?? false);
+
   return {
     from,
     to,
     connects: frameGap >= 0,
     frameGap,
     totalDamage: fromDamage + to.damage,
+    cancel: cancelWhitelisted,
   };
 }
 
@@ -161,7 +194,9 @@ export function analyzeComboRoute(moves: FrameData[]): ComboRoute {
     totalDamage += moves[i].damage;
     totalFrames += moves[i].startup + moves[i].active + moves[i].recovery;
     if (i < moves.length - 1) {
-      const link = checkComboLink(moves[i], moves[i + 1]);
+      // from 의 cancelsInto 에 to 가 포함되면 자동 cancel 모드
+      const canCancel = moves[i].cancelsInto?.includes(moves[i + 1].id) ?? false;
+      const link = checkComboLink(moves[i], moves[i + 1], { cancel: canCancel });
       links.push(link);
       if (!link.connects) allConnect = false;
     }
@@ -177,23 +212,75 @@ export function analyzeComboRoute(moves: FrameData[]): ComboRoute {
 }
 
 // ============================================================================
+// 캔슬 루트 탐색 — gatling/rekka 그래프 BFS
+// ============================================================================
+
+/**
+ * 주어진 시작 기술로부터 가능한 모든 캔슬 루트를 깊이 제한으로 탐색.
+ * 각 루트는 cancelsInto whitelist 만을 따라 전개.
+ * maxDepth 기본 4 (LP→LP→MP→HP→Special 4단 정도 현실적).
+ */
+export function getCancelRoutes(
+  start: FrameData,
+  allMoves: FrameData[],
+  maxDepth = 4,
+): CancelRoute[] {
+  const byId = new Map(allMoves.map((m) => [m.id, m]));
+  const routes: CancelRoute[] = [];
+
+  const walk = (path: FrameData[], visited: Set<string>) => {
+    const last = path[path.length - 1];
+    routes.push({
+      moves: [...path],
+      totalDamage: path.reduce((s, m) => s + m.damage, 0),
+      terminal: last,
+    });
+    if (path.length >= maxDepth) return;
+    const nexts = last.cancelsInto ?? [];
+    for (const nextId of nexts) {
+      if (visited.has(nextId)) continue; // 무한 루프 방지 (매직 시리즈는 동일 종류 반복 금지)
+      const next = byId.get(nextId);
+      if (!next) continue;
+      walk([...path, next], new Set([...visited, nextId]));
+    }
+  };
+
+  walk([start], new Set([start.id]));
+  // 길이 1 (자기 자신만) 인 루트 제외 — 실제 캔슬 있는 것만
+  return routes.filter((r) => r.moves.length >= 2);
+}
+
+// ============================================================================
 // 기본 move 프리셋 (Street Fighter 6 Ryu 기반 근사치)
 // ============================================================================
 
+// cancelsInto — SF6 gatling/special-cancel 규칙 근사:
+//  Light → Light/Medium/Heavy/Special (chain & special cancel)
+//  Medium → Heavy/Special
+//  Heavy  → Special/Super
+//  Special → Super (SA 캔슬)
 export const MOVE_PRESETS: FrameData[] = [
-  // Light
-  { id: 'lp', name: '약 P', category: 'light', startup: 4, active: 3, recovery: 7, hitstun: 12, blockstun: 10, damage: 30 },
-  { id: 'lk', name: '약 K', category: 'light', startup: 5, active: 3, recovery: 9, hitstun: 12, blockstun: 10, damage: 30 },
-  // Medium
-  { id: 'mp', name: '중 P', category: 'medium', startup: 6, active: 3, recovery: 14, hitstun: 17, blockstun: 13, damage: 60 },
-  { id: 'mk', name: '중 K', category: 'medium', startup: 7, active: 4, recovery: 16, hitstun: 17, blockstun: 13, damage: 70 },
-  // Heavy
-  { id: 'hp', name: '강 P', category: 'heavy', startup: 9, active: 4, recovery: 20, hitstun: 22, blockstun: 16, damage: 90 },
-  { id: 'hk', name: '강 K', category: 'heavy', startup: 11, active: 5, recovery: 23, hitstun: 22, blockstun: 16, damage: 100 },
-  // Special
-  { id: 'hadouken', name: '파동권', category: 'special', startup: 13, active: 2, recovery: 35, hitstun: 20, blockstun: 15, damage: 60 },
+  // Light — chain cancel 가능 (gatling)
+  { id: 'lp', name: '약 P', category: 'light', startup: 4, active: 3, recovery: 7, hitstun: 12, blockstun: 10, damage: 30,
+    cancelsInto: ['mp', 'mk', 'hp', 'hk', 'hadouken', 'shoryuken', 'super'] },
+  { id: 'lk', name: '약 K', category: 'light', startup: 5, active: 3, recovery: 9, hitstun: 12, blockstun: 10, damage: 30,
+    cancelsInto: ['mp', 'mk', 'hp', 'hk', 'hadouken', 'shoryuken', 'super'] },
+  // Medium — special cancel
+  { id: 'mp', name: '중 P', category: 'medium', startup: 6, active: 3, recovery: 14, hitstun: 17, blockstun: 13, damage: 60,
+    cancelsInto: ['hp', 'hk', 'hadouken', 'shoryuken', 'super'] },
+  { id: 'mk', name: '중 K', category: 'medium', startup: 7, active: 4, recovery: 16, hitstun: 17, blockstun: 13, damage: 70,
+    cancelsInto: ['hp', 'hk', 'hadouken', 'shoryuken', 'super'] },
+  // Heavy — special cancel only (다른 normal 로 캔슬 불가)
+  { id: 'hp', name: '강 P', category: 'heavy', startup: 9, active: 4, recovery: 20, hitstun: 22, blockstun: 16, damage: 90,
+    cancelsInto: ['hadouken', 'shoryuken', 'super'] },
+  { id: 'hk', name: '강 K', category: 'heavy', startup: 11, active: 5, recovery: 23, hitstun: 22, blockstun: 16, damage: 100,
+    cancelsInto: ['hadouken', 'shoryuken', 'super'] },
+  // Special — super cancel (SA3 등)
+  { id: 'hadouken', name: '파동권', category: 'special', startup: 13, active: 2, recovery: 35, hitstun: 20, blockstun: 15, damage: 60,
+    cancelsInto: ['super'] },
   // 승룡권: SF6 기준 startup 3, 1-6f 무적 (공식 프레임 데이터)
-  { id: 'shoryuken', name: '승룡권', category: 'special', startup: 3, active: 14, recovery: 35, hitstun: 30, blockstun: 20, damage: 120, invincibleFrames: 6, invincibleType: 'full', counterHitMultiplier: 1.2 },
+  { id: 'shoryuken', name: '승룡권', category: 'special', startup: 3, active: 14, recovery: 35, hitstun: 30, blockstun: 20, damage: 120, invincibleFrames: 6, invincibleType: 'full', counterHitMultiplier: 1.2,
+    cancelsInto: ['super'] },
   // Super: 일반적 1-10f 무적 + CH 1.5x
   { id: 'super', name: '수퍼', category: 'super', startup: 7, active: 6, recovery: 40, hitstun: 40, blockstun: 25, damage: 350, invincibleFrames: 10, invincibleType: 'full', counterHitMultiplier: 1.5 },
 ];

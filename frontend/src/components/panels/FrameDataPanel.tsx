@@ -6,9 +6,9 @@
  */
 
 import { useState, useMemo } from 'react';
-import { Zap, Plus, Trash2 } from 'lucide-react';
+import { Zap, Plus, Trash2, GitBranch } from 'lucide-react';
 import PanelShell from '@/components/ui/PanelShell';
-import { analyzeMove, analyzeComboRoute, MOVE_PRESETS, type FrameData } from '@/lib/frameData';
+import { analyzeMove, analyzeComboRoute, getCancelRoutes, MOVE_PRESETS, type FrameData } from '@/lib/frameData';
 
 interface Props {
   onClose: () => void;
@@ -33,9 +33,20 @@ const TIER_LABEL: Record<string, string> = {
 export default function FrameDataPanel({ onClose }: Props) {
   const [moves, setMoves] = useState<FrameData[]>(MOVE_PRESETS);
   const [routeIds, setRouteIds] = useState<string[]>(['lp', 'mp', 'hadouken']);
+  const [cancelStartId, setCancelStartId] = useState<string>('lp');
 
   const routeMoves = useMemo(() => routeIds.map((id) => moves.find((m) => m.id === id)).filter(Boolean) as FrameData[], [routeIds, moves]);
   const routeResult = useMemo(() => analyzeComboRoute(routeMoves), [routeMoves]);
+  const cancelStart = useMemo(() => moves.find((m) => m.id === cancelStartId), [moves, cancelStartId]);
+  const cancelRoutes = useMemo(
+    () => (cancelStart ? getCancelRoutes(cancelStart, moves, 4) : []),
+    [cancelStart, moves],
+  );
+  // 피해 많은 순 정렬 → 최적 루트 상단
+  const topCancelRoutes = useMemo(
+    () => [...cancelRoutes].sort((a, b) => b.totalDamage - a.totalDamage).slice(0, 8),
+    [cancelRoutes],
+  );
 
   const updateMove = <K extends keyof FrameData>(idx: number, key: K, value: FrameData[K]) => {
     setMoves((prev) => prev.map((m, i) => (i === idx ? { ...m, [key]: value } : m)));
@@ -163,6 +174,92 @@ export default function FrameDataPanel({ onClose }: Props) {
           <LegendDot color="#ef4444" label="Active (유지, 판정)" />
           <LegendDot color="#3b82f6" label="Recovery (경직)" />
         </div>
+      </div>
+
+      {/* 캔슬 루트 탐색 — gatling/rekka/special cancel 자동 생성 */}
+      <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+        <div className="flex items-center justify-between mb-2">
+          <span className="inline-flex items-center gap-1.5 text-label font-medium" style={{ color: 'var(--text-primary)' }}>
+            <GitBranch className="w-4 h-4" />
+            캔슬 루트 (gatling / special cancel)
+          </span>
+          <select
+            value={cancelStartId}
+            onChange={(e) => setCancelStartId(e.target.value)}
+            className="input-compact"
+            style={{ width: 120 }}
+          >
+            {moves.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}에서 시작
+              </option>
+            ))}
+          </select>
+        </div>
+        {topCancelRoutes.length === 0 ? (
+          <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
+            이 기술은 캔슬 가능한 후속 기술이 없습니다
+          </p>
+        ) : (
+          <div className="space-y-1">
+            {topCancelRoutes.map((route, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-1 p-1.5 rounded-md"
+                style={{ background: 'var(--bg-primary)' }}
+              >
+                <span className="text-caption w-6 tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+                  #{i + 1}
+                </span>
+                <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
+                  {route.moves.map((m, mIdx) => (
+                    <span key={mIdx} className="inline-flex items-center gap-1 shrink-0">
+                      <span
+                        className="px-1.5 py-0.5 rounded text-caption font-medium"
+                        style={{
+                          background:
+                            m.category === 'super' ? '#f59e0b30'
+                            : m.category === 'special' ? '#8b5cf630'
+                            : m.category === 'heavy' ? '#ef444430'
+                            : m.category === 'medium' ? '#3b82f630'
+                            : '#94a3b830',
+                          color:
+                            m.category === 'super' ? '#f59e0b'
+                            : m.category === 'special' ? '#8b5cf6'
+                            : m.category === 'heavy' ? '#ef4444'
+                            : m.category === 'medium' ? '#3b82f6'
+                            : '#94a3b8',
+                        }}
+                      >
+                        {m.name}
+                      </span>
+                      {mIdx < route.moves.length - 1 && (
+                        <span className="text-caption" style={{ color: '#10b981' }}>→</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <span
+                  className="text-caption font-bold tabular-nums ml-auto shrink-0"
+                  style={{ color: '#ef4444' }}
+                >
+                  {route.totalDamage} dmg
+                </span>
+                <button
+                  onClick={() => setRouteIds(route.moves.map((m) => m.id))}
+                  className="text-caption px-2 py-0.5 rounded shrink-0"
+                  style={{ background: 'var(--bg-tertiary)', color: 'var(--accent)' }}
+                  title="이 루트를 아래 콤보 분석기에 로드"
+                >
+                  분석
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="text-caption italic mt-2" style={{ color: 'var(--text-tertiary)' }}>
+          캔슬: recovery 생략하고 즉시 다음 기술 — SF6 chain/special/super cancel 규칙
+        </p>
       </div>
 
       {/* 콤보 라우트 분석 */}

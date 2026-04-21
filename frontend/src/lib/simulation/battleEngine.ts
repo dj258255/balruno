@@ -1103,10 +1103,12 @@ export function simulateTeamBattle(
   // 타겟 선택 함수
   // attacker.decisionSkill 이 높을수록 mode 를 충실히 따름 (최적 타겟).
   // 낮으면 판단 실수 확률 ↑ → 랜덤 선택. 50 = 50% 확률로 실수.
+  // time 은 여기서는 사용 안 하지만 API 시그니처를 다른 selectTarget 과 통일.
   const selectTarget = (
     enemies: UnitState[],
     mode: import('./types').TeamBattleConfig['targetingMode'],
     attacker?: UnitState,
+    _time?: number,
   ): UnitState | null => {
     const aliveEnemies = enemies.filter(e => e.alive);
     if (aliveEnemies.length === 0) return null;
@@ -1166,7 +1168,7 @@ export function simulateTeamBattle(
     // Team1 공격 계산
     for (const attacker of team1Alive) {
       if (time >= attacker.nextAttackTime) {
-        const target = selectTarget(team2States, cfg.targetingMode, attacker);
+        const target = selectTarget(team2States, cfg.targetingMode, attacker, time);
         if (!target) continue;
 
         const result = calculateDamage(attacker, target, cfg.damageFormula, cfg.defenseFormula, cfg.armorPenetration);
@@ -1184,7 +1186,7 @@ export function simulateTeamBattle(
     // Team2 공격 계산
     for (const attacker of team2Alive) {
       if (time >= attacker.nextAttackTime) {
-        const target = selectTarget(team1States, cfg.targetingMode, attacker);
+        const target = selectTarget(team1States, cfg.targetingMode, attacker, time);
         if (!target) continue;
 
         const result = calculateDamage(attacker, target, cfg.damageFormula, cfg.defenseFormula, cfg.armorPenetration);
@@ -1606,11 +1608,22 @@ export function simulateTeamBattleWithSkills(
   const team1States: UnitState[] = team1.map(u => createUnitState(u, 'team1'));
   const team2States: UnitState[] = team2.map(u => createUnitState(u, 'team2'));
 
+  // 스킬 cooldown Map → skillReady lookup (BehaviorContext.skillReady 용)
+  // time 기준: 해당 스킬의 cooldownEnds ≤ time 이면 ready.
+  const buildSkillReadyMap = (attacker: UnitState, currentTime = 0): Record<string, boolean> => {
+    const ready: Record<string, boolean> = {};
+    attacker.skillCooldowns.forEach((cooldownEnds, skillId) => {
+      ready[skillId] = currentTime >= cooldownEnds;
+    });
+    return ready;
+  };
+
   // 타겟 선택 함수 (스킬 포함 버전 — decisionSkill 로 mode 적용률 제어)
   const selectTarget = (
     enemies: UnitState[],
     mode: import('./types').TeamBattleConfig['targetingMode'],
     attacker?: UnitState,
+    time = 0,
   ): UnitState | null => {
     const aliveEnemies = enemies.filter(e => e.alive);
     if (aliveEnemies.length === 0) return null;
@@ -1627,6 +1640,7 @@ export function simulateTeamBattleWithSkills(
           enemyHpSamples: aliveEnemies.map((e) => ({ id: e.id, hp: e.currentHp, maxHp: e.maxHp })),
           turn: 0,
           aliveEnemyCount: aliveEnemies.length,
+          skillReady: buildSkillReadyMap(attacker, time),
         };
         const action = evaluateRules(a.aiRules as BehaviorRule[], ctx, decisionSkill);
         // 액션별 타겟 결정 override
@@ -1763,6 +1777,7 @@ export function simulateTeamBattleWithSkills(
     attacker: UnitState,
     enemies: UnitState[],
     skills: Skill[],
+    time: number,
   ): Skill[] => {
     const a = attacker as unknown as { aiRules?: unknown[]; decisionSkill?: number };
     if (!a.aiRules || !Array.isArray(a.aiRules) || a.aiRules.length === 0) return skills;
@@ -1772,6 +1787,7 @@ export function simulateTeamBattleWithSkills(
       enemyHpSamples: enemies.filter((e) => e.alive).map((e) => ({ id: e.id, hp: e.currentHp, maxHp: e.maxHp })),
       turn: 0,
       aliveEnemyCount: enemies.filter((e) => e.alive).length,
+      skillReady: buildSkillReadyMap(attacker, time),
     };
     const action = evaluateRules(a.aiRules as BehaviorRule[], ctx, a.decisionSkill ?? 50);
 
@@ -1806,7 +1822,7 @@ export function simulateTeamBattleWithSkills(
     if (time < attacker.invincibleUntil) return; // 무적 중 스킬 사용 불가
 
     // AI 규칙에 따라 스킬 평가 순서 재정렬 (defensive/skill 액션 반영)
-    const orderedSkills = reorderSkillsByAI(attacker, enemies, skills);
+    const orderedSkills = reorderSkillsByAI(attacker, enemies, skills, time);
 
     for (const skill of orderedSkills) {
       const cooldownEnds = attacker.skillCooldowns.get(skill.id) || 0;
@@ -1835,7 +1851,7 @@ export function simulateTeamBattleWithSkills(
 
       switch (skillType) {
         case 'damage': {
-          const target = selectTarget(enemies, cfg.targetingMode, attacker);
+          const target = selectTarget(enemies, cfg.targetingMode, attacker, time);
           if (!target || time < target.invincibleUntil) break;
 
           const baseDamage = skill.damageType === 'flat'
@@ -2009,7 +2025,7 @@ export function simulateTeamBattleWithSkills(
           continue;
         }
 
-        const target = selectTarget(team2States, cfg.targetingMode, attacker);
+        const target = selectTarget(team2States, cfg.targetingMode, attacker, time);
         if (!target) continue;
 
         // 대상 무적 체크
@@ -2039,7 +2055,7 @@ export function simulateTeamBattleWithSkills(
           continue;
         }
 
-        const target = selectTarget(team1States, cfg.targetingMode, attacker);
+        const target = selectTarget(team1States, cfg.targetingMode, attacker, time);
         if (!target) continue;
 
         // 대상 무적 체크

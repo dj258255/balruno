@@ -52,6 +52,35 @@ export interface EnemyMob {
   attackDamage?: number;
   /** 공격 주기 — 매 N 턴마다 공격 (1=매 턴, 2=격턴). 기본 1. */
   attackInterval?: number;
+  /**
+   * 턴 사이클 intent 패턴 — Slay the Spire 몹 행동 예고 시스템.
+   * 지정 시 attackDamage/attackInterval 은 무시되고 이 패턴이 사용됨.
+   * pattern[turn % pattern.length] 가 해당 턴의 intent.
+   */
+  intentPattern?: MobIntent[];
+}
+
+/**
+ * Mob 의 한 턴 의도 (intent). Slay the Spire 의 noggle/atom 아이콘 매핑:
+ *  - attack: 공격 — damage 만큼 피해
+ *  - defend: 방어 — block 획득 (이번 턴 받는 피해 감소)
+ *  - buff:   강화 — 다음 공격부터 strength 증가 (단순화: 이후 attack intent 의 damage 가산)
+ *  - debuff: 디버프 — 플레이어 block 무효화 (이번 턴)
+ *  - stun:   휴식 — 아무것도 안 함
+ *  - unknown: 수면/미공개 — UI 전용, 시뮬상 skip
+ */
+export type IntentKind = 'attack' | 'defend' | 'buff' | 'debuff' | 'stun' | 'unknown';
+
+export interface MobIntent {
+  kind: IntentKind;
+  /** attack: 피해량 */
+  damage?: number;
+  /** defend: 몹이 얻는 block */
+  block?: number;
+  /** buff: 다음 공격부터 적용되는 추가 데미지 */
+  strength?: number;
+  /** UI 툴팁용 라벨 — "Incantation", "Smash" 등 */
+  label?: string;
 }
 
 export interface PlayerConfig {
@@ -90,6 +119,23 @@ export interface DeckSimResult {
 // ============================================================================
 // Fisher-Yates shuffle
 // ============================================================================
+
+/**
+ * 특정 턴의 intent 해석 — intentPattern 이 있으면 그걸 cycle, 없으면 legacy attackDamage/attackInterval.
+ * null 반환 = 이번 턴 아무 행동 없음.
+ */
+export function resolveIntent(mob: EnemyMob, turn: number): MobIntent | null {
+  if (mob.intentPattern && mob.intentPattern.length > 0) {
+    return mob.intentPattern[turn % mob.intentPattern.length];
+  }
+  if (mob.attackDamage && mob.attackDamage > 0) {
+    const interval = mob.attackInterval ?? 1;
+    if (turn % interval === 0) {
+      return { kind: 'attack', damage: mob.attackDamage };
+    }
+  }
+  return null;
+}
 
 function shuffle<T>(arr: T[]): T[] {
   const out = arr.slice();
@@ -158,8 +204,10 @@ function simulateCombat(cfg: DeckConfig): {
   const perTurnDamage: number[] = [];
   const cardUsage: Record<string, number> = {};
 
-  // 몹 처치 추적
-  const enemies = (cfg.enemies ?? []).map((e) => ({ ...e, remaining: e.hp }));
+  // 몹 처치 추적 — pendingStrength 는 buff intent 누적값
+  const enemies: Array<EnemyMob & { remaining: number; pendingStrength: number }> = (cfg.enemies ?? []).map(
+    (e) => ({ ...e, remaining: e.hp, pendingStrength: 0 }),
+  );
   let enemyIdx = 0;
   let kills = 0;
   const killedMobIds: string[] = [];
@@ -220,34 +268,52 @@ function simulateCombat(cfg: DeckConfig): {
     if (playedThisTurn === 0) deadHandTurns++;
     energyWasted += energy;
 
-    // 몹 공격 단계 (생존 시뮬) — 현재 생존 몹이 플레이어 공격
-    if (hasPlayer && enemyIdx < enemies.length) {
+      // 몹 공격/방어 단계 (intent 기반 또는 legacy attackDamage)
+    let mobTurnBlock = 0;
+    let playerBlockNegated = false;
+    if (enemyIdx < enemies.length) {
       const currentMob = enemies[enemyIdx];
-      const interval = currentMob.attackInterval ?? 1;
-      if (currentMob.attackDamage && turn % interval === 0) {
-        const incoming = currentMob.attackDamage;
-        // block 으로 우선 흡수, 나머지는 HP 차감
-        const blocked = Math.min(turnBlock, incoming);
-        const actualDmg = incoming - blocked;
-        damageBlocked += blocked;
-        damageTaken += actualDmg;
-        playerHp -= actualDmg;
-        if (playerHp <= 0) {
-          survived = false;
-          playerHp = 0;
-          // 턴 종료 처리 후 break
-          state.discardPile.push(...state.hand);
-          state.hand = [];
-          break;
+      const intent = resolveIntent(currentMob, turn);
+      if (intent) {
+        if (intent.kind === 'attack' && intent.damage && hasPlayer) {
+          const bonus = currentMob.pendingStrength ?? 0;
+          const incoming = intent.damage + bonus;
+          const effectiveBlock = playerBlockNegated ? 0 : turnBlock;
+          const blocked = Math.min(effectiveBlock, incoming);
+          const actualDmg = incoming - blocked;
+          damageBlocked += blocked;
+          damageTaken += actualDmg;
+          playerHp -= actualDmg;
+          if (playerHp <= 0) {
+            survived = false;
+            playerHp = 0;
+            state.discardPile.push(...state.hand);
+            state.hand = [];
+            break;
+          }
+        } else if (intent.kind === 'defend' && intent.block) {
+          mobTurnBlock += intent.block;
+        } else if (intent.kind === 'buff' && intent.strength) {
+          currentMob.pendingStrength = (currentMob.pendingStrength ?? 0) + intent.strength;
+        } else if (intent.kind === 'debuff' && hasPlayer) {
+          playerBlockNegated = true;
         }
+        // stun / unknown: 아무 효과 없음
       }
     }
 
-    // 적용: turnDamage 를 현재 몹에 순차 누적
+    // 적용: turnDamage 를 현재 몹에 순차 누적 (mob block 먼저 소진)
     if (enemies.length > 0) {
       let remainingDmg = turnDamage;
       while (remainingDmg > 0 && enemyIdx < enemies.length) {
         const mob = enemies[enemyIdx];
+        // mob turn block 흡수
+        if (mobTurnBlock > 0) {
+          const absorbed = Math.min(mobTurnBlock, remainingDmg);
+          mobTurnBlock -= absorbed;
+          remainingDmg -= absorbed;
+          if (remainingDmg <= 0) break;
+        }
         if (mob.remaining <= remainingDmg) {
           remainingDmg -= mob.remaining;
           mob.remaining = 0;
@@ -255,6 +321,7 @@ function simulateCombat(cfg: DeckConfig): {
           killedMobIds.push(mob.id);
           if (firstKillTurn === null) firstKillTurn = turn + 1;
           enemyIdx++;
+          mobTurnBlock = 0; // 새 몹으로 넘어가면 block reset
         } else {
           mob.remaining -= remainingDmg;
           remainingDmg = 0;
@@ -262,7 +329,6 @@ function simulateCombat(cfg: DeckConfig): {
       }
       // 몹 다 잡으면 조기 종료
       if (enemyIdx >= enemies.length) {
-        // 턴 종료 처리 후 break
         state.discardPile.push(...state.hand);
         state.hand = [];
         break;

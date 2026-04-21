@@ -8,11 +8,12 @@
  */
 
 import { useState, useMemo } from 'react';
-import { Crosshair, Swords, Flame } from 'lucide-react';
+import { Crosshair, Swords, Flame, Cloud, Zap, Plus, Trash2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import PanelShell from '@/components/ui/PanelShell';
 import {
   WEAPON_PRESETS,
+  UTILITY_PRESETS,
   aimSkillToProfile,
   simulateWeaponTtk,
   simulateFpsDuel,
@@ -20,6 +21,8 @@ import {
   calculateShieldBreakdown,
   SHIELD_BRACKETS,
   type WeaponStats,
+  type ActiveUtility,
+  type UtilityKind,
 } from '@/lib/fpsSimulation';
 
 interface Props {
@@ -38,6 +41,7 @@ export default function FPSSimulationPanel({ onClose }: Props) {
   const [firstShot, setFirstShot] = useState<'A' | 'B' | 'both-aware'>('both-aware');
   const [aMoving, setAMoving] = useState(false);
   const [bMoving, setBMoving] = useState(false);
+  const [utilities, setUtilities] = useState<ActiveUtility[]>([]);
   const [runs, setRuns] = useState(5000);
 
   const aimA = useMemo(() => aimSkillToProfile(aimSkillA), [aimSkillA]);
@@ -59,11 +63,18 @@ export default function FPSSimulationPanel({ onClose }: Props) {
         weaponB, aimB,
         { hp: 100, shield: 0, armor: 0 },
         { hp: 100, shield: 0, armor: 0 },
-        { distance, firstShot, bothAwareDelayMs: 100, aMoving, bMoving },
+        { distance, firstShot, bothAwareDelayMs: 100, aMoving, bMoving, utilities },
         runs,
       ),
-    [weaponA, aimA, weaponB, aimB, distance, firstShot, aMoving, bMoving, runs],
+    [weaponA, aimA, weaponB, aimB, distance, firstShot, aMoving, bMoving, utilities, runs],
   );
+
+  const addUtility = (kind: UtilityKind, affects: 'A' | 'B' | 'both') => {
+    setUtilities((prev) => [...prev, { ...UTILITY_PRESETS[kind], kind, affects, deployedAtMs: 0 }]);
+  };
+  const removeUtility = (i: number) => setUtilities((prev) => prev.filter((_, j) => j !== i));
+  const updateUtility = (i: number, patch: Partial<ActiveUtility>) =>
+    setUtilities((prev) => prev.map((u, j) => (j === i ? { ...u, ...patch } : u)));
 
   const dpsCurveA = useMemo(() => {
     const distances = Array.from({ length: 21 }, (_, i) => i * 5); // 0, 5, 10, ..., 100m
@@ -140,6 +151,94 @@ export default function FPSSimulationPanel({ onClose }: Props) {
             <input type="checkbox" checked={bMoving} onChange={(e) => setBMoving(e.target.checked)} />
             <span className="text-label" style={{ color: 'var(--text-primary)' }}>B 이동 중</span>
           </label>
+        </div>
+
+        {/* 유틸리티 (스모크 · 플래시 · 몰로토프 · 디코이) */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-label" style={{ color: 'var(--text-secondary)' }}>
+              유틸리티 ({utilities.length})
+            </span>
+            <div className="flex gap-1">
+              {(['smoke', 'flash', 'molotov', 'decoy'] as const).map((kind) => (
+                <button
+                  key={kind}
+                  onClick={() => addUtility(kind, 'B')}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-caption hover:bg-[var(--bg-hover)]"
+                  style={{ background: 'var(--bg-primary)', color: UTILITY_COLOR[kind] }}
+                  title={`${UTILITY_LABEL[kind]} 추가 (B 에게 영향)`}
+                >
+                  <Plus className="w-2.5 h-2.5" />
+                  {UTILITY_LABEL[kind]}
+                </button>
+              ))}
+            </div>
+          </div>
+          {utilities.length > 0 && (
+            <div className="space-y-1">
+              {utilities.map((u, i) => (
+                <div key={i} className="flex items-center gap-1 p-1 rounded" style={{ background: 'var(--bg-primary)' }}>
+                  <UtilityIcon kind={u.kind} />
+                  <span className="text-caption font-semibold" style={{ color: UTILITY_COLOR[u.kind] }}>
+                    {UTILITY_LABEL[u.kind]}
+                  </span>
+                  <select
+                    value={u.affects}
+                    onChange={(e) => updateUtility(i, { affects: e.target.value as 'A' | 'B' | 'both' })}
+                    className="input-compact"
+                    style={{ width: 70 }}
+                  >
+                    <option value="A">A 방해</option>
+                    <option value="B">B 방해</option>
+                    <option value="both">둘 다</option>
+                  </select>
+                  <label className="text-caption ml-1" style={{ color: 'var(--text-tertiary)' }}>
+                    {u.kind === 'molotov' ? 'dps' : 'hit×'}
+                  </label>
+                  <input
+                    type="number"
+                    value={u.intensity ?? 0}
+                    step={u.kind === 'molotov' ? 1 : 0.05}
+                    min={0}
+                    onChange={(e) => updateUtility(i, { intensity: parseFloat(e.target.value) || 0 })}
+                    className="input-compact hide-spinner"
+                    style={{ width: 50 }}
+                  />
+                  <label className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                    sec
+                  </label>
+                  <input
+                    type="number"
+                    value={u.durationMs / 1000}
+                    step={0.5}
+                    min={0.1}
+                    onChange={(e) => updateUtility(i, { durationMs: (parseFloat(e.target.value) || 0.1) * 1000 })}
+                    className="input-compact hide-spinner"
+                    style={{ width: 55 }}
+                  />
+                  <label className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                    @ms
+                  </label>
+                  <input
+                    type="number"
+                    value={u.deployedAtMs}
+                    step={100}
+                    min={0}
+                    onChange={(e) => updateUtility(i, { deployedAtMs: parseFloat(e.target.value) || 0 })}
+                    className="input-compact hide-spinner"
+                    style={{ width: 60 }}
+                    title="교전 시작 후 N ms 시점에 발동"
+                  />
+                  <button onClick={() => removeUtility(i)} className="p-1 rounded hover:bg-[var(--bg-tertiary)] ml-auto">
+                    <Trash2 className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-caption italic mt-1" style={{ color: 'var(--text-tertiary)' }}>
+            Smoke=시야 차단 · Flash=섬광 (시간 지나며 회복) · Molotov=지속 피해 · Decoy=반응 지연
+          </p>
         </div>
 
         <RangeRow label="반복 수" value={runs} unit="회" min={500} max={20000} step={500} onChange={setRuns} />
@@ -286,6 +385,27 @@ function skillTier(v: number): string {
   if (v < 70) return '평균';
   if (v < 85) return '숙련';
   return '전문가';
+}
+
+const UTILITY_LABEL: Record<UtilityKind, string> = {
+  smoke: '스모크',
+  flash: '플래시',
+  molotov: '몰로토프',
+  decoy: '디코이',
+};
+const UTILITY_COLOR: Record<UtilityKind, string> = {
+  smoke: '#6b7280',
+  flash: '#fbbf24',
+  molotov: '#ef4444',
+  decoy: '#8b5cf6',
+};
+
+function UtilityIcon({ kind }: { kind: UtilityKind }) {
+  const color = UTILITY_COLOR[kind];
+  if (kind === 'smoke') return <Cloud className="w-3 h-3" style={{ color }} />;
+  if (kind === 'flash') return <Zap className="w-3 h-3" style={{ color }} />;
+  if (kind === 'molotov') return <Flame className="w-3 h-3" style={{ color }} />;
+  return <Swords className="w-3 h-3" style={{ color }} />;
 }
 
 // ============================================================================

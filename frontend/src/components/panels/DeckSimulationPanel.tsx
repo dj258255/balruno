@@ -7,9 +7,9 @@
  */
 
 import { useState, useMemo } from 'react';
-import { Layers, Plus, Trash2, BarChart3 } from 'lucide-react';
+import { Layers, Plus, Trash2, BarChart3, Swords, Shield, ArrowUp, Ban, Moon, HelpCircle } from 'lucide-react';
 import PanelShell from '@/components/ui/PanelShell';
-import { simulateDeck, CARD_PRESETS, type Card, type DeckConfig, type EnemyMob } from '@/lib/deckSimulation';
+import { simulateDeck, CARD_PRESETS, resolveIntent, type Card, type DeckConfig, type EnemyMob, type MobIntent, type IntentKind } from '@/lib/deckSimulation';
 
 interface Props {
   onClose: () => void;
@@ -22,11 +22,29 @@ export default function DeckSimulationPanel({ onClose }: Props) {
   const [turns, setTurns] = useState(5);
   const [runs, setRuns] = useState(2000);
 
-  // Slay the Spire Act 1 기본 몹 근사 (공식 위키 참고)
-  // attackDamage: Cultist 6-turn 0 → 1/2 → 3/4 → 5... 단순화로 평균값 채용
+  // Slay the Spire Act 1 기본 몹 — 공식 intent 패턴 (StS Wiki 참조)
+  //  - Cultist: turn0 Incantation (+3 str), turn1+ attack (6 + 누적 str)
+  //  - Jaw Worm: 랜덤화 단순 — Chomp(11) / Thrash(7+Block5) / Bellow(+3str+Block6)
   const [enemies, setEnemies] = useState<EnemyMob[]>([
-    { id: 'cultist', name: 'Cultist', hp: 50, attackDamage: 6, attackInterval: 1 },
-    { id: 'jaw-worm', name: 'Jaw Worm', hp: 42, attackDamage: 11, attackInterval: 1 },
+    {
+      id: 'cultist',
+      name: 'Cultist',
+      hp: 50,
+      intentPattern: [
+        { kind: 'buff', strength: 3, label: 'Incantation' },
+        { kind: 'attack', damage: 6, label: 'Dark Strike' },
+      ],
+    },
+    {
+      id: 'jaw-worm',
+      name: 'Jaw Worm',
+      hp: 42,
+      intentPattern: [
+        { kind: 'attack', damage: 11, label: 'Chomp' },
+        { kind: 'defend', block: 6, label: 'Bellow' },
+        { kind: 'attack', damage: 7, label: 'Thrash' },
+      ],
+    },
   ]);
   const [playerHp, setPlayerHp] = useState(80);
   const [survivalMode, setSurvivalMode] = useState(true);
@@ -61,6 +79,30 @@ export default function DeckSimulationPanel({ onClose }: Props) {
   const updateEnemy = <K extends keyof EnemyMob>(idx: number, key: K, value: EnemyMob[K]) =>
     setEnemies((prev) => prev.map((e, i) => (i === idx ? { ...e, [key]: value } : e)));
   const removeEnemy = (idx: number) => setEnemies((prev) => prev.filter((_, i) => i !== idx));
+
+  const addIntent = (mobIdx: number) =>
+    setEnemies((prev) =>
+      prev.map((e, i) =>
+        i === mobIdx ? { ...e, intentPattern: [...(e.intentPattern ?? []), { kind: 'attack' as IntentKind, damage: 5 }] } : e,
+      ),
+    );
+  const updateIntent = (mobIdx: number, intentIdx: number, patch: Partial<MobIntent>) =>
+    setEnemies((prev) =>
+      prev.map((e, i) => {
+        if (i !== mobIdx || !e.intentPattern) return e;
+        const next = [...e.intentPattern];
+        next[intentIdx] = { ...next[intentIdx], ...patch };
+        return { ...e, intentPattern: next };
+      }),
+    );
+  const removeIntent = (mobIdx: number, intentIdx: number) =>
+    setEnemies((prev) =>
+      prev.map((e, i) => {
+        if (i !== mobIdx || !e.intentPattern) return e;
+        const next = e.intentPattern.filter((_, j) => j !== intentIdx);
+        return { ...e, intentPattern: next.length > 0 ? next : undefined };
+      }),
+    );
 
   return (
     <PanelShell
@@ -163,49 +205,64 @@ export default function DeckSimulationPanel({ onClose }: Props) {
         <div className="space-y-1">
           {enemies.map((enemy, idx) => {
             const killRate = result.mobKillRates?.[enemy.id] ?? 0;
+            const nextIntent = resolveIntent(enemy, 0);
+            const hasPattern = !!enemy.intentPattern && enemy.intentPattern.length > 0;
             return (
-              <div key={enemy.id} className="flex items-center gap-2 p-1.5 rounded-md" style={{ background: 'var(--bg-primary)' }}>
-                <span className="text-caption tabular-nums w-6 text-center" style={{ color: 'var(--text-tertiary)' }}>
-                  #{idx + 1}
-                </span>
-                <input
-                  value={enemy.name}
-                  onChange={(e) => updateEnemy(idx, 'name', e.target.value)}
-                  className="input-compact flex-1 min-w-0"
+              <div key={enemy.id} className="rounded-md" style={{ background: 'var(--bg-primary)' }}>
+                <div className="flex items-center gap-2 p-1.5">
+                  <span className="text-caption tabular-nums w-6 text-center" style={{ color: 'var(--text-tertiary)' }}>
+                    #{idx + 1}
+                  </span>
+                  <input
+                    value={enemy.name}
+                    onChange={(e) => updateEnemy(idx, 'name', e.target.value)}
+                    className="input-compact flex-1 min-w-0"
+                  />
+                  <label className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                    HP
+                  </label>
+                  <input
+                    type="number"
+                    value={enemy.hp}
+                    min={1}
+                    onChange={(e) => updateEnemy(idx, 'hp', parseInt(e.target.value) || 1)}
+                    className="input-compact hide-spinner"
+                    style={{ width: 70 }}
+                  />
+                  {!hasPattern && (
+                    <>
+                      <label className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                        ATK
+                      </label>
+                      <input
+                        type="number"
+                        value={enemy.attackDamage ?? 0}
+                        min={0}
+                        onChange={(e) => updateEnemy(idx, 'attackDamage', parseInt(e.target.value) || 0)}
+                        className="input-compact hide-spinner"
+                        style={{ width: 60 }}
+                        title="턴당 공격력"
+                      />
+                    </>
+                  )}
+                  {nextIntent && <IntentBadge intent={nextIntent} label="다음 턴" />}
+                  <span
+                    className="text-caption tabular-nums w-12 text-right font-semibold"
+                    style={{ color: killRate >= 0.8 ? '#10b981' : killRate >= 0.5 ? '#f59e0b' : '#ef4444' }}
+                    title="이 몹 처치율"
+                  >
+                    {Math.round(killRate * 100)}%
+                  </span>
+                  <button onClick={() => removeEnemy(idx)} className="p-1 rounded hover:bg-[var(--bg-tertiary)]">
+                    <Trash2 className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
+                  </button>
+                </div>
+                <IntentEditor
+                  pattern={enemy.intentPattern}
+                  onAdd={() => addIntent(idx)}
+                  onUpdate={(iIdx, patch) => updateIntent(idx, iIdx, patch)}
+                  onRemove={(iIdx) => removeIntent(idx, iIdx)}
                 />
-                <label className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                  HP
-                </label>
-                <input
-                  type="number"
-                  value={enemy.hp}
-                  min={1}
-                  onChange={(e) => updateEnemy(idx, 'hp', parseInt(e.target.value) || 1)}
-                  className="input-compact hide-spinner"
-                  style={{ width: 70 }}
-                />
-                <label className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                  ATK
-                </label>
-                <input
-                  type="number"
-                  value={enemy.attackDamage ?? 0}
-                  min={0}
-                  onChange={(e) => updateEnemy(idx, 'attackDamage', parseInt(e.target.value) || 0)}
-                  className="input-compact hide-spinner"
-                  style={{ width: 60 }}
-                  title="턴당 공격력"
-                />
-                <span
-                  className="text-caption tabular-nums w-12 text-right font-semibold"
-                  style={{ color: killRate >= 0.8 ? '#10b981' : killRate >= 0.5 ? '#f59e0b' : '#ef4444' }}
-                  title="이 몹 처치율"
-                >
-                  {Math.round(killRate * 100)}%
-                </span>
-                <button onClick={() => removeEnemy(idx)} className="p-1 rounded hover:bg-[var(--bg-tertiary)]">
-                  <Trash2 className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
-                </button>
               </div>
             );
           })}
@@ -351,6 +408,120 @@ function Stat({ label, value, sub, color }: { label: string; value: string; sub?
       <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{label}</div>
       <div className="text-heading font-bold tabular-nums" style={{ color }}>{value}</div>
       {sub && <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{sub}</div>}
+    </div>
+  );
+}
+
+// Slay the Spire 아이콘 매핑: noggle(attack), shield(defend), up(buff), ban(debuff), moon(stun), ?(unknown)
+const INTENT_META: Record<IntentKind, { Icon: typeof Swords; color: string; bg: string; label: string }> = {
+  attack:  { Icon: Swords,     color: '#ef4444', bg: '#ef444420', label: '공격' },
+  defend:  { Icon: Shield,     color: '#3b82f6', bg: '#3b82f620', label: '방어' },
+  buff:    { Icon: ArrowUp,    color: '#f59e0b', bg: '#f59e0b20', label: '강화' },
+  debuff:  { Icon: Ban,        color: '#8b5cf6', bg: '#8b5cf620', label: '디버프' },
+  stun:    { Icon: Moon,       color: '#6b7280', bg: '#6b728020', label: '스턴' },
+  unknown: { Icon: HelpCircle, color: '#94a3b8', bg: '#94a3b820', label: '?' },
+};
+
+function IntentBadge({ intent, label }: { intent: MobIntent; label?: string }) {
+  const meta = INTENT_META[intent.kind];
+  const val = intent.damage ?? intent.block ?? intent.strength;
+  const title = [label, intent.label ?? meta.label, val != null ? `${val}` : '']
+    .filter(Boolean)
+    .join(' · ');
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-semibold tabular-nums"
+      style={{ background: meta.bg, color: meta.color }}
+      title={title}
+    >
+      <meta.Icon className="w-3 h-3" />
+      {val != null && val}
+    </span>
+  );
+}
+
+function IntentEditor({
+  pattern,
+  onAdd,
+  onUpdate,
+  onRemove,
+}: {
+  pattern?: MobIntent[];
+  onAdd: () => void;
+  onUpdate: (idx: number, patch: Partial<MobIntent>) => void;
+  onRemove: (idx: number) => void;
+}) {
+  return (
+    <div className="px-2 pb-2 flex items-center gap-1 flex-wrap">
+      <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+        Intent 사이클
+      </span>
+      {(pattern ?? []).map((intent, i) => {
+        const meta = INTENT_META[intent.kind];
+        const val = intent.damage ?? intent.block ?? intent.strength ?? 0;
+        return (
+          <span
+            key={i}
+            className="inline-flex items-center gap-1 px-1 py-0.5 rounded"
+            style={{ background: meta.bg }}
+          >
+            <select
+              value={intent.kind}
+              onChange={(e) => {
+                const kind = e.target.value as IntentKind;
+                // kind 변경 시 기본 필드 초기화
+                const patch: Partial<MobIntent> =
+                  kind === 'attack' ? { kind, damage: val || 5, block: undefined, strength: undefined }
+                  : kind === 'defend' ? { kind, block: val || 5, damage: undefined, strength: undefined }
+                  : kind === 'buff' ? { kind, strength: val || 2, damage: undefined, block: undefined }
+                  : { kind, damage: undefined, block: undefined, strength: undefined };
+                onUpdate(i, patch);
+              }}
+              className="bg-transparent text-caption border-none outline-none font-semibold"
+              style={{ color: meta.color }}
+            >
+              <option value="attack">공격</option>
+              <option value="defend">방어</option>
+              <option value="buff">강화</option>
+              <option value="debuff">디버프</option>
+              <option value="stun">스턴</option>
+            </select>
+            {(intent.kind === 'attack' || intent.kind === 'defend' || intent.kind === 'buff') && (
+              <input
+                type="number"
+                value={
+                  intent.kind === 'attack' ? (intent.damage ?? 0)
+                  : intent.kind === 'defend' ? (intent.block ?? 0)
+                  : (intent.strength ?? 0)
+                }
+                min={0}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value) || 0;
+                  onUpdate(i,
+                    intent.kind === 'attack' ? { damage: v }
+                    : intent.kind === 'defend' ? { block: v }
+                    : { strength: v },
+                  );
+                }}
+                className="bg-transparent text-caption font-bold tabular-nums hide-spinner w-8 outline-none border-b"
+                style={{ color: meta.color, borderColor: meta.color }}
+              />
+            )}
+            <button onClick={() => onRemove(i)} className="opacity-40 hover:opacity-100">
+              <Trash2 className="w-2.5 h-2.5" style={{ color: meta.color }} />
+            </button>
+          </span>
+        );
+      })}
+      <button
+        onClick={onAdd}
+        className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-caption hover:bg-[var(--bg-tertiary)]"
+        style={{ color: 'var(--text-secondary)' }}
+        title="턴 intent 추가"
+      >
+        <Plus className="w-3 h-3" />
+        turn
+      </button>
     </div>
   );
 }

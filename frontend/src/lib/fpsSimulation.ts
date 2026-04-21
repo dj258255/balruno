@@ -162,7 +162,50 @@ export interface FpsEngagement {
   /** A/B 이동 상태 — 이동 중이면 movingAccuracyPenalty 적용 */
   aMoving?: boolean;
   bMoving?: boolean;
+  /**
+   * 발동 중인 유틸리티 — 수류탄·플래시·스모크.
+   * 각 유틸은 발동 시간(ms) 동안 active 상태 유지.
+   */
+  utilities?: ActiveUtility[];
 }
+
+/**
+ * FPS 유틸리티 효과 — Valorant Killjoy/Viper, CS 스모크/플래시, Apex Caustic/Bangalore 패턴.
+ *
+ *  - smoke:  시야 차단 — 지속 중 양쪽 hitRate 대폭 감소 (default 0.3 잔여 = 70% 감소)
+ *  - flash:  섬광 — 맞은 쪽 hitRate 가 duration 만큼 급감 (0.1 잔여 = 90% 감소)
+ *  - decoy:  디코이 — 맞은 쪽 reactionMs 추가 (단순화: firstShot 뒤집기 가능)
+ *  - molotov: 지속 피해 — 지역 피해. 단순 모델에선 HP 지속 감소로 구현
+ *
+ * 각 유틸은 deployedAtMs (발동 시각) + durationMs (유지 시간) 로 지속 판정.
+ * Valorant 실제 수치 기반:
+ *   Smoke 15s, Flash fade 1.1s ~ 2s, Molotov tick 0.25s
+ */
+export type UtilityKind = 'smoke' | 'flash' | 'decoy' | 'molotov';
+
+export interface ActiveUtility {
+  kind: UtilityKind;
+  /** 'A' | 'B' | 'both' — 누구에게 영향? flash 는 보통 한쪽, smoke 는 both */
+  affects: 'A' | 'B' | 'both';
+  /** 발동 시각 (ms, 교전 시작 기준) */
+  deployedAtMs: number;
+  /** 지속 시간 (ms) */
+  durationMs: number;
+  /**
+   * 효과 강도:
+   *  - smoke/flash: hitRate 배율 (0 ~ 1, 낮을수록 더 방해)
+   *  - molotov: 초당 피해 (dps)
+   */
+  intensity?: number;
+}
+
+/** 기본 유틸리티 프리셋 — Valorant/Apex 근사치 */
+export const UTILITY_PRESETS: Record<UtilityKind, Omit<ActiveUtility, 'deployedAtMs' | 'affects'>> = {
+  smoke:   { kind: 'smoke',   durationMs: 15_000, intensity: 0.3 }, // 70% hit rate 감소
+  flash:   { kind: 'flash',   durationMs: 2_000,  intensity: 0.1 }, // 90% hit rate 감소
+  decoy:   { kind: 'decoy',   durationMs: 3_000,  intensity: 0.5 },
+  molotov: { kind: 'molotov', durationMs: 6_000,  intensity: 20 }, // 20 dps
+};
 
 export interface FpsSimResult {
   /** 평균 TTK (ms) */
@@ -241,12 +284,14 @@ function armorDamageMultiplier(armor: number, armorPen: number): number {
  *  - First shot: 첫 발은 completely accurate (spread 0)
  *  - Recoil: shot index 증가하면 spread 증가 → hit rate 감소
  *  - Movement: 이동 중 spread 증가
+ *  - Utility: 스모크/플래시 지속 중 hit rate 추가 감소
  */
 function effectiveHitRate(
   weapon: WeaponStats,
   aim: AimProfile,
   shotIndex: number,
   moving: boolean,
+  utilityMul = 1,
 ): number {
   let rate = aim.hitRate;
 
@@ -263,7 +308,65 @@ function effectiveHitRate(
     rate *= 1 - weapon.movingAccuracyPenalty;
   }
 
+  // 유틸리티 영향 (smoke/flash)
+  rate *= utilityMul;
+
   return Math.max(0, Math.min(1, rate));
+}
+
+/**
+ * 특정 시각에 해당 플레이어가 받는 유틸리티 hit-rate 배율.
+ * 여러 유틸 동시 적용 시 배율 곱연산 (smoke × flash → 더 강한 방해).
+ */
+export function utilityHitRateMultiplier(
+  utilities: ActiveUtility[] | undefined,
+  affects: 'A' | 'B',
+  timeMs: number,
+): number {
+  if (!utilities || utilities.length === 0) return 1;
+  let mul = 1;
+  for (const u of utilities) {
+    if (u.kind === 'molotov') continue; // HP 피해 별도
+    if (u.affects !== 'both' && u.affects !== affects) continue;
+    const elapsed = timeMs - u.deployedAtMs;
+    if (elapsed < 0 || elapsed > u.durationMs) continue;
+    const intensity = u.intensity ?? 0.5;
+    // flash 는 시간 경과에 따라 선형으로 회복 (Valorant fade-out)
+    if (u.kind === 'flash') {
+      const progress = elapsed / u.durationMs;
+      // 0초엔 intensity, duration 끝 무렵 1.0 으로 보간
+      const effective = intensity + (1 - intensity) * progress;
+      mul *= effective;
+    } else {
+      // smoke / decoy: 지속 동안 일정 감소
+      mul *= intensity;
+    }
+  }
+  return mul;
+}
+
+/**
+ * 특정 시각에 지속 피해 (molotov 등) 누적값 계산 — 적분 근사.
+ * 단일 shot 에서 지난 shotInterval 사이 피해 누적.
+ */
+export function utilityTickDamage(
+  utilities: ActiveUtility[] | undefined,
+  affects: 'A' | 'B',
+  fromMs: number,
+  toMs: number,
+): number {
+  if (!utilities) return 0;
+  let damage = 0;
+  for (const u of utilities) {
+    if (u.kind !== 'molotov') continue;
+    if (u.affects !== 'both' && u.affects !== affects) continue;
+    const start = Math.max(u.deployedAtMs, fromMs);
+    const end = Math.min(u.deployedAtMs + u.durationMs, toMs);
+    if (end <= start) continue;
+    const dps = u.intensity ?? 0;
+    damage += (dps * (end - start)) / 1000;
+  }
+  return damage;
 }
 
 function rollShotDamage(
@@ -273,9 +376,10 @@ function rollShotDamage(
   aim: AimProfile,
   shotIndex = 0,
   moving = false,
+  utilityMul = 1,
 ): { damage: number; part: 'head' | 'body' | 'limb' | 'miss' } {
   // 동적 hit rate
-  const hitRate = effectiveHitRate(weapon, aim, shotIndex, moving);
+  const hitRate = effectiveHitRate(weapon, aim, shotIndex, moving, utilityMul);
 
   // miss 체크
   if (Math.random() > hitRate) {
@@ -427,17 +531,32 @@ export function simulateFpsDuel(
     let winnerB = false;
 
     // 탄창 2개 소진할 때까지 (대부분 훨씬 전에 끝남)
+    let lastMolotovTickMs = 0;
     while (aTotalFired < weaponA.magazineSize * 2 && bTotalFired < weaponB.magazineSize * 2) {
       if (aNext <= bNext) {
-        // A 가 먼저 발사
-        const { damage } = rollShotDamage(weaponA, playerB, engagement.distance, aimA, aShots, !!engagement.aMoving);
+        // 유틸리티 효과 적용: A 가 쏠 때 A 에게 걸린 방해(시야 차단 등) 반영
+        const aMul = utilityHitRateMultiplier(engagement.utilities, 'A', aNext);
+        const { damage } = rollShotDamage(weaponA, playerB, engagement.distance, aimA, aShots, !!engagement.aMoving, aMul);
         aShots++;
         aTotalFired++;
         bHp -= damage;
+
+        // 몰로토프 등 지속 피해 (shot 간격 동안 누적)
+        bHp -= utilityTickDamage(engagement.utilities, 'B', lastMolotovTickMs, aNext);
+        aHp -= utilityTickDamage(engagement.utilities, 'A', lastMolotovTickMs, aNext);
+        lastMolotovTickMs = aNext;
+
         if (bHp <= 0) {
           aTtk.push(aNext);
           durations.push(aNext);
           winnerA = true;
+          break;
+        }
+        if (aHp <= 0) {
+          // A 가 molotov 로 자폭 — B 의 승리로 처리
+          bTtk.push(aNext);
+          durations.push(aNext);
+          winnerB = true;
           break;
         }
         aNext += intervalA;
@@ -447,14 +566,26 @@ export function simulateFpsDuel(
           aShots = 0;
         }
       } else {
-        const { damage } = rollShotDamage(weaponB, playerA, engagement.distance, aimB, bShots, !!engagement.bMoving);
+        const bMul = utilityHitRateMultiplier(engagement.utilities, 'B', bNext);
+        const { damage } = rollShotDamage(weaponB, playerA, engagement.distance, aimB, bShots, !!engagement.bMoving, bMul);
         bShots++;
         bTotalFired++;
         aHp -= damage;
+
+        aHp -= utilityTickDamage(engagement.utilities, 'A', lastMolotovTickMs, bNext);
+        bHp -= utilityTickDamage(engagement.utilities, 'B', lastMolotovTickMs, bNext);
+        lastMolotovTickMs = bNext;
+
         if (aHp <= 0) {
           bTtk.push(bNext);
           durations.push(bNext);
           winnerB = true;
+          break;
+        }
+        if (bHp <= 0) {
+          aTtk.push(bNext);
+          durations.push(bNext);
+          winnerA = true;
           break;
         }
         bNext += intervalB;

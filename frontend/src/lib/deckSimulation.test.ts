@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { simulateDeck, CARD_PRESETS } from './deckSimulation';
+import { simulateDeck, resolveIntent, CARD_PRESETS, type EnemyMob } from './deckSimulation';
 
 describe('simulateDeck', () => {
   it('Ironclad 기본 덱 — 평균 DPT > 0, deadHand 낮음', () => {
@@ -89,6 +89,93 @@ describe('simulateDeck', () => {
     }, 500);
 
     expect(result.survivalRate!).toBeGreaterThan(0.8);
+  });
+
+  it('intent 패턴: Cultist (buff→attack) — buff 턴은 공격 없음', () => {
+    const mob: EnemyMob = {
+      id: 'cultist',
+      name: 'Cultist',
+      hp: 9999, // 안 죽음 — 턴마다 공격 여부만 보고 싶음
+      intentPattern: [
+        { kind: 'buff', strength: 3 },
+        { kind: 'attack', damage: 6 },
+      ],
+    };
+    expect(resolveIntent(mob, 0)?.kind).toBe('buff');
+    expect(resolveIntent(mob, 1)?.kind).toBe('attack');
+    expect(resolveIntent(mob, 2)?.kind).toBe('buff'); // cycle
+  });
+
+  it('intent 패턴: 공격 intent 없는 턴(buff) 는 피해 0', () => {
+    const result = simulateDeck({
+      cards: Array.from({ length: 10 }, (_, i) => ({
+        id: `c${i}`, name: 'Nop', type: 'skill' as const, cost: 3, damage: 0,
+      })), // 공격력 0 덱 → 몹 안 죽음
+      handSize: 5,
+      baseEnergy: 3,
+      turnsPerCombat: 2,
+      enemies: [{
+        id: 'noa',
+        name: 'Nop',
+        hp: 9999,
+        intentPattern: [
+          { kind: 'buff', strength: 3 },
+          { kind: 'buff', strength: 3 },
+        ],
+      }],
+      player: { maxHp: 50 },
+    }, 200);
+    // 공격 intent 0회 → damageTaken 0
+    expect(result.avgDamageTaken).toBe(0);
+    expect(result.survivalRate).toBe(1);
+  });
+
+  it('intent 패턴: defend 턴은 몹이 block 획득 → 플레이어 피해 감소', () => {
+    // 공격 강한 덱, 몹은 방어만 — block 5 intent 매턴
+    const withDefend = simulateDeck({
+      cards: CARD_PRESETS,
+      handSize: 5,
+      baseEnergy: 3,
+      turnsPerCombat: 5,
+      enemies: [{
+        id: 'turtle', name: 'Turtle', hp: 60,
+        intentPattern: [{ kind: 'defend', block: 10 }],
+      }],
+    }, 300);
+    const noDefend = simulateDeck({
+      cards: CARD_PRESETS,
+      handSize: 5,
+      baseEnergy: 3,
+      turnsPerCombat: 5,
+      enemies: [{ id: 'sitting', name: 'Sitting', hp: 60 }],
+    }, 300);
+    // defend 있는 쪽이 킬율 낮음 (block 이 피해를 흡수)
+    expect(withDefend.clearRate!).toBeLessThan(noDefend.clearRate!);
+  });
+
+  it('intent 패턴: buff (strength) 누적 → 이후 attack intent damage 증가', () => {
+    // buff→attack 반복. attack intent damage 작아도 누적 strength 때문에 누적 피해 증가
+    const result = simulateDeck({
+      cards: Array.from({ length: 10 }, (_, i) => ({
+        id: `c${i}`, name: 'Nop', type: 'skill' as const, cost: 3, damage: 0,
+      })),
+      handSize: 5,
+      baseEnergy: 3,
+      turnsPerCombat: 6,
+      enemies: [{
+        id: 'stacker',
+        name: 'Stacker',
+        hp: 9999,
+        intentPattern: [
+          { kind: 'buff', strength: 5 },
+          { kind: 'attack', damage: 3 }, // 처음 8, 두 번째 13...
+        ],
+      }],
+      player: { maxHp: 200 },
+    }, 500);
+    // 6 턴 중 3 번 공격 (turn 1,3,5). strength 누적: 5,10,15 → 피해 8,13,18 → 39
+    // block 없음 가정 (Nop 카드는 block 0)
+    expect(result.avgDamageTaken!).toBeCloseTo(39, 0);
   });
 
   it('고비용 카드만 있고 에너지 적으면 deadHand 증가', () => {
