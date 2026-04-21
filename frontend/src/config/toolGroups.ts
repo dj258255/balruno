@@ -52,7 +52,8 @@ export type ToolId =
   | 'mmoRaid'
   | 'autoBattler'
   | 'hordeSurvivor'
-  | 'aiPlaytest';
+  | 'aiPlaytest'
+  | 'formulaVerifier';
 
 export type ToolGroupId =
   | 'build'
@@ -80,7 +81,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'check',
     titleKey: 'toolGroups.check',
     color: '#ec4899',
-    tools: ['balance', 'imbalance', 'balanceValidator', 'sensitivity', 'matchupMatrix', 'aiPlaytest'],
+    tools: ['balance', 'imbalance', 'balanceValidator', 'sensitivity', 'matchupMatrix', 'aiPlaytest', 'formulaVerifier'],
   },
   {
     id: 'simulate',
@@ -139,6 +140,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   autoBattler: 'toolDesc.autoBattler',         // TFT/HSBG 이자 vs 템포 · 전략 비교
   hordeSurvivor: 'toolDesc.hordeSurvivor',     // Vampire Survivors 빌드 최적화 · 시너지
   aiPlaytest: 'toolDesc.aiPlaytest',           // 배치 시뮬 + imbalance 자동 리포트
+  formulaVerifier: 'toolDesc.formulaVerifier', // 실측 vs 수식 회귀 · R² · 이상치 탐지
 
   // simulate — 시뮬
   simulation: 'toolDesc.simulation',           // 1:1/팀 전투 Monte Carlo

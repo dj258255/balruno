@@ -57,6 +57,7 @@ export function usePanelStates(): {
   const [autoBattler, setAutoBattler] = useState(false);
   const [hordeSurvivor, setHordeSurvivor] = useState(false);
   const [aiPlaytest, setAiPlaytest] = useState(false);
+  const [formulaVerifier, setFormulaVerifier] = useState(false);
 
   const panels: Record<ToolId, PanelState> = useMemo(() => ({
     calculator: { show: calculator, setShow: setCalculator },
@@ -96,12 +97,13 @@ export function usePanelStates(): {
     autoBattler: { show: autoBattler, setShow: setAutoBattler },
     hordeSurvivor: { show: hordeSurvivor, setShow: setHordeSurvivor },
     aiPlaytest: { show: aiPlaytest, setShow: setAiPlaytest },
+    formulaVerifier: { show: formulaVerifier, setShow: setFormulaVerifier },
   }), [
     calculator, comparison, chart, preset, imbalance, goal, balance,
     economy, dpsVariance, curveFitting, formulaHelper, balanceValidator,
     difficultyCurve, simulation, entityDefinition, autoBalancer, lootSimulator,
     powerCurveCompare, comments, interfaceDesigner, automations, sensitivity,
-    changeHistory, fpsSimulation, fpsTeamSimulation, deckSimulation, frameData, aiBehavior, matchupMatrix, replayTimeline, snapshotCompare, mobaLaning, rtsBuildOrder, mmoRaid, autoBattler, hordeSurvivor, aiPlaytest,
+    changeHistory, fpsSimulation, fpsTeamSimulation, deckSimulation, frameData, aiBehavior, matchupMatrix, replayTimeline, snapshotCompare, mobaLaning, rtsBuildOrder, mmoRaid, autoBattler, hordeSurvivor, aiPlaytest, formulaVerifier,
   ]);
 
   const openByName = useCallback((name: string) => {
