@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { X, Target, Calculator, AlertTriangle, Check, Copy, ChevronDown, HelpCircle, Search } from 'lucide-react';
-import { solve, SOLVER_FORMULAS, type SolverFormula } from '@/lib/goalSolver';
+import { X, Target, Calculator, AlertTriangle, Check, Copy, ChevronDown, HelpCircle, Search, Activity, Clock, Trash2, XCircle } from 'lucide-react';
+import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, type SolverFormula } from '@/lib/goalSolver';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useTranslations } from 'next-intl';
 import { useCalculatorStore } from '@/stores/calculatorStore';
+import { useGoalSolverHistory } from '@/stores/goalSolverHistoryStore';
 
 const PANEL_COLOR = '#3db8a8'; // 소프트 틸
 
@@ -92,13 +93,24 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
       parsedParams[param.key] = value;
     }
 
-    const solverResult = solve({
+    const input = {
       formula: formulaId,
       params: parsedParams,
       targetValue: parsedTarget,
-    });
+    };
+    const solverResult = solve(input);
 
     setResults(prev => ({ ...prev, [formulaId]: solverResult }));
+
+    // History 에 push (성공/실패 모두 — 실패 기록도 참고 가치 있음)
+    useGoalSolverHistory.getState().push({
+      formula: formulaId,
+      formulaName: formula.name,
+      targetValue: parsedTarget,
+      params: parsedParams,
+      resultValue: solverResult.value,
+      success: solverResult.success,
+    });
   };
 
   // 결과 복사
@@ -310,15 +322,27 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                           </div>
 
                           {/* 검증 배지 — 해를 원 공식에 재대입한 오차 */}
-                          {typeof result.value === 'number' && (
-                            <div className="px-4 py-2 flex items-center gap-2 text-sm" style={{ background: `${PANEL_COLOR}08`, borderTop: '1px solid var(--border-primary)' }}>
-                              <Check className="w-4 h-4" style={{ color: PANEL_COLOR }} />
-                              <span style={{ color: 'var(--text-secondary)' }}>해 검증: bisection 수렴</span>
-                              <span className="ml-auto font-mono tabular-nums text-caption" style={{ color: PANEL_COLOR }}>
-                                오차 &lt; 0.01 · tolerance 이내
-                              </span>
-                            </div>
-                          )}
+                          {typeof result.value === 'number' && (() => {
+                            const sens = verifyAndAnalyzeSensitivity({ formula: formula.id, params: Object.fromEntries(Object.entries(formulaParams).map(([k, v]) => [k, parseFloat(v) || 0])), targetValue: parseFloat(targetValue) || 0 }, result);
+                            const sensColor = sens?.level === 'high' ? '#ef4444' : sens?.level === 'medium' ? '#f59e0b' : PANEL_COLOR;
+                            return (
+                              <div className="px-4 py-2 space-y-1" style={{ background: `${PANEL_COLOR}08`, borderTop: '1px solid var(--border-primary)' }}>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Check className="w-4 h-4" style={{ color: PANEL_COLOR }} />
+                                  <span style={{ color: 'var(--text-secondary)' }}>해 검증: bisection 수렴</span>
+                                  <span className="ml-auto font-mono tabular-nums text-caption" style={{ color: PANEL_COLOR }}>
+                                    오차 &lt; 0.01 · tolerance 이내
+                                  </span>
+                                </div>
+                                {sens && (
+                                  <div className="flex items-center gap-2 text-caption">
+                                    <Activity className="w-3.5 h-3.5" style={{ color: sensColor }} />
+                                    <span style={{ color: sensColor }}>{sens.message}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           {/* 설명 */}
                           <div className="glass-section px-4 py-3 space-y-3">
@@ -331,14 +355,46 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                           </div>
                         </>
                       ) : (
-                        <div className="p-4 flex items-center gap-3" style={{ background: 'rgba(232, 97, 97, 0.08)' }}>
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(232, 97, 97, 0.15)' }}>
-                            <AlertTriangle className="w-5 h-5" style={{ color: '#e86161' }} />
+                        <div className="p-4 space-y-3" style={{ background: 'rgba(232, 97, 97, 0.08)' }}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(232, 97, 97, 0.15)' }}>
+                              <XCircle className="w-5 h-5" style={{ color: '#e86161' }} />
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-sm font-semibold" style={{ color: '#e86161' }}>{t('calculationFailed')}</div>
+                              <div className="text-sm whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
+                                {result.explanation}
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="text-sm font-semibold" style={{ color: '#e86161' }}>{t('calculationFailed')}</div>
-                            <div className="text-sm whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
-                              {result.explanation}
+                          <div className="rounded-lg p-2.5 text-caption" style={{ background: 'var(--bg-primary)' }}>
+                            <div className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>💡 제안</div>
+                            <ul className="list-disc list-inside space-y-0.5" style={{ color: 'var(--text-secondary)' }}>
+                              <li>목표값을 조금 완화해보세요 (예: ±20%)</li>
+                              <li>다른 파라미터 (예: baseline) 를 먼저 조정</li>
+                              <li>이 공식으로는 유한 해가 없을 수 있음 — 다른 역산 공식 시도</li>
+                            </ul>
+                            <div className="mt-2 flex gap-1">
+                              <button
+                                onClick={() => {
+                                  const current = parseFloat(targetValue) || 0;
+                                  setTargetValues((prev) => ({ ...prev, [formula.id]: String(current * 1.2) }));
+                                }}
+                                className="px-2 py-0.5 rounded text-caption"
+                                style={{ background: `${PANEL_COLOR}20`, color: PANEL_COLOR }}
+                              >
+                                목표 +20%
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const current = parseFloat(targetValue) || 0;
+                                  setTargetValues((prev) => ({ ...prev, [formula.id]: String(current * 0.8) }));
+                                }}
+                                className="px-2 py-0.5 rounded text-caption"
+                                style={{ background: `${PANEL_COLOR}20`, color: PANEL_COLOR }}
+                              >
+                                목표 -20%
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -365,8 +421,102 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
             </div>
           );
         })}
+
+        {/* 최근 역산 기록 (History) */}
+        <GoalSolverHistoryPanel
+          onReload={(entry) => {
+            const fid = entry.formula;
+            setExpandedFormulas((prev) => new Set(prev).add(fid));
+            setTargetValues((prev) => ({ ...prev, [fid]: String(entry.targetValue) }));
+            setParams((prev) => ({
+              ...prev,
+              [fid]: Object.fromEntries(Object.entries(entry.params).map(([k, v]) => [k, String(v)])),
+            }));
+          }}
+        />
       </div>
     </PanelShell>
+  );
+}
+
+function GoalSolverHistoryPanel({ onReload }: { onReload: (e: { formula: SolverFormula; targetValue: number; params: Record<string, number> }) => void }) {
+  const entries = useGoalSolverHistory((s) => s.entries);
+  const clear = useGoalSolverHistory((s) => s.clear);
+  const remove = useGoalSolverHistory((s) => s.remove);
+  const [open, setOpen] = useState(false);
+  if (entries.length === 0) return null;
+  return (
+    <div className="glass-card rounded-lg overflow-hidden mt-3">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 p-3 text-left"
+      >
+        <Clock className="w-4 h-4" style={{ color: PANEL_COLOR }} />
+        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+          최근 역산 ({entries.length})
+        </span>
+        <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${open ? '' : '-rotate-90'}`} style={{ color: 'var(--text-tertiary)' }} />
+      </button>
+      {open && (
+        <div className="border-t p-2 space-y-1" style={{ borderColor: 'var(--border-primary)' }}>
+          {entries.map((e) => {
+            const d = new Date(e.timestamp);
+            return (
+              <div
+                key={e.id}
+                className="flex items-center gap-2 p-2 rounded text-caption"
+                style={{
+                  background: e.success ? `${PANEL_COLOR}08` : 'rgba(239,68,68,0.08)',
+                  borderLeft: `3px solid ${e.success ? PANEL_COLOR : '#ef4444'}`,
+                }}
+              >
+                <span className="font-semibold truncate" style={{ color: 'var(--text-primary)', minWidth: 100 }}>
+                  {e.formulaName}
+                </span>
+                <span className="tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+                  목표 {e.targetValue}
+                </span>
+                {e.success && typeof e.resultValue === 'number' && (
+                  <>
+                    <span style={{ color: 'var(--text-tertiary)' }}>→</span>
+                    <span className="tabular-nums font-mono" style={{ color: PANEL_COLOR }}>
+                      {e.resultValue.toFixed(2)}
+                    </span>
+                  </>
+                )}
+                {!e.success && (
+                  <span style={{ color: '#ef4444' }}>실패</span>
+                )}
+                <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                  {d.getMonth() + 1}/{d.getDate()} {d.getHours()}:{d.getMinutes().toString().padStart(2, '0')}
+                </span>
+                <button
+                  onClick={() => onReload({ formula: e.formula, targetValue: e.targetValue, params: e.params })}
+                  className="px-1.5 py-0.5 rounded text-caption"
+                  style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
+                  title="이 입력으로 복원"
+                >
+                  복원
+                </button>
+                <button
+                  onClick={() => remove(e.id)}
+                  className="p-0.5 rounded hover:bg-[var(--bg-tertiary)]"
+                >
+                  <Trash2 className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+              </div>
+            );
+          })}
+          <button
+            onClick={clear}
+            className="w-full text-caption py-1 rounded mt-1"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            전체 기록 지우기
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
