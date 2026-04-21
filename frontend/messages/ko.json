@@ -711,7 +711,18 @@
       "PI": "원주율 (π)",
       "E": "자연상수 (e)",
       "SheetRef": "다른 시트 값 참조",
-      "PrevRow": "이전 행의 값 참조 (이전행 또는 PREV)"
+      "PrevRow": "이전 행의 값 참조 (이전행 또는 PREV)",
+      "IFS": "다중 조건 체인 (중첩 IF 대체)",
+      "SWITCH": "값 비교 분기",
+      "IFERROR": "에러 방어 (0으로 나누기 등)",
+      "LARGE": "N 번째 큰 값",
+      "SMALL": "N 번째 작은 값",
+      "PERCENTILE": "백분위 값",
+      "RANK": "순위",
+      "ISBLANK": "빈 셀 체크",
+      "ISNUMBER": "숫자 여부",
+      "ISERROR": "에러 여부",
+      "CHOOSE": "index 기반 값 선택"
     }
   },
   "export": {
