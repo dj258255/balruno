@@ -46,6 +46,7 @@ const MmoRaidPanel = dynamic(() => import('@/components/panels/MmoRaidPanel'), {
 const AutoBattlerPanel = dynamic(() => import('@/components/panels/AutoBattlerPanel'), { ssr: false });
 const HordeSurvivorPanel = dynamic(() => import('@/components/panels/HordeSurvivorPanel'), { ssr: false });
 const AiPlaytestPanel = dynamic(() => import('@/components/panels/AiPlaytestPanel'), { ssr: false });
+const FormulaVerifierPanel = dynamic(() => import('@/components/panels/FormulaVerifierPanel'), { ssr: false });
 const EconomyPanel = dynamic(() => import('@/components/panels/EconomyPanel'), { ssr: false });
 const DPSVariancePanel = dynamic(() => import('@/components/panels/DPSVariancePanel'), { ssr: false });
 const CurveFittingPanel = dynamic(() => import('@/components/panels/CurveFittingPanel'), { ssr: false });
@@ -107,6 +108,7 @@ const TOOL_LABEL_KEYS: Record<ToolId, string> = {
   autoBattler: 'sidebar.autoBattler',
   hordeSurvivor: 'sidebar.hordeSurvivor',
   aiPlaytest: 'sidebar.aiPlaytest',
+  formulaVerifier: 'sidebar.formulaVerifier',
 };
 
 function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
@@ -186,6 +188,8 @@ function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
       return <HordeSurvivorPanel onClose={close} />;
     case 'aiPlaytest':
       return <AiPlaytestPanel onClose={close} />;
+    case 'formulaVerifier':
+      return <FormulaVerifierPanel onClose={close} />;
   }
 }
 
