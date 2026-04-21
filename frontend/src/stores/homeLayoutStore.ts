@@ -45,7 +45,7 @@ const DEFAULT_STATE: HomeLayoutState = {
     {
       id: 'pm',
       name: 'PM',
-      widgetIds: ['hero', 'my-sprint', 'my-bugs', 'playtest', 'recent-changes'],
+      widgetIds: ['hero', 'burndown', 'my-sprint', 'my-bugs', 'playtest', 'recent-changes'],
     },
   ],
 };
