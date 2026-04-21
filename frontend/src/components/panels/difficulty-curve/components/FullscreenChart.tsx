@@ -20,7 +20,7 @@ import {
 import { useTranslations } from 'next-intl';
 import type { DifficultySegment, MilestoneData, RestPoint, FlowZone } from '../hooks';
 
-const PANEL_COLOR = '#9179f2';
+const PANEL_COLOR = '#06b6d4';
 
 // 플로우 존 색상
 const FLOW_ZONE_COLORS: Record<FlowZone, string> = {

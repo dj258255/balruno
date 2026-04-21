@@ -25,7 +25,7 @@ import {
   type WallData,
 } from '../hooks';
 
-const PANEL_COLOR = '#9179f2';
+const PANEL_COLOR = '#06b6d4';
 
 // 프리셋 선택
 interface PresetSelectorProps {
@@ -211,7 +211,7 @@ const WALL_TYPE_COLORS: Record<WallType, string> = {
   boss: '#e86161',
   gear: '#e5a440',
   level: '#5a9cf5',
-  time: '#a855f7',
+  time: '#06b6d4',
 };
 
 // 벽 스테이지 편집기 (개선된 버전)
@@ -1062,11 +1062,11 @@ export function DDAEditor({
           ) : (
             <ChevronRight className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
           )}
-          <Sliders className="w-4 h-4" style={{ color: '#a855f7' }} />
+          <Sliders className="w-4 h-4" style={{ color: '#06b6d4' }} />
           <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
             {t('dda')}
           </span>
-          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' }}>
+          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(6, 182, 212, 0.1)', color: '#06b6d4' }}>
             {t('ddaSimulationBadge')}
           </span>
         </div>
@@ -1128,7 +1128,7 @@ export function DDAEditor({
             <div className="glass-section p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('adjustmentRate')}</span>
-                <span className="text-sm font-bold" style={{ color: '#a855f7' }}>
+                <span className="text-sm font-bold" style={{ color: '#06b6d4' }}>
                   {Math.round(ddaConfig.adjustmentRate * 100)}%
                 </span>
               </div>
@@ -1140,13 +1140,13 @@ export function DDAEditor({
                 value={ddaConfig.adjustmentRate}
                 onChange={(e) => setDDAConfig({ ...ddaConfig, adjustmentRate: Number(e.target.value) })}
                 className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                style={{ background: `linear-gradient(to right, #a855f7, var(--bg-tertiary))` }}
+                style={{ background: `linear-gradient(to right, #06b6d4, var(--bg-tertiary))` }}
               />
             </div>
             <div className="glass-section p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('maxAdjustment')}</span>
-                <span className="text-sm font-bold" style={{ color: '#a855f7' }}>
+                <span className="text-sm font-bold" style={{ color: '#06b6d4' }}>
                   ±{Math.round(ddaConfig.maxAdjustment * 100)}%
                 </span>
               </div>
@@ -1158,7 +1158,7 @@ export function DDAEditor({
                 value={ddaConfig.maxAdjustment}
                 onChange={(e) => setDDAConfig({ ...ddaConfig, maxAdjustment: Number(e.target.value) })}
                 className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                style={{ background: `linear-gradient(to right, var(--bg-tertiary), #a855f7)` }}
+                style={{ background: `linear-gradient(to right, var(--bg-tertiary), #06b6d4)` }}
               />
             </div>
           </div>
@@ -1166,7 +1166,7 @@ export function DDAEditor({
           {/* DDA 시뮬레이션 */}
           <div className="glass-section p-3" style={{ background: 'rgba(168, 85, 247, 0.05)' }}>
             <div className="flex items-center gap-2 mb-3">
-              <Target className="w-3.5 h-3.5" style={{ color: '#a855f7' }} />
+              <Target className="w-3.5 h-3.5" style={{ color: '#06b6d4' }} />
               <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 {t('ddaSimulation')}
               </span>
