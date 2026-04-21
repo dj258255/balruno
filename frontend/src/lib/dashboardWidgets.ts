@@ -13,6 +13,7 @@
 
 import type { Sheet, CellValue } from '@/types';
 import { computeSheetRows } from './formulaEngine';
+import { loadSnapshots, type SimSnapshot, type SnapshotDomain } from './simSnapshots';
 
 export type WidgetType =
   | 'metric'
@@ -29,7 +30,9 @@ export type WidgetType =
   | 'retention-curve'      // 게임 메트릭: D1/D7/D30 코호트 잔존
   | 'funnel'               // 게임 메트릭: 다단계 전환율
   | 'whale-curve'          // 게임 메트릭: 파레토 매출 분포
-  | 'liveops-kpi';         // 게임 메트릭: DAU/MAU/Stickiness/ARPDAU 프리셋
+  | 'liveops-kpi'          // 게임 메트릭: DAU/MAU/Stickiness/ARPDAU 프리셋
+  | 'sim-metric'           // P10: 저장된 시뮬 스냅샷의 특정 metric 값
+  | 'sim-trend';           // P10: 여러 스냅샷의 동일 metric 을 시간순 라인차트
 
 export interface WidgetBase {
   id: string;
@@ -180,6 +183,42 @@ export interface WhaleCurveWidget extends WidgetBase {
   };
 }
 
+/**
+ * P10 — 시뮬 스냅샷의 특정 metric 값을 위젯으로 고정.
+ * 예: "balance 매트릭스 의 최신 Balance Score" 를 대시보드에 상시 표시.
+ *
+ * snapshotId = 'latest' 면 해당 metricKey 를 가진 가장 최근 스냅샷 자동 선택.
+ */
+export interface SimMetricWidget extends WidgetBase {
+  type: 'sim-metric';
+  config: {
+    /** 'latest' 또는 특정 snapshot id */
+    snapshotId: string;
+    /** 메트릭 key (snapshot.metrics 객체의 키) */
+    metricKey: string;
+    /** 스냅샷 도메인 필터 (latest 선택 시 사용) */
+    domain?: SnapshotDomain;
+    suffix?: string;
+    /** 임계값 기준 색상 바꾸기 */
+    threshold?: { ok: number; warn: number };
+  };
+}
+
+/**
+ * P10 — 여러 스냅샷의 동일 metric 시간순 추이.
+ * 반복 튜닝 (snap → 수정 → 다시 snap) 때 개선/악화 곡선 확인.
+ */
+export interface SimTrendWidget extends WidgetBase {
+  type: 'sim-trend';
+  config: {
+    metricKey: string;
+    domain?: SnapshotDomain;
+    /** 최대 몇 개 스냅샷까지 표시 (default 20) */
+    limit?: number;
+    color?: string;
+  };
+}
+
 export interface LiveopsKpiWidget extends WidgetBase {
   type: 'liveops-kpi';
   config: {
@@ -207,7 +246,9 @@ export type DashboardWidget =
   | RetentionCurveWidget
   | FunnelWidget
   | WhaleCurveWidget
-  | LiveopsKpiWidget;
+  | LiveopsKpiWidget
+  | SimMetricWidget
+  | SimTrendWidget;
 
 export interface DashboardLayout {
   widgets: DashboardWidget[];
@@ -388,6 +429,66 @@ export interface LiveopsKpiComputed {
   cac: number;
   roas: number;
   payback: number;
+}
+
+// ─────── P10 Sim Snapshot 위젯 ───────
+
+export interface SimMetricComputed {
+  value: number | null;
+  snapshot: SimSnapshot | null;
+  /** threshold 기준 status — UI 색상용 */
+  status: 'ok' | 'warn' | 'critical' | 'unknown';
+}
+
+export function computeSimMetric(widget: SimMetricWidget, snapshotsOverride?: SimSnapshot[]): SimMetricComputed {
+  const snapshots = snapshotsOverride ?? loadSnapshots();
+  let target: SimSnapshot | undefined;
+  if (widget.config.snapshotId === 'latest') {
+    // 해당 도메인 + metricKey 가진 가장 최근
+    target = snapshots.find(
+      (s) => (!widget.config.domain || s.domain === widget.config.domain)
+        && widget.config.metricKey in s.metrics,
+    );
+  } else {
+    target = snapshots.find((s) => s.id === widget.config.snapshotId);
+  }
+  if (!target) return { value: null, snapshot: null, status: 'unknown' };
+  const value = target.metrics[widget.config.metricKey];
+  if (value === undefined) return { value: null, snapshot: target, status: 'unknown' };
+
+  let status: SimMetricComputed['status'] = 'unknown';
+  if (widget.config.threshold) {
+    if (value >= widget.config.threshold.ok) status = 'ok';
+    else if (value >= widget.config.threshold.warn) status = 'warn';
+    else status = 'critical';
+  }
+
+  return { value, snapshot: target, status };
+}
+
+export interface SimTrendPoint {
+  createdAt: number;
+  value: number;
+  snapshotId: string;
+  snapshotName: string;
+}
+
+export function computeSimTrend(widget: SimTrendWidget, snapshotsOverride?: SimSnapshot[]): SimTrendPoint[] {
+  const snapshots = snapshotsOverride ?? loadSnapshots();
+  const filtered = snapshots.filter((s) =>
+    (!widget.config.domain || s.domain === widget.config.domain)
+    && widget.config.metricKey in s.metrics,
+  );
+  // 시간순 (오래된 게 앞)
+  const sorted = filtered.sort((a, b) => a.createdAt - b.createdAt);
+  const limit = widget.config.limit ?? 20;
+  const trimmed = sorted.slice(-limit);
+  return trimmed.map((s) => ({
+    createdAt: s.createdAt,
+    value: s.metrics[widget.config.metricKey],
+    snapshotId: s.id,
+    snapshotName: s.name,
+  }));
 }
 
 export function computeLiveopsKpi(widget: LiveopsKpiWidget): LiveopsKpiComputed {

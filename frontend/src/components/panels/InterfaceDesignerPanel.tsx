@@ -13,6 +13,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import GridLayout from 'react-grid-layout';
 import { LayoutGrid, Plus, Settings, Trash2 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useProjectStore } from '@/stores/projectStore';
 import type { Sheet, Project } from '@/types';
 import {
@@ -28,6 +29,8 @@ import {
   computeFunnel,
   computeWhaleCurve,
   computeLiveopsKpi,
+  computeSimMetric,
+  computeSimTrend,
   type DashboardLayout,
   type DashboardWidget,
   type WidgetType,
@@ -59,6 +62,8 @@ const WIDGET_LABELS: Record<WidgetType, string> = {
   funnel: '퍼널',
   'whale-curve': '고래 곡선',
   'liveops-kpi': 'LiveOps KPI',
+  'sim-metric': '시뮬 메트릭',
+  'sim-trend': '시뮬 추이',
 };
 
 export default function InterfaceDesignerPanel({ onClose }: Props) {
@@ -214,6 +219,18 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
             dau: 10000, mau: 50000, revenue: 2000,
             payingUsers: 300, newUsers: 500, adSpend: 800,
           },
+        };
+        break;
+      case 'sim-metric':
+        widget = {
+          id, type: 'sim-metric', title: '최신 시뮬 메트릭',
+          config: { snapshotId: 'latest', metricKey: 'winRate', threshold: { ok: 0.6, warn: 0.4 } },
+        };
+        break;
+      case 'sim-trend':
+        widget = {
+          id, type: 'sim-trend', title: '시뮬 튜닝 추이',
+          config: { metricKey: 'winRate', limit: 20, color: '#8b5cf6' },
         };
         break;
     }
@@ -623,6 +640,59 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
     );
   }
 
+  if (widget.type === 'sim-metric') {
+    const r = computeSimMetric(widget);
+    const statusColor =
+      r.status === 'ok'       ? '#10b981'
+      : r.status === 'warn'     ? '#f59e0b'
+      : r.status === 'critical' ? '#ef4444'
+      : 'var(--text-secondary)';
+    const display = r.value === null ? 'N/A'
+      : Math.abs(r.value) >= 1 ? r.value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+      : r.value.toFixed(3);
+    return (
+      <div className="flex flex-col h-full justify-center">
+        <div className="text-2xl font-bold tabular-nums" style={{ color: statusColor }}>
+          {display}{widget.config.suffix ?? ''}
+        </div>
+        <div className="text-caption mt-1 truncate" style={{ color: 'var(--text-secondary)' }}>
+          {widget.config.metricKey} · {r.snapshot?.name ?? '스냅샷 없음'}
+        </div>
+      </div>
+    );
+  }
+
+  if (widget.type === 'sim-trend') {
+    const pts = computeSimTrend(widget);
+    if (pts.length === 0) {
+      return <div className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>스냅샷이 없습니다</div>;
+    }
+    const chartData = pts.map((p, i) => ({
+      idx: i,
+      value: p.value,
+      name: p.snapshotName,
+    }));
+    return (
+      <div className="h-full w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
+            <XAxis dataKey="name" tick={{ fontSize: 10 }} hide={chartData.length > 8} />
+            <YAxis tick={{ fontSize: 10 }} />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke={widget.config.color ?? '#8b5cf6'}
+              strokeWidth={2}
+              dot={{ r: 3 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
   return null;
 }
 
@@ -648,7 +718,7 @@ function WidgetEditor({
         className="w-full px-1.5 py-0.5 rounded border bg-transparent"
         style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
       />
-      {widget.type !== 'text' && (
+      {widget.type !== 'text' && widget.type !== 'sim-metric' && widget.type !== 'sim-trend' && widget.type !== 'button' && widget.type !== 'filter-control' && widget.type !== 'retention-curve' && widget.type !== 'funnel' && widget.type !== 'whale-curve' && widget.type !== 'liveops-kpi' && (
         <select
           value={config.sheetId as string}
           onChange={(e) => onUpdate({ config: { ...config, sheetId: e.target.value } } as Partial<DashboardWidget>)}
@@ -756,6 +826,30 @@ function WidgetEditor({
           className="w-full px-1.5 py-0.5 rounded border bg-transparent resize-none"
           style={{ borderColor: 'var(--border-primary)' }}
         />
+      )}
+      {(widget.type === 'sim-metric' || widget.type === 'sim-trend') && (
+        <>
+          <input
+            value={(config.metricKey as string) ?? ''}
+            onChange={(e) => onUpdate({ config: { ...config, metricKey: e.target.value } } as Partial<DashboardWidget>)}
+            placeholder="metric key (예: winRate, avgDpt)"
+            className="w-full px-1.5 py-0.5 rounded border bg-transparent"
+            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+          />
+          <select
+            value={(config.domain as string) ?? ''}
+            onChange={(e) => onUpdate({ config: { ...config, domain: e.target.value || undefined } } as Partial<DashboardWidget>)}
+            className="w-full px-1.5 py-0.5 rounded border bg-transparent"
+            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+          >
+            <option value="">모든 도메인</option>
+            <option value="unit">unit</option>
+            <option value="fps-duel">fps-duel</option>
+            <option value="fps-team">fps-team</option>
+            <option value="deck">deck</option>
+            <option value="matchup">matchup</option>
+          </select>
+        </>
       )}
     </div>
   );
