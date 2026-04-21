@@ -8,7 +8,7 @@
  */
 
 import {
-  Sparkles, Clock, History, Zap, Bug, Gamepad2, TrendingUp, Activity,
+  Sparkles, Clock, History, Zap, Bug, Gamepad2, TrendingUp, Activity, Flame,
   type LucideIcon,
 } from 'lucide-react';
 import type { TodaysWork } from '@/hooks/useTodaysWork';
@@ -20,6 +20,7 @@ import MySprintWidget from './widgets/MySprintWidget';
 import MyBugsWidget from './widgets/MyBugsWidget';
 import PlaytestWidget from './widgets/PlaytestWidget';
 import BalanceHealthWidget from './widgets/BalanceHealthWidget';
+import BurndownWidget from './widgets/BurndownWidget';
 
 export type WidgetId =
   | 'hero'
@@ -29,7 +30,8 @@ export type WidgetId =
   | 'my-sprint'
   | 'my-bugs'
   | 'playtest'
-  | 'balance-health';
+  | 'balance-health'
+  | 'burndown';
 
 export type WidgetSize = 'full' | 'half' | 'third';
 
@@ -116,6 +118,15 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
     color: '#f59e0b',
     size: 'half',
     Component: BalanceHealthWidget,
+  },
+  'burndown': {
+    id: 'burndown',
+    name: '번다운 차트',
+    description: '스프린트 ideal vs 실제 진척 (changelog 기반)',
+    icon: Flame,
+    color: '#ef4444',
+    size: 'half',
+    Component: BurndownWidget as unknown as React.FC<{ work: TodaysWork }>,
   },
 };
 
