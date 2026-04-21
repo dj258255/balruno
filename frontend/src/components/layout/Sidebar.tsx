@@ -14,7 +14,6 @@ import {
   SidebarFooter,
   SidebarQuickAccess,
   SidebarDocsSection,
-  HelpButtons,
   SaveStatus,
   SheetContextMenu,
   ProjectContextMenu,
@@ -268,11 +267,7 @@ export default function Sidebar({
 
         {/* Track 6 후속: 도구는 하단 BottomDock 으로 일원화. 사이드바에서는 제거. */}
         {/* 내보내기/가져오기는 ProjectMenu (시트 탭바 우측 ⋯) 에 통합됨 — 사이드바에서 제거 */}
-
-        <HelpButtons
-          onShowHelp={onShowHelp}
-          onShowReferences={onShowReferences}
-        />
+        {/* 사용가이드 / 참고자료 는 ProjectMenu + CommandPalette 에서 접근 — 사이드바에서 제거 */}
 
         <SaveStatus
           lastSaved={projectStore.lastSaved}
