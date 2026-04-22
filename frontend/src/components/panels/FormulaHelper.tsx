@@ -27,8 +27,11 @@ import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 
-// 카테고리 정의
-const CATEGORY_IDS = ['all', 'combat', 'economy', 'stage', 'util', 'ref', 'math', 'stat', 'trig', 'logic'] as const;
+// 카테고리 정의 — 기본 10개 + 확장 모드 4개 (Formualizer 엔진 필요)
+const CATEGORY_IDS = [
+  'all', 'combat', 'economy', 'stage', 'util', 'ref', 'math', 'stat', 'trig', 'logic',
+  'lookup', 'condAgg', 'text', 'date',
+] as const;
 const CATEGORY_ICONS: Record<string, typeof Calculator> = {
   all: Calculator,
   combat: Swords,
@@ -40,6 +43,10 @@ const CATEGORY_ICONS: Record<string, typeof Calculator> = {
   stat: BarChart3,
   trig: Triangle,
   logic: GitBranch,
+  lookup: Link,
+  condAgg: Sigma,
+  text: BookOpen,
+  date: Clock,
 };
 const CATEGORY_COLORS: Record<string, string> = {
   all: '#5a9cf5',
@@ -52,6 +59,10 @@ const CATEGORY_COLORS: Record<string, string> = {
   stat: '#e87aa8',
   trig: '#3db8a8',
   logic: '#a896f5',
+  lookup: '#06b6d4',
+  condAgg: '#0ea5e9',
+  text: '#8b5cf6',
+  date: '#f59e0b',
 };
 
 interface FormulaHelperProps {
@@ -147,6 +158,10 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
       stat: 'formulaHelper.catStat',
       trig: 'formulaHelper.catTrig',
       logic: 'formulaHelper.catLogic',
+      lookup: 'formulaHelper.catLookup',
+      condAgg: 'formulaHelper.catCondAgg',
+      text: 'formulaHelper.catText',
+      date: 'formulaHelper.catDate',
     };
     return t(keyMap[id] || id);
   };
