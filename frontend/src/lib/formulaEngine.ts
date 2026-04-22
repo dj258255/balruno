@@ -1,8 +1,7 @@
 import { create, all, MathJsInstance } from 'mathjs';
+import * as formulajs from '@formulajs/formulajs';
 import type { Sheet, CellValue, CurveType, FormulaResult } from '@/types';
 import { formulaBundle, SCALE } from './formulas';
-// Formualizer 백엔드는 엔진 부트 시점에 함께 로드 — WASM 초기화는 별도 initializeWasm() 에서
-import { formualizerBackend, isFormualizerReady } from './formula/formualizerBackend';
 
 // 공개 API에서 재노출 (기존 import 경로 유지)
 export {
@@ -11,8 +10,28 @@ export {
   DIMINISHING, ELEMENT_MULT, STAMINA_REGEN, COMBO_MULT, STAR_RATING, TIER_INDEX,
 } from './formulas';
 
-// mathjs 인스턴스 생성 + 커스텀 함수 등록
+// mathjs 인스턴스 생성 + 커스텀 함수 등록.
+//
+// 엔진 스택 (우선순위 낮은 것부터 덮어쓰기):
+//  1. mathjs 기본 (+-*/·삼각·상수 등)
+//  2. formulajs (@formulajs/formulajs) — Excel 호환 300+ 함수 (VLOOKUP / SUMIF / FILTER /
+//     LEFT / RIGHT / DATE / WEEKDAY / XLOOKUP 등). MIT · 순수 JS · 주간 DL 240K+.
+//  3. formulaBundle — 우리 게임 함수 40+ (SCALE / DAMAGE / DPS / LTV 등). 동일 이름 충돌 시 승리.
+//
+// formulajs 함수는 Error 값을 throw 대신 return 하므로, 아래 evaluateFormulaInternal 에서
+// 결과가 Error 인스턴스이면 에러 문자열로 변환.
 const math: MathJsInstance = create(all);
+// formulajs 의 default export / TypedArray 등 함수가 아닌 속성 필터링
+const formulajsFunctions: Record<string, unknown> = {};
+for (const [name, fn] of Object.entries(formulajs as Record<string, unknown>)) {
+  if (typeof fn === 'function' && /^[A-Z][A-Z0-9_]*$/.test(name)) {
+    formulajsFunctions[name] = fn;
+  }
+}
+// formulajs 는 native JS 배열/값을 기대 — mathjs Matrix 타입을 그대로 넘기면 SUMIF/VLOOKUP
+// 같은 배열 함수가 깨짐. wrap: true 로 호출 시 mathjs 타입 → native JS 자동 언래핑.
+// silent: true 로 mathjs 기본 함수와 동명 충돌(ABS/SIN/COS 등) 시 조용히 스킵 — mathjs 정의 승리.
+math.import(formulajsFunctions, { override: false, silent: true, wrap: true });
 math.import(formulaBundle, { override: true });
 
 
@@ -676,6 +695,14 @@ function evaluateFormulaInternal(
       }
 
       const result = math.evaluate(convertedExpr, scope);
+      // formulajs 는 Error 인스턴스를 throw 대신 return (예: VLOOKUP 미스 → #N/A)
+      if (result instanceof Error) {
+        return {
+          value: null,
+          error: result.message,
+          warnings: warnings.length > 0 ? warnings : undefined,
+        };
+      }
       return {
         value: typeof result === 'number' ? result : String(result),
         warnings: warnings.length > 0 ? warnings : undefined,
@@ -683,6 +710,9 @@ function evaluateFormulaInternal(
     }
 
     const result = math.evaluate(expression);
+    if (result instanceof Error) {
+      return { value: null, error: result.message };
+    }
     return { value: typeof result === 'number' ? result : String(result) };
   } catch (error) {
     return {
@@ -693,28 +723,14 @@ function evaluateFormulaInternal(
 }
 
 /**
- * 수식 평가 (외부 API).
- *
- * 모든 시트는 Formualizer (MIT/Apache-2.0, 320+ Excel 함수) 엔진을 기본 사용.
- * WASM 미초기화 시점 (앱 첫 로드 수백 ms) 에만 mathjs 로 자동 fallback —
- * 양 엔진의 게임 함수/기본 연산 결과는 동등성 테스트로 검증됨.
- *
- * 디버그 override: localStorage['balruno:formula:backend'] = 'mathjs' 로
- * 강제 mathjs 사용 가능 (사용자 UI 에는 노출하지 않음).
+ * 수식 평가 (외부 API) — 단일 엔진 (mathjs + formulajs + 게임 함수 plugin).
+ * 모든 Excel 호환 함수(VLOOKUP·SUMIF·FILTER·LEFT·TODAY 등) 가 동일 컨텍스트에서 동작.
  */
 export function evaluateFormula(
   formula: string,
   context?: FormulaContext
 ): FormulaResult {
-  if (!shouldForceMathjs() && context && isFormualizerReady()) {
-    return formualizerBackend.evaluate(formula, context);
-  }
   return evaluateFormulaInternal(formula, context);
-}
-
-function shouldForceMathjs(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.localStorage?.getItem('balruno:formula:backend') === 'mathjs';
 }
 
 /**

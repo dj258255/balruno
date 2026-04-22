@@ -157,28 +157,6 @@ export default function Home() {
   // Track 10 — 활성 자동화의 cell-changed / row-added trigger 자동 발동
   useAutomationObserver(currentProjectId);
 
-  // Formualizer (Rust+WASM) 수식 엔진 pre-warm.
-  // 실패해도 mathjs 엔진으로 fallback — 사용자 경험엔 영향 없지만
-  // VLOOKUP/SUMIF 같은 Excel 전용 함수는 동작 안 함. 조용히 넘기면 디버깅 불가능하므로
-  // reportError 로 가시화.
-  useEffect(() => {
-    import('@/lib/formula')
-      .then(({ initFormualizer }) =>
-        initFormualizer().catch((err) => {
-          import('@/lib/errorReporting').then(({ reportError }) => {
-            reportError(err, {
-              source: 'formualizer-init',
-              extra: { phase: 'wasm-bootstrap' },
-            });
-          }).catch(() => {});
-        }),
-      )
-      .catch((err) => {
-        import('@/lib/errorReporting').then(({ reportError }) => {
-          reportError(err, { source: 'formualizer-init', extra: { phase: 'import' } });
-        }).catch(() => {});
-      });
-  }, []);
 
   // 중복 프로젝트 자동 감지 — 세션당 1회, 초기 로드 후
   useEffect(() => {
