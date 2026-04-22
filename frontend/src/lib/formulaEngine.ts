@@ -1,6 +1,8 @@
 import { create, all, MathJsInstance } from 'mathjs';
 import type { Sheet, CellValue, CurveType, FormulaResult } from '@/types';
 import { formulaBundle, SCALE } from './formulas';
+// Formualizer 백엔드는 엔진 부트 시점에 함께 로드 — WASM 초기화는 별도 initializeWasm() 에서
+import { formualizerBackend, isFormualizerReady } from './formula/formualizerBackend';
 
 // 공개 API에서 재노출 (기존 import 경로 유지)
 export {
@@ -517,7 +519,7 @@ function processPreviousRowReferences(
 /**
  * 한글 변수명 변환 결과
  */
-interface ConvertResult {
+export interface ConvertResult {
   expression: string;
   scope: Record<string, CellValue>;
   errors: string[];
@@ -527,7 +529,7 @@ interface ConvertResult {
 /**
  * 한글 변수명을 영어로 변환
  */
-function convertKoreanToScope(
+export function convertKoreanToScope(
   expression: string,
   columns: { id: string; name: string }[],
   currentRow: Record<string, CellValue>,
@@ -691,13 +693,28 @@ function evaluateFormulaInternal(
 }
 
 /**
- * 수식 평가 (외부 API)
+ * 수식 평가 (외부 API).
+ *
+ * 모든 시트는 Formualizer (MIT/Apache-2.0, 320+ Excel 함수) 엔진을 기본 사용.
+ * WASM 미초기화 시점 (앱 첫 로드 수백 ms) 에만 mathjs 로 자동 fallback —
+ * 양 엔진의 게임 함수/기본 연산 결과는 동등성 테스트로 검증됨.
+ *
+ * 디버그 override: localStorage['balruno:formula:backend'] = 'mathjs' 로
+ * 강제 mathjs 사용 가능 (사용자 UI 에는 노출하지 않음).
  */
 export function evaluateFormula(
   formula: string,
   context?: FormulaContext
 ): FormulaResult {
+  if (!shouldForceMathjs() && context && isFormualizerReady()) {
+    return formualizerBackend.evaluate(formula, context);
+  }
   return evaluateFormulaInternal(formula, context);
+}
+
+function shouldForceMathjs(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage?.getItem('balruno:formula:backend') === 'mathjs';
 }
 
 /**
@@ -1586,5 +1603,40 @@ export const availableFunctions = [
     example: 'CHOOSE(rarity, "common", "rare", "epic")',
     category: 'logic',
   },
+
+  // === Excel 호환 확장 — Formualizer 엔진으로 모든 시트에서 기본 사용 가능 ===
+  // Lookup & Reference
+  { name: 'VLOOKUP', description: '세로 룩업 (등급→스탯 매핑)', syntax: 'VLOOKUP(key, table, col, [exactMatch])', example: 'VLOOKUP("Legendary", grades, 3, FALSE)', category: 'lookup' },
+  { name: 'HLOOKUP', description: '가로 룩업', syntax: 'HLOOKUP(key, table, row, [exactMatch])', example: 'HLOOKUP("HP", stats, 2, FALSE)', category: 'lookup' },
+  { name: 'XLOOKUP', description: '양방향 룩업 (VLOOKUP 상위호환)', syntax: 'XLOOKUP(key, lookupArr, returnArr, [notFound])', example: 'XLOOKUP(level, levels, exp, 0)', category: 'lookup' },
+  { name: 'INDEX', description: '위치 기반 값 추출', syntax: 'INDEX(array, row, [col])', example: 'INDEX(stats, MATCH("ATK", keys, 0))', category: 'lookup' },
+  { name: 'MATCH', description: '값의 인덱스 찾기', syntax: 'MATCH(key, array, [matchType])', example: 'MATCH("Rare", grades, 0)', category: 'lookup' },
+  // Conditional Aggregation
+  { name: 'SUMIF', description: '조건부 합', syntax: 'SUMIF(range, criterion, [sumRange])', example: 'SUMIF(grades, "Legendary", damage)', category: 'condAgg' },
+  { name: 'SUMIFS', description: '다중 조건부 합', syntax: 'SUMIFS(sumRange, critRange1, crit1, ...)', example: 'SUMIFS(dmg, grade, "L", tier, ">=5")', category: 'condAgg' },
+  { name: 'COUNTIF', description: '조건부 개수', syntax: 'COUNTIF(range, criterion)', example: 'COUNTIF(tier, ">=5")', category: 'condAgg' },
+  { name: 'COUNTIFS', description: '다중 조건부 개수', syntax: 'COUNTIFS(range1, crit1, ...)', example: 'COUNTIFS(grade,"L",hp,">1000")', category: 'condAgg' },
+  { name: 'AVERAGEIF', description: '조건부 평균', syntax: 'AVERAGEIF(range, criterion, [avgRange])', example: 'AVERAGEIF(grade, "Rare", hp)', category: 'condAgg' },
+  // Text
+  { name: 'LEFT', description: '왼쪽 N 글자', syntax: 'LEFT(text, [n])', example: 'LEFT(id, 3)', category: 'text' },
+  { name: 'RIGHT', description: '오른쪽 N 글자', syntax: 'RIGHT(text, [n])', example: 'RIGHT(code, 2)', category: 'text' },
+  { name: 'MID', description: '중간 추출', syntax: 'MID(text, start, len)', example: 'MID(skuCode, 4, 3)', category: 'text' },
+  { name: 'LEN', description: '글자 수', syntax: 'LEN(text)', example: 'LEN(name)', category: 'text' },
+  { name: 'FIND', description: '부분 문자열 위치 (대소문자 구분)', syntax: 'FIND(search, text)', example: 'FIND("+", name)', category: 'text' },
+  { name: 'SEARCH', description: '부분 문자열 위치 (대소문자 무시)', syntax: 'SEARCH(search, text)', example: 'SEARCH("ex", name)', category: 'text' },
+  { name: 'CONCATENATE', description: '문자열 합치기', syntax: 'CONCATENATE(t1, t2, ...)', example: 'CONCATENATE(grade, "-", tier)', category: 'text' },
+  { name: 'TRIM', description: '양끝 공백 제거', syntax: 'TRIM(text)', example: 'TRIM(input)', category: 'text' },
+  { name: 'UPPER', description: '대문자 변환', syntax: 'UPPER(text)', example: 'UPPER(name)', category: 'text' },
+  { name: 'LOWER', description: '소문자 변환', syntax: 'LOWER(text)', example: 'LOWER(name)', category: 'text' },
+  { name: 'SUBSTITUTE', description: '문자열 치환', syntax: 'SUBSTITUTE(text, oldStr, newStr)', example: 'SUBSTITUTE(name, " ", "_")', category: 'text' },
+  // Date
+  { name: 'TODAY', description: '오늘 날짜', syntax: 'TODAY()', example: 'TODAY()', category: 'date' },
+  { name: 'NOW', description: '현재 시각', syntax: 'NOW()', example: 'NOW()', category: 'date' },
+  { name: 'DATE', description: '연·월·일 → 날짜', syntax: 'DATE(year, month, day)', example: 'DATE(2026, 5, 1)', category: 'date' },
+  { name: 'YEAR', description: '연도 추출', syntax: 'YEAR(date)', example: 'YEAR(releaseDate)', category: 'date' },
+  { name: 'MONTH', description: '월 추출', syntax: 'MONTH(date)', example: 'MONTH(releaseDate)', category: 'date' },
+  { name: 'WEEKDAY', description: '요일 (일=1)', syntax: 'WEEKDAY(date, [type])', example: 'WEEKDAY(releaseDate)', category: 'date' },
+  // Dynamic reference
+  { name: 'INDIRECT', description: '동적 참조', syntax: 'INDIRECT(refText)', example: 'INDIRECT("Sheet1.A1")', category: 'ref' },
 ];
 
