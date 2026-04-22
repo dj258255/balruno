@@ -626,7 +626,12 @@ export default function DiagramView({ projectId, sheet }: Props) {
                   style={{ cursor: 'move' }}
                   onPointerDown={(e) => {
                     e.stopPropagation();
-                    const svg = (e.target as SVGElement).ownerSVGElement!;
+                    // currentTarget(=<g>) 의 ownerSVGElement 를 사용.
+                    // e.target 은 foreignObject 안쪽 HTML(lucide icon 등) 일 수 있어
+                    // ownerSVGElement 가 null 로 나옴.
+                    const g = e.currentTarget as SVGGraphicsElement;
+                    const svg = g.ownerSVGElement;
+                    if (!svg) return;
                     const pt = svg.createSVGPoint();
                     pt.x = e.clientX;
                     pt.y = e.clientY;
