@@ -1,4 +1,6 @@
 export { SidebarHeader } from './SidebarHeader';
+export { WorkspaceSwitcher } from './WorkspaceSwitcher';
+export { PinnedSection } from './PinnedSection';
 export { NewProjectForm } from './NewProjectForm';
 export { ProjectList } from './ProjectList';
 export { default as SidebarQuickAccess } from './SidebarQuickAccess';

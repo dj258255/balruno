@@ -5,10 +5,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Edit2, Trash2, Copy, Plus, Code, FolderPlus, Folder, Tag, Check, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, Copy, Plus, Code, FolderPlus, Folder, Tag, Check, ChevronRight, Pin, PinOff, Users, Lock } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui';
 import { useTranslations } from 'next-intl';
-import type { SheetKind } from '@/types';
+import type { SheetKind, ProjectVisibility } from '@/types';
 import { KIND_META } from '@/lib/sheetKind';
 import type {
   SheetContextMenuState,
@@ -25,6 +25,8 @@ interface SheetContextMenuProps {
   menu: SheetContextMenuState | null;
   menuRef: React.RefObject<HTMLDivElement | null>;
   currentKind?: SheetKind;
+  isPinned?: boolean;
+  onTogglePin?: (sheetId: string) => void;
   onRename: (sheetId: string, sheetName: string) => void;
   onEditClassName: (sheetId: string, className?: string) => void;
   onSetKind?: (projectId: string, sheetId: string, kind: SheetKind | undefined) => void;
@@ -37,6 +39,8 @@ export function SheetContextMenu({
   menu,
   menuRef,
   currentKind,
+  isPinned,
+  onTogglePin,
   onRename,
   onEditClassName,
   onSetKind,
@@ -60,6 +64,28 @@ export function SheetContextMenu({
         borderColor: 'var(--border-primary)',
       }}
     >
+      {onTogglePin && (
+        <>
+          <button
+            onClick={() => {
+              onTogglePin(menu.sheetId);
+              onClose();
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
+            style={{ color: 'var(--text-primary)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            {isPinned ? (
+              <PinOff className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            ) : (
+              <Pin className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            )}
+            {isPinned ? t('sidebar.unpin') : t('sidebar.pin')}
+          </button>
+          <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />
+        </>
+      )}
       <button
         onClick={() => {
           onRename(menu.sheetId, menu.sheetName);
@@ -176,10 +202,12 @@ export function SheetContextMenu({
 interface ProjectContextMenuProps {
   menu: ProjectContextMenuState | null;
   menuRef: React.RefObject<HTMLDivElement | null>;
+  currentVisibility?: ProjectVisibility;
   onNewSheet: (projectId: string) => void;
   onNewFolder: (projectId: string) => void;
   onRename: (projectId: string, projectName: string) => void;
   onDuplicate: (projectId: string) => void;
+  onSetVisibility?: (projectId: string, visibility: ProjectVisibility) => void;
   onDelete: (projectId: string, projectName: string) => void;
   onClose: () => void;
 }
@@ -187,16 +215,21 @@ interface ProjectContextMenuProps {
 export function ProjectContextMenu({
   menu,
   menuRef,
+  currentVisibility,
   onNewSheet,
   onNewFolder,
   onRename,
   onDuplicate,
+  onSetVisibility,
   onDelete,
   onClose,
 }: ProjectContextMenuProps) {
   const t = useTranslations();
 
   if (!menu) return null;
+
+  const effectiveVisibility: ProjectVisibility = currentVisibility ?? 'teamspace';
+  const targetVisibility: ProjectVisibility = effectiveVisibility === 'teamspace' ? 'private' : 'teamspace';
 
   return (
     <div
@@ -262,6 +295,28 @@ export function ProjectContextMenu({
         <Copy className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
         {t('project.duplicate')}
       </button>
+      {onSetVisibility && (
+        <>
+          <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />
+          <button
+            onClick={() => {
+              onSetVisibility(menu.projectId, targetVisibility);
+              onClose();
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
+            style={{ color: 'var(--text-primary)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            {targetVisibility === 'private' ? (
+              <Lock className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            ) : (
+              <Users className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            )}
+            {targetVisibility === 'private' ? t('sidebar.makePrivate') : t('sidebar.makeTeamspace')}
+          </button>
+        </>
+      )}
       <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />
       <button
         onClick={() => {

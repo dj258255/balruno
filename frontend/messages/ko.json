@@ -23,6 +23,26 @@
   "sidebar": {
     "newProject": "새 프로젝트",
     "projects": "프로젝트",
+    "teamspaces": "팀스페이스",
+    "teamspacesEmpty": "팀스페이스가 비어있습니다",
+    "private": "Private",
+    "privateEmpty": "개인 프로젝트가 없습니다",
+    "privateHint": "팀과 공유되지 않는 개인 작업 공간",
+    "pinned": "Pinned",
+    "pin": "핀 고정",
+    "unpin": "핀 해제",
+    "myStuff": "My Stuff",
+    "makePrivate": "Private 으로 이동",
+    "makeTeamspace": "팀스페이스로 이동",
+    "workspaceSwitcher": {
+      "defaultName": "Default Workspace",
+      "newWorkspace": "새 워크스페이스",
+      "newWorkspaceHint": "여러 워크스페이스는 Team 플랜에서 지원됩니다",
+      "settings": "워크스페이스 설정"
+    },
+    "upgradeHint": {
+      "teamspacesMulti": "여러 팀을 관리하려면 Team 플랜이 필요합니다"
+    },
     "tools": "도구",
     "calculator": "계산기",
     "comparison": "비교 분석",

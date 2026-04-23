@@ -19,6 +19,12 @@ interface ProjectListProps {
   currentProjectId: string | null;
   currentSheetId: string | null;
   expandedProjects: Set<string>;
+  /** 섹션 헤더 타이틀 — 제공 시 리스트 위에 라벨 출력 (예: "팀스페이스", "Private") */
+  title?: string;
+  /** 빈 상태 때 큰 "첫 프로젝트 만들기" UI 숨김 (Private 처럼 보조 섹션용) */
+  hideEmptyState?: boolean;
+  /** 완전히 빈 경우 섹션 자체 숨김 */
+  hideWhenEmpty?: boolean;
 
   // 편집 상태
   editingProjectId: string | null;
@@ -88,6 +94,9 @@ export function ProjectList({
   currentProjectId,
   currentSheetId,
   expandedProjects,
+  title,
+  hideEmptyState,
+  hideWhenEmpty,
   editingProjectId,
   editName,
   setEditName,
@@ -158,9 +167,21 @@ export function ProjectList({
   };
 
   if (projects.length === 0) {
+    if (hideWhenEmpty) return null;
+    if (hideEmptyState) {
+      return (
+        <div className="p-2">
+          {title && <SectionTitle>{title}</SectionTitle>}
+          <div className="text-xs px-2 py-1.5" style={{ color: 'var(--text-tertiary)' }}>
+            {t('sidebar.teamspacesEmpty')}
+          </div>
+        </div>
+      );
+    }
     return (
-      <div className="flex-1 overflow-y-auto p-2" onContextMenu={handleEmptyContextMenu}>
+      <div className="p-2" onContextMenu={handleEmptyContextMenu}>
         {renderEmptyContextMenu(emptyMenu, setEmptyMenu)}
+        {title && <SectionTitle>{title}</SectionTitle>}
         <div className="text-center py-10 px-4">
           <div className="w-12 h-12 mx-auto mb-3 rounded-lg flex items-center justify-center" style={{
             background: 'var(--accent-light)'
@@ -248,8 +269,9 @@ export function ProjectList({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-2" onContextMenu={handleEmptyContextMenu}>
+    <div className="p-2" onContextMenu={handleEmptyContextMenu}>
       {renderEmptyContextMenu(emptyMenu, setEmptyMenu)}
+      {title && <SectionTitle>{title}</SectionTitle>}
       <div className="space-y-1.5">
         {projects.map((project, projectIndex) => {
           // 루트 레벨 폴더들 (parentId가 없는 것) — 구버전 저장 데이터의 id 중복 방어
@@ -583,6 +605,20 @@ export function ProjectList({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/**
+ * 섹션 타이틀 — "팀스페이스", "Private" 같은 구획 라벨.
+ */
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="px-2 pt-1 pb-1.5 text-overline"
+      style={{ color: 'var(--text-tertiary)' }}
+    >
+      {children}
     </div>
   );
 }

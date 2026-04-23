@@ -5,11 +5,15 @@ import { useTranslations } from 'next-intl';
 import { deleteProjectFromDB } from '@/lib/storage';
 import { AllToolId } from '@/stores/toolLayoutStore';
 import { useSheetUIStore } from '@/stores/sheetUIStore';
+import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
+import type { ProjectVisibility } from '@/types';
 
 // 분리된 훅과 컴포넌트들
 import { useSidebarState } from './sidebar/hooks';
 import {
   SidebarHeader,
+  WorkspaceSwitcher,
+  PinnedSection,
   NewProjectForm,
   ProjectList,
   SidebarFooter,
@@ -88,6 +92,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const t = useTranslations();
   const state = useSidebarState();
+  const sidebarPrefs = useSidebarPrefs();
 
   // 문서 섹션 높이 — 프로젝트 섹션과의 리사이즈 핸들로 조절. localStorage 저장.
   // 스타일/동작은 SidebarResizer (사이드바↔본문) 와 일관되게 pointer event + 글로벌 cursor 사용.
@@ -213,10 +218,14 @@ export default function Sidebar({
       >
         <SidebarHeader />
 
+        <WorkspaceSwitcher onOpenSettings={onShowSettings} />
+
         <SidebarQuickAccess />
 
-        {/* 섹션 순서: 새 프로젝트(생성) → 프로젝트 리스트(컨테이너) → 문서(컨테이너 안 내용)
-            Linear/Jira/ClickUp 과 동일한 "컨테이너 → 내용" 정보 계층 */}
+        <PinnedSection />
+
+        {/* 섹션 순서: 새 프로젝트 → 팀스페이스(공유) → Private(개인) → 문서.
+            Notion/Linear/Airtable 공통 문법 — 상단 개인 맥락, 중단 팀 공유, 하단 개인 공간. */}
         <NewProjectForm
           showNewProject={showNewProject}
           setShowNewProject={setShowNewProject}
@@ -225,94 +234,100 @@ export default function Sidebar({
           onCreateProject={handleCreateProject}
         />
 
-        <ProjectList
-          projects={projectStore.projects}
-          currentProjectId={projectStore.currentProjectId}
-          currentSheetId={projectStore.currentSheetId}
-          expandedProjects={expandedProjects}
-          editingProjectId={editingProjectId}
-          editName={editName}
-          setEditName={setEditName}
-          editingSheetId={editingSheetId}
-          editSheetName={editSheetName}
-          setEditSheetName={setEditSheetName}
-          draggedProjectIndex={draggedProjectIndex}
-          dragOverProjectIndex={dragOverProjectIndex}
-          setDraggedProjectIndex={setDraggedProjectIndex}
-          setDragOverProjectIndex={setDragOverProjectIndex}
-          draggedSheetIndex={draggedSheetIndex}
-          draggedSheetId={draggedSheetId}
-          dragOverIndex={dragOverIndex}
-          dragProjectId={dragProjectId}
-          dragOverProjectId={dragOverProjectId}
-          setDraggedSheetIndex={setDraggedSheetIndex}
-          setDraggedSheetId={setDraggedSheetId}
-          setDragOverIndex={setDragOverIndex}
-          setDragProjectId={setDragProjectId}
-          setDragOverProjectId={setDragOverProjectId}
-          toggleProject={toggleProject}
-          setCurrentProject={projectStore.setCurrentProject}
-          setCurrentSheet={projectStore.setCurrentSheet}
-          handleFinishEdit={handleFinishEdit}
-          setEditingProjectId={setEditingProjectId}
-          setEditingSheetId={setEditingSheetId}
-          updateSheet={projectStore.updateSheet}
-          reorderProjects={projectStore.reorderProjects}
-          reorderSheets={projectStore.reorderSheets}
-          toggleFolderExpanded={projectStore.toggleFolderExpanded}
-          updateFolder={projectStore.updateFolder}
-          moveSheetToFolder={projectStore.moveSheetToFolder}
-          moveFolderToFolder={projectStore.moveFolderToFolder}
-          onSheetContextMenu={(e, projectId, sheetId, sheetName, exportClassName) => {
-            setSheetContextMenu({
-              x: e.clientX,
-              y: e.clientY,
-              projectId,
-              sheetId,
-              sheetName,
-              exportClassName,
-            });
-          }}
-          onProjectContextMenu={(e, projectId, projectName) => {
-            setProjectContextMenu({
-              x: e.clientX,
-              y: e.clientY,
-              projectId,
-              projectName,
-            });
-          }}
-          onFolderContextMenu={(e, projectId, folderId, folderName) => {
-            setFolderContextMenu({
-              x: e.clientX,
-              y: e.clientY,
-              projectId,
-              folderId,
-              folderName,
-            });
-          }}
-          onSheetMoveConfirm={(fromProjectId, toProjectId, toProjectName, sheetId, sheetName) => {
-            setSheetMoveConfirm({
-              fromProjectId,
-              toProjectId,
-              toProjectName,
-              sheetId,
-              sheetName,
-            });
-          }}
-          onSheetDelete={(projectId, sheetId, sheetName) => {
-            setSheetDeleteConfirm({ projectId, sheetId, sheetName });
-          }}
-          onProjectDelete={(projectId, projectName) => {
-            setProjectDeleteConfirm({ projectId, projectName });
-          }}
-          onFolderDelete={(projectId, folderId, folderName) => {
-            setFolderDeleteConfirm({ projectId, folderId, folderName });
-          }}
-          editingFolderId={editingFolderId}
-          setEditingFolderId={setEditingFolderId}
-          editFolderName={editFolderName}
-          setEditFolderName={setEditFolderName}
-        />
+        {/* 팀스페이스 + Private 공통 스크롤 컨테이너 */}
+        <div className="flex-1 overflow-y-auto">
+          {(() => {
+            // visibility 기준 2 분할 — 기본(없음/'teamspace') 은 teamspace, 명시적 'private' 만 분리
+            const teamspaceProjects = projectStore.projects.filter(
+              (p) => (p.visibility ?? 'teamspace') === 'teamspace',
+            );
+            const privateProjects = projectStore.projects.filter((p) => p.visibility === 'private');
+
+            const sharedListProps = {
+              currentProjectId: projectStore.currentProjectId,
+              currentSheetId: projectStore.currentSheetId,
+              expandedProjects,
+              editingProjectId,
+              editName,
+              setEditName,
+              editingSheetId,
+              editSheetName,
+              setEditSheetName,
+              draggedProjectIndex,
+              dragOverProjectIndex,
+              setDraggedProjectIndex,
+              setDragOverProjectIndex,
+              draggedSheetIndex,
+              draggedSheetId,
+              dragOverIndex,
+              dragProjectId,
+              dragOverProjectId,
+              setDraggedSheetIndex,
+              setDraggedSheetId,
+              setDragOverIndex,
+              setDragProjectId,
+              setDragOverProjectId,
+              toggleProject,
+              setCurrentProject: projectStore.setCurrentProject,
+              setCurrentSheet: projectStore.setCurrentSheet,
+              handleFinishEdit,
+              setEditingProjectId,
+              setEditingSheetId,
+              updateSheet: projectStore.updateSheet,
+              reorderProjects: projectStore.reorderProjects,
+              reorderSheets: projectStore.reorderSheets,
+              toggleFolderExpanded: projectStore.toggleFolderExpanded,
+              updateFolder: projectStore.updateFolder,
+              moveSheetToFolder: projectStore.moveSheetToFolder,
+              moveFolderToFolder: projectStore.moveFolderToFolder,
+              onSheetContextMenu: (e: React.MouseEvent, projectId: string, sheetId: string, sheetName: string, exportClassName?: string) => {
+                setSheetContextMenu({ x: e.clientX, y: e.clientY, projectId, sheetId, sheetName, exportClassName });
+              },
+              onProjectContextMenu: (e: React.MouseEvent, projectId: string, projectName: string) => {
+                setProjectContextMenu({ x: e.clientX, y: e.clientY, projectId, projectName });
+              },
+              onFolderContextMenu: (e: React.MouseEvent, projectId: string, folderId: string, folderName: string) => {
+                setFolderContextMenu({ x: e.clientX, y: e.clientY, projectId, folderId, folderName });
+              },
+              onSheetMoveConfirm: (fromProjectId: string, toProjectId: string, toProjectName: string, sheetId: string, sheetName: string) => {
+                setSheetMoveConfirm({ fromProjectId, toProjectId, toProjectName, sheetId, sheetName });
+              },
+              onSheetDelete: (projectId: string, sheetId: string, sheetName: string) => {
+                setSheetDeleteConfirm({ projectId, sheetId, sheetName });
+              },
+              onProjectDelete: (projectId: string, projectName: string) => {
+                setProjectDeleteConfirm({ projectId, projectName });
+              },
+              onFolderDelete: (projectId: string, folderId: string, folderName: string) => {
+                setFolderDeleteConfirm({ projectId, folderId, folderName });
+              },
+              editingFolderId,
+              setEditingFolderId,
+              editFolderName,
+              setEditFolderName,
+            };
+
+            return (
+              <>
+                <ProjectList
+                  projects={teamspaceProjects}
+                  title={t('sidebar.teamspaces')}
+                  {...sharedListProps}
+                />
+                {privateProjects.length > 0 && (
+                  <div className="border-t" style={{ borderColor: 'var(--border-primary)' }}>
+                    <ProjectList
+                      projects={privateProjects}
+                      title={t('sidebar.private')}
+                      hideWhenEmpty
+                      {...sharedListProps}
+                    />
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
 
         {/* 프로젝트 / 문서 섹션 사이 리사이즈 핸들 — 얇은 시각 + 넓은 hit area */}
         <div
@@ -362,6 +377,10 @@ export default function Sidebar({
           const project = projectStore.projects.find((p) => p.id === sheetContextMenu.projectId);
           return project?.sheets.find((s) => s.id === sheetContextMenu.sheetId)?.kind;
         })()}
+        isPinned={sheetContextMenu ? sidebarPrefs.pinnedSheetIds.includes(sheetContextMenu.sheetId) : false}
+        onTogglePin={(sheetId) => {
+          sidebarPrefs.togglePinSheet(sheetId);
+        }}
         onRename={(sheetId, sheetName) => {
           setEditingSheetId(sheetId);
           setEditSheetName(sheetName);
@@ -385,6 +404,11 @@ export default function Sidebar({
       <ProjectContextMenu
         menu={projectContextMenu}
         menuRef={projectContextMenuRef}
+        currentVisibility={(() => {
+          if (!projectContextMenu) return undefined;
+          const project = projectStore.projects.find((p) => p.id === projectContextMenu.projectId);
+          return project?.visibility;
+        })()}
         onNewSheet={(projectId) => {
           projectStore.createSheet(projectId, t('sheet.newSheet'));
           setExpandedProjects((prev) => new Set([...prev, projectId]));
@@ -395,6 +419,9 @@ export default function Sidebar({
         }}
         onRename={handleStartEdit}
         onDuplicate={projectStore.duplicateProject}
+        onSetVisibility={(projectId: string, visibility: ProjectVisibility) => {
+          projectStore.updateProject(projectId, { visibility });
+        }}
         onDelete={(projectId, projectName) => {
           setProjectDeleteConfirm({ projectId, projectName });
         }}

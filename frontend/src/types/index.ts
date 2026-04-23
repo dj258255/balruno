@@ -12,6 +12,10 @@ export interface Folder {
 // 동기화 모드
 export type ProjectSyncMode = 'local' | 'cloud';
 
+/** 사이드바 섹션 가시성 — 'teamspace' 는 팀 공유 영역, 'private' 는 개인 영역.
+ *  기본 'teamspace' (없으면 teamspace 로 간주). 백엔드 연결 전에는 시각적 분리만 담당. */
+export type ProjectVisibility = 'teamspace' | 'private';
+
 // 프로젝트 타입
 export interface Project {
   id: string;
@@ -26,6 +30,8 @@ export interface Project {
   // 동기화 설정
   syncMode?: ProjectSyncMode;  // 'local' (기본) | 'cloud'
   syncRoomId?: string;         // 클라우드 모드 시 협업 룸 ID
+  /** 사이드바 섹션 분류 — 없으면 'teamspace' 로 간주 (기본 팀 공유) */
+  visibility?: ProjectVisibility;
 }
 
 // GDD · 설계안 문서 (Tiptap 기반)

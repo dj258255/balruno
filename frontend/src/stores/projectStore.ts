@@ -63,7 +63,7 @@ export interface ProjectState {
   ) => string | null;
   updateProject: (
     id: string,
-    updates: Partial<Pick<Project, 'name' | 'description' | 'syncMode' | 'syncRoomId'>>
+    updates: Partial<Pick<Project, 'name' | 'description' | 'syncMode' | 'syncRoomId' | 'visibility'>>
   ) => void;
   deleteProject: (id: string) => void;
   duplicateProject: (id: string) => string;
