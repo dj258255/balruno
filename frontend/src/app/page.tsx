@@ -21,6 +21,7 @@ import { Sidebar, SheetTabs } from '@/components/layout';
 
 // Sheet components
 import { SheetTable, StickerLayer } from '@/components/sheet';
+import { PmBadgeStrip } from '@/components/sheet/PmBadgeStrip';
 
 // Track 8 Presence
 import PresenceIndicator from '@/components/PresenceIndicator';
@@ -492,6 +493,9 @@ export default function Home() {
                   <SheetHeader
                     sheet={currentSheet}
                   />
+
+                  {/* PM 시트 (kind='pm' 또는 auto-detect) 전용 상태·우선순위·담당자 요약 배지 */}
+                  <PmBadgeStrip sheet={currentSheet} />
 
                   {/* Track 4: 뷰 스위처 (저장된 뷰 + 기본 뷰 6종) */}
                   <ViewSwitcher
