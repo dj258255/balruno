@@ -11,6 +11,7 @@ import {
   Type,
   ChevronRight,
   Check,
+  Maximize2,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useSheetUIStore } from '@/stores/sheetUIStore';
@@ -26,6 +27,8 @@ interface RowContextMenuProps {
   onClearValues: () => void;
   onInsertAbove: () => void;
   onInsertBelow: () => void;
+  /** 레코드 상세 패널 열기 — 제공 시 메뉴 최상단에 표시 */
+  onOpenDetail?: () => void;
 }
 
 interface MenuItem {
@@ -51,6 +54,7 @@ export default function RowContextMenu({
   onClearValues,
   onInsertAbove,
   onInsertBelow,
+  onOpenDetail,
 }: RowContextMenuProps) {
   const t = useTranslations();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -96,6 +100,16 @@ export default function RowContextMenu({
   }, [onClose]);
 
   const menuItems: MenuItem[] = [
+    ...(onOpenDetail
+      ? [
+          {
+            label: t('contextMenu.openRecordDetail'),
+            icon: <Maximize2 className="w-4 h-4" />,
+            onClick: onOpenDetail,
+            divider: true,
+          } as MenuItem,
+        ]
+      : []),
     {
       label: t('contextMenu.rowHeaderFontSize'),
       icon: <Type className="w-4 h-4" />,
