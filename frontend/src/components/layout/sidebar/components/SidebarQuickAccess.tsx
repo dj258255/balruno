@@ -27,10 +27,12 @@ import {
   ChevronDown, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useTodaysWork, type RowWithContext } from '@/hooks/useTodaysWork';
 import { useProjectStore } from '@/stores/projectStore';
 
 export default function SidebarQuickAccess() {
+  const t = useTranslations();
   const work = useTodaysWork();
   const [expanded, setExpanded] = useState(true);
   const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
@@ -88,7 +90,7 @@ export default function SidebarQuickAccess() {
         style={{ color: 'var(--text-tertiary)' }}
       >
         {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        빠른 접근
+        {t('sidebar.myStuff')}
       </button>
 
       {expanded && (

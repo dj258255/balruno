@@ -79,19 +79,19 @@ export const createProjectActions = (set: SetFn, get: GetFn) => ({
 
   updateProject: (
     id: string,
-    updates: Partial<Pick<Project, 'name' | 'description' | 'syncMode' | 'syncRoomId'>>
+    updates: Partial<Pick<Project, 'name' | 'description' | 'syncMode' | 'syncRoomId' | 'visibility'>>
   ) => {
-    // name/description 은 Y.Doc meta — observer 가 반사. syncMode/syncRoomId 는
+    // name/description 은 Y.Doc meta — observer 가 반사. syncMode/syncRoomId/visibility 는
     // Y.Doc 에서 저장은 가능하지만 updateProjectMeta 가 name/description 만 처리하므로
-    // 나머지는 Zustand 에 직접 세팅 (sync 모드는 meta 가 아니라 컨피그 수준).
-    const { name, description, syncMode, syncRoomId } = updates;
+    // 나머지는 Zustand 에 직접 세팅 (컨피그 수준 — 메타가 아닌 프로젝트 속성).
+    const { name, description, syncMode, syncRoomId, visibility } = updates;
     if (name !== undefined || description !== undefined) {
       updateProjectMeta(getProjectDoc(id), {
         ...(name !== undefined && { name }),
         ...(description !== undefined && { description }),
       });
     }
-    if (syncMode !== undefined || syncRoomId !== undefined) {
+    if (syncMode !== undefined || syncRoomId !== undefined || visibility !== undefined) {
       set((state) => ({
         projects: state.projects.map((p) =>
           p.id === id
@@ -99,6 +99,7 @@ export const createProjectActions = (set: SetFn, get: GetFn) => ({
                 ...p,
                 ...(syncMode !== undefined && { syncMode }),
                 ...(syncRoomId !== undefined && { syncRoomId }),
+                ...(visibility !== undefined && { visibility }),
                 updatedAt: Date.now(),
               }
             : p

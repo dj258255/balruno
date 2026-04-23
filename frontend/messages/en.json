@@ -23,6 +23,26 @@
   "sidebar": {
     "newProject": "New Project",
     "projects": "Projects",
+    "teamspaces": "Teamspaces",
+    "teamspacesEmpty": "No teamspaces yet",
+    "private": "Private",
+    "privateEmpty": "No private projects",
+    "privateHint": "Personal workspace not shared with team",
+    "pinned": "Pinned",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "myStuff": "My Stuff",
+    "makePrivate": "Move to Private",
+    "makeTeamspace": "Move to Teamspace",
+    "workspaceSwitcher": {
+      "defaultName": "Default Workspace",
+      "newWorkspace": "New Workspace",
+      "newWorkspaceHint": "Multiple workspaces require the Team plan",
+      "settings": "Workspace settings"
+    },
+    "upgradeHint": {
+      "teamspacesMulti": "Managing multiple teams requires the Team plan"
+    },
     "tools": "Tools",
     "calculator": "Calculator",
     "comparison": "Comparison",
