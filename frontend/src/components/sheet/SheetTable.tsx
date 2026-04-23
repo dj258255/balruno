@@ -34,6 +34,7 @@ import type { SheetTableProps, CellPosition } from './types';
 import { useProjectStore } from '@/stores/projectStore';
 import { useHistoryStore } from '@/stores/historyStore';
 import { useSheetUIStore, DEFAULT_CELL_STYLE } from '@/stores/sheetUIStore';
+import { useRecordDetail } from '@/stores/recordDetailStore';
 
 // Hooks
 import {
@@ -1727,6 +1728,14 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           rowIndex={rowContextMenu.rowIndex}
           isLocked={rowContextMenu.row.locked || false}
           onClose={() => setRowContextMenu(null)}
+          onOpenDetail={() => {
+            useRecordDetail.getState().openRecord({
+              projectId,
+              sheetId: sheet.id,
+              rowId: rowContextMenu.row.id,
+            });
+            setRowContextMenu(null);
+          }}
           onToggleLock={() => {
             updateRow(projectId, sheet.id, rowContextMenu.row.id, { locked: !rowContextMenu.row.locked });
             setRowContextMenu(null);

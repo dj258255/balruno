@@ -87,6 +87,7 @@ import MobileNotice from './components/MobileNotice';
 import MobileSidebar from './components/MobileSidebar';
 import SheetHeader from './components/SheetHeader';
 import BottomDock from '@/components/BottomDock';
+import { GlobalRecordDetail } from '@/components/panels/GlobalRecordDetail';
 import ProjectMenu from './components/ProjectMenu';
 import DockedToolbox from '@/components/DockedToolbox';
 import SidebarResizer from './components/SidebarResizer';
@@ -558,6 +559,9 @@ export default function Home() {
       {/* Track 6: Docked Toolbox — 우측 사이드 도킹 + 하단 독바. usePanelStates hook 으로 단일화. */}
       <DockedToolbox panels={toolPanels} />
       <BottomDock panels={toolPanels} isModalOpen={isModalOpen} />
+
+      {/* 전역 레코드 상세 슬라이드 — 그리드 뷰에서 RowContextMenu "레코드 상세" 로 open */}
+      <GlobalRecordDetail />
 
       {/* Track 5: Command Palette (⌘K) */}
       <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />

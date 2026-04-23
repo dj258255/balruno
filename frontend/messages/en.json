@@ -183,6 +183,7 @@
     "optional": "optional"
   },
   "contextMenu": {
+    "openRecordDetail": "Open record detail",
     "cut": "Cut",
     "copy": "Copy",
     "paste": "Paste",

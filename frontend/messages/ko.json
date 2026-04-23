@@ -183,6 +183,7 @@
     "optional": "선택"
   },
   "contextMenu": {
+    "openRecordDetail": "레코드 상세 보기",
     "cut": "잘라내기",
     "copy": "복사",
     "paste": "붙여넣기",
