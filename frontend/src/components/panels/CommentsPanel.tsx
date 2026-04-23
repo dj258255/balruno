@@ -11,8 +11,9 @@
  */
 
 import { useMemo, useState, useEffect } from 'react';
-import { MessageCircle, Send, Check, Reply, Trash2, AtSign } from 'lucide-react';
+import { MessageCircle, Send, Check, Reply, Trash2, AtSign, Focus } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
+import { useRecordDetail } from '@/stores/recordDetailStore';
 import { useComments } from '@/hooks/useComments';
 import { usePresence } from '@/hooks/usePresence';
 import PanelShell from '@/components/ui/PanelShell';
@@ -37,6 +38,22 @@ export default function CommentsPanel({ onClose }: Props) {
   const [anchorColId, setAnchorColId] = useState<string>('');
   const [filter, setFilter] = useState<'all' | 'open' | 'mentions'>('all');
   const [showResolved, setShowResolved] = useState(false);
+
+  // 레코드 상세 패널이 열려있으면 그 행의 코멘트만 필터링. 닫히면 전체.
+  // 사용자가 "현재 행" 칩을 끄면 잠시 off — 다음 행 open 때 다시 on.
+  const openedRecord = useRecordDetail((s) => s.opened);
+  const focusedRowId =
+    openedRecord && openedRecord.sheetId === currentSheetId ? openedRecord.rowId : null;
+  const [rowFilterActive, setRowFilterActive] = useState(true);
+  useEffect(() => {
+    // 상세 패널이 새로 열릴 때마다 row 필터 다시 활성 — 사용자 의도와 일치
+    if (focusedRowId) setRowFilterActive(true);
+  }, [focusedRowId]);
+
+  // 상세 패널 열려있으면 새 코멘트 anchor 도 해당 행으로 자동 포커스
+  useEffect(() => {
+    if (focusedRowId) setAnchorRowId(focusedRowId);
+  }, [focusedRowId]);
 
   // @mention 후보 = 접속자 + 자기 자신 + 코멘트 작성자
   const mentionCandidates: MentionCandidate[] = useMemo(() => {
@@ -94,20 +111,34 @@ export default function CommentsPanel({ onClose }: Props) {
       });
   }, [comments]);
 
-  // 필터링
+  // 필터링 — row 필터가 활성이면 해당 행의 코멘트만
   const filteredGroups = useMemo(() => {
     return grouped
-      .map((g) => ({
-        ...g,
-        threads: g.threads.filter((t) => {
-          if (!showResolved && t.root.resolved) return false;
-          if (filter === 'open' && t.root.resolved) return false;
-          if (filter === 'mentions' && !t.root.mentions.includes(myName)) return false;
-          return true;
-        }),
-      }))
+      .map((g) => {
+        // cellKey = "rowId|columnId" — row 필터 활성 + focused 가 있으면 rowId 일치만
+        if (rowFilterActive && focusedRowId) {
+          const [rowId] = g.cellKey.split('|');
+          if (rowId !== focusedRowId) return { ...g, threads: [] };
+        }
+        return {
+          ...g,
+          threads: g.threads.filter((t) => {
+            if (!showResolved && t.root.resolved) return false;
+            if (filter === 'open' && t.root.resolved) return false;
+            if (filter === 'mentions' && !t.root.mentions.includes(myName)) return false;
+            return true;
+          }),
+        };
+      })
       .filter((g) => g.threads.length > 0);
-  }, [grouped, filter, showResolved, myName]);
+  }, [grouped, filter, showResolved, myName, rowFilterActive, focusedRowId]);
+
+  // 현재 focused row 의 인덱스 (subtitle 에 "Row N" 힌트용)
+  const focusedRowIndex = useMemo(() => {
+    if (!focusedRowId || !sheet) return null;
+    const idx = sheet.rows.findIndex((r) => r.id === focusedRowId);
+    return idx === -1 ? null : idx + 1;
+  }, [focusedRowId, sheet]);
 
   const cellLabel = (key: string): string => {
     if (!sheet) return key;
@@ -132,7 +163,13 @@ export default function CommentsPanel({ onClose }: Props) {
   return (
     <PanelShell
       title="코멘트 / 멘션"
-      subtitle={sheet ? `시트: ${sheet.name}` : '시트 선택'}
+      subtitle={
+        sheet
+          ? focusedRowIndex && rowFilterActive
+            ? `시트: ${sheet.name} · Row ${focusedRowIndex}`
+            : `시트: ${sheet.name}`
+          : '시트 선택'
+      }
       icon={MessageCircle}
       onClose={onClose}
       headerExtra={
@@ -158,6 +195,20 @@ export default function CommentsPanel({ onClose }: Props) {
             {f === 'all' ? '전체' : f === 'open' ? '미해결' : '내 멘션'}
           </button>
         ))}
+        {focusedRowId && (
+          <button
+            onClick={() => setRowFilterActive((v) => !v)}
+            className="flex items-center gap-1 px-2 py-0.5 text-caption rounded transition-colors"
+            style={{
+              background: rowFilterActive ? 'var(--accent)' : 'var(--bg-tertiary)',
+              color: rowFilterActive ? 'white' : 'var(--text-secondary)',
+            }}
+            title={rowFilterActive ? '현재 행 코멘트만 표시 중 — 클릭해 전체 보기' : '전체 표시 중 — 클릭해 현재 행만'}
+          >
+            <Focus className="w-3 h-3" />
+            현재 행
+          </button>
+        )}
         <label className="ml-auto flex items-center gap-1.5 text-caption cursor-pointer select-none" style={{ color: 'var(--text-secondary)' }}>
           <Checkbox
             checked={showResolved}
