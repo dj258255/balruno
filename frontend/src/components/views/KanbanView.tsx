@@ -9,10 +9,10 @@ import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Settings2, Check } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
+import { useRecordDetail } from '@/stores/recordDetailStore';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { formatDisplayValue } from '@/components/sheet/utils';
 import type { Sheet, Row, CellValue } from '@/types';
-import RecordEditor from './RecordEditor';
 import RecordContextMenu, { type RecordContextMenuState } from './RecordContextMenu';
 
 interface KanbanViewProps {
@@ -26,16 +26,18 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
   const updateCell = useProjectStore((s) => s.updateCell);
   const addRow = useProjectStore((s) => s.addRow);
   const deleteRow = useProjectStore((s) => s.deleteRow);
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  // 전역 recordDetailStore 로 행 선택 / 상세 패널 연동
+  const openedRowId = useRecordDetail((s) =>
+    s.opened && s.opened.sheetId === sheet.id ? s.opened.rowId : null,
+  );
+  const openRecord = useRecordDetail((s) => s.openRecord);
+  const closeRecord = useRecordDetail((s) => s.closeRecord);
+  const selectRow = (rowId: string) => openRecord({ projectId, sheetId: sheet.id, rowId });
   const [showSettings, setShowSettings] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<RecordContextMenuState | null>(null);
 
   const urlColumns = sheet.columns.filter((c) => c.type === 'url');
   const coverColId = sheet.viewKanbanCoverColumnId;
-
-  const selectedRow = selectedRowId
-    ? sheet.rows.find((r) => r.id === selectedRowId)
-    : null;
 
   // select 타입 컬럼만 그룹핑 대상
   const selectColumns = sheet.columns.filter((c) => c.type === 'select');
@@ -247,11 +249,11 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                         tabIndex={0}
                         aria-label={titleVal || `${col.label} 카드`}
                         onDragStart={(e) => e.dataTransfer.setData('text/plain', row.id)}
-                        onClick={() => setSelectedRowId(row.id)}
+                        onClick={() => selectRow(row.id)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            setSelectedRowId(row.id);
+                            selectRow(row.id);
                           }
                         }}
                         onContextMenu={(e) => {
@@ -262,7 +264,7 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                         style={{
                           background: 'var(--bg-primary)',
                           border: '1px solid var(--border-primary)',
-                          outline: selectedRowId === row.id ? '2px solid var(--accent)' : 'none',
+                          outline: openedRowId === row.id ? '2px solid var(--accent)' : 'none',
                         }}
                       >
                         {/* 좌측 색상 바 — select option color 반영 */}
@@ -309,27 +311,19 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
         </div>
       </div>
       </div>
-      {/* Track 4: 카드 편집 사이드 패널 */}
-      {selectedRow && (
-        <RecordEditor
-          projectId={projectId}
-          sheet={sheet}
-          row={selectedRow}
-          onClose={() => setSelectedRowId(null)}
-        />
-      )}
+      {/* RecordEditor 는 앱 루트의 GlobalRecordDetail 에서 일괄 렌더 */}
       {/* 우클릭 컨텍스트 메뉴 */}
       <RecordContextMenu
         state={ctxMenu}
         onClose={() => setCtxMenu(null)}
-        onEdit={(rowId) => setSelectedRowId(rowId)}
+        onEdit={(rowId) => selectRow(rowId)}
         onDuplicate={(rowId) => {
           const src = sheet.rows.find((r) => r.id === rowId);
           if (src) addRow(projectId, sheet.id, { ...src.cells });
         }}
         onDelete={(rowId) => {
           deleteRow(projectId, sheet.id, rowId);
-          if (selectedRowId === rowId) setSelectedRowId(null);
+          if (openedRowId === rowId) closeRecord();
         }}
       />
     </div>

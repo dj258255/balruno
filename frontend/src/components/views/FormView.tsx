@@ -14,9 +14,9 @@ import { Plus, Check, Link as LinkIcon, CheckCircle2, RotateCcw, Star } from 'lu
 import { useTranslations } from 'next-intl';
 import type { Sheet, CellValue, Column } from '@/types';
 import { useProjectStore } from '@/stores/projectStore';
+import { useRecordDetail } from '@/stores/recordDetailStore';
 import { toast } from '@/components/ui/Toast';
 import Select from '@/components/ui/Select';
-import RecordEditor from './RecordEditor';
 import RecordContextMenu, { type RecordContextMenuState } from './RecordContextMenu';
 
 interface FormViewProps {
@@ -31,9 +31,13 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
   const [draft, setDraft] = useState<Record<string, CellValue>>({});
   const [submitting, setSubmitting] = useState(false);
   const [sessionCount, setSessionCount] = useState(0);
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const openedRowId = useRecordDetail((s) =>
+    s.opened && s.opened.sheetId === sheet.id ? s.opened.rowId : null,
+  );
+  const openRecord = useRecordDetail((s) => s.openRecord);
+  const closeRecord = useRecordDetail((s) => s.closeRecord);
+  const selectRow = (rowId: string) => openRecord({ projectId, sheetId: sheet.id, rowId });
   const [ctxMenu, setCtxMenu] = useState<RecordContextMenuState | null>(null);
-  const selectedRow = selectedRowId ? sheet.rows.find((r) => r.id === selectedRowId) : null;
 
   // 수식 / 자동 계산 컬럼은 폼에서 제외
   const editableColumns = useMemo(
@@ -344,7 +348,7 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
                   <button
                     key={row.id}
                     type="button"
-                    onClick={() => setSelectedRowId(row.id)}
+                    onClick={() => selectRow(row.id)}
                     onContextMenu={(e) => {
                       e.preventDefault();
                       setCtxMenu({ rowId: row.id, x: e.clientX, y: e.clientY });
@@ -366,28 +370,20 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
         )}
       </div>
 
-      {/* 최근 제출 항목 편집 */}
-      {selectedRow && (
-        <RecordEditor
-          projectId={projectId}
-          sheet={sheet}
-          row={selectedRow}
-          onClose={() => setSelectedRowId(null)}
-        />
-      )}
+      {/* RecordEditor 는 GlobalRecordDetail 에서 렌더 */}
 
       {/* 우클릭 컨텍스트 메뉴 */}
       <RecordContextMenu
         state={ctxMenu}
         onClose={() => setCtxMenu(null)}
-        onEdit={(rowId) => setSelectedRowId(rowId)}
+        onEdit={(rowId) => selectRow(rowId)}
         onDuplicate={(rowId) => {
           const src = sheet.rows.find((r) => r.id === rowId);
           if (src) addRow(projectId, sheet.id, { ...src.cells });
         }}
         onDelete={(rowId) => {
           deleteRow(projectId, sheet.id, rowId);
-          if (selectedRowId === rowId) setSelectedRowId(null);
+          if (openedRowId === rowId) closeRecord();
         }}
       />
     </div>
