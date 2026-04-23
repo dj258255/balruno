@@ -13,9 +13,9 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
+import { useRecordDetail } from '@/stores/recordDetailStore';
 import CustomSelect from '@/components/ui/CustomSelect';
 import type { Sheet, Row } from '@/types';
-import RecordEditor from './RecordEditor';
 import RecordContextMenu, { type RecordContextMenuState } from './RecordContextMenu';
 
 interface CalendarViewProps {
@@ -71,10 +71,14 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
   const deleteRow = useProjectStore((s) => s.deleteRow);
   const [cursor, setCursor] = useState<Date>(startOfMonth(new Date()));
   const [mode, setMode] = useState<CalendarMode>('month');
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const openedRowId = useRecordDetail((s) =>
+    s.opened && s.opened.sheetId === sheet.id ? s.opened.rowId : null,
+  );
+  const openRecord = useRecordDetail((s) => s.openRecord);
+  const closeRecord = useRecordDetail((s) => s.closeRecord);
+  const selectRow = (rowId: string) => openRecord({ projectId, sheetId: sheet.id, rowId });
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [ctxMenu, setCtxMenu] = useState<RecordContextMenuState | null>(null);
-  const selectedRow = selectedRowId ? sheet.rows.find((r) => r.id === selectedRowId) : null;
 
   const dateColumns = sheet.columns.filter((c) => c.type === 'date');
   const dateColId =
@@ -118,7 +122,7 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
   const createOnDate = (date: Date) => {
     if (!dateCol) return;
     const rowId = addRow(projectId, sheet.id, { [dateCol.id]: iso(date) });
-    setSelectedRowId(rowId);
+    selectRow(rowId);
   };
 
   const handleDrop = (date: Date) => {
@@ -210,7 +214,7 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
               byDate={byDate}
               titleCol={titleCol}
               onCellClick={createOnDate}
-              onCardClick={setSelectedRowId}
+              onCardClick={selectRow}
               onCardDragStart={(rowId, e) => e.dataTransfer.setData('text/plain', rowId)}
               onCardDrop={onDropCard}
               onCardDragOver={(date) => setDragOverDate(iso(date))}
@@ -224,7 +228,7 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
               byDate={byDate}
               titleCol={titleCol}
               onCellClick={createOnDate}
-              onCardClick={setSelectedRowId}
+              onCardClick={selectRow}
               onCardDragStart={(rowId, e) => e.dataTransfer.setData('text/plain', rowId)}
               onCardDrop={onDropCard}
               onCardContextMenu={(rowId, x, y) => setCtxMenu({ rowId, x, y })}
@@ -236,7 +240,7 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
               rows={byDate.get(iso(cursor)) ?? []}
               titleCol={titleCol}
               sheet={sheet}
-              onCardClick={setSelectedRowId}
+              onCardClick={selectRow}
               onAdd={() => createOnDate(cursor)}
               onCardContextMenu={(rowId, x, y) => setCtxMenu({ rowId, x, y })}
             />
@@ -245,25 +249,18 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
           {(() => { void handleDrop; return null; })()}
         </div>
       </div>
-      {selectedRow && (
-        <RecordEditor
-          projectId={projectId}
-          sheet={sheet}
-          row={selectedRow}
-          onClose={() => setSelectedRowId(null)}
-        />
-      )}
+      {/* RecordEditor 는 GlobalRecordDetail 에서 렌더 */}
       <RecordContextMenu
         state={ctxMenu}
         onClose={() => setCtxMenu(null)}
-        onEdit={(rowId) => setSelectedRowId(rowId)}
+        onEdit={(rowId) => selectRow(rowId)}
         onDuplicate={(rowId) => {
           const src = sheet.rows.find((r) => r.id === rowId);
           if (src) addRow(projectId, sheet.id, { ...src.cells });
         }}
         onDelete={(rowId) => {
           deleteRow(projectId, sheet.id, rowId);
-          if (selectedRowId === rowId) setSelectedRowId(null);
+          if (openedRowId === rowId) closeRecord();
         }}
       />
     </div>

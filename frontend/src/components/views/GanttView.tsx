@@ -17,9 +17,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
+import { useRecordDetail } from '@/stores/recordDetailStore';
 import CustomSelect from '@/components/ui/CustomSelect';
 import type { Sheet, Column } from '@/types';
-import RecordEditor from './RecordEditor';
 import RecordContextMenu, { type RecordContextMenuState } from './RecordContextMenu';
 
 interface GanttViewProps {
@@ -57,9 +57,13 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
   const updateCell = useProjectStore((s) => s.updateCell);
   const addRow = useProjectStore((s) => s.addRow);
   const deleteRow = useProjectStore((s) => s.deleteRow);
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const openedRowId = useRecordDetail((s) =>
+    s.opened && s.opened.sheetId === sheet.id ? s.opened.rowId : null,
+  );
+  const openRecord = useRecordDetail((s) => s.openRecord);
+  const closeRecord = useRecordDetail((s) => s.closeRecord);
+  const selectRow = (rowId: string) => openRecord({ projectId, sheetId: sheet.id, rowId });
   const [ctxMenu, setCtxMenu] = useState<RecordContextMenuState | null>(null);
-  const selectedRow = selectedRowId ? sheet.rows.find((r) => r.id === selectedRowId) : null;
   const dragState = useRef<{ rowId: string; mode: 'move' | 'resize-end'; startX: number; origStart: Date; origEnd: Date } | null>(null);
   const [dragPreview, setDragPreview] = useState<{ rowId: string; deltaDays: number; mode: 'move' | 'resize-end' } | null>(null);
 
@@ -226,7 +230,7 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
                   <button
                     type="button"
                     key={row.id}
-                    onClick={() => setSelectedRowId(row.id)}
+                    onClick={() => selectRow(row.id)}
                     onContextMenu={(e) => {
                       e.preventDefault();
                       setCtxMenu({ rowId: row.id, x: e.clientX, y: e.clientY });
@@ -236,7 +240,7 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
                       height: ROW_H,
                       borderColor: 'var(--border-primary)',
                       color: 'var(--text-primary)',
-                      background: selectedRowId === row.id ? 'var(--bg-hover)' : 'transparent',
+                      background: openedRowId === row.id ? 'var(--bg-hover)' : 'transparent',
                     }}
                   >
                     <span className="truncate">{titleCol ? String(row.cells[titleCol.id] ?? row.id.slice(0, 6)) : row.id.slice(0, 6)}</span>
@@ -326,11 +330,11 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
                           left: offset * DAY_W + 2 + (preview?.mode === 'move' ? dx : 0),
                           width: Math.max(DAY_W - 4, span * DAY_W - 4 + widthBoost),
                           background: 'var(--accent)',
-                          outline: selectedRowId === row.id ? '2px solid white' : 'none',
+                          outline: openedRowId === row.id ? '2px solid white' : 'none',
                           cursor: 'grab',
                         }}
                         onPointerDown={onPointerDown(row.id, 'move', start, end)}
-                        onClick={(e) => { if (!preview) { e.stopPropagation(); setSelectedRowId(row.id); } }}
+                        onClick={(e) => { if (!preview) { e.stopPropagation(); selectRow(row.id); } }}
                         onContextMenu={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -386,25 +390,18 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
           )}
         </div>
       </div>
-      {selectedRow && (
-        <RecordEditor
-          projectId={projectId}
-          sheet={sheet}
-          row={selectedRow}
-          onClose={() => setSelectedRowId(null)}
-        />
-      )}
+      {/* RecordEditor 는 GlobalRecordDetail 에서 렌더 */}
       <RecordContextMenu
         state={ctxMenu}
         onClose={() => setCtxMenu(null)}
-        onEdit={(rowId) => setSelectedRowId(rowId)}
+        onEdit={(rowId) => selectRow(rowId)}
         onDuplicate={(rowId) => {
           const src = sheet.rows.find((r) => r.id === rowId);
           if (src) addRow(projectId, sheet.id, { ...src.cells });
         }}
         onDelete={(rowId) => {
           deleteRow(projectId, sheet.id, rowId);
-          if (selectedRowId === rowId) setSelectedRowId(null);
+          if (openedRowId === rowId) closeRecord();
         }}
       />
     </div>

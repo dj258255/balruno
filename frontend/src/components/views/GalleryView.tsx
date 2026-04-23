@@ -10,8 +10,8 @@ import { useState } from 'react';
 import { ImageIcon, Plus } from 'lucide-react';
 import { formatDisplayValue } from '@/components/sheet/utils';
 import { useProjectStore } from '@/stores/projectStore';
+import { useRecordDetail } from '@/stores/recordDetailStore';
 import type { Sheet } from '@/types';
-import RecordEditor from './RecordEditor';
 import RecordContextMenu, { type RecordContextMenuState } from './RecordContextMenu';
 
 interface GalleryViewProps {
@@ -20,15 +20,19 @@ interface GalleryViewProps {
 }
 
 export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const openedRowId = useRecordDetail((s) =>
+    s.opened && s.opened.sheetId === sheet.id ? s.opened.rowId : null,
+  );
+  const openRecord = useRecordDetail((s) => s.openRecord);
+  const closeRecord = useRecordDetail((s) => s.closeRecord);
+  const selectRow = (rowId: string) => openRecord({ projectId, sheetId: sheet.id, rowId });
   const [ctxMenu, setCtxMenu] = useState<RecordContextMenuState | null>(null);
-  const selectedRow = selectedRowId ? sheet.rows.find((r) => r.id === selectedRowId) : null;
   const addRow = useProjectStore((s) => s.addRow);
   const deleteRow = useProjectStore((s) => s.deleteRow);
 
   const handleAddRow = () => {
     const rowId = addRow(projectId, sheet.id);
-    setSelectedRowId(rowId);
+    selectRow(rowId);
   };
   const titleCol = sheet.columns.find(
     (c) => c.type === 'general' || c.type === 'formula'
@@ -57,7 +61,7 @@ export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
               key={row.id}
               role="listitem"
               aria-label={titleRaw || '레코드'}
-              onClick={() => setSelectedRowId(row.id)}
+              onClick={() => selectRow(row.id)}
               onContextMenu={(e) => {
                 e.preventDefault();
                 setCtxMenu({ rowId: row.id, x: e.clientX, y: e.clientY });
@@ -66,7 +70,7 @@ export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
               style={{
                 background: 'var(--bg-primary)',
                 border: '1px solid var(--border-primary)',
-                outline: selectedRowId === row.id ? '2px solid var(--accent)' : 'none',
+                outline: openedRowId === row.id ? '2px solid var(--accent)' : 'none',
               }}
             >
               <div
@@ -144,25 +148,18 @@ export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
         </div>
       )}
     </div>
-    {selectedRow && (
-      <RecordEditor
-        projectId={projectId}
-        sheet={sheet}
-        row={selectedRow}
-        onClose={() => setSelectedRowId(null)}
-      />
-    )}
+    {/* RecordEditor 는 GlobalRecordDetail 에서 렌더 */}
     <RecordContextMenu
       state={ctxMenu}
       onClose={() => setCtxMenu(null)}
-      onEdit={(rowId) => setSelectedRowId(rowId)}
+      onEdit={(rowId) => selectRow(rowId)}
       onDuplicate={(rowId) => {
         const src = sheet.rows.find((r) => r.id === rowId);
         if (src) addRow(projectId, sheet.id, { ...src.cells });
       }}
       onDelete={(rowId) => {
         deleteRow(projectId, sheet.id, rowId);
-        if (selectedRowId === rowId) setSelectedRowId(null);
+        if (openedRowId === rowId) closeRecord();
       }}
     />
     </div>
