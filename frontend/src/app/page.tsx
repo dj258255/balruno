@@ -89,6 +89,7 @@ import MobileSidebar from './components/MobileSidebar';
 import SheetHeader from './components/SheetHeader';
 import BottomDock from '@/components/BottomDock';
 import { GlobalRecordDetail } from '@/components/panels/GlobalRecordDetail';
+import InboxPanel from '@/components/panels/InboxPanel';
 import ProjectMenu from './components/ProjectMenu';
 import DockedToolbox from '@/components/DockedToolbox';
 import SidebarResizer from './components/SidebarResizer';
@@ -566,6 +567,9 @@ export default function Home() {
 
       {/* 전역 레코드 상세 슬라이드 — 그리드 뷰에서 RowContextMenu "레코드 상세" 로 open */}
       <GlobalRecordDetail />
+
+      {/* 전역 Inbox — 사이드바 Inbox 버튼 or 추후 단축키로 open */}
+      <InboxPanel />
 
       {/* Track 5: Command Palette (⌘K) */}
       <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />

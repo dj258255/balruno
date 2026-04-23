@@ -30,6 +30,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { useTodaysWork, type RowWithContext } from '@/hooks/useTodaysWork';
 import { useProjectStore } from '@/stores/projectStore';
+import { useInbox } from '@/stores/inboxStore';
 
 export default function SidebarQuickAccess() {
   const t = useTranslations();
@@ -39,6 +40,7 @@ export default function SidebarQuickAccess() {
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
   const currentSheetId = useProjectStore((s) => s.currentSheetId);
+  const openInbox = useInbox((s) => s.openInbox);
 
   const goHome = () => {
     setCurrentProject(null);
@@ -108,14 +110,7 @@ export default function SidebarQuickAccess() {
               icon={Inbox}
               label="Inbox"
               count={work.recentChanges.length}
-              onClick={() => {
-                // Home 으로 이동 + changelog 위젯 스크롤
-                setCurrentProject(null);
-                setCurrentSheet(null);
-                setTimeout(() => {
-                  window.dispatchEvent(new Event('balruno:scroll-to-inbox'));
-                }, 100);
-              }}
+              onClick={openInbox}
               hint="최근 변경 · 피드백"
             />
           )}
