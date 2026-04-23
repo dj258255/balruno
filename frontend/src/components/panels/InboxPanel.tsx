@@ -12,15 +12,20 @@
  *  - 필터: 내 담당 · 언멘션 · 최근 7일
  */
 
-import { useMemo, useEffect, useRef } from 'react';
-import { X, Inbox as InboxIcon, Check, CheckCheck } from 'lucide-react';
+import { useMemo, useEffect, useRef, useState } from 'react';
+import { X, Inbox as InboxIcon, CheckCheck, AtSign, GitCommit } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { useRecordDetail } from '@/stores/recordDetailStore';
 import { useInbox } from '@/stores/inboxStore';
+import { getProjectDoc } from '@/lib/ydoc';
+import { getCommentsArray, getCommentsForSheet, type CellComment } from '@/lib/cellComments';
 import type { ChangeEntry, Project, Sheet } from '@/types';
+
+type FeedKind = 'change' | 'mention' | 'comment';
 
 interface FeedItem {
   id: string;
+  kind: FeedKind;
   timestamp: number;
   projectId: string;
   projectName: string;
@@ -28,6 +33,7 @@ interface FeedItem {
   rowId: string;
   columnLabel: string;
   userName: string;
+  /** 'change' 는 before→after, 'mention'/'comment' 는 원문 텍스트 */
   summary: string;
 }
 
@@ -43,7 +49,8 @@ function entryToFeedItem(project: Project, entry: ChangeEntry): FeedItem {
       ? '(빈 값)'
       : String(entry.after);
   return {
-    id: entry.id,
+    id: `change-${entry.id}`,
+    kind: 'change',
     timestamp: entry.timestamp,
     projectId: project.id,
     projectName: project.name,
@@ -52,6 +59,27 @@ function entryToFeedItem(project: Project, entry: ChangeEntry): FeedItem {
     columnLabel: col?.name ?? entry.columnId.slice(0, 6),
     userName: entry.userName,
     summary: `${before} → ${after}`,
+  };
+}
+
+function commentToFeedItem(
+  project: Project,
+  sheet: Sheet,
+  comment: CellComment,
+  kind: FeedKind,
+): FeedItem {
+  const col = sheet.columns.find((c) => c.id === comment.columnId);
+  return {
+    id: `${kind}-${comment.id}`,
+    kind,
+    timestamp: comment.timestamp,
+    projectId: project.id,
+    projectName: project.name,
+    sheet,
+    rowId: comment.rowId,
+    columnLabel: col?.name ?? comment.columnId.slice(0, 6),
+    userName: comment.author,
+    summary: comment.text.slice(0, 200),
   };
 }
 
@@ -68,6 +96,16 @@ function relativeTime(ts: number): string {
   return new Date(ts).toLocaleDateString('ko-KR');
 }
 
+function KindIcon({ kind }: { kind: FeedKind }) {
+  if (kind === 'mention') {
+    return <AtSign className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: '#ec4899' }} />;
+  }
+  if (kind === 'comment') {
+    return <InboxIcon className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'var(--accent)' }} />;
+  }
+  return <GitCommit className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'var(--text-tertiary)' }} />;
+}
+
 export default function InboxPanel() {
   const open = useInbox((s) => s.open);
   const closeInbox = useInbox((s) => s.closeInbox);
@@ -81,16 +119,67 @@ export default function InboxPanel() {
   const openRecord = useRecordDetail((s) => s.openRecord);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // 현재 유저 — presence localStorage 재사용 (백엔드 오기 전까지 client-side 식별자)
+  const currentUser = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    return window.localStorage.getItem('balruno:user-name') ?? '';
+  }, []);
+
+  // 코멘트 live 구독 — Inbox 열린 동안만 모든 프로젝트/시트의 Y.Array observer 등록.
+  // observer 가 tick 카운터를 올려 feed 재계산 트리거.
+  const [commentTick, setCommentTick] = useState(0);
+  useEffect(() => {
+    if (!open) return;
+    const unsubs: Array<() => void> = [];
+    for (const project of projects) {
+      const doc = getProjectDoc(project.id);
+      for (const sheet of project.sheets) {
+        const arr = getCommentsArray(doc, sheet.id);
+        if (!arr) continue;
+        const handler = () => setCommentTick((t) => t + 1);
+        arr.observe(handler);
+        unsubs.push(() => arr.unobserve(handler));
+      }
+    }
+    return () => {
+      for (const u of unsubs) u();
+    };
+  }, [open, projects]);
+
   const feed: FeedItem[] = useMemo(() => {
+    if (!open) return []; // 닫혔을 때는 계산 비용 없음
     const items: FeedItem[] = [];
+
+    // 1. changelog
     for (const project of projects) {
       for (const entry of project.changelog ?? []) {
         items.push(entryToFeedItem(project, entry));
       }
     }
+
+    // 2. 코멘트 — @mention 이 나 포함 or 남이 최근 7일 내 쓴 것
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    for (const project of projects) {
+      const doc = getProjectDoc(project.id);
+      for (const sheet of project.sheets) {
+        const comments = getCommentsForSheet(doc, sheet.id);
+        for (const c of comments) {
+          const mentionsMe = currentUser ? c.mentions.includes(currentUser) : false;
+          const otherRecent = c.author !== currentUser && c.timestamp >= cutoff;
+          if (mentionsMe) {
+            items.push(commentToFeedItem(project, sheet, c, 'mention'));
+          } else if (otherRecent) {
+            items.push(commentToFeedItem(project, sheet, c, 'comment'));
+          }
+        }
+      }
+    }
+
     items.sort((a, b) => b.timestamp - a.timestamp);
-    return items.slice(0, 100); // 상한 — 너무 오래된 건 잘라냄
-  }, [projects]);
+    return items.slice(0, 150);
+    // commentTick 은 live 구독 트리거 용 — react 가 recompute 하도록
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, projects, currentUser, commentTick]);
 
   const readSet = useMemo(() => new Set(readIds), [readIds]);
   const unreadCount = feed.filter((f) => !readSet.has(f.id)).length;
@@ -197,10 +286,11 @@ export default function InboxPanel() {
                     <span
                       className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
                       style={{
-                        background: read ? 'transparent' : 'var(--accent)',
+                        background: read ? 'transparent' : item.kind === 'mention' ? '#ec4899' : 'var(--accent)',
                         border: read ? '1px solid var(--border-primary)' : 'none',
                       }}
                     />
+                    <KindIcon kind={item.kind} />
                     <div className="flex-1 min-w-0">
                       <div
                         className="flex items-center gap-1.5 text-xs"
@@ -209,7 +299,9 @@ export default function InboxPanel() {
                         <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
                           {item.userName}
                         </span>
-                        <span className="opacity-70">편집</span>
+                        <span className="opacity-70">
+                          {item.kind === 'change' ? '편집' : item.kind === 'mention' ? '당신을 멘션' : '코멘트'}
+                        </span>
                         <span className="opacity-70">·</span>
                         <span>{relativeTime(item.timestamp)}</span>
                       </div>
@@ -220,8 +312,11 @@ export default function InboxPanel() {
                         {item.sheet?.name ?? item.projectName} · {item.columnLabel}
                       </div>
                       <div
-                        className="text-caption mt-0.5 truncate font-mono"
-                        style={{ color: 'var(--text-tertiary)' }}
+                        className="text-caption mt-0.5 truncate"
+                        style={{
+                          color: 'var(--text-tertiary)',
+                          fontFamily: item.kind === 'change' ? 'var(--font-mono)' : undefined,
+                        }}
                       >
                         {item.summary}
                       </div>
