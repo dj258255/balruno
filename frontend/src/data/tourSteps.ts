@@ -267,6 +267,218 @@ const sprintBoardTour: ProjectTour = {
 };
 
 // ============================================
+// Bug Tracker Tour (PM)
+// ============================================
+const bugTrackerTour: ProjectTour = {
+  projectId: 'bug-tracker',
+  steps: [
+    {
+      id: 'welcome',
+      titleKey: 'tour.bugTracker.welcome.title',
+      descriptionKey: 'tour.bugTracker.welcome.description',
+      target: { type: 'none' },
+      highlightIntensity: 'low',
+    },
+    {
+      id: 'severity',
+      titleKey: 'tour.bugTracker.severity.title',
+      descriptionKey: 'tour.bugTracker.severity.description',
+      target: { type: 'column', columnIndex: 2 }, // Severity
+      action: 'observe',
+      highlightIntensity: 'medium',
+    },
+    {
+      id: 's1-scan',
+      titleKey: 'tour.bugTracker.s1.title',
+      descriptionKey: 'tour.bugTracker.s1.description',
+      target: { type: 'cell', cellCoords: { rowIndex: 0, colIndex: 2 } }, // BUG-001 Severity
+      action: 'observe',
+      highlightIntensity: 'high',
+    },
+    {
+      id: 'assign',
+      titleKey: 'tour.bugTracker.assign.title',
+      descriptionKey: 'tour.bugTracker.assign.description',
+      target: { type: 'cell', cellCoords: { rowIndex: 0, colIndex: 6 } }, // BUG-001 Assignee (empty)
+      action: 'edit',
+      highlightIntensity: 'high',
+    },
+    {
+      id: 'kanban',
+      titleKey: 'tour.bugTracker.kanban.title',
+      descriptionKey: 'tour.bugTracker.kanban.description',
+      target: { type: 'none' },
+      highlightIntensity: 'low',
+    },
+  ],
+};
+
+// ============================================
+// Epic Roadmap Tour (PM Gantt)
+// ============================================
+const epicRoadmapTour: ProjectTour = {
+  projectId: 'epic-roadmap',
+  steps: [
+    {
+      id: 'welcome',
+      titleKey: 'tour.epicRoadmap.welcome.title',
+      descriptionKey: 'tour.epicRoadmap.welcome.description',
+      target: { type: 'none' },
+      highlightIntensity: 'low',
+    },
+    {
+      id: 'phase',
+      titleKey: 'tour.epicRoadmap.phase.title',
+      descriptionKey: 'tour.epicRoadmap.phase.description',
+      target: { type: 'column', columnIndex: 2 }, // Phase
+      action: 'observe',
+      highlightIntensity: 'medium',
+    },
+    {
+      id: 'dates',
+      titleKey: 'tour.epicRoadmap.dates.title',
+      descriptionKey: 'tour.epicRoadmap.dates.description',
+      target: { type: 'area', area: { startRow: 0, endRow: 3, startCol: 3, endCol: 4 } },
+      action: 'observe',
+      highlightIntensity: 'medium',
+    },
+    {
+      id: 'gantt',
+      titleKey: 'tour.epicRoadmap.gantt.title',
+      descriptionKey: 'tour.epicRoadmap.gantt.description',
+      target: { type: 'none' },
+      highlightIntensity: 'low',
+    },
+    {
+      id: 'drag',
+      titleKey: 'tour.epicRoadmap.drag.title',
+      descriptionKey: 'tour.epicRoadmap.drag.description',
+      target: { type: 'none' },
+      action: 'edit',
+      highlightIntensity: 'low',
+    },
+  ],
+};
+
+// ============================================
+// Playtest Sessions Tour (PM)
+// ============================================
+const playtestSessionsTour: ProjectTour = {
+  projectId: 'playtest-sessions',
+  steps: [
+    {
+      id: 'welcome',
+      titleKey: 'tour.playtest.welcome.title',
+      descriptionKey: 'tour.playtest.welcome.description',
+      target: { type: 'none' },
+      highlightIntensity: 'low',
+    },
+    {
+      id: 'testers',
+      titleKey: 'tour.playtest.testers.title',
+      descriptionKey: 'tour.playtest.testers.description',
+      target: { type: 'column', columnIndex: 3 }, // Testers (person)
+      action: 'observe',
+      highlightIntensity: 'medium',
+    },
+    {
+      id: 'goals',
+      titleKey: 'tour.playtest.goals.title',
+      descriptionKey: 'tour.playtest.goals.description',
+      target: { type: 'column', columnIndex: 4 }, // Goals (multiSelect)
+      action: 'observe',
+      highlightIntensity: 'medium',
+    },
+    {
+      id: 'new-session',
+      titleKey: 'tour.playtest.newSession.title',
+      descriptionKey: 'tour.playtest.newSession.description',
+      target: { type: 'none' },
+      action: 'click',
+      highlightIntensity: 'low',
+    },
+  ],
+};
+
+// ============================================
+// FPS Arena Tour (Balance)
+// ============================================
+const fpsArenaTour: ProjectTour = {
+  projectId: 'fps-arena',
+  steps: [
+    {
+      id: 'welcome',
+      titleKey: 'tour.fpsArena.welcome.title',
+      descriptionKey: 'tour.fpsArena.welcome.description',
+      target: { type: 'none' },
+      highlightIntensity: 'low',
+    },
+    {
+      id: 'weapon-class',
+      titleKey: 'tour.fpsArena.weaponClass.title',
+      descriptionKey: 'tour.fpsArena.weaponClass.description',
+      target: { type: 'column', columnIndex: 1 }, // Class (AR/SMG/SR/SG/LMG)
+      action: 'observe',
+      highlightIntensity: 'medium',
+    },
+    {
+      id: 'ttk',
+      titleKey: 'tour.fpsArena.ttk.title',
+      descriptionKey: 'tour.fpsArena.ttk.description',
+      target: { type: 'cell', cellCoords: { rowIndex: 0, colIndex: 5 } },
+      action: 'click',
+      highlightIntensity: 'high',
+    },
+    {
+      id: 'compare',
+      titleKey: 'tour.fpsArena.compare.title',
+      descriptionKey: 'tour.fpsArena.compare.description',
+      target: { type: 'none' },
+      highlightIntensity: 'low',
+    },
+  ],
+};
+
+// ============================================
+// Idle Clicker Tour (Balance)
+// ============================================
+const idleClickerTour: ProjectTour = {
+  projectId: 'idle-clicker',
+  steps: [
+    {
+      id: 'welcome',
+      titleKey: 'tour.idleClicker.welcome.title',
+      descriptionKey: 'tour.idleClicker.welcome.description',
+      target: { type: 'none' },
+      highlightIntensity: 'low',
+    },
+    {
+      id: 'cps',
+      titleKey: 'tour.idleClicker.cps.title',
+      descriptionKey: 'tour.idleClicker.cps.description',
+      target: { type: 'column', columnIndex: 2 },
+      action: 'observe',
+      highlightIntensity: 'medium',
+    },
+    {
+      id: 'cost-growth',
+      titleKey: 'tour.idleClicker.costGrowth.title',
+      descriptionKey: 'tour.idleClicker.costGrowth.description',
+      target: { type: 'column', columnIndex: 3 },
+      action: 'observe',
+      highlightIntensity: 'high',
+    },
+    {
+      id: 'sim',
+      titleKey: 'tour.idleClicker.sim.title',
+      descriptionKey: 'tour.idleClicker.sim.description',
+      target: { type: 'none' },
+      highlightIntensity: 'low',
+    },
+  ],
+};
+
+// ============================================
 // Export tour definitions
 // ============================================
 export const PROJECT_TOURS: ProjectTour[] = [
@@ -275,6 +487,11 @@ export const PROJECT_TOURS: ProjectTour[] = [
   expCurveTour,
   gachaRatesTour,
   sprintBoardTour,
+  bugTrackerTour,
+  epicRoadmapTour,
+  playtestSessionsTour,
+  fpsArenaTour,
+  idleClickerTour,
 ];
 
 // Helper: Get tour by project ID
