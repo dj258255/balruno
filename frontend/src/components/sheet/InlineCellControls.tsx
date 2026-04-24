@@ -9,8 +9,67 @@
  * 더블클릭으로 편집 모드 진입 X — 컨트롤 자체가 에디터 역할.
  */
 
-import { Check, Star, Circle } from 'lucide-react';
+import { Check, Star, Circle, User } from 'lucide-react';
 import type { CellValue, Column, Sheet } from '@/types';
+
+/**
+ * person / assignee 컬럼 인라인 렌더. 값은 콤마 split — 한 명 또는 여러 명.
+ * 아바타 (이니셜) + 이름. 여러 명이면 아바타 겹침 + 이름 첫 명만 표시.
+ *
+ * 편집은 기존 셀 더블클릭 경로 유지 (아바타는 표시만).
+ */
+export function InlinePerson({
+  value,
+}: {
+  value: CellValue;
+}) {
+  const raw = typeof value === 'string' ? value.trim() : value == null ? '' : String(value);
+  if (!raw) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+        <User className="w-3 h-3" />
+        <span className="opacity-60">미지정</span>
+      </span>
+    );
+  }
+  const names = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  const visible = names.slice(0, 3);
+  const extra = names.length - visible.length;
+
+  return (
+    <span className="inline-flex items-center gap-1.5 min-w-0">
+      <span className="flex -space-x-1 shrink-0">
+        {visible.map((name) => (
+          <span
+            key={name}
+            className="w-5 h-5 rounded-full flex items-center justify-center text-caption font-medium ring-2"
+            style={{
+              background: personColor(name),
+              color: 'white',
+              boxShadow: '0 0 0 2px var(--bg-primary)',
+            }}
+            title={name}
+          >
+            {name.slice(0, 1).toUpperCase()}
+          </span>
+        ))}
+      </span>
+      <span className="truncate text-xs" style={{ color: 'var(--text-primary)' }}>
+        {names[0]}
+        {extra > 0 && (
+          <span className="opacity-60"> +{extra}</span>
+        )}
+      </span>
+    </span>
+  );
+}
+
+function personColor(name: string): string {
+  const palette = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return palette[h % palette.length];
+}
 
 export function InlineCheckbox({
   value,

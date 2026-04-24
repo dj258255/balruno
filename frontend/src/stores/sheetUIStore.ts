@@ -66,6 +66,12 @@ interface SheetUIState {
   // 셀 스타일
   setCurrentCellStyle: (style: CellStyle) => void;
   updateCurrentCellStyle: (updates: Partial<CellStyle>) => void;
+
+  // PM 빠른 필터 — 시트 단위. sheetId 가 현재 시트와 다르면 무시.
+  quickFilter: { sheetId: string; assignee?: string; priority?: string } | null;
+  setQuickFilterAssignee: (sheetId: string, assignee: string | null) => void;
+  setQuickFilterPriority: (sheetId: string, priority: string | null) => void;
+  clearQuickFilter: () => void;
 }
 
 // 줌 레벨 스텝
@@ -84,6 +90,7 @@ export const useSheetUIStore = create<SheetUIState>()(
   redoStack: [],
   maxHistorySize: 50,
   currentCellStyle: DEFAULT_CELL_STYLE,
+  quickFilter: null,
 
   // 줌 액션
   setZoom: (level) => {
@@ -212,9 +219,43 @@ export const useSheetUIStore = create<SheetUIState>()(
       currentCellStyle: { ...state.currentCellStyle, ...updates },
     }));
   },
+
+  setQuickFilterAssignee: (sheetId, assignee) => {
+    set((state) => {
+      const current = state.quickFilter?.sheetId === sheetId ? state.quickFilter : null;
+      const next = {
+        sheetId,
+        assignee: assignee ?? undefined,
+        priority: current?.priority,
+      };
+      if (!next.assignee && !next.priority) return { quickFilter: null };
+      return { quickFilter: next };
+    });
+  },
+
+  setQuickFilterPriority: (sheetId, priority) => {
+    set((state) => {
+      const current = state.quickFilter?.sheetId === sheetId ? state.quickFilter : null;
+      const next = {
+        sheetId,
+        assignee: current?.assignee,
+        priority: priority ?? undefined,
+      };
+      if (!next.assignee && !next.priority) return { quickFilter: null };
+      return { quickFilter: next };
+    });
+  },
+
+  clearQuickFilter: () => set({ quickFilter: null }),
     }),
     {
       name: 'sheet-ui',
+      // quickFilter 는 세션 로컬 — persist 대상 아님
+      partialize: (state) => {
+        const rest = { ...state } as Partial<SheetUIState>;
+        delete rest.quickFilter;
+        return rest;
+      },
     }
   )
 );
