@@ -250,17 +250,49 @@ export default function Home() {
     },
   });
 
-  // URL hash `?room=xxx` 자동 감지 → 활성 프로젝트에 attachWebrtc
-  // (받는 쪽 link 클릭 흐름 — 기존 로컬 프로젝트와 매칭되어야 sync 가능)
+  // URL `?room=xxx&project=yyy` 자동 감지 → webrtc 연결 + 필요 시 placeholder 프로젝트
+  // 생성 (Cross-machine bootstrap). 로컬에 projectId 가 이미 있으면 그대로, 없으면 빈
+  // 프로젝트를 Zustand 에 추가 → useYDocSync 가 Y.Doc 초기화 → peers 가 full hydrate.
+  // 세션당 1 회만 (sessionStorage 플래그).
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     const room = url.searchParams.get('room');
-    if (!room || !currentProjectId) return;
+    const remoteProjectId = url.searchParams.get('project');
+    if (!room) return;
+
+    const sessionKey = `balruno:bootstrapped-${room}`;
+    if (window.sessionStorage.getItem(sessionKey) === '1') return;
+
+    const state = useProjectStore.getState();
+    let targetProjectId: string | null = remoteProjectId ?? currentProjectId;
+
+    // 로컬에 없는 remote projectId 면 placeholder 생성 (bootstrap)
+    if (remoteProjectId && !state.projects.find((p) => p.id === remoteProjectId)) {
+      const now = Date.now();
+      state.loadProjects([
+        ...state.projects,
+        {
+          id: remoteProjectId,
+          name: '공유 프로젝트 (동기화 중…)',
+          description: '',
+          createdAt: now,
+          updatedAt: now,
+          sheets: [],
+          syncMode: 'cloud',
+          syncRoomId: room,
+        },
+      ]);
+      state.setCurrentProject(remoteProjectId);
+      targetProjectId = remoteProjectId;
+    }
+
+    if (!targetProjectId) return;
+    window.sessionStorage.setItem(sessionKey, '1');
 
     // 동적 import 로 lib/ydoc 접근 (서버 번들 분리)
     import('@/lib/ydoc').then(({ attachWebrtc }) => {
-      attachWebrtc(currentProjectId, room);
+      attachWebrtc(targetProjectId!, room);
     });
   }, [currentProjectId]);
 

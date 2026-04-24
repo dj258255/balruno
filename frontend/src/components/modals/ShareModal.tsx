@@ -58,7 +58,8 @@ export default function ShareModal({ onClose }: ShareModalProps) {
   const isActive = project?.syncMode === 'cloud' && !!project.syncRoomId;
   const roomUrl = (() => {
     if (!isActive || !project?.syncRoomId || typeof window === 'undefined') return null;
-    const params = new URLSearchParams({ room: project.syncRoomId });
+    // project id 도 URL 에 포함 — 받는 쪽에서 로컬에 없으면 placeholder 생성해 bootstrap
+    const params = new URLSearchParams({ room: project.syncRoomId, project: project.id });
     if (readOnly) params.set('readonly', '1');
     if (expiryKey !== 'none') {
       const ms = { '1h': 3600_000, '1d': 86400_000, '7d': 604800_000 }[expiryKey];
