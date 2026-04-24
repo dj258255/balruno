@@ -49,6 +49,7 @@ const ProjectGalleryModal = dynamic(() => import('@/components/modals/ProjectGal
 const SettingsModal = dynamic(() => import('@/components/modals/SettingsModal'), { ssr: false });
 const ReferencesModal = dynamic(() => import('@/components/modals/ReferencesModal'), { ssr: false });
 const OnboardingGuide = dynamic(() => import('@/components/modals/OnboardingGuide'), { ssr: false });
+const PersonaModal = dynamic(() => import('@/components/modals/PersonaModal'), { ssr: false });
 const ExportModal = dynamic(() => import('@/components/modals/ExportModal'), { ssr: false });
 const ImportModal = dynamic(() => import('@/components/modals/ImportModal'), { ssr: false });
 
@@ -570,6 +571,9 @@ export default function Home() {
 
       {/* 전역 Inbox — 사이드바 Inbox 버튼 or 추후 단축키로 open */}
       <InboxPanel />
+
+      {/* 첫 진입 시 1 회 페르소나 선택 — hasChosen=false 일 때만 내부적으로 렌더 */}
+      <PersonaModal />
 
       {/* Track 5: Command Palette (⌘K) */}
       <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />

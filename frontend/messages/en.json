@@ -20,9 +20,48 @@
     "simulation": "Simulate combat between units",
     "entityDefinition": "Define level-based stats for characters/monsters"
   },
+  "persona": {
+    "heading": "What do you mostly work on?",
+    "subheading": "We'll tailor the home screen and recommended samples. Change anytime.",
+    "changeLaterHint": "Change anytime from Settings",
+    "skip": "Later",
+    "balancer": {
+      "title": "Balancer",
+      "desc": "Stats, formulas, simulation — numeric design"
+    },
+    "pm": {
+      "title": "PM / Design",
+      "desc": "Sprints, bugs, roadmap — task management"
+    },
+    "analyst": {
+      "title": "Analyst",
+      "desc": "Economy, curves, distributions — data insight"
+    },
+    "explorer": {
+      "title": "Explore",
+      "desc": "See everything"
+    }
+  },
   "sidebar": {
     "newProject": "New Project",
     "projects": "Projects",
+    "emptyCta": {
+      "heading": "Start from a sample",
+      "subheading": "One click — data and formulas pre-filled",
+      "balance": {
+        "title": "Balancing — RPG Character",
+        "hint": "Stats · DPS · EHP formulas"
+      },
+      "pm": {
+        "title": "Team PM — Sprint Board",
+        "hint": "Status · Assignee · Priority"
+      },
+      "gallery": {
+        "title": "Browse all samples",
+        "hint": "10+ genre & PM templates"
+      },
+      "blank": "Start with a blank project"
+    },
     "teamspaces": "Teamspaces",
     "teamspacesEmpty": "No teamspaces yet",
     "private": "Private",
