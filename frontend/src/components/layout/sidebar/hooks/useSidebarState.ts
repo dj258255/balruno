@@ -135,7 +135,29 @@ export function useSidebarState() {
   const projectContextMenuRef = useRef<HTMLDivElement>(null);
   const folderContextMenuRef = useRef<HTMLDivElement>(null);
 
-  // 폴더 컨텍스트 메뉴 바깥 클릭 시 닫기
+  // 컨텍스트 메뉴 3 종 바깥 클릭 시 닫기 — sheet / project / folder 동일 패턴
+  useEffect(() => {
+    if (!sheetContextMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (sheetContextMenuRef.current && !sheetContextMenuRef.current.contains(e.target as Node)) {
+        setSheetContextMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [sheetContextMenu]);
+
+  useEffect(() => {
+    if (!projectContextMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (projectContextMenuRef.current && !projectContextMenuRef.current.contains(e.target as Node)) {
+        setProjectContextMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [projectContextMenu]);
+
   useEffect(() => {
     if (!folderContextMenu) return;
     const onDown = (e: MouseEvent) => {
