@@ -2724,6 +2724,104 @@
         "description": "왼쪽 사이드바의 비교 차트 도구를 사용해 캐릭터들을 시각적으로 비교해보세요. 불균형 감지 도구로 밸런스 문제를 찾을 수도 있습니다."
       }
     },
+    "bugTracker": {
+      "welcome": {
+        "title": "버그 트래커 샘플",
+        "description": "Severity (S1~S4) · Status · Platform · Assignee 컬럼으로 버그를 체계적으로 관리. Kanban 으로 보면 Severity 별 스윔레인이 됩니다."
+      },
+      "severity": {
+        "title": "Severity 가 트리아지 핵심",
+        "description": "S1 Blocker → 즉시. S2 Critical → 이번 스프린트. S3/S4 는 백로그. 상단 배지에서 카운트 바로 확인."
+      },
+      "s1": {
+        "title": "BUG-001 은 S1",
+        "description": "보스 2페이즈 무적 — 플레이 불가. S1 은 Open 상태면 최우선. 이걸 누가 잡을지가 첫 의사결정."
+      },
+      "assign": {
+        "title": "Assignee 를 지정해 보세요",
+        "description": "BUG-001 의 Assignee 셀을 클릭해 이름을 입력. 상단 담당자 아바타에 즉시 반영. 여러 명은 콤마로 구분."
+      },
+      "kanban": {
+        "title": "Kanban 뷰로 Severity 별 스윔",
+        "description": "View 스위처 → Kanban. Severity 기준 그룹. 드래그로 S3 → S2 승격 같은 트리아지."
+      }
+    },
+    "epicRoadmap": {
+      "welcome": {
+        "title": "에픽 로드맵 (Gantt)",
+        "description": "런칭까지의 큰 덩어리 (에픽) 를 Phase + 시작/종료 날짜로. Gantt 뷰가 기본 — 시각적 타임라인."
+      },
+      "phase": {
+        "title": "Phase — 개발 단계",
+        "description": "Pre-production / Production / Beta / Launch. 시간 순 흐름이 아니라 에픽 별 현재 위치."
+      },
+      "dates": {
+        "title": "Start · End 가 Gantt 막대 폭",
+        "description": "두 날짜가 Gantt 에서 막대 길이로 시각화. 한 에픽의 폭 = 개발 기간."
+      },
+      "gantt": {
+        "title": "Gantt 뷰로 전체 타임라인",
+        "description": "View 스위처 → Gantt. 에픽 겹침 · 병목 · 공백이 한눈에. 막대 드래그로 일정 조정."
+      },
+      "drag": {
+        "title": "막대 드래그로 재스케줄",
+        "description": "막대 본체 드래그 → 평행이동. 오른쪽 끝 드래그 → 기간 연장."
+      }
+    },
+    "playtest": {
+      "welcome": {
+        "title": "플레이테스트 세션",
+        "description": "테스트 세션마다 누가 테스트했고 · 목표가 뭐였고 · 언제 · 결과가 어땠는지. 밸런스 변경 근거 저장소."
+      },
+      "testers": {
+        "title": "Testers — person 컬럼",
+        "description": "여러 테스터 이름을 아바타로 표시. 콤마로 여러 명. 다음 세션에서 같은 조합 재소집할 때 참조."
+      },
+      "goals": {
+        "title": "Goals — multiSelect",
+        "description": "Combat balance · Economy check · UI readability 등 세션 목표를 여러 개 태깅. 나중에 필터링 가능."
+      },
+      "newSession": {
+        "title": "새 세션 추가",
+        "description": "행 + 버튼으로 새 세션 기록. 끝난 뒤 Notes 에 한줄 피드백 · 다음 세션 계획."
+      }
+    },
+    "fpsArena": {
+      "welcome": {
+        "title": "FPS Arena 밸런싱",
+        "description": "무기별 Class · Damage · RoF · Range · TTK. 무기 종류 (AR/SMG/Sniper/Shotgun/LMG) 별로 메타 확인."
+      },
+      "weaponClass": {
+        "title": "Class 가 메타 축",
+        "description": "AR 은 올라운더. SMG 근거리. Sniper 장거리 원샷. Shotgun 초근접 버스트. 각 Class 별 DPS 커브가 Range 에 따라 교차하는 지점이 설계 핵심."
+      },
+      "ttk": {
+        "title": "TTK 수식 셀",
+        "description": "Time To Kill = HP / DPS. 플레이어 HP 100 기준 1~2초 범위가 아케이드 FPS 스윗 스폿. 수식 셀을 열어 확인."
+      },
+      "compare": {
+        "title": "DPS 비교 차트",
+        "description": "우측 도구 → 비교 차트. 여러 무기를 동시에 선택해 거리별 DPS 그래프로 겹쳐 보기."
+      }
+    },
+    "idleClicker": {
+      "welcome": {
+        "title": "Idle Clicker 밸런싱",
+        "description": "빌딩별 CPS (Cookies per Second) + 비용 성장률. 지루함 없는 로그 곡선 설계."
+      },
+      "cps": {
+        "title": "CPS 는 코어 메트릭",
+        "description": "각 빌딩이 초당 몇 개 생산. Tier 가 올라갈수록 CPS 도 기하급수로 — 하지만 비용도 같이 올라야 진행감 유지."
+      },
+      "costGrowth": {
+        "title": "Cost Growth Rate ≈ 1.15",
+        "description": "매 구매마다 가격이 15% 씩 올라감. 이게 Idle 장르의 황금비 — 너무 낮으면 단조, 너무 높으면 벽. 1.15 는 Cookie Clicker 원조가 정립."
+      },
+      "sim": {
+        "title": "10000 클릭 시뮬",
+        "description": "시뮬 패널에서 시간 vs 총 Cookie 그래프. 각 빌딩 언락 타이밍이 균등하게 분포되는지가 지루함 없는 설계의 기준."
+      }
+    },
     "sprintBoard": {
       "welcome": {
         "title": "스프린트 보드에 오신 걸 환영합니다",

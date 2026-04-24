@@ -2717,6 +2717,104 @@
         "description": "Use the comparison chart tool in the left sidebar to visually compare characters. You can also use the imbalance detector to find balance issues."
       }
     },
+    "bugTracker": {
+      "welcome": {
+        "title": "Bug Tracker Sample",
+        "description": "Severity (S1-S4), Status, Platform, Assignee columns for systematic bug management. Kanban view becomes severity swimlanes."
+      },
+      "severity": {
+        "title": "Severity drives triage",
+        "description": "S1 Blocker -> immediate. S2 Critical -> this sprint. S3/S4 -> backlog. Top badge strip shows counts."
+      },
+      "s1": {
+        "title": "BUG-001 is S1",
+        "description": "Boss phase-2 invulnerability - game-breaking. An S1 in Open status is top priority. Who picks it up is the first decision."
+      },
+      "assign": {
+        "title": "Assign it",
+        "description": "Click the Assignee cell on BUG-001 and type a name. Top assignee avatars update instantly. Comma-separate for multiple."
+      },
+      "kanban": {
+        "title": "Kanban view by severity",
+        "description": "Switch to Kanban. Grouped by severity. Drag cards to triage S3 -> S2."
+      }
+    },
+    "epicRoadmap": {
+      "welcome": {
+        "title": "Epic Roadmap (Gantt)",
+        "description": "Large chunks (epics) with phase + start/end dates. Gantt is the default view for visual timelines."
+      },
+      "phase": {
+        "title": "Phase - dev stage",
+        "description": "Pre-production / Production / Beta / Launch. Not time-ordered but per-epic current state."
+      },
+      "dates": {
+        "title": "Start/End define the Gantt bar width",
+        "description": "Two dates become bar length in Gantt view. Each epic's width = its development duration."
+      },
+      "gantt": {
+        "title": "Gantt view for the full timeline",
+        "description": "Switch to Gantt. Overlaps, bottlenecks, gaps are immediately visible. Drag bars to reschedule."
+      },
+      "drag": {
+        "title": "Drag bars to reschedule",
+        "description": "Drag the body to shift. Drag the right edge to extend the duration."
+      }
+    },
+    "playtest": {
+      "welcome": {
+        "title": "Playtest Sessions",
+        "description": "Per session: who tested, goals, date, outcome. Evidence store for balance decisions."
+      },
+      "testers": {
+        "title": "Testers - person column",
+        "description": "Multiple tester names shown as avatars. Comma-separate. Reference when re-recruiting the same mix."
+      },
+      "goals": {
+        "title": "Goals - multiSelect",
+        "description": "Tag each session: Combat balance, Economy check, UI readability, etc. Filter later."
+      },
+      "newSession": {
+        "title": "Add a new session",
+        "description": "Row + to log a new session. Fill Notes afterward with feedback and next-session plan."
+      }
+    },
+    "fpsArena": {
+      "welcome": {
+        "title": "FPS Arena Balancing",
+        "description": "Per-weapon Class, Damage, RoF, Range, TTK. Check the meta across AR / SMG / Sniper / Shotgun / LMG."
+      },
+      "weaponClass": {
+        "title": "Class is the meta axis",
+        "description": "AR - all-rounder. SMG - close. Sniper - long-range one-shot. Shotgun - point-blank burst. Where DPS curves cross by range defines the meta."
+      },
+      "ttk": {
+        "title": "TTK formula cell",
+        "description": "Time To Kill = HP / DPS. For 100 HP, 1-2 seconds is the arcade FPS sweet spot. Open the formula to see."
+      },
+      "compare": {
+        "title": "DPS compare chart",
+        "description": "Right tools -> compare chart. Select multiple weapons to overlay DPS-vs-range curves."
+      }
+    },
+    "idleClicker": {
+      "welcome": {
+        "title": "Idle Clicker Balancing",
+        "description": "Per-building CPS (Cookies per Second) and cost growth. Designing a log-curve that avoids boredom."
+      },
+      "cps": {
+        "title": "CPS is the core metric",
+        "description": "Each building's production per second. Higher tiers grow exponentially - but so does cost, to keep progress alive."
+      },
+      "costGrowth": {
+        "title": "Cost Growth Rate ~= 1.15",
+        "description": "Each purchase raises price by 15%. This is the genre's golden ratio - Cookie Clicker's original. Too low is dull, too high is a wall."
+      },
+      "sim": {
+        "title": "Simulate 10000 clicks",
+        "description": "Sim panel shows time vs total Cookie graph. Evenly distributed building-unlock times = a pleasant curve."
+      }
+    },
     "sprintBoard": {
       "welcome": {
         "title": "Welcome to the Sprint Board",
