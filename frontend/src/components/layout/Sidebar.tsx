@@ -11,7 +11,6 @@ import type { ProjectVisibility } from '@/types';
 // 분리된 훅과 컴포넌트들
 import { useSidebarState } from './sidebar/hooks';
 import {
-  SidebarHeader,
   WorkspaceSwitcher,
   PinnedSection,
   NewProjectForm,
@@ -216,8 +215,8 @@ export default function Sidebar({
           opacity: mounted ? 1 : 0,
         }}
       >
-        <SidebarHeader />
-
+        {/* Notion / Linear 공통 패턴 — 별도 앱 로고 없음. WorkspaceSwitcher 가 최상단 앵커
+            역할 + 테마 토글 인라인. (앱 브랜드는 브라우저 탭·파비콘·랜딩에서만) */}
         <WorkspaceSwitcher onOpenSettings={onShowSettings} />
 
         <SidebarQuickAccess />
