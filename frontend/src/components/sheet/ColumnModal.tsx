@@ -283,12 +283,12 @@ export default function ColumnModal({
                 { value: 'url', label: 'URL' },
                 { value: 'currency', label: 'Currency' },
                 { value: 'rating', label: 'Rating' },
-                { value: 'link', label: 'Link (Track 2)' },
-                { value: 'lookup', label: 'Lookup (Track 3)' },
-                { value: 'rollup', label: 'Rollup (Track 3)' },
-                { value: 'task-link', label: 'Task Link (Track 12)' },
+                { value: 'link', label: 'Link' },
+                { value: 'lookup', label: 'Lookup' },
+                { value: 'rollup', label: 'Rollup' },
+                { value: 'task-link', label: 'Task Link' },
                 { value: 'person', label: 'Person / @mention' },
-                { value: 'stat-snapshot', label: 'Stat Snapshot (Track 13)' },
+                { value: 'stat-snapshot', label: 'Stat Snapshot' },
               ]}
               size="md"
             />
