@@ -10,7 +10,7 @@
  */
 
 import { useState } from 'react';
-import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Workflow, Filter } from 'lucide-react';
+import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Filter } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ViewType, Sheet, SavedView, FilterGroup } from '@/types';
 import { useProjectStore } from '@/stores/projectStore';
@@ -21,6 +21,8 @@ interface ViewSwitcherProps {
   sheet: Sheet;
 }
 
+// diagram 뷰는 경제 워크벤치 패널(DockedToolbox) 로 이관돼 여기서 제외됨.
+// legacy 데이터 (sheet.activeView === 'diagram') 는 page.tsx 에서 grid 로 폴백.
 const VIEWS: Array<{ id: ViewType; labelKey: string; icon: typeof Table2 }> = [
   { id: 'grid', labelKey: 'views.grid', icon: Table2 },
   { id: 'form', labelKey: 'views.form', icon: FileText },
@@ -28,12 +30,11 @@ const VIEWS: Array<{ id: ViewType; labelKey: string; icon: typeof Table2 }> = [
   { id: 'calendar', labelKey: 'views.calendar', icon: Calendar },
   { id: 'gallery', labelKey: 'views.gallery', icon: Image },
   { id: 'gantt', labelKey: 'views.gantt', icon: GanttChart },
-  { id: 'diagram', labelKey: 'views.diagram', icon: Workflow },
 ];
 
 const VIEW_ICON: Record<ViewType, typeof Table2> = {
   grid: Table2, form: FileText, kanban: Columns3, calendar: Calendar, gallery: Image, gantt: GanttChart,
-  diagram: Workflow,
+  diagram: Table2,
 };
 
 export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
