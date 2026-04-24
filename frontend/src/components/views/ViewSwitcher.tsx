@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 4 — 뷰 스위처. 기본 뷰 6종 + 저장된 뷰 N개 (시트마다).
+ * 뷰 스위처. 기본 뷰 6종 + 저장된 뷰 N개 (시트마다).
  *
  * - 기본 뷰 6종: grid/form/kanban/calendar/gallery/gantt
  * - 저장 뷰: 사용자가 + 버튼으로 현재 설정을 이름과 함께 저장

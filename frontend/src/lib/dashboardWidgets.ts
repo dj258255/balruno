@@ -1,5 +1,5 @@
 /**
- * Track 9 — Interface Designer 위젯 정의 + 데이터 어댑터.
+ * Interface Designer 위젯 정의 + 데이터 어댑터.
  *
  * 위젯 종류:
  *   - metric:     단일 숫자 (sheet 의 cell or aggregate)
@@ -123,7 +123,7 @@ export interface ButtonWidget extends WidgetBase {
   type: 'button';
   config: {
     label: string;
-    /** 클릭 시 실행할 automation id (Track 10 연동) */
+    /** 클릭 시 실행할 automation id (Track연동) */
     automationId?: string;
     color?: string;
   };

@@ -1,5 +1,5 @@
 /**
- * Track 11 — AI 밸런스 리뷰 (템플릿 기반).
+ * AI 밸런스 리뷰 (템플릿 기반).
  *
  * imbalanceDetector 의 ImbalanceIssue[] 결과를 사람이 읽는 자연어 리포트로 변환.
  * LLM 호출 없이 템플릿 합성 — 백엔드에서 추후 진짜 LLM 으로 교체 가능.

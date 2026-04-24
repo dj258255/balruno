@@ -1,5 +1,5 @@
 /**
- * Track 0 Phase 3 — Y.UndoManager delegate.
+ * TrackPhase 3 — Y.UndoManager delegate.
  *
  * 이전에는 매 편집마다 `JSON.parse(JSON.stringify(projects))` 로 스냅샷을 쌓았다.
  * 이제는 활성 프로젝트의 Y.UndoManager 가 CRDT 트랜잭션 단위로 자동 추적하므로

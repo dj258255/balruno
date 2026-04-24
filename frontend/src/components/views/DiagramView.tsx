@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 15 — Economy Diagram View.
+ * Economy Diagram View.
  *
  * Machinations-lite: Source → Gate → Converter → Sink + Pool 노드를
  * SVG 위에 배치하고, 각 노드의 rate/probability 를 시트 cell 로부터 참조 가능.
@@ -170,7 +170,7 @@ export default function DiagramView({ projectId, sheet }: Props) {
   const [viewBox, setViewBox] = useState({ x: 0, y: 0, w: 1400, h: 900 });
   const panState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
 
-  // Track 15-B — SVG / PNG 내보내기.
+  // SVG / PNG 내보내기.
   // CSS 변수(var(--xxx))를 실제 색으로 치환해야 외부 이미지에서도 색이 맞음.
   const serializeSvg = useCallback((): { xml: string; width: number; height: number; bg: string } | null => {
     const svg = svgRef.current;
@@ -790,7 +790,7 @@ export default function DiagramView({ projectId, sheet }: Props) {
           <div className="mt-4 text-caption space-y-1" style={{ color: 'var(--text-tertiary)' }}>
             <div><b>팁 1:</b> 노드 더블클릭 → 다른 노드 클릭 = edge 생성.</div>
             <div>
-              <b>팁 2 (Track 15-3):</b> rate/probability 자리에{' '}
+              <b>팁 2 :</b> rate/probability 자리에{' '}
               <code style={{ color: 'var(--primary-purple)' }}>=Sheet!colId!rowId</code>{' '}
               입력하면 시트 cell 값 실시간 참조. 시트 편집 → 다음 시뮬에 반영됨.
             </div>

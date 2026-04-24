@@ -77,7 +77,7 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   'recent-changes': {
     id: 'recent-changes',
     name: '최근 변경',
-    description: '셀 변경 히스토리 10개 (Track 12 changelog)',
+    description: '셀 변경 히스토리 10개 (Trackchangelog)',
     icon: History,
     color: '#10b981',
     size: 'full',

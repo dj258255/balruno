@@ -58,7 +58,7 @@ export default function ColumnModal({
   const [required, setRequired] = useState(column?.validation?.required || false);
   const [locked, setLocked] = useState(column?.locked || false);
   const [exportName, setExportName] = useState(column?.exportName || '');
-  // Track 1 — 타입별 설정 state
+  // 타입별 설정 state
   const [selectOptions, setSelectOptions] = useState<FieldOption[]>(
     column?.selectOptions ?? []
   );
@@ -69,13 +69,13 @@ export default function ColumnModal({
     column?.currencyFormat?.decimals ?? 0
   );
   const [ratingMax, setRatingMax] = useState(column?.ratingMax ?? 5);
-  // Track 2 — link 설정
+  // link 설정
   const [linkedSheetId, setLinkedSheetId] = useState(column?.linkedSheetId ?? '');
   const [linkedDisplayColumnId, setLinkedDisplayColumnId] = useState(
     column?.linkedDisplayColumnId ?? ''
   );
   const [linkedMultiple, setLinkedMultiple] = useState(column?.linkedMultiple ?? false);
-  // Track 3 — lookup / rollup
+  // lookup / rollup
   const [lookupLinkColumnId, setLookupLinkColumnId] = useState(
     column?.lookupLinkColumnId ?? ''
   );
@@ -85,7 +85,7 @@ export default function ColumnModal({
   const [rollupAggregate, setRollupAggregate] = useState<
     'SUM' | 'AVG' | 'MIN' | 'MAX' | 'COUNT' | 'CONCAT'
   >(column?.rollupAggregate ?? 'SUM');
-  // Track 12 — task-link
+  // task-link
   const [taskSheetId, setTaskSheetId] = useState(column?.taskSheetId ?? '');
   const [taskStatusColumnId, setTaskStatusColumnId] = useState(
     column?.taskStatusColumnId ?? ''
@@ -93,7 +93,7 @@ export default function ColumnModal({
   const [taskAssigneeColumnId, setTaskAssigneeColumnId] = useState(
     column?.taskAssigneeColumnId ?? ''
   );
-  // Track 13 — stat-snapshot
+  // stat-snapshot
   const [snapshotSheetId, setSnapshotSheetId] = useState(column?.snapshotSheetId ?? '');
   const [snapshotColumnIds, setSnapshotColumnIds] = useState<string[]>(
     column?.snapshotColumnIds ?? []
@@ -155,7 +155,7 @@ export default function ColumnModal({
       data.formula = formula.startsWith('=') ? formula : `=${formula}`;
     }
 
-    // Track 1 — 타입별 설정 저장
+    // 타입별 설정 저장
     if (type === 'select' || type === 'multiSelect') {
       data.selectOptions = selectOptions.filter((o) => o.label.trim());
     }
@@ -294,7 +294,7 @@ export default function ColumnModal({
             />
           </div>
 
-          {/* Track 2 — link 설정 */}
+          {/* link 설정 */}
           {type === 'link' && (
             <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
               <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
@@ -341,7 +341,7 @@ export default function ColumnModal({
             </div>
           )}
 
-          {/* Track 3 — lookup / rollup 설정 */}
+          {/* lookup / rollup 설정 */}
           {(type === 'lookup' || type === 'rollup') && (
             <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
               <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
@@ -398,7 +398,7 @@ export default function ColumnModal({
             </div>
           )}
 
-          {/* Track 13 — stat-snapshot 설정 */}
+          {/* stat-snapshot 설정 */}
           {type === 'stat-snapshot' && (
             <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
               <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
@@ -451,7 +451,7 @@ export default function ColumnModal({
             </div>
           )}
 
-          {/* Track 12 — task-link 설정 */}
+          {/* task-link 설정 */}
           {type === 'task-link' && (
             <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
               <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
@@ -501,7 +501,7 @@ export default function ColumnModal({
             </div>
           )}
 
-          {/* Track 1 — 타입별 설정 */}
+          {/* 타입별 설정 */}
           {(type === 'select' || type === 'multiSelect') && (
             <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
               <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>

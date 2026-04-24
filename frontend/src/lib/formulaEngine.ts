@@ -207,7 +207,7 @@ function computeCellValue(
 }
 
 /**
- * Track 2 — 링크 컬럼 traversal: `{링크컬럼}.타겟컬럼` 문법.
+ * 링크 컬럼 traversal: `{링크컬럼}.타겟컬럼` 문법.
  *
  * 현재 행에서 link 타입 컬럼을 찾아 → 그 값(rowId) 으로 대상 시트 row 를 조회 →
  * 타겟 컬럼 값을 반환. 다중 링크(linkedMultiple) 는 첫 번째 row 만 사용 (MVP).
@@ -561,7 +561,7 @@ export function convertKoreanToScope(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // 0. Track 2 — 링크 컬럼 traversal: {링크컬럼}.타겟컬럼
+  // 0. 링크 컬럼 traversal: {링크컬럼}.타겟컬럼
   // 예: {무기}.데미지 = 현재 행의 무기 링크가 가리키는 row 의 데미지 컬럼
   if (context?.currentSheet && context?.sheets) {
     const linkResult = processLinkTraversal(

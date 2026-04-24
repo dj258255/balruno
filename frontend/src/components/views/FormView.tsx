@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * Track 4 — Form 뷰 (Airtable 스타일 수집 폼).
+ * Form 뷰 (Airtable 스타일 수집 폼).
  *
  * 목적: 외부 이해관계자/팀원이 스프레드시트 편집 없이 레코드를 "제출".
  * - 폼 설명 + 최근 제출 프리뷰 + 세션 카운터로 "수집 인터페이스" 느낌 강화
- * - Field 타입 (Track 1) 반영 — checkbox 토글, rating 별, select 드롭다운 등
+ * - Field 타입  반영 — checkbox 토글, rating 별, select 드롭다운 등
  * - 제출 시 toast + 필드 리셋
  */
 

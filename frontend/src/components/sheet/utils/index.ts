@@ -1,7 +1,7 @@
 import type { CellValue, Column, Sheet } from '@/types';
 
 /**
- * Track 2/3 — link/lookup/rollup 해결에 필요한 컨텍스트.
+ * link/lookup/rollup 해결에 필요한 컨텍스트.
  * 다른 시트의 행을 조회해야 하므로 sheets 배열 전달.
  */
 export interface DisplayContext {
@@ -45,7 +45,7 @@ export function parseValue(value: string): CellValue {
   return value;
 }
 
-// 표시값 포맷팅 — Track 1/2/3: column.type 에 따라 타입별 표시.
+// 표시값 포맷팅: column.type 에 따라 타입별 표시.
 // link/lookup/rollup 은 DisplayContext (다른 시트 참조) 필요.
 export function formatDisplayValue(
   value: CellValue,
@@ -136,7 +136,7 @@ export function hasValue(value: CellValue): boolean {
 }
 
 /**
- * Track 3 — lookup / rollup 해결.
+ * lookup / rollup 해결.
  * 현재 row 의 link 컬럼 값 → 연결된 시트의 target 컬럼 값 → 집계.
  * 순환 참조는 현재 방어 X (MVP). lookup 체이닝 없음.
  */

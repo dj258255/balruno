@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 8 Presence — y-webrtc awareness API 기반 다중 사용자 표시.
+ * TrackPresence — y-webrtc awareness API 기반 다중 사용자 표시.
  *
  * - 익명 사용자 이름/색 자동 생성 (localStorage 영구 저장)
  * - WebRTC provider 활성 시 awareness.setLocalState 로 publish

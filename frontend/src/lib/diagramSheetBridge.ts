@@ -1,5 +1,5 @@
 /**
- * Track 15-3 — Diagram ↔ Sheet 양방향 연결.
+ * Diagram ↔ Sheet 양방향 연결.
  *
  * 노드의 rate/probability 값에 `=Sheet!colId!rowId` 형태의 참조를 허용.
  * - 읽기: resolveNodeValue(cfg.rate, sheets) → 실제 number

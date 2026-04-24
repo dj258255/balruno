@@ -1,5 +1,5 @@
 /**
- * 셀 코멘트 / @멘션 시스템 — Track 8 협업 마무리.
+ * 셀 코멘트 / @멘션 시스템 — Track협업 마무리.
  *
  * 저장 위치: sheet.get('comments') = Y.Array<Y.Map>
  * 한 코멘트는 cell 단위로 attach 되며 thread (parentId) 로 연결.

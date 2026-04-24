@@ -43,7 +43,7 @@ interface SheetBodyProps {
   computedRows: Record<string, CellValue>[];
   columns: Column[];
 
-  // Track 2/3 — link/lookup/rollup 해결용 컨텍스트
+  // link/lookup/rollup 해결용 컨텍스트
   displayContext?: DisplayContext;
 
   // 리사이즈 상태
@@ -70,7 +70,7 @@ interface SheetBodyProps {
   noDataText: string;
   dragToFillText: string;
 
-  /** Track 1 인라인 컨트롤 — checkbox 토글, rating 별 클릭. */
+  /** Track인라인 컨트롤 — checkbox 토글, rating 별 클릭. */
   onInlineCellUpdate?: (rowId: string, columnId: string, value: CellValue) => void;
 }
 

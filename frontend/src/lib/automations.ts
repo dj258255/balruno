@@ -1,5 +1,5 @@
 /**
- * Track 10 — Automations.
+ * Automations.
  *
  * 노드 기반 룰 파이프라인 (Trigger → Condition → Action).
  *
@@ -32,8 +32,8 @@ export type TriggerType =
   | 'row-added'
   | 'manual'
   | 'schedule'
-  | 'playtest-started'    // Track 13: playtest status → running
-  | 'playtest-ended';     // Track 13: playtest status → done
+  | 'playtest-started'    // playtest status → running
+  | 'playtest-ended';     // playtest status → done
 export type ConditionType = 'compare' | 'threshold' | 'branch';
 export type ActionType =
   | 'notify'
@@ -43,10 +43,10 @@ export type ActionType =
   | 'delay'
   | 'loop-rows'
   | 'calc'
-  | 'snapshot-stats'      // Track 13: 현재 시트 stats 를 snapshot row 에 캡처
-  | 'create-retro-task';  // Track 13: playtest 종료 후 회고 task 자동 생성
+  | 'snapshot-stats'      // 현재 시트 stats 를 snapshot row 에 캡처
+  | 'create-retro-task';  // playtest 종료 후 회고 task 자동 생성
 /** Probability Flow 노드 — Machinations 스타일.
- *  Track 15 확장: pool(자원 저장), converter(a→b 변환), trigger(조건 발동). */
+ *  Track확장: pool(자원 저장), converter(a→b 변환), trigger(조건 발동). */
 export type FlowType = 'source' | 'gate' | 'sink' | 'pool' | 'converter' | 'trigger';
 export type NodeType = 'trigger' | 'condition' | 'action' | 'flow';
 
@@ -329,7 +329,7 @@ async function executeAction(
   }
 
   if (node.subtype === 'snapshot-stats') {
-    // Track 13: 소스 시트의 특정 row stats 를 JSON 으로 캡처.
+    // 소스 시트의 특정 row stats 를 JSON 으로 캡처.
     // caller 는 이 action 의 notify 콜백에서 구조화된 JSON 을 받아 snapshot 셀에 저장.
     const { sourceSheetId, sourceRowId, targetSheetId, targetRowId, targetColumnId } = cfg as {
       sourceSheetId: string; sourceRowId: string;
@@ -413,7 +413,7 @@ export function simulateFlow(
     // BFS — token volume 누적
     const tokens = new Map<string, number>();
     for (const src of sources) {
-      // Track 15-3: rate 가 sheet ref 면 resolve
+      // rate 가 sheet ref 면 resolve
       const rawRate = (src.config as { rate?: unknown }).rate;
       const resolved = resolveNodeValue(rawRate, sheets, 1);
       tokens.set(src.id, resolved);

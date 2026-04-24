@@ -5,7 +5,7 @@ import { useHistoryStore } from '@/stores/historyStore';
 import type { Project } from '@/types';
 
 /**
- * Track 0 Phase 3 — Y.UndoManager 어댑터 훅.
+ * TrackPhase 3 — Y.UndoManager 어댑터 훅.
  *
  * 기존에는 이 훅이 projects 스냅샷을 Zustand 에 setProjects 로 되돌렸지만,
  * 이제 Y.UndoManager 가 Y.Doc 을 직접 되돌리고 observer 가 Zustand 에 반사하므로

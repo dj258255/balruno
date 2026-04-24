@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * ChangeHistoryPanel — Track 12.
+ * ChangeHistoryPanel — 
  *
  * 모든 프로젝트의 cell 변경 이력을 시간 역순으로 보여준다.
  * - 행 클릭 → 해당 시트/행으로 점프 (setCurrentSheet + focus-row 이벤트)

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 4 MVP — Gallery 뷰.
+ * Gallery 뷰.
  * 각 행을 카드 그리드로 표시. 첫 url 컬럼 값이 있으면 이미지로 렌더(attachment 는 다음 세션).
  * 제목 = 첫 일반 컬럼, 나머지 컬럼은 메타 데이터로.
  */

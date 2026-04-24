@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 13 — stat-snapshot 셀 인라인.
+ * stat-snapshot 셀 인라인.
  *
  * 값이 없으면 "Capture" 버튼, 있으면 미니 테이블로 stats 표시.
  * Capture 클릭 → 모달에서 entity row 선택 → JSON 저장.

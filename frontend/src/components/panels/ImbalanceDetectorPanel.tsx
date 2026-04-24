@@ -107,7 +107,7 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
     return counts;
   }, [issues]);
 
-  // Track 11 — AI 리뷰 (템플릿 기반)
+  // AI 리뷰 (템플릿 기반)
   const aiReview = useMemo(() => {
     if (!hasAnalyzed) return null;
     return reviewBalance(issues);
@@ -427,7 +427,7 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
               )}
             </div>
 
-            {/* Track 11 — AI 밸런스 리뷰 (템플릿) */}
+            {/* AI 밸런스 리뷰 (템플릿) */}
             {aiReview && (
               <div
                 className="rounded-lg border-2 overflow-hidden"

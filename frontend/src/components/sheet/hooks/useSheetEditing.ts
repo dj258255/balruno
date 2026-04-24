@@ -40,7 +40,7 @@ export function useSheetEditing({
   const formulaBarRef = useRef<HTMLInputElement>(null);
   const isComposingRef = useRef(false);
 
-  // 셀 편집 시작 — Track 1: 타입별 전용 인터랙션
+  // 셀 편집 시작 — 타입별 전용 인터랙션
   const startEditing = useCallback(
     (rowId: string, columnId: string) => {
       const column = sheet.columns.find((c) => c.id === columnId);
@@ -50,7 +50,7 @@ export function useSheetEditing({
         return;
       }
 
-      // Track 1: checkbox 는 편집 모드 진입 대신 즉시 토글
+      // checkbox 는 편집 모드 진입 대신 즉시 토글
       if (column?.type === 'checkbox') {
         const current = row?.cells[columnId];
         const isTrue = current === 'true' || current === 1 || current === '1';
@@ -60,7 +60,7 @@ export function useSheetEditing({
         return;
       }
 
-      // Track 1: rating 은 더블클릭으로 별 하나씩 순환 (0→1→...→max→0)
+      // rating 은 더블클릭으로 별 하나씩 순환 (0→1→...→max→0)
       if (column?.type === 'rating') {
         const max = column.ratingMax ?? 5;
         const current = row?.cells[columnId];

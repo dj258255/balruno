@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 9 — Interface Designer 패널.
+ * Interface Designer 패널.
  *
  * react-grid-layout 으로 위젯을 자유 배치/리사이즈하는 대시보드.
  * 위젯 타입 5개 (metric / chart-line / text / sheet-table / distribution).

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 8 MVP — 프로젝트 공유 / WebRTC P2P 협업.
+ * 프로젝트 공유 / WebRTC P2P 협업.
  *
  * 동작:
  *  - "협업 활성화" 토글 → project.syncMode = 'cloud' + syncRoomId 생성

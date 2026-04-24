@@ -1,5 +1,5 @@
 /**
- * Track 3 — link / lookup / rollup 체인에서 순환 참조 감지.
+ * link / lookup / rollup 체인에서 순환 참조 감지.
  *
  * 시트 간 link/lookup/rollup 의존 그래프를 구성한 뒤 DFS 로 사이클 탐지.
  * - link: linkedSheetId 로 edge

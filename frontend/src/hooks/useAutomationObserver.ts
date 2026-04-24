@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 10 — 활성 자동화의 cell-changed / row-added trigger 를 Y.Doc observer 로 발동.
+ * 활성 자동화의 cell-changed / row-added trigger 를 Y.Doc observer 로 발동.
  *
  * 설계:
  *  - 프로젝트별 y-doc 의 sheets 변경 감지
@@ -52,7 +52,7 @@ export function useAutomationObserver(projectId: string | null): void {
       // cell-changed: cells Y.Map 변경 — 여기서는 구분 없이 둘 다 모두 검사
       let fireRowAdded = false;
       let fireCellChanged = false;
-      // Track 13: playtest 트리거 — project 의 Playtest Sessions 시트에서
+      // playtest 트리거 — project 의 Playtest Sessions 시트에서
       // Status 컬럼이 'running' 으로 전환 → playtest-started, 'done' → playtest-ended.
       let firePlaytestStarted = false;
       let firePlaytestEnded = false;

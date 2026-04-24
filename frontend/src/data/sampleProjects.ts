@@ -8,7 +8,7 @@ export type SampleCategory =
   | 'economy'
   | 'progression'
   | 'gacha'
-  | 'team-pm'; // Track PM (Codecks meets Airtable)
+  | 'team-pm'; // (Codecks meets Airtable)
 
 // 샘플 프로젝트 메타데이터
 export interface SampleProjectMeta {
@@ -611,7 +611,7 @@ const createEpicRoadmapProject = (_t: TranslateFunction): Project => {
 };
 
 // ============================================
-// Track 13 — Playtest Sessions (team-pm)
+// Playtest Sessions (team-pm)
 // ============================================
 const createPlaytestSessionsProject = (_t: TranslateFunction): Project => {
   const now = Date.now();

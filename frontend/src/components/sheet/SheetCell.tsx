@@ -65,10 +65,10 @@ export interface SheetCellProps {
   // 기본 스타일
   defaultFontSize: number;
 
-  /** Track 1 — checkbox/rating 등 display 모드에서 클릭 가능한 인라인 컨트롤. 제공 시 displayValue 텍스트 대체 */
+  /** checkbox/rating 등 display 모드에서 클릭 가능한 인라인 컨트롤. 제공 시 displayValue 텍스트 대체 */
   inlineControl?: React.ReactNode;
 
-  /** Track 8B — peer cursor 색상 (다른 유저가 현재 이 셀 선택 중). undefined = 없음. */
+  /** peer cursor 색상 (다른 유저가 현재 이 셀 선택 중). undefined = 없음. */
   peerCursorColor?: string;
   /** peer 이름 (툴팁) */
   peerCursorName?: string;
@@ -199,7 +199,7 @@ const SheetCell = memo(function SheetCell({
     if (isFillPreview) return '2px dashed var(--primary-green)';
     if (isSelected) return '2px solid var(--primary-blue)';
     if (isMultiSelected) return '1px solid var(--primary-blue)';
-    // Track 8B — peer cursor (로컬 선택 없을 때만)
+    // peer cursor (로컬 선택 없을 때만)
     if (peerCursorColor) return `2px solid ${peerCursorColor}`;
     return 'none';
   };
@@ -299,7 +299,7 @@ const SheetCell = memo(function SheetCell({
         </span>
       )}
 
-      {/* Track 8B — peer cursor 뱃지 (이름 + typing indicator) */}
+      {/* peer cursor 뱃지 (이름 + typing indicator) */}
       {peerCursorColor && peerCursorName && !isSelected && (
         <span
           className="absolute -top-4 left-0 px-1 rounded text-caption font-semibold text-white z-30 whitespace-nowrap pointer-events-none inline-flex items-center gap-1"
