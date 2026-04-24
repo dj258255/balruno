@@ -131,8 +131,13 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
         if (!names.includes(quickFilter.assignee)) keep = false;
       }
       if (keep && quickFilter.priority && priorityCol) {
-        const v = row.cells[priorityCol.id];
-        if (String(v ?? '') !== quickFilter.priority) keep = false;
+        const v = String(row.cells[priorityCol.id] ?? '');
+        // cell 값은 option.id 또는 label 둘 다 올 수 있음 — 양쪽 모두 비교
+        const matchedOpt = priorityCol.selectOptions?.find(
+          (o) => o.id === v || o.label === v,
+        );
+        const valueLabel = matchedOpt ? matchedOpt.label : v;
+        if (valueLabel !== quickFilter.priority) keep = false;
       }
       if (!keep) dim.add(row.id);
     }

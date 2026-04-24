@@ -58,7 +58,8 @@ export function PmBadgeStrip({ sheet }: Props) {
     [sheet.columns, isPm],
   );
 
-  // 상태 집계 — 비 PM 면 null. PM 이면 select option 순서대로 카운트.
+  // 상태 집계 — cell 값은 option.id 또는 label 둘 다 올 수 있음 (구버전 호환).
+  // option 의 id 와 label 로 동시 매칭해서 항상 display label 로 표시.
   const statusBuckets = useMemo(() => {
     if (!isPm || !statusCol) return null;
     const counts = new Map<string, number>();
@@ -69,9 +70,12 @@ export function PmBadgeStrip({ sheet }: Props) {
     }
     const ordered: Array<{ label: string; count: number; color?: string }> = [];
     for (const opt of statusCol.selectOptions ?? []) {
-      const c = counts.get(opt.label);
-      if (c) {
-        ordered.push({ label: opt.label, count: c, color: opt.color });
+      const byId = counts.get(opt.id) ?? 0;
+      const byLabel = counts.get(opt.label) ?? 0;
+      const total = byId + byLabel;
+      if (total > 0) {
+        ordered.push({ label: opt.label, count: total, color: opt.color });
+        counts.delete(opt.id);
         counts.delete(opt.label);
       }
     }
@@ -89,9 +93,12 @@ export function PmBadgeStrip({ sheet }: Props) {
     }
     const ordered: Array<{ label: string; count: number; color?: string }> = [];
     for (const opt of priorityCol.selectOptions ?? []) {
-      const c = counts.get(opt.label);
-      if (c) {
-        ordered.push({ label: opt.label, count: c, color: opt.color });
+      const byId = counts.get(opt.id) ?? 0;
+      const byLabel = counts.get(opt.label) ?? 0;
+      const total = byId + byLabel;
+      if (total > 0) {
+        ordered.push({ label: opt.label, count: total, color: opt.color });
+        counts.delete(opt.id);
         counts.delete(opt.label);
       }
     }
