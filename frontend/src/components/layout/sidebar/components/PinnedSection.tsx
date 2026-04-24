@@ -10,8 +10,8 @@
  *  - onSheetContextMenu 미제공 시 fallback 으로 단순 unpin
  */
 
-import { useState } from 'react';
-import { Pin, ChevronDown, ChevronRight, FileSpreadsheet, X } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Pin, ChevronDown, ChevronRight, FileSpreadsheet, X, PinOff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 import { useProjectStore } from '@/stores/projectStore';
@@ -38,6 +38,20 @@ export function PinnedSection({ onSheetContextMenu }: PinnedSectionProps = {}) {
   const { pinnedSheetIds, unpinSheet } = useSidebarPrefs();
   const [expanded, setExpanded] = useState(true);
 
+  // 섹션 헤더 우클릭 — "모두 해제"
+  const [headerMenu, setHeaderMenu] = useState<{ x: number; y: number } | null>(null);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!headerMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(e.target as Node)) {
+        setHeaderMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [headerMenu]);
+
   // 핀된 시트를 실제 시트 데이터로 해석 — 존재하지 않는 ID 는 조용히 스킵
   const pinnedEntries = pinnedSheetIds
     .map((sheetId) => {
@@ -56,6 +70,11 @@ export function PinnedSection({ onSheetContextMenu }: PinnedSectionProps = {}) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setHeaderMenu({ x: e.clientX, y: e.clientY });
+        }}
         className="w-full flex items-center gap-1 px-3 py-1.5 text-overline hover:bg-[var(--bg-hover)] transition-colors"
         style={{ color: 'var(--text-tertiary)' }}
       >
@@ -66,6 +85,32 @@ export function PinnedSection({ onSheetContextMenu }: PinnedSectionProps = {}) {
           {pinnedEntries.length}
         </span>
       </button>
+
+      {headerMenu && (
+        <div
+          ref={headerMenuRef}
+          className="fixed z-50 min-w-[160px] py-1 rounded-lg shadow-lg border"
+          style={{
+            left: headerMenu.x,
+            top: headerMenu.y,
+            background: 'var(--bg-primary)',
+            borderColor: 'var(--border-primary)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              pinnedEntries.forEach(({ sheet }) => unpinSheet(sheet.id));
+              setHeaderMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <PinOff className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            모두 핀 해제
+          </button>
+        </div>
+      )}
 
       {expanded && (
         <div className="px-2 pb-2 space-y-0.5">

@@ -11,7 +11,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { ChevronDown, Plus, Settings } from 'lucide-react';
+import { ChevronDown, Plus, Settings, Edit2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ui';
@@ -24,9 +24,23 @@ interface WorkspaceSwitcherProps {
 export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
   const t = useTranslations();
   const { theme } = useTheme();
-  const { workspaces, activeWorkspaceId } = useSidebarPrefs();
+  const { workspaces, activeWorkspaceId, renameWorkspace } = useSidebarPrefs();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // 우클릭 컨텍스트 메뉴 — 이름 변경 / 설정 바로가기
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+  const ctxMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (ctxMenuRef.current && !ctxMenuRef.current.contains(e.target as Node)) {
+        setCtxMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [ctxMenu]);
 
   const active = workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces[0];
   const displayName = active?.name ?? t('sidebar.workspaceSwitcher.defaultName');
@@ -51,6 +65,11 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setCtxMenu({ x: e.clientX, y: e.clientY });
+        }}
         className="flex-1 min-w-0 flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors hover:bg-[var(--bg-hover)]"
         style={{ color: 'var(--text-primary)' }}
       >
@@ -150,6 +169,53 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {ctxMenu && (
+        <div
+          ref={ctxMenuRef}
+          className="fixed z-50 min-w-[180px] py-1 rounded-lg shadow-lg border"
+          style={{
+            left: ctxMenu.x,
+            top: ctxMenu.y,
+            background: 'var(--bg-primary)',
+            borderColor: 'var(--border-primary)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              if (!active) {
+                setCtxMenu(null);
+                return;
+              }
+              const next = window.prompt('워크스페이스 이름', active.name);
+              if (next && next.trim()) {
+                renameWorkspace(active.id, next);
+              }
+              setCtxMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <Edit2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            이름 변경
+          </button>
+          {onOpenSettings && (
+            <button
+              type="button"
+              onClick={() => {
+                setCtxMenu(null);
+                onOpenSettings();
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              <Settings className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+              워크스페이스 설정
+            </button>
+          )}
         </div>
       )}
     </div>

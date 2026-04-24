@@ -8,7 +8,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { Plus, ChevronDown, ChevronRight, Trash2, Sparkles } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, Trash2, Sparkles, Edit2, Copy } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { DOC_TEMPLATES } from '@/lib/docTemplates';
 import DocIconPicker from '@/components/docs/DocIconPicker';
@@ -32,6 +32,25 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
   const [expanded, setExpanded] = useState(true);
   const [showTemplates, setShowTemplates] = useState(false);
   const templateMenuRef = useRef<HTMLDivElement>(null);
+
+  // 문서 행 우클릭 컨텍스트 메뉴
+  const [docCtxMenu, setDocCtxMenu] = useState<{
+    x: number;
+    y: number;
+    docId: string;
+    docName: string;
+  } | null>(null);
+  const docCtxMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!docCtxMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (docCtxMenuRef.current && !docCtxMenuRef.current.contains(e.target as Node)) {
+        setDocCtxMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [docCtxMenu]);
 
   useEffect(() => {
     if (!showTemplates) return;
@@ -178,6 +197,11 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                         handleOpen(d.id);
                       }
                     }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDocCtxMenu({ x: e.clientX, y: e.clientY, docId: d.id, docName: d.name });
+                    }}
                     className="group w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-left transition-colors cursor-pointer"
                     style={{
                       background: isActive ? 'var(--bg-tertiary)' : 'transparent',
@@ -212,6 +236,71 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* 문서 우클릭 컨텍스트 메뉴 — 이름 변경 / 복제 / 삭제 */}
+      {docCtxMenu && (
+        <div
+          ref={docCtxMenuRef}
+          className="fixed z-50 min-w-[160px] py-1 rounded-lg shadow-lg border"
+          style={{
+            left: docCtxMenu.x,
+            top: docCtxMenu.y,
+            background: 'var(--bg-primary)',
+            borderColor: 'var(--border-primary)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              const next = window.prompt('문서 이름', docCtxMenu.docName);
+              if (next && next.trim() && currentProjectId) {
+                updateDoc(currentProjectId, docCtxMenu.docId, { name: next.trim() });
+              }
+              setDocCtxMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <Edit2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            이름 변경
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!currentProjectId) {
+                setDocCtxMenu(null);
+                return;
+              }
+              const source = project?.docs?.find((x) => x.id === docCtxMenu.docId);
+              const copyName = `${docCtxMenu.docName || '문서'} (사본)`;
+              const newId = createDoc(currentProjectId, copyName, source?.content ?? '');
+              setCurrentSheet(null);
+              setCurrentDoc(newId);
+              setDocCtxMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <Copy className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            복제
+          </button>
+          <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />
+          <button
+            type="button"
+            onClick={() => {
+              if (currentProjectId) {
+                deleteDoc(currentProjectId, docCtxMenu.docId);
+              }
+              setDocCtxMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--danger)' }}
+          >
+            <Trash2 className="w-4 h-4" />
+            삭제
+          </button>
         </div>
       )}
     </div>
