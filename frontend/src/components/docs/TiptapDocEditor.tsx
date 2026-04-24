@@ -49,7 +49,7 @@ export default function TiptapDocEditor({ content, onChange, placeholder, projec
     projectRef.current = projects.find((p) => p.id === projectId);
   }, [projects, projectId]);
 
-  // 멘션 클릭 시 네비게이션 — setCurrentSheet/setCurrentDoc 는 매 렌더마다 같은 참조라 ref 불필요
+  // 멘션 클릭 시 네비게이션 — task/cell 은 RecordEditor 슬라이드까지 자동 open
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
   const setCurrentDoc = useProjectStore((s) => s.setCurrentDoc);
   const navigateMention = (id: string) => {
@@ -57,23 +57,21 @@ export default function TiptapDocEditor({ content, onChange, placeholder, projec
     if (kind === 'sheet' && a) {
       setCurrentDoc(null);
       setCurrentSheet(a);
-    } else if (kind === 'task' && a) {
-      // task:<sheetId>:<rowId> — 시트로 이동, row 포커스는 추후
+    } else if ((kind === 'task' || kind === 'cell') && a) {
+      // task|cell:<sheetId>:<rowId> — 시트 전환 + RecordEditor 자동 open (Linear 식)
       setCurrentDoc(null);
       setCurrentSheet(a);
-      if (b) {
-        // 기존 컨벤션: 셀/행 하이라이트 이벤트 (리스너 있는 경우에만 작동)
+      if (b && projectId) {
+        // 전역 레코드 상세 패널 open — task-link 클릭과 동일한 UX
+        const pid = projectId;
+        import('@/stores/recordDetailStore').then(({ useRecordDetail }) => {
+          useRecordDetail.getState().openRecord({ projectId: pid, sheetId: a, rowId: b });
+        });
         window.dispatchEvent(new CustomEvent('balruno:focus-row', { detail: { sheetId: a, rowId: b } }));
       }
     } else if (kind === 'doc' && a) {
       setCurrentSheet(null);
       setCurrentDoc(a);
-    } else if (kind === 'cell' && a) {
-      setCurrentDoc(null);
-      setCurrentSheet(a);
-      if (b) {
-        window.dispatchEvent(new CustomEvent('balruno:focus-row', { detail: { sheetId: a, rowId: b } }));
-      }
     }
   };
 
