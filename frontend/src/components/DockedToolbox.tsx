@@ -48,7 +48,7 @@ const AutoBattlerPanel = dynamic(() => import('@/components/panels/AutoBattlerPa
 const HordeSurvivorPanel = dynamic(() => import('@/components/panels/HordeSurvivorPanel'), { ssr: false });
 const AiPlaytestPanel = dynamic(() => import('@/components/panels/AiPlaytestPanel'), { ssr: false });
 const FormulaVerifierPanel = dynamic(() => import('@/components/panels/FormulaVerifierPanel'), { ssr: false });
-const EconomyPanel = dynamic(() => import('@/components/panels/EconomyPanel'), { ssr: false });
+const EconomyWorkbench = dynamic(() => import('@/components/panels/EconomyWorkbench'), { ssr: false });
 const DPSVariancePanel = dynamic(() => import('@/components/panels/DPSVariancePanel'), { ssr: false });
 const CurveFittingPanel = dynamic(() => import('@/components/panels/CurveFittingPanel'), { ssr: false });
 const EntityDefinition = dynamic(() => import('@/components/panels/EntityDefinition'), { ssr: false });
@@ -130,7 +130,7 @@ function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
     case 'balance':
       return <BalanceAnalysisPanel onClose={close} />;
     case 'economy':
-      return <EconomyPanel onClose={close} />;
+      return <EconomyWorkbench onClose={close} />;
     case 'dpsVariance':
       return <DPSVariancePanel onClose={close} isPanel />;
     case 'curveFitting':

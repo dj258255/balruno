@@ -33,7 +33,6 @@ import KanbanView from '@/components/views/KanbanView';
 import CalendarView from '@/components/views/CalendarView';
 import GalleryView from '@/components/views/GalleryView';
 import GanttView from '@/components/views/GanttView';
-import DiagramView from '@/components/views/DiagramView';
 import type { ViewType } from '@/types';
 
 // Modal components - Dynamic imports for code splitting
@@ -579,7 +578,8 @@ export default function Home() {
                         case 'gantt':
                           return <GanttView projectId={currentProject.id} sheet={currentSheet} />;
                         case 'diagram':
-                          return <DiagramView projectId={currentProject.id} sheet={currentSheet} />;
+                          // legacy: 경제 워크벤치로 이관된 뷰. 기존 데이터 보존 위해 조용히 grid 로 폴백.
+                          return <SheetTable projectId={currentProject.id} sheet={currentSheet} onAddMemo={handleAddMemo} />;
                       }
                     })()}
                   </div>
