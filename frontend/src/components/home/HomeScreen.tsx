@@ -21,6 +21,7 @@ import { useHomeLayout } from '@/stores/homeLayoutStore';
 import { WIDGET_REGISTRY, type WidgetId } from './widgetRegistry';
 import HomeEmptyState from './HomeEmptyState';
 import CurrentUserBadge from './CurrentUserBadge';
+import { GettingStartedChecklist } from './GettingStartedChecklist';
 
 export default function HomeScreen() {
   const work = useTodaysWork();
@@ -130,6 +131,9 @@ export default function HomeScreen() {
               {editMode ? '위젯을 추가/삭제하거나 순서를 바꿀 수 있습니다' : `"${activeIface.name}" 뷰입니다. 모든 "@me" 필터는 위 유저 기준으로 작동합니다.`}
             </p>
           </header>
+
+          {/* 신규 유저 시작 가이드 — 5 단계 완료 또는 dismiss 시 자동 숨김 */}
+          <GettingStartedChecklist />
 
           {/* 위젯 그리드 */}
           {widgets.length === 0 ? (

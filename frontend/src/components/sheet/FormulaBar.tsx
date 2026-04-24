@@ -14,6 +14,7 @@ import { AlertTriangle, Check, X } from 'lucide-react';
 import type { Column, Sheet } from '@/types';
 import type { CellPosition } from './types';
 import FormulaAutocomplete, { type FormulaAutocompleteRef } from './FormulaAutocomplete';
+import { AiFormulaButton } from './AiFormulaButton';
 
 interface FormulaBarProps {
   selectedCell: CellPosition | null;
@@ -287,6 +288,18 @@ const FormulaBar = memo(function FormulaBar({
           }}
         />
       </div>
+
+      {/* AI 수식 생성 — 자연어 → 수식. 응답 적용 시 = prefix 자동 */}
+      <AiFormulaButton
+        columns={columns}
+        currentColumn={selectedCellInfo?.column ?? undefined}
+        disabled={!selectedCell}
+        onFormula={(f) => {
+          const withEquals = f.startsWith('=') ? f : `=${f}`;
+          onFormulaBarChange(withEquals);
+          formulaBarRef.current?.focus();
+        }}
+      />
 
       {/* Validation Error */}
       {validationError && (

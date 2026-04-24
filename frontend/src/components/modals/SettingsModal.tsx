@@ -60,6 +60,10 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
     }
   };
 
+  // GitHub / Notion 은 브라우저 CORS + 인증 헤더 필요 — 현 UI 로는 실 발송 불가.
+  // 템플릿만 제공하고 배지로 정직성 유지. 토큰 입력 + 서버 프록시는 백엔드 붙은 뒤.
+  const needsServer = preset.service === 'github' || preset.service === 'notion';
+
   return (
     <div
       className="p-2.5 rounded-lg space-y-2"
@@ -69,8 +73,22 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
       }}
     >
       <div>
-        <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-          {preset.name}
+        <div className="flex items-center gap-1.5">
+          <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            {preset.name}
+          </div>
+          {needsServer && (
+            <span
+              className="text-caption px-1.5 py-0.5 rounded-full font-medium"
+              style={{
+                background: 'var(--warning, #f59e0b)',
+                color: 'white',
+              }}
+              title="브라우저 CORS + 인증 헤더 필요 — 현재는 템플릿 복사용. 백엔드 연동 후 실발송 지원"
+            >
+              서버 필요
+            </span>
+          )}
         </div>
         <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
           {preset.description}
@@ -99,13 +117,19 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
         </button>
         <button
           onClick={handleTest}
-          disabled={testing || !url.trim()}
+          disabled={testing || !url.trim() || needsServer}
           className="p-1.5 rounded"
           style={{
-            background: testing ? 'var(--bg-secondary)' : 'var(--accent)',
-            color: testing ? 'var(--text-tertiary)' : 'white',
+            background: testing || needsServer ? 'var(--bg-secondary)' : 'var(--accent)',
+            color: testing || needsServer ? 'var(--text-tertiary)' : 'white',
+            cursor: needsServer ? 'not-allowed' : undefined,
+            opacity: needsServer ? 0.5 : 1,
           }}
-          title="샘플 payload 로 테스트 발송"
+          title={
+            needsServer
+              ? '브라우저에서 직접 호출 불가 — 서버 프록시 필요 (백엔드 연동 후 지원)'
+              : '샘플 payload 로 테스트 발송'
+          }
         >
           <Send className="w-3 h-3" />
         </button>
