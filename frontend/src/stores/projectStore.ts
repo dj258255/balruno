@@ -90,6 +90,7 @@ export interface ProjectState {
       | 'viewGanttDependsColumnId'
       | 'savedViews'
       | 'activeSavedViewId'
+      | 'filterGroup'
     >>
   ) => void;
   deleteSheet: (projectId: string, sheetId: string) => void;
