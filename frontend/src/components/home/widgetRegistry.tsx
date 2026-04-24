@@ -8,7 +8,7 @@
  */
 
 import {
-  Sparkles, Clock, History, Zap, Bug, Gamepad2, TrendingUp, Activity, Flame,
+  Sparkles, Clock, History, Zap, Bug, Gamepad2, TrendingUp, Activity, Flame, CalendarDays,
   type LucideIcon,
 } from 'lucide-react';
 import type { TodaysWork } from '@/hooks/useTodaysWork';
@@ -22,6 +22,7 @@ import PlaytestWidget from './widgets/PlaytestWidget';
 import BalanceHealthWidget from './widgets/BalanceHealthWidget';
 import BurndownWidget from './widgets/BurndownWidget';
 import VelocityWidget from './widgets/VelocityWidget';
+import CurrentCycleWidget from './widgets/CurrentCycleWidget';
 
 export type WidgetId =
   | 'hero'
@@ -33,7 +34,8 @@ export type WidgetId =
   | 'playtest'
   | 'balance-health'
   | 'burndown'
-  | 'velocity';
+  | 'velocity'
+  | 'current-cycle';
 
 export type WidgetSize = 'full' | 'half' | 'third';
 
@@ -138,6 +140,15 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
     color: '#10b981',
     size: 'half',
     Component: VelocityWidget as unknown as React.FC<{ work: TodaysWork }>,
+  },
+  'current-cycle': {
+    id: 'current-cycle',
+    name: '현재 Cycle',
+    description: '활성 sprint/cycle · 남은 일수 · 미완료 이관',
+    icon: CalendarDays,
+    color: '#3b82f6',
+    size: 'half',
+    Component: CurrentCycleWidget as unknown as React.FC<{ work: TodaysWork }>,
   },
 };
 
