@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Edit2, Trash2, Copy, Plus, Code, FolderPlus, Folder, Tag, Check, ChevronRight, Pin, PinOff, Users, Lock } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui';
 import { useTranslations } from 'next-intl';
@@ -50,6 +50,20 @@ export function SheetContextMenu({
 }: SheetContextMenuProps) {
   const t = useTranslations();
   const [kindSubmenuOpen, setKindSubmenuOpen] = useState(false);
+  // 서브메뉴 hover 갭에서 즉시 닫히지 않게 closing delay. 150ms 내에 mouseenter 다시
+  // 발생하면 닫기 취소. Linear / macOS menu 식 패턴.
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openSubmenu = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setKindSubmenuOpen(true);
+  };
+  const scheduleCloseSubmenu = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => setKindSubmenuOpen(false), 150);
+  };
 
   if (!menu) return null;
 
@@ -115,8 +129,8 @@ export function SheetContextMenu({
       {onSetKind && (
         <div
           className="relative"
-          onMouseEnter={() => setKindSubmenuOpen(true)}
-          onMouseLeave={() => setKindSubmenuOpen(false)}
+          onMouseEnter={openSubmenu}
+          onMouseLeave={scheduleCloseSubmenu}
         >
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
@@ -130,8 +144,15 @@ export function SheetContextMenu({
           </button>
           {kindSubmenuOpen && (
             <div
-              className="absolute left-full top-0 ml-1 min-w-[180px] py-1 rounded-lg shadow-lg border"
-              style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-primary)' }}
+              className="absolute left-full top-0 min-w-[180px] py-1 rounded-lg shadow-lg border"
+              style={{
+                background: 'var(--bg-primary)',
+                borderColor: 'var(--border-primary)',
+                // 부모와 겹치도록 살짝 음수 margin — 갭 없음, 마우스 이동 시 끊기지 않음
+                marginLeft: -2,
+              }}
+              onMouseEnter={openSubmenu}
+              onMouseLeave={scheduleCloseSubmenu}
             >
               <button
                 onClick={() => { onSetKind(menu.projectId, menu.sheetId, undefined); onClose(); }}
