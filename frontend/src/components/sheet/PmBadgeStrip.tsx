@@ -36,16 +36,9 @@ function findPriorityColumn(columns: Column[]): Column | undefined {
 }
 
 export function PmBadgeStrip({ sheet }: Props) {
-  // 빠른 바일아웃 — 명시 kind 가 게임/분석/참조 면 detect 자체 스킵 (일반 시트 기본 경로)
-  const explicitNonPm =
-    sheet.kind === 'game-data' || sheet.kind === 'analysis' || sheet.kind === 'reference';
-
-  // 명시 kind='pm' 이 최우선. 아니면 auto detect. (explicitNonPm 면 호출 스킵)
-  const detection = useMemo(
-    () => (explicitNonPm ? { type: null } as ReturnType<typeof detectPmSheet> : detectPmSheet(sheet)),
-    [sheet, explicitNonPm],
-  );
-  const isPm = !explicitNonPm && (sheet.kind === 'pm' || detection.type !== null);
+  // 명시 kind='pm' 이 최우선. 아니면 auto detect.
+  const detection = useMemo(() => detectPmSheet(sheet), [sheet]);
+  const isPm = sheet.kind === 'pm' || detection.type !== null;
   const quickFilter = useSheetUIStore((s) => s.quickFilter);
   const setFilterAssignee = useSheetUIStore((s) => s.setQuickFilterAssignee);
   const setFilterPriority = useSheetUIStore((s) => s.setQuickFilterPriority);
