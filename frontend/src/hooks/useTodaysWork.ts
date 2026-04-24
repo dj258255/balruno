@@ -10,7 +10,7 @@
  *   - recentSheets: 최근 7일 편집된 시트
  *   - recentChanges: 최근 changelog entry
  *
- * current user = localStorage 'balruno:user-name' (Track 8 presence 재활용).
+ * current user = localStorage 'balruno:user-name' (Trackpresence 재활용).
  * Stage 3 에서 proper auth 로 upgrade 예정.
  */
 

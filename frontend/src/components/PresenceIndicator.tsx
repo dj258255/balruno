@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 8 — 우측 상단 접속자 아바타 (Figma/Notion 스타일).
+ * 우측 상단 접속자 아바타 (Figma/Notion 스타일).
  * 활성 프로젝트의 WebRTC provider awareness 기반.
  */
 

@@ -92,7 +92,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
 
   const { pushState } = useHistoryStore();
 
-  // Track 8B — 셀 cursor presence
+  // 셀 cursor presence
   const { peers, publishActiveCell, publishSelectedCells, publishEditing } = usePresence(projectId);
   // selectedCell 바인딩은 아래 useSheetSelection 에서 나오므로 이후 effect 에서 publish
   const { zoomLevel, setCurrentCellStyle, columnHeaderFontSize, rowHeaderFontSize, rowHeaderWidth } = useSheetUIStore();
@@ -240,7 +240,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
     selectAllCells,
   } = useSheetSelection({ projectId, sheet, computedRows });
 
-  // Track 8B — selectedCell 변경 시 peer 에게 publish
+  // selectedCell 변경 시 peer 에게 publish
   useEffect(() => {
     if (selectedCell) {
       publishActiveCell({ sheetId: sheet.id, rowId: selectedCell.rowId, columnId: selectedCell.columnId });

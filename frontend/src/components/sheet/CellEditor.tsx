@@ -25,15 +25,15 @@ interface CellEditorProps {
     height: number;
   };
   cellStyle?: CellStyle;
-  /** Track 1: 컬럼 타입에 따라 input type 분기 */
+  /** 컬럼 타입에 따라 input type 분기 */
   columnType?: ColumnType;
-  /** Track 1: select / multiSelect 의 옵션 목록 */
+  /** select / multiSelect 의 옵션 목록 */
   selectOptions?: SelectOption[];
-  /** Track 2: link 타입 — 대상 시트의 row 목록을 드롭다운으로 */
+  /** link 타입 — 대상 시트의 row 목록을 드롭다운으로 */
   linkedSheet?: Sheet | null;
-  /** Track 2: link 타입 — 표시 컬럼 id (없으면 row.id) */
+  /** link 타입 — 표시 컬럼 id (없으면 row.id) */
   linkedDisplayColumnId?: string;
-  /** Track 2: link 타입 — 다중 선택 허용 */
+  /** link 타입 — 다중 선택 허용 */
   linkedMultiple?: boolean;
 }
 
@@ -54,7 +54,7 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
     // 테두리 두께 - 셀 외곽에 추가되는 테두리
     const borderWidth = 2;
 
-    // Track 1: 컬럼 타입에 따른 input type
+    // 컬럼 타입에 따른 input type
     const inputType = (() => {
       if (isFormula) return 'text';
       switch (columnType) {
@@ -95,7 +95,7 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
       caretColor: isFormula ? 'var(--editor-border-formula)' : 'var(--editor-border-focus)',
     };
 
-    // Track 1: multiSelect — 체크박스 팝업
+    // multiSelect — 체크박스 팝업
     if (columnType === 'multiSelect' && selectOptions && !isFormula) {
       const selected = new Set(
         String(value || '')
@@ -161,7 +161,7 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
       );
     }
 
-    // Track 1: select 는 <select> 드롭다운
+    // select 는 <select> 드롭다운
     if (columnType === 'select' && selectOptions && !isFormula) {
       return (
         <select
@@ -187,7 +187,7 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
       );
     }
 
-    // Track 2: link — 검색 가능한 레코드 피커 (단일/다중 모드)
+    // link — 검색 가능한 레코드 피커 (단일/다중 모드)
     if (columnType === 'link' && linkedSheet && !isFormula) {
       return (
         <LinkRecordPicker

@@ -11,7 +11,7 @@ import {
 } from '@/lib/ydoc';
 
 /**
- * Y.Doc ↔ Zustand 브릿지 (Track 0 Phase 2~4).
+ * Y.Doc ↔ Zustand 브릿지 (TrackPhase 2~4).
  *
  * 단일 책임:
  *  1. 새 프로젝트 → Y.Doc 초기화 (y-indexeddb persist + 조건부 hydrate)

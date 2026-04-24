@@ -4,7 +4,7 @@
  * Current User 표시 — Stage 3 "Airtable current user 필터" 가시화.
  *
  * 모든 위젯에서 이 유저 이름 기준으로 "내 작업" 필터.
- * Track 8 Presence 의 user-name 을 재사용 (backend 오기 전 대체).
+ * TrackPresence 의 user-name 을 재사용 (backend 오기 전 대체).
  * 클릭 시 SettingsModal 로 이동 → 이름/색 변경.
  */
 

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 4 — Gantt 뷰. start+end range + 의존성 화살표 + 드래그 재스케줄.
+ * Gantt 뷰. start+end range + 의존성 화살표 + 드래그 재스케줄.
  *
  * 컬럼 매핑:
  *   - start: viewGroupColumnId (date)

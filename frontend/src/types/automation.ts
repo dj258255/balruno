@@ -1,5 +1,5 @@
 /**
- * Track 10 — Automations (n8n-style 노드 에디터) 타입 정의.
+ * Automations (n8n-style 노드 에디터) 타입 정의.
  *
  * Scaffold only — 런타임 엔진 / 노드 그래프 에디터 / 실행 로그 UI 는 다음 세션.
  */

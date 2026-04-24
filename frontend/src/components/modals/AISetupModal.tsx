@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 11 MVP — AI 요구사항 → 초기 밸런스 시트 추천 UI.
+ * AI 요구사항 → 초기 밸런스 시트 추천 UI.
  *
  * 자연어 요구사항 + 장르 선택 → /api/ai/recommend 호출 → 시트 자동 생성
  * LLM 없을 시 템플릿 fallback.

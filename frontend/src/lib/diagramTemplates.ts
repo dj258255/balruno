@@ -1,5 +1,5 @@
 /**
- * Track 15 — Economy Diagram 템플릿.
+ * Economy Diagram 템플릿.
  * "템플릿으로 시작" 3개 프리셋: RPG 경제 / Gacha / Idle.
  */
 

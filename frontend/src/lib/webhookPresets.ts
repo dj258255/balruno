@@ -1,5 +1,5 @@
 /**
- * Track 14 — Webhook 프리셋.
+ * Webhook 프리셋.
  *
  * Discord embed / Slack block / 일반 JSON / GitHub / Notion 템플릿.
  * Automation 의 webhook action 에서 1-클릭 선택.

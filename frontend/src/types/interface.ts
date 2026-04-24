@@ -1,5 +1,5 @@
 /**
- * Track 9 — Interface Designer (Dashboard Builder) 타입 정의.
+ * Interface Designer (Dashboard Builder) 타입 정의.
  *
  * Scaffold only — 실제 위젯 렌더러 / react-grid-layout 통합 / 드래그앤드롭 편집기는 다음 세션.
  */

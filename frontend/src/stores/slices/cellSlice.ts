@@ -1,7 +1,7 @@
 /**
  * Column + Row + Cell + Sticker actions slice.
  *
- * Track 0 Phase 2 — 모든 write 가 Y.Doc helper 로 수렴.
+ * TrackPhase 2 — 모든 write 가 Y.Doc helper 로 수렴.
  * Zustand 의 `projects` 배열은 Y.Doc observer 가 자동 동기화하므로 이 slice 는
  * `set()` 을 호출하지 않는다 (UI state 만 필요하면 예외).
  */
@@ -13,7 +13,7 @@ import type { ProjectState } from '../projectStore';
 import { wouldCreateCycle } from '@/lib/linkGraph';
 import { toast } from '@/components/ui/Toast';
 
-/** Track 12 — 현재 사용자 이름 읽기 (usePresence 가 쓰는 키). */
+/** 현재 사용자 이름 읽기 (usePresence 가 쓰는 키). */
 function getCurrentUserName(): string {
   if (typeof window === 'undefined') return 'local';
   return localStorage.getItem('balruno:user-name') ?? 'local';
@@ -68,7 +68,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     const id = uuidv4();
     const doc = getProjectDoc(projectId);
 
-    // Track 3 — link/lookup/rollup 사이클 사전 검사. 생성 차단.
+    // link/lookup/rollup 사이클 사전 검사. 생성 차단.
     if (column.type === 'link' || column.type === 'lookup' || column.type === 'rollup') {
       const state = get();
       const project = state.projects.find((p) => p.id === projectId);
@@ -81,7 +81,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
       }
     }
 
-    // Track 2 양방향 미러링: link 타입이면 대상 시트에 reverse 컬럼 자동 생성
+    // Track양방향 미러링: link 타입이면 대상 시트에 reverse 컬럼 자동 생성
     if (column.type === 'link' && column.linkedSheetId && !column.isReverseLink) {
       const state = get();
       const project = state.projects.find((p) => p.id === projectId);
@@ -115,7 +115,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     const fullColumn = { ...column, id };
     addColumnInDoc(doc, sheetId, fullColumn);
 
-    // Track 1 fix: formula 타입 컬럼 추가 시 기존 행들에 formula 값 prefill
+    // Trackfix: formula 타입 컬럼 추가 시 기존 행들에 formula 값 prefill
     // (addRow 에서는 이미 처리됨, addColumn 경로에서는 누락되어 있었음)
     if (fullColumn.type === 'formula' && fullColumn.formula) {
       const state = get();
@@ -154,7 +154,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     columnId: string,
     updates: Partial<Column>
   ) => {
-    // Track 3 — link/lookup/rollup 관련 필드 변경 시 사이클 사전 검사
+    // link/lookup/rollup 관련 필드 변경 시 사이클 사전 검사
     const touchesLink = (
       'type' in updates || 'linkedSheetId' in updates
       || 'lookupLinkColumnId' in updates || 'lookupTargetColumnId' in updates
@@ -185,7 +185,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     const sourceSheet = project?.sheets.find((s) => s.id === sheetId);
     const column = sourceSheet?.columns.find((c) => c.id === columnId);
 
-    // Track 2 cascade: link 컬럼 삭제 시 반대편 reverse 컬럼도 삭제
+    // Trackcascade: link 컬럼 삭제 시 반대편 reverse 컬럼도 삭제
     if (column?.type === 'link' && column.linkedSheetId && column.reverseColumnId) {
       doc.transact(() => {
         deleteColumnInDoc(doc, sheetId, columnId);
@@ -272,7 +272,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     const sourceSheet = project?.sheets.find((s) => s.id === sheetId);
     const column = sourceSheet?.columns.find((c) => c.id === columnId);
 
-    // Track 12 — 이전 값 snapshot + changelog 기록
+    // 이전 값 snapshot + changelog 기록
     // (link 양방향 미러링 분기 전에 미리 찍어둠)
     const prevValue = sourceSheet?.rows.find((r) => r.id === rowId)?.cells[columnId] ?? null;
     const recordChange = () => {
@@ -313,7 +313,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
       appendChangelogInDoc(doc, entry);
     };
 
-    // Track 2 양방향 미러링: link 타입 셀 업데이트 시 반대쪽도 동기화
+    // Track양방향 미러링: link 타입 셀 업데이트 시 반대쪽도 동기화
     if (
       column?.type === 'link' &&
       column.linkedSheetId &&

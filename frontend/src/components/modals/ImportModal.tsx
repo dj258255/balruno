@@ -274,7 +274,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
     return acc;
   }, {} as Record<string, typeof FORMAT_INFO>);
 
-  // Track 7: Import 자동 진단 — preview 단계 시트로 변환 후 imbalanceDetector 실행
+  // Import 자동 진단 — preview 단계 시트로 변환 후 imbalanceDetector 실행
   const diagnosticIssues: ImbalanceIssue[] | null = useMemo(() => {
     const now = Date.now();
     let tempSheet: Sheet | null = null;
@@ -561,7 +561,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                   </div>
                 )}
 
-                {/* Track 7: 자동 진단 카드 — 이슈 있으면 요약 표시 */}
+                {/* 자동 진단 카드 — 이슈 있으면 요약 표시 */}
                 {diagnosticSummary && (diagnosticSummary.critical + diagnosticSummary.warning + diagnosticSummary.info > 0) && (
                   <div
                     className="mb-4 p-4 rounded-xl"

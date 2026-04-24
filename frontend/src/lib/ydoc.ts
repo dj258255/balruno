@@ -1,5 +1,5 @@
 /**
- * Yjs Y.Doc 관리 — Track 0 Yjs 마이그레이션의 핵심.
+ * Yjs Y.Doc 관리 — TrackYjs 마이그레이션의 핵심.
  *
  * 설계 원칙:
  * - 프로젝트당 1개의 Y.Doc
@@ -67,7 +67,7 @@ export function detachDoc(projectId: string): void {
 }
 
 /**
- * Track 8 Stage B — y-webrtc P2P 협업 연결.
+ * TrackStage B — y-webrtc P2P 협업 연결.
  * room 은 URL hash 에서 공유되는 비밀키 (공용 신호서버 사용 시에도 데이터는 E2E).
  * 같은 room 에 연결한 브라우저끼리 Y.Doc 자동 sync.
  */
@@ -198,7 +198,7 @@ function sheetToYMap(sheet: Sheet): Y.Map<unknown> {
   if (sheet.kind) map.set('kind', sheet.kind);
   if (sheet.exportClassName) map.set('exportClassName', sheet.exportClassName);
   if (sheet.folderId) map.set('folderId', sheet.folderId);
-  // Track 4 — 뷰 스위처 상태
+  // 뷰 스위처 상태
   if (sheet.activeView) map.set('activeView', sheet.activeView);
   if (sheet.viewGroupColumnId) map.set('viewGroupColumnId', sheet.viewGroupColumnId);
   map.set('createdAt', sheet.createdAt);
@@ -1173,7 +1173,7 @@ function rebuildGenericYMap(obj: Record<string, unknown>): Y.Map<unknown> {
 }
 
 // ============================================================================
-// Changelog — Track 12 내부 기록. UI 는 아직 미완이지만 cellSlice 가 매 cell
+// Changelog — Track내부 기록. UI 는 아직 미완이지만 cellSlice 가 매 cell
 // 업데이트 시 append 하므로 여기서 최소 구현을 제공.
 // ============================================================================
 

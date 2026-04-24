@@ -26,7 +26,7 @@ export interface Project {
   sheets: Sheet[];
   folders?: Folder[];       // 폴더 목록
   docs?: Doc[];             // GDD · 설계안 문서 (Phase A)
-  changelog?: ChangeEntry[]; // Track 12 변경 이력 (내부 기록)
+  changelog?: ChangeEntry[]; // Track변경 이력 (내부 기록)
   // 동기화 설정
   syncMode?: ProjectSyncMode;  // 'local' (기본) | 'cloud'
   syncRoomId?: string;         // 클라우드 모드 시 협업 룸 ID
@@ -53,7 +53,7 @@ export interface StatSnapshotValue {
   label?: string;
 }
 
-// 저장된 뷰 — Track 4 확장. Kanban/Gantt/Calendar 설정 포함
+// 저장된 뷰 — Track확장. Kanban/Gantt/Calendar 설정 포함
 export interface SavedView {
   id: string;
   name: string;
@@ -81,7 +81,7 @@ export interface Sticker {
   createdAt: number;
 }
 
-// Track 4 — 뷰 타입
+// 뷰 타입
 export type ViewType = 'grid' | 'form' | 'kanban' | 'calendar' | 'gallery' | 'gantt' | 'diagram';
 
 /** 시트 용도 — export 정책, 사이드바 분류, AI 컨텍스트 가중치 결정 */
@@ -100,9 +100,9 @@ export interface Sheet {
   stickers?: Sticker[];  // 스티커 목록
   exportClassName?: string;  // 게임 엔진 내보내기 시 사용할 클래스명 (영문)
   folderId?: string;     // 소속 폴더 ID (없으면 루트)
-  /** Track 4: 현재 활성 뷰 (기본 'grid'). 단일 뷰 MVP — 다중 뷰 저장은 추후 */
+  /** 현재 활성 뷰 (기본 'grid'). 단일 뷰 MVP — 다중 뷰 저장은 추후 */
   activeView?: ViewType;
-  /** Track 4: Kanban/Calendar/Gallery 뷰에서 그룹/날짜 기준 컬럼 ID */
+  /** Kanban/Calendar/Gallery 뷰에서 그룹/날짜 기준 컬럼 ID */
   viewGroupColumnId?: string;
   /** Kanban 카드 커버로 쓸 컬럼 ID (image 등) */
   viewKanbanCoverColumnId?: string;
@@ -122,10 +122,10 @@ export interface Sheet {
   updatedAt: number;
 }
 
-// 컬럼 타입 — Track 1 (Field 확장)
+// 컬럼 타입 — Track(Field 확장)
 // general: 자동 감지 (기존), formula: 컬럼 전체 수식 (기존)
 // + 기본 7종: checkbox/select/multiSelect/date/url/currency/rating
-// Track 2/3 에서 추가될 예정: link/lookup/rollup/attachment
+// 에서 추가될 예정: link/lookup/rollup/attachment
 export type ColumnType =
   | 'general'
   | 'formula'
@@ -136,12 +136,12 @@ export type ColumnType =
   | 'url'
   | 'currency'
   | 'rating'
-  | 'link'           // Track 2: 다른 시트 레코드 참조
-  | 'lookup'         // Track 3: link 경유 값 가져오기
-  | 'rollup'         // Track 3: link 경유 집계
-  | 'task-link'      // Track PM: 셀 → 태스크 시트 레코드 연결
-  | 'stat-snapshot'  // Track PM: 밸런스 스냅샷 참조 (PM 이력용)
-  | 'person';        // Track PM: 담당자 (multi-user pick)
+  | 'link'           // 다른 시트 레코드 참조
+  | 'lookup'         // link 경유 값 가져오기
+  | 'rollup'         // link 경유 집계
+  | 'task-link'      // 셀 → 태스크 시트 레코드 연결
+  | 'stat-snapshot'  // 밸런스 스냅샷 참조 (PM 이력용)
+  | 'person';        // 담당자 (multi-user pick)
 
 // 선택 옵션 (select / multiSelect 공용)
 export interface SelectOption {
@@ -173,7 +173,7 @@ export interface Column {
   exportName?: string;      // 게임 엔진 내보내기 시 사용할 영문 필드명
   exportExcluded?: boolean; // 내보내기 제외 여부
 
-  // Track 1 — Field 타입별 설정
+  // Field 타입별 설정
   /** select/multiSelect 의 선택지 */
   selectOptions?: SelectOption[];
   /** currency 포맷: 통화 기호 (₩, $, 원) + 소수점 자릿수 */
@@ -183,7 +183,7 @@ export interface Column {
   /** date 포맷 (기본 'YYYY-MM-DD') */
   dateFormat?: string;
 
-  // Track 2 — Linked Records (양방향 미러링)
+  // Linked Records (양방향 미러링)
   /** type='link': 참조 대상 시트 ID */
   linkedSheetId?: string;
   /** type='link': 표시용 컬럼 (대상 시트의 컬럼 ID, 보통 이름/ID 컬럼) */
@@ -195,7 +195,7 @@ export interface Column {
   /** 자동 생성된 reverse 컬럼 표시 (UI 에서 "자동 생성됨" 뱃지) */
   isReverseLink?: boolean;
 
-  // Track 3 — Lookup / Rollup
+  // Lookup / Rollup
   /** type='lookup'/'rollup': 현재 시트의 link 컬럼 ID (참조 경로) */
   lookupLinkColumnId?: string;
   /** type='lookup'/'rollup': 가져올 대상 시트의 컬럼 ID */
@@ -203,7 +203,7 @@ export interface Column {
   /** type='rollup': 집계 함수 */
   rollupAggregate?: 'SUM' | 'AVG' | 'MIN' | 'MAX' | 'COUNT' | 'CONCAT';
 
-  // Track PM — task-link / stat-snapshot
+  // task-link / stat-snapshot
   /** type='task-link': 연결할 태스크 시트 ID */
   taskSheetId?: string;
   /** type='task-link': 태스크 시트 내 status 컬럼 ID (배지 표시용) */
@@ -368,7 +368,7 @@ export interface SheetMetadata {
   generatedAt?: number;
 }
 
-// 변경 이력 엔트리 (Track 12 — 내부 기록용, UI 는 아직 미완)
+// 변경 이력 엔트리 (내부 기록용, UI 는 아직 미완)
 export interface ChangeEntry {
   id: string;
   timestamp: number;

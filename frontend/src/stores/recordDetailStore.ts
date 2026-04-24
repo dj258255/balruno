@@ -7,7 +7,7 @@ import { create } from 'zustand';
  * 기존 5개 뷰 (Kanban/Calendar/Form/Gantt/Gallery) 는 각자 로컬 state 로 RecordEditor
  * 를 띄우고 있음 — 그들은 유지. 이 store 는 그리드 뷰 + GlobalRecordDetail 용.
  *
- * Task #3 (행↔코멘트 sync) 에서 focused row 추적용으로도 확장 예정.
+ *  (행↔코멘트 sync) 에서 focused row 추적용으로도 확장 예정.
  */
 export interface OpenedRecord {
   projectId: string;

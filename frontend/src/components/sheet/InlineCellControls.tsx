@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 1 — 셀 display 모드에서 직접 조작하는 인라인 컨트롤.
+ * 셀 display 모드에서 직접 조작하는 인라인 컨트롤.
  *
  * - checkbox: 한 번 클릭으로 토글
  * - rating: 별 클릭으로 1~max 값 설정 (max 별 한 번 더 누르면 0)
@@ -107,7 +107,7 @@ export function InlineCheckbox({
 }
 
 /**
- * Track 12 — task-link 셀 인라인 렌더.
+ * task-link 셀 인라인 렌더.
  * 값 = 참조 task sheet 의 row id (또는 CSV). 표시: [● 상태] 이름 · @담당자
  */
 export function InlineTaskLink({

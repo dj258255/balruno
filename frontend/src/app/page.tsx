@@ -23,10 +23,10 @@ import { Sidebar, SheetTabs } from '@/components/layout';
 import { SheetTable, StickerLayer } from '@/components/sheet';
 import { PmBadgeStrip } from '@/components/sheet/PmBadgeStrip';
 
-// Track 8 Presence
+// TrackPresence
 import PresenceIndicator from '@/components/PresenceIndicator';
 
-// Track 4: 뷰 스위처 + 각 뷰 컴포넌트
+// 뷰 스위처 + 각 뷰 컴포넌트
 import ViewSwitcher from '@/components/views/ViewSwitcher';
 import FormView from '@/components/views/FormView';
 import KanbanView from '@/components/views/KanbanView';
@@ -118,7 +118,7 @@ export default function Home() {
 
   const { toggleTheme } = useTheme();
 
-  // Track 0 Phase 2: Y.Doc ↔ Zustand 양방향 브릿지 (모든 편집이 Y.Doc 경유)
+  // TrackPhase 2: Y.Doc ↔ Zustand 양방향 브릿지 (모든 편집이 Y.Doc 경유)
   useYDocSync();
 
   // (useAutomationObserver 는 아래 currentProjectId 바인딩 이후 호출)
@@ -158,7 +158,7 @@ export default function Home() {
   // 21개 툴 패널 상태 — 단일 hook 으로 통합 (page.tsx 분해)
   const { panels: toolPanels } = usePanelStates();
 
-  // Track 10 — 활성 자동화의 cell-changed / row-added trigger 자동 발동
+  // 활성 자동화의 cell-changed / row-added trigger 자동 발동
   useAutomationObserver(currentProjectId);
 
 
@@ -250,7 +250,7 @@ export default function Home() {
     },
   });
 
-  // Track 8: URL hash `?room=xxx` 자동 감지 → 활성 프로젝트에 attachWebrtc
+  // URL hash `?room=xxx` 자동 감지 → 활성 프로젝트에 attachWebrtc
   // (받는 쪽 link 클릭 흐름 — 기존 로컬 프로젝트와 매칭되어야 sync 가능)
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -499,7 +499,7 @@ export default function Home() {
                   {/* PM 시트 (kind='pm' 또는 auto-detect) 전용 상태·우선순위·담당자 요약 배지 */}
                   <PmBadgeStrip sheet={currentSheet} />
 
-                  {/* Track 4: 뷰 스위처 (저장된 뷰 + 기본 뷰 6종) */}
+                  {/* 뷰 스위처 (저장된 뷰 + 기본 뷰 6종) */}
                   <ViewSwitcher
                     projectId={currentProject.id}
                     sheet={currentSheet}
@@ -562,7 +562,7 @@ export default function Home() {
       {showShare && <ShareModal onClose={() => setShowShare(false)} />}
       {showGallery && <ProjectGalleryModal onClose={() => setShowGallery(false)} />}
 
-      {/* Track 6: Docked Toolbox — 우측 사이드 도킹 + 하단 독바. usePanelStates hook 으로 단일화. */}
+      {/* Docked Toolbox — 우측 사이드 도킹 + 하단 독바. usePanelStates hook 으로 단일화. */}
       <DockedToolbox panels={toolPanels} />
       <BottomDock panels={toolPanels} isModalOpen={isModalOpen} />
 
@@ -575,7 +575,7 @@ export default function Home() {
       {/* 첫 진입 시 1 회 페르소나 선택 — hasChosen=false 일 때만 내부적으로 렌더 */}
       <PersonaModal />
 
-      {/* Track 5: Command Palette (⌘K) */}
+      {/* Command Palette (⌘K) */}
       <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />
 
       {/* 키보드 단축키 (⌘/) */}

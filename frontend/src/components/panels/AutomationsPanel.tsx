@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track 10 — Automations 패널.
+ * Automations 패널.
  *
  * 자동화 룰 리스트 + 각 룰의 노드 그래프 편집 (단순 list 형식).
  * 좌측: 자동화 목록 / 우측: 선택된 자동화의 노드 편집 + 실행 로그.
@@ -881,7 +881,7 @@ function NodeConfigEditor({
   }
 
   if (node.subtype === 'snapshot-stats') {
-    // Track 13-B — source row stats 를 target 셀(stat-snapshot 타입 권장)에 JSON 저장.
+    // source row stats 를 target 셀(stat-snapshot 타입 권장)에 JSON 저장.
     // source/target 미지정 시 트리거 시점 컨텍스트(playtest 등)에서 채움.
     const sourceSheet = sheets.find((s) => s.id === (cfg.sourceSheetId as string));
     const targetSheet = sheets.find((s) => s.id === (cfg.targetSheetId as string));
