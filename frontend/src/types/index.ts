@@ -65,7 +65,41 @@ export interface SavedView {
   calendarEndColumnId?: string;
   ganttEndColumnId?: string;
   ganttDependsColumnId?: string;
+  /** Linear 의 Triage / Jira JQL 대응 — 필터 조건 체인 */
+  filterGroup?: FilterGroup;
   createdAt?: number;
+}
+
+/** 필터 연산자 — cell 값 비교 방식 */
+export type FilterOperator =
+  | 'equals'
+  | 'not-equals'
+  | 'contains'
+  | 'not-contains'
+  | 'is-empty'
+  | 'is-not-empty'
+  | 'greater-than'
+  | 'less-than'
+  | 'includes'      // multiSelect / person / link (CSV 안에 포함)
+  | 'not-includes'
+  | 'is-me';        // 현재 유저와 매칭 (person 컬럼)
+
+/** 단일 필터 조건 */
+export interface FilterCondition {
+  id: string;
+  columnId: string;
+  operator: FilterOperator;
+  /** 비교 값. is-empty / is-not-empty / is-me 는 무시 */
+  value?: string;
+}
+
+/** 조건 그룹 — AND 또는 OR 로 결합. 중첩 허용 (추후 확장) */
+export interface FilterGroup {
+  id: string;
+  combinator: 'and' | 'or';
+  conditions: FilterCondition[];
+  /** 중첩 그룹 (옵션) — 복잡한 JQL 대응시 확장 */
+  groups?: FilterGroup[];
 }
 
 // 스티커 타입
@@ -118,6 +152,8 @@ export interface Sheet {
   savedViews?: SavedView[];
   /** 현재 활성화된 저장된 뷰 ID */
   activeSavedViewId?: string;
+  /** 현재 적용된 ad-hoc 필터. SavedView 에 포함시켜 저장 가능 */
+  filterGroup?: FilterGroup;
   createdAt: number;
   updatedAt: number;
 }

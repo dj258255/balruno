@@ -36,6 +36,7 @@ import { useHistoryStore } from '@/stores/historyStore';
 import { useSheetUIStore, DEFAULT_CELL_STYLE } from '@/stores/sheetUIStore';
 import { useRecordDetail } from '@/stores/recordDetailStore';
 import { detectPmSheet } from '@/lib/pmSheetDetection';
+import { applyFilter } from '@/lib/filterEval';
 
 // Hooks
 import {
@@ -111,8 +112,23 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
   // PM 빠른 필터 — 현재 시트에 활성된 assignee/priority 값과 맞지 않는 행은 dim.
   // detectPmSheet 로 assignee 컬럼 id 를 얻고, priority 는 이름 패턴 매칭.
   const dimmedRowIds = useMemo<Set<string>>(() => {
-    if (!quickFilter || quickFilter.sheetId !== sheet.id) return new Set();
-    if (!quickFilter.assignee && !quickFilter.priority) return new Set();
+    const dim = new Set<string>();
+
+    // SavedView filterGroup 적용 — 조건 매치 안 되는 row 는 dim
+    if (sheet.filterGroup && sheet.filterGroup.conditions.length > 0) {
+      const passed = new Set(
+        applyFilter(sheet.rows, sheet.filterGroup, sheet.columns).map((r) => r.id),
+      );
+      for (const row of sheet.rows) {
+        if (!passed.has(row.id)) dim.add(row.id);
+      }
+    }
+
+    // QuickFilter (PmBadgeStrip 배지 클릭) — 기존 로직
+    const isSameSheet = quickFilter && quickFilter.sheetId === sheet.id;
+    const hasQuickFilter = isSameSheet && (quickFilter.assignee || quickFilter.priority);
+    if (!hasQuickFilter) return dim;
+
     const detection = detectPmSheet(sheet);
     const assigneeColId = detection.assigneeColumnId;
     const priorityCol = sheet.columns.find(
@@ -122,8 +138,8 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           c.name.toLowerCase().trim().includes(n),
         ),
     );
-    const dim = new Set<string>();
     for (const row of sheet.rows) {
+      if (dim.has(row.id)) continue; // 이미 filter 로 dim
       let keep = true;
       if (quickFilter.assignee && assigneeColId) {
         const v = row.cells[assigneeColId];
@@ -132,7 +148,6 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
       }
       if (keep && quickFilter.priority && priorityCol) {
         const v = String(row.cells[priorityCol.id] ?? '');
-        // cell 값은 option.id 또는 label 둘 다 올 수 있음 — 양쪽 모두 비교
         const matchedOpt = priorityCol.selectOptions?.find(
           (o) => o.id === v || o.label === v,
         );

@@ -10,10 +10,11 @@
  */
 
 import { useState } from 'react';
-import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Workflow } from 'lucide-react';
+import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Workflow, Filter } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { ViewType, Sheet, SavedView } from '@/types';
+import type { ViewType, Sheet, SavedView, FilterGroup } from '@/types';
 import { useProjectStore } from '@/stores/projectStore';
+import { FilterBuilder } from './FilterBuilder';
 
 interface ViewSwitcherProps {
   projectId: string;
@@ -41,6 +42,13 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [newName, setNewName] = useState('');
   const [renaming, setRenaming] = useState<string | null>(null);
+  const [showFilter, setShowFilter] = useState(false);
+
+  const filterGroup = sheet.filterGroup;
+  const filterActive = Boolean(filterGroup && filterGroup.conditions.length > 0);
+  const setFilterGroup = (next: FilterGroup | undefined) => {
+    updateSheet(projectId, sheet.id, { filterGroup: next });
+  };
 
   const savedViews = sheet.savedViews ?? [];
   const activeSavedViewId = sheet.activeSavedViewId;
@@ -102,6 +110,7 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
   };
 
   return (
+    <>
     <div
       role="tablist"
       aria-label="시트 뷰"
@@ -227,7 +236,41 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
             </button>
           </div>
         )}
+
+        {/* 필터 토글 — 활성 시 accent 색 + 조건 수 배지 */}
+        <button
+          type="button"
+          onClick={() => setShowFilter((v) => !v)}
+          className="ml-1 flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors flex-shrink-0"
+          style={{
+            background: filterActive ? 'var(--accent)' : showFilter ? 'var(--bg-hover)' : 'transparent',
+            color: filterActive ? 'white' : 'var(--text-secondary)',
+          }}
+          title="필터 (Kanban · Grid dim 에 적용)"
+        >
+          <Filter className="w-3 h-3" />
+          필터
+          {filterActive && filterGroup && (
+            <span
+              className="text-caption px-1 rounded-full"
+              style={{ background: 'rgba(255,255,255,0.25)' }}
+            >
+              {filterGroup.conditions.length}
+            </span>
+          )}
+        </button>
       </div>
     </div>
+
+    {showFilter && (
+      <div className="px-2 pt-2 pb-1 border-b" style={{ borderColor: 'var(--border-primary)' }}>
+        <FilterBuilder
+          columns={sheet.columns}
+          value={filterGroup}
+          onChange={setFilterGroup}
+        />
+      </div>
+    )}
+    </>
   );
 }

@@ -12,6 +12,7 @@ import { useProjectStore } from '@/stores/projectStore';
 import { useRecordDetail } from '@/stores/recordDetailStore';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { formatDisplayValue } from '@/components/sheet/utils';
+import { applyFilter } from '@/lib/filterEval';
 import type { Sheet, Row, CellValue } from '@/types';
 import RecordContextMenu, { type RecordContextMenuState } from './RecordContextMenu';
 
@@ -46,21 +47,26 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
     selectColumns[0]?.id;
   const groupCol = sheet.columns.find((c) => c.id === groupColId);
 
-  // 옵션별 행 그룹화
+  // SavedView 필터 적용 후 그룹핑
+  const filteredRows = useMemo(
+    () => applyFilter(sheet.rows, sheet.filterGroup, sheet.columns),
+    [sheet.rows, sheet.filterGroup, sheet.columns],
+  );
+
   const grouped = useMemo(() => {
     const map = new Map<string, Row[]>();
     map.set('_ungrouped', []);
     const options = groupCol?.selectOptions ?? [];
     options.forEach((opt) => map.set(opt.id, []));
     if (!groupCol) return map;
-    sheet.rows.forEach((row) => {
+    filteredRows.forEach((row) => {
       const val = row.cells[groupCol.id];
       const key = val === null || val === undefined || val === '' ? '_ungrouped' : String(val);
       if (!map.has(key)) map.set('_ungrouped', [...(map.get('_ungrouped') ?? []), row]);
       else map.get(key)!.push(row);
     });
     return map;
-  }, [sheet.rows, groupCol]);
+  }, [filteredRows, groupCol]);
 
   if (selectColumns.length === 0) {
     return (
