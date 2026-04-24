@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { ChevronDown, Plus, Settings } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/contexts/ThemeContext';
+import { ThemeToggle } from '@/components/ui';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 
 interface WorkspaceSwitcherProps {
@@ -44,13 +45,13 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
   return (
     <div
       ref={rootRef}
-      className="relative px-2 py-2 border-b"
+      className="relative px-2 py-2 border-b flex items-center gap-1"
       style={{ borderColor: 'var(--border-primary)' }}
     >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors hover:bg-[var(--bg-hover)]"
+        className="flex-1 min-w-0 flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors hover:bg-[var(--bg-hover)]"
         style={{ color: 'var(--text-primary)' }}
       >
         <Image
@@ -69,6 +70,7 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
           }}
         />
       </button>
+      <ThemeToggle />
 
       {open && (
         <div
