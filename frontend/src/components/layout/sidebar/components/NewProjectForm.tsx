@@ -69,12 +69,17 @@ export function NewProjectForm({
         </button>
         <button
           onClick={() => window.dispatchEvent(new Event('balruno:open-gallery'))}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setCtxMenu({ x: e.clientX, y: e.clientY });
+          }}
           className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
           style={{
             background: 'var(--bg-tertiary)',
             color: 'var(--text-secondary)',
           }}
-          title="템플릿으로 빠르게 시작"
+          title="템플릿으로 빠르게 시작 · 우클릭: 빠른 샘플"
         >
           <LayoutTemplate className="w-3.5 h-3.5" />
           템플릿 갤러리

@@ -359,12 +359,22 @@ export default function Sidebar({
         {/* 프로젝트 / 문서 섹션 사이 리사이즈 핸들 — 얇은 시각 + 넓은 hit area */}
         <div
           onPointerDown={handleDocsResizeStart}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // 기본 높이 240 으로 리셋. 다른 옵션도 한 줄 메뉴로 확장 가능하지만
+            // 리사이즈 핸들의 유일한 유의미 액션이 "리셋" 이라 단순히 즉시 리셋.
+            setDocsHeight(240);
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem('balruno:docs-section-height', '240');
+            }
+          }}
           className="relative h-1 cursor-row-resize shrink-0 group"
           style={{ touchAction: 'none' }}
           role="separator"
           aria-orientation="horizontal"
           aria-label="프로젝트/문서 영역 크기 조절"
-          title="드래그로 문서 섹션 높이 조절"
+          title="드래그로 문서 섹션 높이 조절 · 우클릭으로 기본 크기 리셋"
         >
           <div className="absolute inset-x-0 -top-1 -bottom-1" />
           <div className="absolute inset-0 transition-colors group-hover:bg-[var(--accent)]" />
