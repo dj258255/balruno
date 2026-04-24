@@ -88,14 +88,8 @@ import MobileNotice from './components/MobileNotice';
 import MobileSidebar from './components/MobileSidebar';
 import SheetHeader from './components/SheetHeader';
 import BottomDock from '@/components/BottomDock';
-
-// 초기 진입 TTI 단축 — 둘 다 열려있을 때만 실제 렌더이므로 lazy + ssr off.
-// 특히 InboxPanel 은 yjs/cellComments 를 import 하므로 eager 면 초기 번들 비대.
-const GlobalRecordDetail = dynamic(
-  () => import('@/components/panels/GlobalRecordDetail').then((m) => m.GlobalRecordDetail),
-  { ssr: false },
-);
-const InboxPanel = dynamic(() => import('@/components/panels/InboxPanel'), { ssr: false });
+import { GlobalRecordDetail } from '@/components/panels/GlobalRecordDetail';
+import InboxPanel from '@/components/panels/InboxPanel';
 import ProjectMenu from './components/ProjectMenu';
 import DockedToolbox from '@/components/DockedToolbox';
 import SidebarResizer from './components/SidebarResizer';
