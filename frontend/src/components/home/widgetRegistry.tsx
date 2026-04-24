@@ -21,6 +21,7 @@ import MyBugsWidget from './widgets/MyBugsWidget';
 import PlaytestWidget from './widgets/PlaytestWidget';
 import BalanceHealthWidget from './widgets/BalanceHealthWidget';
 import BurndownWidget from './widgets/BurndownWidget';
+import VelocityWidget from './widgets/VelocityWidget';
 
 export type WidgetId =
   | 'hero'
@@ -31,7 +32,8 @@ export type WidgetId =
   | 'my-bugs'
   | 'playtest'
   | 'balance-health'
-  | 'burndown';
+  | 'burndown'
+  | 'velocity';
 
 export type WidgetSize = 'full' | 'half' | 'third';
 
@@ -127,6 +129,15 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
     color: '#ef4444',
     size: 'half',
     Component: BurndownWidget as unknown as React.FC<{ work: TodaysWork }>,
+  },
+  'velocity': {
+    id: 'velocity',
+    name: 'Velocity',
+    description: '최근 N 개 sprint 완료 points + 평균선',
+    icon: TrendingUp,
+    color: '#10b981',
+    size: 'half',
+    Component: VelocityWidget as unknown as React.FC<{ work: TodaysWork }>,
   },
 };
 
