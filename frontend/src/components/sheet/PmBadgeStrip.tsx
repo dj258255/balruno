@@ -36,38 +36,37 @@ function findPriorityColumn(columns: Column[]): Column | undefined {
 }
 
 export function PmBadgeStrip({ sheet }: Props) {
-  // 명시 kind='pm' 이 최우선. 아니면 auto detect.
+  // 모든 훅은 최상단 — 조건부 반환 전에. Rules of Hooks 준수.
   const detection = useMemo(() => detectPmSheet(sheet), [sheet]);
-  const isPm = sheet.kind === 'pm' || detection.type !== null;
   const quickFilter = useSheetUIStore((s) => s.quickFilter);
   const setFilterAssignee = useSheetUIStore((s) => s.setQuickFilterAssignee);
   const setFilterPriority = useSheetUIStore((s) => s.setQuickFilterPriority);
   const clearFilter = useSheetUIStore((s) => s.clearQuickFilter);
 
+  const isPm = sheet.kind === 'pm' || detection.type !== null;
   const activeFilter = quickFilter && quickFilter.sheetId === sheet.id ? quickFilter : null;
 
-  if (!isPm) return null;
-
-  const pmType = detection.type ?? 'generic-pm';
   const statusCol = detection.statusColumnId
     ? sheet.columns.find((c) => c.id === detection.statusColumnId)
     : undefined;
   const assigneeCol = detection.assigneeColumnId
     ? sheet.columns.find((c) => c.id === detection.assigneeColumnId)
     : undefined;
-  const priorityCol = useMemo(() => findPriorityColumn(sheet.columns), [sheet.columns]);
 
-  // 상태 집계 — select option 기준. 빈 값은 "(미지정)" 으로
+  const priorityCol = useMemo(
+    () => (isPm ? findPriorityColumn(sheet.columns) : undefined),
+    [sheet.columns, isPm],
+  );
+
+  // 상태 집계 — 비 PM 면 null. PM 이면 select option 순서대로 카운트.
   const statusBuckets = useMemo(() => {
-    if (!statusCol) return null;
+    if (!isPm || !statusCol) return null;
     const counts = new Map<string, number>();
     for (const row of sheet.rows) {
       const v = row.cells[statusCol.id];
       const key = v === null || v === undefined || v === '' ? '(미지정)' : String(v);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
-    // select option 순서 존중
-    const optionOrder = (statusCol.selectOptions ?? []).map((o) => o.label);
     const ordered: Array<{ label: string; count: number; color?: string }> = [];
     for (const opt of statusCol.selectOptions ?? []) {
       const c = counts.get(opt.label);
@@ -76,22 +75,17 @@ export function PmBadgeStrip({ sheet }: Props) {
         counts.delete(opt.label);
       }
     }
-    // 미지정 · 옵션 외
-    for (const [label, count] of counts) {
-      ordered.push({ label, count });
-    }
+    for (const [label, count] of counts) ordered.push({ label, count });
     return ordered;
-  }, [statusCol, sheet.rows]);
+  }, [isPm, statusCol, sheet.rows]);
 
-  // 우선순위 집계
   const priorityBuckets = useMemo(() => {
-    if (!priorityCol) return null;
+    if (!isPm || !priorityCol) return null;
     const counts = new Map<string, number>();
     for (const row of sheet.rows) {
       const v = row.cells[priorityCol.id];
       if (v === null || v === undefined || v === '') continue;
-      const key = String(v);
-      counts.set(key, (counts.get(key) ?? 0) + 1);
+      counts.set(String(v), (counts.get(String(v)) ?? 0) + 1);
     }
     const ordered: Array<{ label: string; count: number; color?: string }> = [];
     for (const opt of priorityCol.selectOptions ?? []) {
@@ -103,11 +97,10 @@ export function PmBadgeStrip({ sheet }: Props) {
     }
     for (const [label, count] of counts) ordered.push({ label, count });
     return ordered;
-  }, [priorityCol, sheet.rows]);
+  }, [isPm, priorityCol, sheet.rows]);
 
-  // 담당자 — person 컬럼 또는 assignee select 컬럼. 값을 콤마 split 으로 여러 명 지원.
   const assignees = useMemo(() => {
-    if (!assigneeCol) return null;
+    if (!isPm || !assigneeCol) return null;
     const set = new Set<string>();
     for (const row of sheet.rows) {
       const v = row.cells[assigneeCol.id];
@@ -117,8 +110,12 @@ export function PmBadgeStrip({ sheet }: Props) {
       }
     }
     return Array.from(set);
-  }, [assigneeCol, sheet.rows]);
+  }, [isPm, assigneeCol, sheet.rows]);
 
+  // ↓ 모든 훅 호출 후 조건부 반환
+  if (!isPm) return null;
+
+  const pmType = detection.type ?? 'generic-pm';
   const hasAnyBadge = statusBuckets || priorityBuckets || assignees;
   if (!hasAnyBadge) {
     // PM 시트지만 집계 축이 없는 경우 — 타입 라벨만
