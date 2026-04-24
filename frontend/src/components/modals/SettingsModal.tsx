@@ -180,10 +180,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       onClick={handleBackdropClick}
     >
       <div
-        className="rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+        className="rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col"
         style={{
           backgroundColor: 'var(--bg-secondary)',
-          border: '1px solid var(--border-color)'
+          border: '1px solid var(--border-color)',
+          maxHeight: 'calc(100vh - 48px)',
         }}
       >
         {/* Header */}
@@ -229,7 +230,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         {/* Content */}
-        <div className="py-4">
+        <div className="py-4 flex-1 min-h-0 overflow-y-auto">
           {activeTab === 'language' && (
             <div>
               {languages.map((lang) => (
@@ -382,7 +383,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           {activeTab === 'integrations' && (
             <div className="px-5 space-y-3">
               <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                Track 14 — 외부 툴과 양방향 통합. 복사 버튼으로 body 템플릿을 클립보드에 담고,
+                외부 툴과 양방향 통합. 복사 버튼으로 body 템플릿을 클립보드에 담고,
                 Test 버튼으로 직접 웹훅 URL 에 샘플 payload 를 발송할 수 있습니다.
               </p>
               {(['discord', 'slack', 'github', 'notion', 'generic'] as const).map((service) => {
