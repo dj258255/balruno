@@ -29,6 +29,7 @@ interface SidebarPrefsState {
   isSheetPinned: (sheetId: string) => boolean;
   unpinSheet: (sheetId: string) => void;
   setActiveWorkspace: (id: WorkspaceId) => void;
+  renameWorkspace: (id: WorkspaceId, name: string) => void;
 }
 
 export const useSidebarPrefs = create<SidebarPrefsState>()(
@@ -58,6 +59,16 @@ export const useSidebarPrefs = create<SidebarPrefsState>()(
       },
 
       setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
+
+      renameWorkspace: (id, name) => {
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        set((state) => ({
+          workspaces: state.workspaces.map((w) =>
+            w.id === id ? { ...w, name: trimmed } : w,
+          ),
+        }));
+      },
     }),
     { name: 'balruno:sidebar-prefs' },
   ),
