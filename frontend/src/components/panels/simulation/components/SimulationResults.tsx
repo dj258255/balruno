@@ -4,7 +4,7 @@
 
 'use client';
 
-import { BarChart3, Clock, Zap, TrendingUp, ChevronDown, ChevronUp, Download, Heart, Shield, RotateCcw, Sparkles, Activity, Swords } from 'lucide-react';
+import { BarChart3, Clock, Zap, TrendingUp, ChevronDown, ChevronUp, Download, Heart, Shield, RotateCcw, Sparkles, Activity, Swords, FileSpreadsheet } from 'lucide-react';
 import type { UnitStats, SimulationResult } from '@/lib/simulation/types';
 import { Histogram } from './Histogram';
 import { HpTimelineGraph } from './HpTimelineGraph';
@@ -21,6 +21,8 @@ interface SimulationResultsProps {
   selectedBattleIndex: number;
   setSelectedBattleIndex: (index: number) => void;
   onExport: (format: 'json' | 'csv') => void;
+  /** 제공 시 "시트에 저장" 버튼 노출 — 결과를 현재 시트에 행으로 commit */
+  onSaveToSheet?: () => void;
 }
 
 export function SimulationResults({
@@ -32,6 +34,7 @@ export function SimulationResults({
   selectedBattleIndex,
   setSelectedBattleIndex,
   onExport,
+  onSaveToSheet,
 }: SimulationResultsProps) {
   const t = useTranslations('simulation');
 
@@ -649,11 +652,22 @@ export function SimulationResults({
         </div>
       )}
 
-      {/* 결과 내보내기 */}
-      <div className="flex gap-2">
+      {/* 결과 내보내기 + 시트 commit */}
+      <div className="flex gap-2 flex-wrap">
+        {onSaveToSheet && (
+          <button
+            onClick={onSaveToSheet}
+            className="flex-1 min-w-[140px] py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors hover:opacity-90"
+            style={{ background: 'var(--accent)', color: 'white' }}
+            title="현재 시트에 시뮬 결과 행 추가"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            시트에 저장
+          </button>
+        )}
         <button
           onClick={() => onExport('json')}
-          className="flex-1 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors hover:opacity-80"
+          className="flex-1 min-w-[120px] py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors hover:opacity-80"
           style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
         >
           <Download className="w-4 h-4" />
@@ -661,7 +675,7 @@ export function SimulationResults({
         </button>
         <button
           onClick={() => onExport('csv')}
-          className="flex-1 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors hover:opacity-80"
+          className="flex-1 min-w-[120px] py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors hover:opacity-80"
           style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
         >
           <Download className="w-4 h-4" />
