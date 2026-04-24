@@ -21,16 +21,18 @@
  * useTodaysWork 훅 재사용.
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Home, Inbox, Zap, Bug, Gamepad2, Clock,
-  ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight, Check, CheckCheck, Plus, LayoutTemplate, Trash2,
   type LucideIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTodaysWork, type RowWithContext } from '@/hooks/useTodaysWork';
 import { useProjectStore } from '@/stores/projectStore';
 import { useInbox } from '@/stores/inboxStore';
+
+type QuickLinkKind = 'home' | 'inbox' | 'sprint' | 'bug' | 'playtest' | 'recent';
 
 export default function SidebarQuickAccess() {
   const t = useTranslations();
@@ -41,6 +43,27 @@ export default function SidebarQuickAccess() {
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
   const currentSheetId = useProjectStore((s) => s.currentSheetId);
   const openInbox = useInbox((s) => s.openInbox);
+  const markAllInboxRead = useInbox((s) => s.markAllRead);
+
+  // 우클릭 컨텍스트 메뉴 — kind 별로 다른 액션
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; kind: QuickLinkKind } | null>(null);
+  const ctxMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (ctxMenuRef.current && !ctxMenuRef.current.contains(e.target as Node)) {
+        setCtxMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [ctxMenu]);
+
+  const openCtx = (kind: QuickLinkKind) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCtxMenu({ x: e.clientX, y: e.clientY, kind });
+  };
 
   const goHome = () => {
     setCurrentProject(null);
@@ -102,6 +125,7 @@ export default function SidebarQuickAccess() {
             icon={Home}
             label="Home"
             onClick={goHome}
+            onContextMenu={openCtx('home')}
             active={isHomeActive}
           />
 
@@ -111,6 +135,7 @@ export default function SidebarQuickAccess() {
               label="Inbox"
               count={work.recentChanges.length}
               onClick={openInbox}
+              onContextMenu={openCtx('inbox')}
               hint="최근 변경 · 피드백"
             />
           )}
@@ -125,6 +150,7 @@ export default function SidebarQuickAccess() {
                 if (work.mySprint[0]) jumpToRow(work.mySprint[0]);
                 else jumpToFirstOfType('sprint');
               }}
+              onContextMenu={openCtx('sprint')}
             />
           )}
 
@@ -138,6 +164,7 @@ export default function SidebarQuickAccess() {
                 if (work.myBugs[0]) jumpToRow(work.myBugs[0]);
                 else jumpToFirstOfType('bug');
               }}
+              onContextMenu={openCtx('bug')}
             />
           )}
 
@@ -147,6 +174,7 @@ export default function SidebarQuickAccess() {
               label="Playtest"
               count={work.pmSheets.filter((p) => p.type === 'playtest').length}
               onClick={() => jumpToFirstOfType('playtest')}
+              onContextMenu={openCtx('playtest')}
             />
           )}
 
@@ -157,13 +185,115 @@ export default function SidebarQuickAccess() {
                 icon={Clock}
                 label="최근 편집"
                 onClick={jumpToRecentEdit}
+                onContextMenu={openCtx('recent')}
                 hint={work.recentSheets[0]?.sheet.name}
               />
             </>
           )}
         </div>
       )}
+
+      {ctxMenu && (
+        <div
+          ref={ctxMenuRef}
+          className="fixed z-50 min-w-[180px] py-1 rounded-lg shadow-lg border"
+          style={{
+            left: ctxMenu.x,
+            top: ctxMenu.y,
+            background: 'var(--bg-primary)',
+            borderColor: 'var(--border-primary)',
+          }}
+        >
+          {ctxMenu.kind === 'home' && (
+            <>
+              <CtxItem
+                icon={Plus}
+                label="새 프로젝트"
+                onClick={() => { window.dispatchEvent(new Event('balruno:open-new-project')); setCtxMenu(null); }}
+              />
+              <CtxItem
+                icon={LayoutTemplate}
+                label="템플릿 갤러리"
+                onClick={() => { window.dispatchEvent(new Event('balruno:open-gallery')); setCtxMenu(null); }}
+              />
+            </>
+          )}
+          {ctxMenu.kind === 'inbox' && (
+            <>
+              <CtxItem
+                icon={Inbox}
+                label="Inbox 열기"
+                onClick={() => { openInbox(); setCtxMenu(null); }}
+              />
+              <CtxItem
+                icon={CheckCheck}
+                label="모두 읽음 표시"
+                onClick={() => {
+                  markAllInboxRead(work.recentChanges.map((c) => c.entry.id));
+                  setCtxMenu(null);
+                }}
+              />
+            </>
+          )}
+          {(ctxMenu.kind === 'sprint' || ctxMenu.kind === 'bug' || ctxMenu.kind === 'playtest') && (
+            <CtxItem
+              icon={Plus}
+              label="새 항목 추가"
+              onClick={() => {
+                const kind = ctxMenu.kind as 'sprint' | 'bug' | 'playtest';
+                const match = work.pmSheets.find((p) => p.type === kind || (kind === 'sprint' && p.type === 'generic-pm'));
+                if (match) {
+                  setCurrentProject(match.projectId);
+                  setCurrentSheet(match.sheet.id);
+                  useProjectStore.getState().addRow(match.projectId, match.sheet.id);
+                }
+                setCtxMenu(null);
+              }}
+            />
+          )}
+          {ctxMenu.kind === 'recent' && (
+            <CtxItem
+              icon={Trash2}
+              label="최근 편집 지우기"
+              danger
+              onClick={() => {
+                // recentSheets 는 localStorage 기반 — 관련 키 clear (recentSheets.ts 참조)
+                if (typeof window !== 'undefined') {
+                  window.localStorage.removeItem('balruno:recent-sheets');
+                }
+                setCtxMenu(null);
+                // 리프레시 필요
+                window.dispatchEvent(new Event('balruno:recent-cleared'));
+              }}
+            />
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+function CtxItem({
+  icon: Icon,
+  label,
+  onClick,
+  danger,
+}: {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+      style={{ color: danger ? 'var(--danger)' : 'var(--text-primary)' }}
+    >
+      <Icon className="w-4 h-4" style={{ color: danger ? 'var(--danger)' : 'var(--text-secondary)' }} />
+      {label}
+    </button>
   );
 }
 
@@ -173,6 +303,7 @@ function QuickLink({
   count,
   totalCount,
   onClick,
+  onContextMenu,
   active,
   hint,
 }: {
@@ -181,12 +312,14 @@ function QuickLink({
   count?: number;
   totalCount?: number;
   onClick: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   active?: boolean;
   hint?: string;
 }) {
   return (
     <button
       onClick={onClick}
+      onContextMenu={onContextMenu}
       className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-left transition-colors"
       style={{
         background: active ? 'var(--bg-tertiary)' : 'transparent',
