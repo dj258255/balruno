@@ -6,7 +6,8 @@
  * 규칙:
  *  - 핀이 하나도 없으면 섹션 자체 숨김 (빈 섹션 노이즈 방지)
  *  - 핀된 시트는 프로젝트 경로 없이 바로 클릭 → 해당 시트로 이동
- *  - 우클릭 시 "핀 해제"
+ *  - 우클릭 시 시트 컨텍스트 메뉴 (핀 해제 / 이름 변경 / 시트 용도 / 복제 / 삭제)
+ *  - onSheetContextMenu 미제공 시 fallback 으로 단순 unpin
  */
 
 import { useState } from 'react';
@@ -16,7 +17,18 @@ import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 import { useProjectStore } from '@/stores/projectStore';
 import DocIconPicker from '@/components/docs/DocIconPicker';
 
-export function PinnedSection() {
+interface PinnedSectionProps {
+  /** 우클릭 시 시트 컨텍스트 메뉴 열기 — Sidebar 의 공통 핸들러와 공유 */
+  onSheetContextMenu?: (
+    e: React.MouseEvent,
+    projectId: string,
+    sheetId: string,
+    sheetName: string,
+    exportClassName?: string,
+  ) => void;
+}
+
+export function PinnedSection({ onSheetContextMenu }: PinnedSectionProps = {}) {
   const t = useTranslations();
   const projects = useProjectStore((s) => s.projects);
   const currentSheetId = useProjectStore((s) => s.currentSheetId);
@@ -65,6 +77,16 @@ export function PinnedSection() {
                 onClick={() => {
                   setCurrentProject(project.id);
                   setCurrentSheet(sheet.id);
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (onSheetContextMenu) {
+                    onSheetContextMenu(e, project.id, sheet.id, sheet.name, sheet.exportClassName);
+                  } else {
+                    // fallback — prop 미제공 시 단순 unpin
+                    unpinSheet(sheet.id);
+                  }
                 }}
                 className="group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-xs transition-colors"
                 style={{

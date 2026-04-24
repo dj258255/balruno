@@ -221,7 +221,11 @@ export default function Sidebar({
 
         <SidebarQuickAccess />
 
-        <PinnedSection />
+        <PinnedSection
+          onSheetContextMenu={(e, projectId, sheetId, sheetName, exportClassName) => {
+            setSheetContextMenu({ x: e.clientX, y: e.clientY, projectId, sheetId, sheetName, exportClassName });
+          }}
+        />
 
         {/* 섹션 순서: 새 프로젝트 → 팀스페이스(공유) → Private(개인) → 문서.
             Notion/Linear/Airtable 공통 문법 — 상단 개인 맥락, 중단 팀 공유, 하단 개인 공간. */}
