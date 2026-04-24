@@ -1521,7 +1521,13 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                                       column={column}
                                       taskSheet={taskSheet}
                                       onOpen={(rid) => {
+                                        // 대상 시트 전환 + 전역 레코드 상세 패널 open → Linear 식 슬라이드
                                         useProjectStore.getState().setCurrentSheet(column.taskSheetId!);
+                                        useRecordDetail.getState().openRecord({
+                                          projectId,
+                                          sheetId: column.taskSheetId!,
+                                          rowId: rid,
+                                        });
                                         window.dispatchEvent(
                                           new CustomEvent('balruno:focus-cell', {
                                             detail: { sheetId: column.taskSheetId, rowId: rid, columnId: '' },
