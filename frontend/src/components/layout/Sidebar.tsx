@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { FolderPlus, LayoutTemplate } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { deleteProjectFromDB } from '@/lib/storage';
 import { AllToolId } from '@/stores/toolLayoutStore';
@@ -92,6 +93,20 @@ export default function Sidebar({
   const t = useTranslations();
   const state = useSidebarState();
   const sidebarPrefs = useSidebarPrefs();
+
+  // 팀스페이스 스크롤 컨테이너 빈 영역 우클릭 메뉴
+  const [emptyAreaMenu, setEmptyAreaMenu] = useState<{ x: number; y: number } | null>(null);
+  const emptyAreaMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!emptyAreaMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (emptyAreaMenuRef.current && !emptyAreaMenuRef.current.contains(e.target as Node)) {
+        setEmptyAreaMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [emptyAreaMenu]);
 
   // 문서 섹션 높이 — 프로젝트 섹션과의 리사이즈 핸들로 조절. localStorage 저장.
   // 스타일/동작은 SidebarResizer (사이드바↔본문) 와 일관되게 pointer event + 글로벌 cursor 사용.
@@ -237,8 +252,17 @@ export default function Sidebar({
           onCreateProject={handleCreateProject}
         />
 
-        {/* 팀스페이스 + Private 공통 스크롤 컨테이너 */}
-        <div className="flex-1 overflow-y-auto">
+        {/* 팀스페이스 + Private 공통 스크롤 컨테이너.
+            빈 영역 우클릭 시 새 프로젝트 / 갤러리 메뉴. child row 들 우클릭은
+            자체 onContextMenu 로 처리되고 여기선 스킵. */}
+        <div
+          className="flex-1 overflow-y-auto"
+          onContextMenu={(e) => {
+            if (e.target !== e.currentTarget) return;
+            e.preventDefault();
+            setEmptyAreaMenu({ x: e.clientX, y: e.clientY });
+          }}
+        >
           {(() => {
             // visibility 기준 2 분할 — 기본(없음/'teamspace') 은 teamspace, 명시적 'private' 만 분리
             const teamspaceProjects = projectStore.projects.filter(
@@ -495,6 +519,44 @@ export default function Sidebar({
           projectStore.deleteFolder(projectId, folderId);
         }}
       />
+
+      {emptyAreaMenu && (
+        <div
+          ref={emptyAreaMenuRef}
+          className="fixed z-50 min-w-[180px] py-1 rounded-lg shadow-lg border"
+          style={{
+            left: emptyAreaMenu.x,
+            top: emptyAreaMenu.y,
+            background: 'var(--bg-primary)',
+            borderColor: 'var(--border-primary)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new Event('balruno:open-new-project'));
+              setEmptyAreaMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <FolderPlus className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+            새 프로젝트
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new Event('balruno:open-gallery'));
+              setEmptyAreaMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <LayoutTemplate className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            템플릿 갤러리에서 시작
+          </button>
+        </div>
+      )}
     </>
   );
 }
