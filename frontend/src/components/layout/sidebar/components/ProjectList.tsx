@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import type { Project, Folder as FolderType } from '@/types';
 import { FolderItem } from './FolderItem';
+import { EmptyProjectsCTA } from './EmptyProjectsCTA';
 import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
 import DocIconPicker from '@/components/docs/DocIconPicker';
 
@@ -179,18 +180,10 @@ export function ProjectList({
       );
     }
     return (
-      <div className="p-2" onContextMenu={handleEmptyContextMenu}>
+      <div onContextMenu={handleEmptyContextMenu}>
         {renderEmptyContextMenu(emptyMenu, setEmptyMenu)}
-        {title && <SectionTitle>{title}</SectionTitle>}
-        <div className="text-center py-10 px-4">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-lg flex items-center justify-center" style={{
-            background: 'var(--accent-light)'
-          }}>
-            <FileSpreadsheet className="w-6 h-6" style={{ color: 'var(--accent)' }} />
-          </div>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('project.noProject')}</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('project.createProject')}</p>
-        </div>
+        {title && <div className="pt-2 px-2"><SectionTitle>{title}</SectionTitle></div>}
+        <EmptyProjectsCTA />
       </div>
     );
   }

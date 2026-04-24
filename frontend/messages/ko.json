@@ -20,9 +20,48 @@
     "simulation": "유닛 간 전투를 시뮬레이션합니다",
     "entityDefinition": "캐릭터/몬스터의 레벨별 스탯을 정의합니다"
   },
+  "persona": {
+    "heading": "어떤 작업을 주로 하시나요?",
+    "subheading": "선택에 따라 첫 화면과 추천 샘플이 조정됩니다. 언제든 바꿀 수 있어요.",
+    "changeLaterHint": "Settings 에서 언제든 변경 가능",
+    "skip": "나중에",
+    "balancer": {
+      "title": "밸런서",
+      "desc": "스탯·수식·시뮬. 게임 수치 설계 중심"
+    },
+    "pm": {
+      "title": "PM / 기획",
+      "desc": "스프린트·버그·로드맵. 태스크 관리 중심"
+    },
+    "analyst": {
+      "title": "분석가",
+      "desc": "경제·곡선·분포. 데이터 해석 중심"
+    },
+    "explorer": {
+      "title": "둘러보기",
+      "desc": "모든 기능 다 보기"
+    }
+  },
   "sidebar": {
     "newProject": "새 프로젝트",
     "projects": "프로젝트",
+    "emptyCta": {
+      "heading": "샘플로 바로 시작",
+      "subheading": "클릭 한 번으로 데이터·수식이 채워진 프로젝트",
+      "balance": {
+        "title": "밸런싱 — RPG 캐릭터",
+        "hint": "스탯·DPS·EHP 수식 예제"
+      },
+      "pm": {
+        "title": "팀 PM — 스프린트 보드",
+        "hint": "상태·담당자·우선순위 포함"
+      },
+      "gallery": {
+        "title": "전체 샘플 갤러리",
+        "hint": "장르·PM 템플릿 10+"
+      },
+      "blank": "빈 프로젝트로 시작"
+    },
     "teamspaces": "팀스페이스",
     "teamspacesEmpty": "팀스페이스가 비어있습니다",
     "private": "Private",
