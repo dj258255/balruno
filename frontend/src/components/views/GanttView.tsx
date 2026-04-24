@@ -223,6 +223,9 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
             >
               {/* 좌측 레코드 이름 열 */}
               <div className="flex-shrink-0 border-r" style={{ borderColor: 'var(--border-primary)', width: 200 }}>
+                {/* 2 단 헤더 높이 맞춤 — 타임라인 측 (월 h-6=24px + 일/요일 h-8=32px = 56px) 과 정렬.
+                    아래 row 영역이 어긋나지 않게 반드시 같은 총 높이 유지. */}
+                <div className="h-6 border-b" style={{ borderColor: 'var(--border-primary)' }} />
                 <div className="h-8 border-b px-3 flex items-center text-xs" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
                   {titleCol?.name ?? 'ID'}
                 </div>
