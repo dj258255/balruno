@@ -32,7 +32,7 @@ import { useTodaysWork, type RowWithContext } from '@/hooks/useTodaysWork';
 import { useProjectStore } from '@/stores/projectStore';
 import { useInbox } from '@/stores/inboxStore';
 
-type QuickLinkKind = 'home' | 'inbox' | 'sprint' | 'bug' | 'playtest' | 'recent';
+type QuickLinkKind = 'home' | 'inbox' | 'sprint' | 'bug' | 'playtest' | 'recent' | 'section-header';
 
 export default function SidebarQuickAccess() {
   const t = useTranslations();
@@ -111,6 +111,7 @@ export default function SidebarQuickAccess() {
     <div className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
       <button
         onClick={() => setExpanded((v) => !v)}
+        onContextMenu={openCtx('section-header')}
         className="w-full flex items-center gap-1 px-3 py-1.5 text-overline hover:bg-[var(--bg-hover)] transition-colors"
         style={{ color: 'var(--text-tertiary)' }}
       >
@@ -266,6 +267,25 @@ export default function SidebarQuickAccess() {
                 window.dispatchEvent(new Event('balruno:recent-cleared'));
               }}
             />
+          )}
+          {ctxMenu.kind === 'section-header' && (
+            <>
+              <CtxItem
+                icon={expanded ? ChevronRight : ChevronDown}
+                label={expanded ? '섹션 접기' : '섹션 펼치기'}
+                onClick={() => { setExpanded((v) => !v); setCtxMenu(null); }}
+              />
+              <CtxItem
+                icon={Home}
+                label="Home 으로 이동"
+                onClick={() => { goHome(); setCtxMenu(null); }}
+              />
+              <CtxItem
+                icon={Inbox}
+                label="Inbox 열기"
+                onClick={() => { openInbox(); setCtxMenu(null); }}
+              />
+            </>
           )}
         </div>
       )}
