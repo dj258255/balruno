@@ -16,9 +16,10 @@
  */
 
 import { useMemo } from 'react';
-import { Users, CircleDot, Flag } from 'lucide-react';
+import { Users, CircleDot, Flag, X } from 'lucide-react';
 import type { Sheet, Column } from '@/types';
 import { detectPmSheet, PM_TYPE_LABELS } from '@/lib/pmSheetDetection';
+import { useSheetUIStore } from '@/stores/sheetUIStore';
 
 interface Props {
   sheet: Sheet;
@@ -38,6 +39,12 @@ export function PmBadgeStrip({ sheet }: Props) {
   // 명시 kind='pm' 이 최우선. 아니면 auto detect.
   const detection = useMemo(() => detectPmSheet(sheet), [sheet]);
   const isPm = sheet.kind === 'pm' || detection.type !== null;
+  const quickFilter = useSheetUIStore((s) => s.quickFilter);
+  const setFilterAssignee = useSheetUIStore((s) => s.setQuickFilterAssignee);
+  const setFilterPriority = useSheetUIStore((s) => s.setQuickFilterPriority);
+  const clearFilter = useSheetUIStore((s) => s.clearQuickFilter);
+
+  const activeFilter = quickFilter && quickFilter.sheetId === sheet.id ? quickFilter : null;
 
   if (!isPm) return null;
 
@@ -145,16 +152,47 @@ export function PmBadgeStrip({ sheet }: Props) {
 
       {priorityBuckets && priorityBuckets.length > 0 && (
         <BadgeGroup icon={<Flag className="w-3 h-3" />} label={priorityCol?.name ?? 'Priority'}>
-          {priorityBuckets.map((b) => (
-            <Badge key={b.label} label={b.label} count={b.count} color={b.color} />
-          ))}
+          {priorityBuckets.map((b) => {
+            const active = activeFilter?.priority === b.label;
+            return (
+              <Badge
+                key={b.label}
+                label={b.label}
+                count={b.count}
+                color={b.color}
+                active={active}
+                onClick={() => setFilterPriority(sheet.id, active ? null : b.label)}
+              />
+            );
+          })}
         </BadgeGroup>
       )}
 
       {assignees && assignees.length > 0 && (
         <BadgeGroup icon={<Users className="w-3 h-3" />} label={assigneeCol?.name ?? 'Assignee'}>
-          <AssigneeAvatars names={assignees} />
+          <AssigneeAvatars
+            names={assignees}
+            activeAssignee={activeFilter?.assignee}
+            onToggle={(name) =>
+              setFilterAssignee(sheet.id, activeFilter?.assignee === name ? null : name)
+            }
+          />
         </BadgeGroup>
+      )}
+
+      {activeFilter && (activeFilter.assignee || activeFilter.priority) && (
+        <button
+          type="button"
+          onClick={clearFilter}
+          className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded text-caption transition-colors"
+          style={{ background: 'var(--accent)', color: 'white' }}
+          title="필터 해제"
+        >
+          <X className="w-3 h-3" />
+          필터:
+          {activeFilter.assignee && <span>@{activeFilter.assignee}</span>}
+          {activeFilter.priority && <span>{activeFilter.priority}</span>}
+        </button>
       )}
     </div>
   );
@@ -191,48 +229,109 @@ function BadgeGroup({
   );
 }
 
-function Badge({ label, count, color }: { label: string; count: number; color?: string }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-caption"
-      style={{
-        background: color ? `${color}22` : 'var(--bg-tertiary)',
-        color: color ?? 'var(--text-secondary)',
-        border: `1px solid ${color ?? 'var(--border-primary)'}`,
-      }}
-      title={`${label}: ${count}`}
-    >
-      {color && (
-        <span
-          className="w-1.5 h-1.5 rounded-full shrink-0"
-          style={{ background: color }}
-        />
+function Badge({
+  label,
+  count,
+  color,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  color?: string;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const interactive = Boolean(onClick);
+  const baseStyle: React.CSSProperties = {
+    background: active ? (color ?? 'var(--accent)') : color ? `${color}22` : 'var(--bg-tertiary)',
+    color: active ? 'white' : color ?? 'var(--text-secondary)',
+    border: `1px solid ${active ? (color ?? 'var(--accent)') : color ?? 'var(--border-primary)'}`,
+    cursor: interactive ? 'pointer' : 'default',
+  };
+  const content = (
+    <>
+      {color && !active && (
+        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
       )}
       <span>{label}</span>
       <span className="opacity-60">{count}</span>
+    </>
+  );
+  if (interactive) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-caption transition-colors hover:brightness-110"
+        style={baseStyle}
+        title={`${label}: ${count}${active ? ' (필터 활성 — 클릭으로 해제)' : ' (클릭으로 필터)'}`}
+      >
+        {content}
+      </button>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-caption"
+      style={baseStyle}
+      title={`${label}: ${count}`}
+    >
+      {content}
     </span>
   );
 }
 
-function AssigneeAvatars({ names }: { names: string[] }) {
+function AssigneeAvatars({
+  names,
+  activeAssignee,
+  onToggle,
+}: {
+  names: string[];
+  activeAssignee?: string;
+  onToggle?: (name: string) => void;
+}) {
   const visible = names.slice(0, 5);
   const extra = names.length - visible.length;
   return (
     <div className="flex items-center -space-x-1.5">
-      {visible.map((name) => (
-        <span
-          key={name}
-          className="w-5 h-5 rounded-full flex items-center justify-center text-caption font-medium ring-2"
-          style={{
-            background: colorFromName(name),
-            color: 'white',
-            boxShadow: '0 0 0 2px var(--bg-secondary)',
-          }}
-          title={name}
-        >
-          {name.slice(0, 1).toUpperCase()}
-        </span>
-      ))}
+      {visible.map((name) => {
+        const active = activeAssignee === name;
+        const interactive = Boolean(onToggle);
+        const style: React.CSSProperties = {
+          background: colorFromName(name),
+          color: 'white',
+          boxShadow: `0 0 0 2px var(--bg-secondary)${active ? `, 0 0 0 4px ${colorFromName(name)}` : ''}`,
+          transform: active ? 'scale(1.1)' : undefined,
+          transition: 'transform 120ms',
+          cursor: interactive ? 'pointer' : 'default',
+        };
+        const content = name.slice(0, 1).toUpperCase();
+        if (interactive) {
+          return (
+            <button
+              type="button"
+              key={name}
+              onClick={() => onToggle?.(name)}
+              className="w-5 h-5 rounded-full flex items-center justify-center text-caption font-medium hover:brightness-110"
+              style={style}
+              title={`${name}${active ? ' (필터 활성 — 클릭으로 해제)' : ' (클릭으로 필터)'}`}
+            >
+              {content}
+            </button>
+          );
+        }
+        return (
+          <span
+            key={name}
+            className="w-5 h-5 rounded-full flex items-center justify-center text-caption font-medium"
+            style={style}
+            title={name}
+          >
+            {content}
+          </span>
+        );
+      })}
       {extra > 0 && (
         <span
           className="w-5 h-5 rounded-full flex items-center justify-center text-caption font-medium"

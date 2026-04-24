@@ -17,7 +17,7 @@ import { VirtualItem } from '@tanstack/react-virtual';
 import { cn } from '@/lib/utils';
 import type { Row, Column, CellValue, CellStyle } from '@/types';
 import SheetCell from './SheetCell';
-import { InlineCheckbox, InlineRating } from './InlineCellControls';
+import { InlineCheckbox, InlineRating, InlinePerson } from './InlineCellControls';
 import { cellKey, formatDisplayValue, type DisplayContext } from './utils';
 
 interface SheetBodyProps {
@@ -317,6 +317,9 @@ const SheetBody = memo(function SheetBody({
                             onChange={(next) => onInlineCellUpdate(rowData.id, columnId, next)}
                           />
                         );
+                      }
+                      if (column.type === 'person') {
+                        return <InlinePerson value={rawValue} />;
                       }
                       return undefined;
                     })()}

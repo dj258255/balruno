@@ -35,6 +35,7 @@ import { useProjectStore } from '@/stores/projectStore';
 import { useHistoryStore } from '@/stores/historyStore';
 import { useSheetUIStore, DEFAULT_CELL_STYLE } from '@/stores/sheetUIStore';
 import { useRecordDetail } from '@/stores/recordDetailStore';
+import { detectPmSheet } from '@/lib/pmSheetDetection';
 
 // Hooks
 import {
@@ -95,6 +96,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
   const { peers, publishActiveCell, publishSelectedCells, publishEditing } = usePresence(projectId);
   // selectedCell 바인딩은 아래 useSheetSelection 에서 나오므로 이후 effect 에서 publish
   const { zoomLevel, setCurrentCellStyle, columnHeaderFontSize, rowHeaderFontSize, rowHeaderWidth } = useSheetUIStore();
+  const quickFilter = useSheetUIStore((s) => s.quickFilter);
 
   // Refs
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +107,37 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
 
   // 현재 프로젝트
   const currentProject = projects.find((p) => p.id === projectId);
+
+  // PM 빠른 필터 — 현재 시트에 활성된 assignee/priority 값과 맞지 않는 행은 dim.
+  // detectPmSheet 로 assignee 컬럼 id 를 얻고, priority 는 이름 패턴 매칭.
+  const dimmedRowIds = useMemo<Set<string>>(() => {
+    if (!quickFilter || quickFilter.sheetId !== sheet.id) return new Set();
+    if (!quickFilter.assignee && !quickFilter.priority) return new Set();
+    const detection = detectPmSheet(sheet);
+    const assigneeColId = detection.assigneeColumnId;
+    const priorityCol = sheet.columns.find(
+      (c) =>
+        c.type === 'select' &&
+        ['priority', '우선순위', 'prio'].some((n) =>
+          c.name.toLowerCase().trim().includes(n),
+        ),
+    );
+    const dim = new Set<string>();
+    for (const row of sheet.rows) {
+      let keep = true;
+      if (quickFilter.assignee && assigneeColId) {
+        const v = row.cells[assigneeColId];
+        const names = v == null ? [] : String(v).split(',').map((s) => s.trim());
+        if (!names.includes(quickFilter.assignee)) keep = false;
+      }
+      if (keep && quickFilter.priority && priorityCol) {
+        const v = row.cells[priorityCol.id];
+        if (String(v ?? '') !== quickFilter.priority) keep = false;
+      }
+      if (!keep) dim.add(row.id);
+    }
+    return dim;
+  }, [quickFilter, sheet]);
 
   // 수식 계산 (computedRows)
   const computedRows = useMemo(() => {
@@ -1286,6 +1319,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                   // 선택된 범위에 포함된 행인지 확인 (다중 선택 지원)
                   const isSelectedRow = isRowInSelection(rowData.id);
 
+                  const isDimmed = dimmedRowIds.has(rowData.id);
                   return (
                     <tr
                       key={row.id}
@@ -1305,6 +1339,8 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                         width: tableWidth,
                         background: 'var(--bg-primary)',
                         height: rowHeight,
+                        opacity: isDimmed ? 0.25 : 1,
+                        transition: 'opacity 120ms',
                         // 테마 전환 성능 최적화: 행 단위로 리플로우 범위 제한
                         contain: 'content',
                       }}
