@@ -50,6 +50,7 @@ const SettingsModal = dynamic(() => import('@/components/modals/SettingsModal'),
 const ReferencesModal = dynamic(() => import('@/components/modals/ReferencesModal'), { ssr: false });
 const OnboardingGuide = dynamic(() => import('@/components/modals/OnboardingGuide'), { ssr: false });
 const PersonaModal = dynamic(() => import('@/components/modals/PersonaModal'), { ssr: false });
+const ProductIntroModal = dynamic(() => import('@/components/modals/ProductIntroModal'), { ssr: false });
 const ExportModal = dynamic(() => import('@/components/modals/ExportModal'), { ssr: false });
 const ImportModal = dynamic(() => import('@/components/modals/ImportModal'), { ssr: false });
 
@@ -154,6 +155,30 @@ export default function Home() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const { showOnboarding, setShowOnboarding } = useOnboardingStatus();
+
+  // ProductIntro 최초 자동 노출 — persona 선택 끝났고 아직 intro 본 적 없을 때
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const personaRaw = window.localStorage.getItem('balruno:persona');
+    const hasPersona = (() => {
+      try { return personaRaw ? JSON.parse(personaRaw).state?.hasChosen === true : false; } catch { return false; }
+    })();
+    if (!hasPersona) return;
+
+    const introRaw = window.localStorage.getItem('balruno:product-intro');
+    const hasSeen = (() => {
+      try { return introRaw ? JSON.parse(introRaw).state?.seenAt != null : false; } catch { return false; }
+    })();
+    if (hasSeen) return;
+
+    // 1 초 딜레이 후 — 다른 모달 (persona) 닫힘 보장
+    const timer = setTimeout(() => {
+      import('@/stores/productIntroStore').then(({ useProductIntro }) => {
+        useProductIntro.getState().openIntro();
+      });
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   // 21개 툴 패널 상태 — 단일 hook 으로 통합 (page.tsx 분해)
   const { panels: toolPanels } = usePanelStates();
@@ -606,6 +631,9 @@ export default function Home() {
 
       {/* 첫 진입 시 1 회 페르소나 선택 — hasChosen=false 일 때만 내부적으로 렌더 */}
       <PersonaModal />
+
+      {/* 앱 소개 — persona 선택 후 최초 1 회 자동, 이후 WorkspaceSwitcher 에서 재접근 */}
+      <ProductIntroModal />
 
       {/* Command Palette (⌘K) */}
       <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />

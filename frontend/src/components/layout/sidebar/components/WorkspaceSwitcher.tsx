@@ -11,11 +11,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { ChevronDown, Plus, Settings, Edit2 } from 'lucide-react';
+import { ChevronDown, Plus, Settings, Edit2, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ui';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
+import { useProductIntro } from '@/stores/productIntroStore';
 
 interface WorkspaceSwitcherProps {
   onOpenSettings?: () => void;
@@ -25,6 +26,7 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
   const t = useTranslations();
   const { theme } = useTheme();
   const { workspaces, activeWorkspaceId, renameWorkspace } = useSidebarPrefs();
+  const openProductIntro = useProductIntro((s) => s.openIntro);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -151,6 +153,20 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
               >
                 Team
               </span>
+            </button>
+
+            {/* 앱 소개 다시 보기 */}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                openProductIntro();
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              <Sparkles className="w-4 h-4 shrink-0" style={{ color: 'var(--accent)' }} />
+              <span>앱 소개 다시 보기</span>
             </button>
 
             {/* 워크스페이스 설정 */}
