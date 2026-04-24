@@ -204,6 +204,69 @@ const gachaRatesTour: ProjectTour = {
 };
 
 // ============================================
+// Sprint Board Tour (PM)
+// ============================================
+const sprintBoardTour: ProjectTour = {
+  projectId: 'sprint-board',
+  steps: [
+    {
+      id: 'welcome',
+      titleKey: 'tour.sprintBoard.welcome.title',
+      descriptionKey: 'tour.sprintBoard.welcome.description',
+      target: { type: 'none' },
+      highlightIntensity: 'low',
+    },
+    {
+      id: 'status-column',
+      titleKey: 'tour.sprintBoard.status.title',
+      descriptionKey: 'tour.sprintBoard.status.description',
+      target: { type: 'column', columnIndex: 2 }, // Status column
+      action: 'observe',
+      highlightIntensity: 'medium',
+    },
+    {
+      id: 'priority-column',
+      titleKey: 'tour.sprintBoard.priority.title',
+      descriptionKey: 'tour.sprintBoard.priority.description',
+      target: { type: 'column', columnIndex: 3 }, // Priority
+      action: 'observe',
+      highlightIntensity: 'medium',
+    },
+    {
+      id: 'assignee-edit',
+      titleKey: 'tour.sprintBoard.assignee.title',
+      descriptionKey: 'tour.sprintBoard.assignee.description',
+      target: { type: 'cell', cellCoords: { rowIndex: 3, colIndex: 5 } }, // 빈 Assignee 셀 (GAME-104)
+      action: 'edit',
+      highlightIntensity: 'high',
+    },
+    {
+      id: 'kanban-view',
+      titleKey: 'tour.sprintBoard.kanban.title',
+      descriptionKey: 'tour.sprintBoard.kanban.description',
+      target: { type: 'none' },
+      action: 'observe',
+      highlightIntensity: 'low',
+    },
+    {
+      id: 'record-detail',
+      titleKey: 'tour.sprintBoard.detail.title',
+      descriptionKey: 'tour.sprintBoard.detail.description',
+      target: { type: 'row', rowIndex: 0 }, // GAME-101 row
+      action: 'click',
+      highlightIntensity: 'high',
+    },
+    {
+      id: 'inbox-wrap',
+      titleKey: 'tour.sprintBoard.inbox.title',
+      descriptionKey: 'tour.sprintBoard.inbox.description',
+      target: { type: 'none' },
+      highlightIntensity: 'low',
+    },
+  ],
+};
+
+// ============================================
 // Export tour definitions
 // ============================================
 export const PROJECT_TOURS: ProjectTour[] = [
@@ -211,6 +274,7 @@ export const PROJECT_TOURS: ProjectTour[] = [
   weaponBalanceTour,
   expCurveTour,
   gachaRatesTour,
+  sprintBoardTour,
 ];
 
 // Helper: Get tour by project ID

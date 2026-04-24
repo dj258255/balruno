@@ -2717,6 +2717,36 @@
         "description": "Use the comparison chart tool in the left sidebar to visually compare characters. You can also use the imbalance detector to find balance issues."
       }
     },
+    "sprintBoard": {
+      "welcome": {
+        "title": "Welcome to the Sprint Board",
+        "description": "This sample shows how a game team can manage sprints, bugs, and roles as a spreadsheet. Combined with Kanban view, it replaces Linear/Jira for most tasks."
+      },
+      "status": {
+        "title": "Status is the key column",
+        "description": "Five stages: Backlog / Todo / Doing / Review / Done. Drag cards in Kanban view to change status — it syncs back to this cell."
+      },
+      "priority": {
+        "title": "Priority for triage",
+        "description": "P0 Critical to P3 Low. Click a priority badge at the top strip to filter — non-matching rows dim."
+      },
+      "assignee": {
+        "title": "Fill in the empty Assignee",
+        "description": "GAME-104 has no assignee yet. Type a name — it will appear in the top badge strip's avatars instantly. Comma-separate for multiple (e.g. Daisy, Mike)."
+      },
+      "kanban": {
+        "title": "Switch to Kanban view",
+        "description": "Use the view switcher to see the same data as a card board. Drag cards to change status, click to open detail."
+      },
+      "detail": {
+        "title": "Right-click → Open record detail",
+        "description": "Right-click any row and pick 'Open record detail'. A right-side slide panel appears — edit all fields and the Comments panel auto-filters to that row (Linear-style workflow)."
+      },
+      "inbox": {
+        "title": "Finish — check the Inbox",
+        "description": "Open the Inbox icon in the left sidebar. It aggregates change history, @mentions, and recent comments across all your projects."
+      }
+    },
     "weaponBalance": {
       "welcome": {
         "title": "Weapon Balance Sample",
