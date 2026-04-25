@@ -34,6 +34,7 @@ import {
 import { useProjectStore } from '@/stores/projectStore';
 import { Tooltip as TooltipUI } from '@/components/ui/Tooltip';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
+import type { EconomyDesignHandle } from '@/hooks/useEconomyDesign';
 
 const PANEL_COLOR = '#e5a440'; // 소프트 앰버
 
@@ -41,28 +42,125 @@ interface EconomyPanelProps {
   showHelp?: boolean;
   setShowHelp?: (value: boolean) => void;
   onClose?: () => void;
+  /**
+   * Workbench 가 hold 한 디자인 핸들. 분석 탭 데이터(Faucet/Sink/config) 와
+   * 다이어그램 노드를 양방향 동기화.
+   * 없으면 기존 동작(로컬 state)으로 폴백 — 단독 호출 호환성.
+   */
+  design?: EconomyDesignHandle | null;
 }
 
-export default function EconomyPanel({ showHelp: externalShowHelp, setShowHelp: externalSetShowHelp, onClose }: EconomyPanelProps) {
+export default function EconomyPanel({ showHelp: externalShowHelp, setShowHelp: externalSetShowHelp, onClose, design }: EconomyPanelProps) {
   const t = useTranslations('economy');
   const [internalShowHelp, setInternalShowHelp] = useState(false);
   const showHelp = externalShowHelp ?? internalShowHelp;
   const setShowHelp = externalSetShowHelp ?? setInternalShowHelp;
 
-  // 게임 모드 (online/single)
-  const [gameMode, setGameMode] = useState<'online' | 'single'>('online');
+  // 폴백 로컬 state — design 핸들이 없을 때만 사용
+  const [localFaucets, setLocalFaucets] = useState<Faucet[]>(DEFAULT_FAUCETS);
+  const [localSinks, setLocalSinks] = useState<Sink[]>(DEFAULT_SINKS);
+  const [localConfig, setLocalConfig] = useState<EconomyConfig>(DEFAULT_CONFIG);
+  const [localGameMode, setLocalGameMode] = useState<'online' | 'single'>('online');
+  const [localSingleSources, setLocalSingleSources] = useState<SinglePlayerSource[]>(DEFAULT_SINGLE_SOURCES);
+  const [localSingleSinks, setLocalSingleSinks] = useState<SinglePlayerSink[]>(DEFAULT_SINGLE_SINKS);
+  const [localSingleConfig, setLocalSingleConfig] = useState<SinglePlayerConfig>(DEFAULT_SINGLE_CONFIG);
 
-  // 온라인 게임 상태
-  const [faucets, setFaucets] = useState<Faucet[]>(DEFAULT_FAUCETS);
-  const [sinks, setSinks] = useState<Sink[]>(DEFAULT_SINKS);
-  const [config, setConfig] = useState<EconomyConfig>(DEFAULT_CONFIG);
+  // 데이터 source — design 핸들 우선, 없으면 폴백
+  const faucets = design ? design.economy.faucets : localFaucets;
+  const sinks = design ? design.economy.sinks : localSinks;
+  const config = design ? design.economy.config : localConfig;
+  const gameMode: 'online' | 'single' = design ? (design.economy.gameMode ?? 'online') : localGameMode;
+  const singleSources = design ? (design.economy.singleSources ?? DEFAULT_SINGLE_SOURCES) : localSingleSources;
+  const singleSinks = design ? (design.economy.singleSinks ?? DEFAULT_SINGLE_SINKS) : localSingleSinks;
+  const singleConfig = design ? (design.economy.singleConfig ?? DEFAULT_SINGLE_CONFIG) : localSingleConfig;
+
+  // 데이터 setter — design 액션 → automation persist + 노드 동기 / 폴백 → 로컬 state
+  const setGameMode = (m: 'online' | 'single') => {
+    if (design) design.setGameMode(m);
+    else setLocalGameMode(m);
+  };
+  const setConfig = (next: EconomyConfig | ((prev: EconomyConfig) => EconomyConfig)) => {
+    const value = typeof next === 'function' ? next(config) : next;
+    if (design) design.setConfig(value);
+    else setLocalConfig(value);
+  };
+  const setFaucets = (next: Faucet[] | ((prev: Faucet[]) => Faucet[])) => {
+    const value = typeof next === 'function' ? next(faucets) : next;
+    if (!design) {
+      setLocalFaucets(value);
+      return;
+    }
+    // design 모드: prev 와 비교해 add/update/delete 분기
+    const prevById = new Map(design.economy.faucets.map((f) => [f.id, f]));
+    const nextById = new Map(value.map((f) => [f.id, f]));
+    for (const f of value) {
+      const prev = prevById.get(f.id);
+      if (!prev) design.addFaucet(f);
+      else if (prev !== f) design.updateFaucet(f.id, f);
+    }
+    for (const id of prevById.keys()) {
+      if (!nextById.has(id)) design.deleteFaucet(id);
+    }
+  };
+  const setSinks = (next: Sink[] | ((prev: Sink[]) => Sink[])) => {
+    const value = typeof next === 'function' ? next(sinks) : next;
+    if (!design) {
+      setLocalSinks(value);
+      return;
+    }
+    const prevById = new Map(design.economy.sinks.map((s) => [s.id, s]));
+    const nextById = new Map(value.map((s) => [s.id, s]));
+    for (const s of value) {
+      const prev = prevById.get(s.id);
+      if (!prev) design.addSink(s);
+      else if (prev !== s) design.updateSink(s.id, s);
+    }
+    for (const id of prevById.keys()) {
+      if (!nextById.has(id)) design.deleteSink(id);
+    }
+  };
+  const setSingleConfig = (next: SinglePlayerConfig | ((prev: SinglePlayerConfig) => SinglePlayerConfig)) => {
+    const value = typeof next === 'function' ? next(singleConfig) : next;
+    if (design) design.setSingleConfig(value);
+    else setLocalSingleConfig(value);
+  };
+  const setSingleSources = (next: SinglePlayerSource[] | ((prev: SinglePlayerSource[]) => SinglePlayerSource[])) => {
+    const value = typeof next === 'function' ? next(singleSources) : next;
+    if (!design) {
+      setLocalSingleSources(value);
+      return;
+    }
+    const prevById = new Map((design.economy.singleSources ?? []).map((s) => [s.id, s]));
+    const nextById = new Map(value.map((s) => [s.id, s]));
+    for (const s of value) {
+      const prev = prevById.get(s.id);
+      if (!prev) design.addSingleSource(s);
+      else if (prev !== s) design.updateSingleSource(s.id, s);
+    }
+    for (const id of prevById.keys()) {
+      if (!nextById.has(id)) design.deleteSingleSource(id);
+    }
+  };
+  const setSingleSinks = (next: SinglePlayerSink[] | ((prev: SinglePlayerSink[]) => SinglePlayerSink[])) => {
+    const value = typeof next === 'function' ? next(singleSinks) : next;
+    if (!design) {
+      setLocalSingleSinks(value);
+      return;
+    }
+    const prevById = new Map((design.economy.singleSinks ?? []).map((s) => [s.id, s]));
+    const nextById = new Map(value.map((s) => [s.id, s]));
+    for (const s of value) {
+      const prev = prevById.get(s.id);
+      if (!prev) design.addSingleSink(s);
+      else if (prev !== s) design.updateSingleSink(s.id, s);
+    }
+    for (const id of prevById.keys()) {
+      if (!nextById.has(id)) design.deleteSingleSink(id);
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<'faucets' | 'sinks' | 'config'>('faucets');
   const [fullscreenChart, setFullscreenChart] = useState(false);
-
-  // 싱글 게임 상태
-  const [singleSources, setSingleSources] = useState<SinglePlayerSource[]>(DEFAULT_SINGLE_SOURCES);
-  const [singleSinks, setSingleSinks] = useState<SinglePlayerSink[]>(DEFAULT_SINGLE_SINKS);
-  const [singleConfig, setSingleConfig] = useState<SinglePlayerConfig>(DEFAULT_SINGLE_CONFIG);
   const [singleActiveTab, setSingleActiveTab] = useState<'sources' | 'sinks' | 'config'>('sources');
 
   // 온라인 게임 결과

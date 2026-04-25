@@ -24,6 +24,22 @@
  */
 
 import type { Project, Sheet } from '@/types';
+import type {
+  Faucet,
+  Sink,
+  EconomyConfig,
+  SinglePlayerSource,
+  SinglePlayerSink,
+  SinglePlayerConfig,
+} from './economySimulator';
+import {
+  DEFAULT_CONFIG,
+  DEFAULT_FAUCETS,
+  DEFAULT_SINKS,
+  DEFAULT_SINGLE_CONFIG,
+  DEFAULT_SINGLE_SOURCES,
+  DEFAULT_SINGLE_SINKS,
+} from './economySimulator';
 import { computeSheetRows } from './formulaEngine';
 import { resolveNodeValue } from './diagramSheetBridge';
 
@@ -64,14 +80,35 @@ export interface AutomationEdge {
   to: string;
 }
 
+/**
+ * 경제 워크벤치(분석 + 다이어그램) 통합 데이터.
+ * - faucets/sinks/config: 분석 탭의 Faucet/Sink 모델
+ * - singleSources/singleSinks/singleConfig: 싱글 플레이어 모드 (별도 모델)
+ * - gameMode: 분석 탭이 어느 모드로 열려 있는지
+ *
+ * Source/Sink 노드는 Automation.nodes 에 그대로 저장. config.origin='faucet'/'sink'
+ * + faucetId/sinkId 로 분석 탭의 Faucet/Sink 와 매핑.
+ */
+export interface EconomyDesignData {
+  config: EconomyConfig;
+  faucets: Faucet[];
+  sinks: Sink[];
+  gameMode?: 'online' | 'single';
+  singleConfig?: SinglePlayerConfig;
+  singleSources?: SinglePlayerSource[];
+  singleSinks?: SinglePlayerSink[];
+}
+
 export interface Automation {
   id: string;
   name: string;
   enabled: boolean;
-  /** 'automation' (기본) | 'flow' (Probability Flow Diagram). */
-  mode?: 'automation' | 'flow';
+  /** 'automation' (기본) | 'flow' (legacy diagram) | 'economy' (분석+다이어그램 통합) */
+  mode?: 'automation' | 'flow' | 'economy';
   nodes: AutomationNode[];
   edges: AutomationEdge[];
+  /** mode='economy' 전용 — 분석 탭 데이터. */
+  economy?: EconomyDesignData;
   createdAt: number;
   updatedAt: number;
 }
@@ -100,6 +137,204 @@ export function generateAutomationId(): string {
 
 export function generateNodeId(): string {
   return `node_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+/**
+ * 새 경제 워크벤치 automation 생성.
+ * 분석 탭의 default Faucet/Sink 와 매칭되는 Source/Sink 노드를 함께 생성해
+ * 첫 오픈 시 다이어그램과 분석이 같은 데이터를 가리키도록.
+ */
+export function createBlankEconomy(name: string): Automation {
+  const id = generateAutomationId();
+  const economy: EconomyDesignData = {
+    config: { ...DEFAULT_CONFIG },
+    faucets: DEFAULT_FAUCETS.map((f) => ({ ...f })),
+    sinks: DEFAULT_SINKS.map((s) => ({ ...s })),
+    gameMode: 'online',
+    singleConfig: { ...DEFAULT_SINGLE_CONFIG },
+    singleSources: DEFAULT_SINGLE_SOURCES.map((s) => ({ ...s })),
+    singleSinks: DEFAULT_SINGLE_SINKS.map((s) => ({ ...s })),
+  };
+  // Faucet → Source 노드 자동 생성
+  const sourceNodes: AutomationNode[] = economy.faucets.map((f, i) => ({
+    id: generateNodeId(),
+    type: 'flow',
+    subtype: 'source',
+    config: { rate: f.ratePerHour, origin: 'faucet', faucetId: f.id, label: f.name },
+    position: { x: 100, y: 80 + i * 100 },
+  }));
+  // Sink → Sink 노드 자동 생성
+  const sinkNodes: AutomationNode[] = economy.sinks.map((s, i) => ({
+    id: generateNodeId(),
+    type: 'flow',
+    subtype: 'sink',
+    config: { label: s.name, origin: 'sink', sinkId: s.id },
+    position: { x: 500, y: 80 + i * 100 },
+  }));
+  return {
+    id,
+    name,
+    enabled: false,
+    mode: 'economy',
+    nodes: [...sourceNodes, ...sinkNodes],
+    edges: [],
+    economy,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+}
+
+/**
+ * Faucet 추가 → economy.faucets 에 push + 매칭 Source 노드 자동 생성.
+ * 순수 함수 — useEconomyDesign 과 테스트에서 공유.
+ */
+export function addFaucetToDesign(a: Automation, f: Faucet): Automation {
+  if (!a.economy) return a;
+  const sourceCount = a.nodes.filter((n) => n.subtype === 'source').length;
+  const newNode: AutomationNode = {
+    id: generateNodeId(),
+    type: 'flow',
+    subtype: 'source',
+    config: { rate: f.ratePerHour, origin: 'faucet', faucetId: f.id, label: f.name },
+    position: { x: 100, y: 80 + sourceCount * 100 },
+  };
+  return {
+    ...a,
+    economy: { ...a.economy, faucets: [...a.economy.faucets, f] },
+    nodes: [...a.nodes, newNode],
+    updatedAt: Date.now(),
+  };
+}
+
+/** Faucet 수정 → 매칭 Source 노드의 rate/label 동기. */
+export function updateFaucetInDesign(a: Automation, id: string, patch: Partial<Faucet>): Automation {
+  if (!a.economy) return a;
+  const updatedFaucets = a.economy.faucets.map((f) => (f.id === id ? { ...f, ...patch } : f));
+  const merged = updatedFaucets.find((f) => f.id === id);
+  const updatedNodes = a.nodes.map((n) => {
+    const cfg = n.config as Record<string, unknown>;
+    if (cfg.origin === 'faucet' && cfg.faucetId === id && merged) {
+      return { ...n, config: { ...cfg, rate: merged.ratePerHour, label: merged.name } };
+    }
+    return n;
+  });
+  return {
+    ...a,
+    economy: { ...a.economy, faucets: updatedFaucets },
+    nodes: updatedNodes,
+    updatedAt: Date.now(),
+  };
+}
+
+/** Faucet 삭제 → 매칭 Source 노드와 그 노드에 연결된 edge 정리. */
+export function deleteFaucetFromDesign(a: Automation, id: string): Automation {
+  if (!a.economy) return a;
+  const removedNodeIds = new Set(
+    a.nodes
+      .filter((n) => {
+        const cfg = n.config as Record<string, unknown>;
+        return cfg.origin === 'faucet' && cfg.faucetId === id;
+      })
+      .map((n) => n.id),
+  );
+  return {
+    ...a,
+    economy: { ...a.economy, faucets: a.economy.faucets.filter((f) => f.id !== id) },
+    nodes: a.nodes.filter((n) => !removedNodeIds.has(n.id)),
+    edges: a.edges.filter((e) => !removedNodeIds.has(e.from) && !removedNodeIds.has(e.to)),
+    updatedAt: Date.now(),
+  };
+}
+
+/** Sink 추가 → economy.sinks 에 push + 매칭 Sink 노드 자동 생성. */
+export function addSinkToDesign(a: Automation, s: Sink): Automation {
+  if (!a.economy) return a;
+  const sinkCount = a.nodes.filter((n) => n.subtype === 'sink').length;
+  const newNode: AutomationNode = {
+    id: generateNodeId(),
+    type: 'flow',
+    subtype: 'sink',
+    config: { label: s.name, origin: 'sink', sinkId: s.id },
+    position: { x: 500, y: 80 + sinkCount * 100 },
+  };
+  return {
+    ...a,
+    economy: { ...a.economy, sinks: [...a.economy.sinks, s] },
+    nodes: [...a.nodes, newNode],
+    updatedAt: Date.now(),
+  };
+}
+
+/** Sink 수정 → 매칭 Sink 노드 label 동기. */
+export function updateSinkInDesign(a: Automation, id: string, patch: Partial<Sink>): Automation {
+  if (!a.economy) return a;
+  const updatedSinks = a.economy.sinks.map((s) => (s.id === id ? { ...s, ...patch } : s));
+  const merged = updatedSinks.find((s) => s.id === id);
+  const updatedNodes = a.nodes.map((n) => {
+    const cfg = n.config as Record<string, unknown>;
+    if (cfg.origin === 'sink' && cfg.sinkId === id && merged) {
+      return { ...n, config: { ...cfg, label: merged.name } };
+    }
+    return n;
+  });
+  return {
+    ...a,
+    economy: { ...a.economy, sinks: updatedSinks },
+    nodes: updatedNodes,
+    updatedAt: Date.now(),
+  };
+}
+
+/** Sink 삭제 → 매칭 Sink 노드 + 연결 edge 정리. */
+export function deleteSinkFromDesign(a: Automation, id: string): Automation {
+  if (!a.economy) return a;
+  const removedNodeIds = new Set(
+    a.nodes
+      .filter((n) => {
+        const cfg = n.config as Record<string, unknown>;
+        return cfg.origin === 'sink' && cfg.sinkId === id;
+      })
+      .map((n) => n.id),
+  );
+  return {
+    ...a,
+    economy: { ...a.economy, sinks: a.economy.sinks.filter((s) => s.id !== id) },
+    nodes: a.nodes.filter((n) => !removedNodeIds.has(n.id)),
+    edges: a.edges.filter((e) => !removedNodeIds.has(e.from) && !removedNodeIds.has(e.to)),
+    updatedAt: Date.now(),
+  };
+}
+
+/**
+ * legacy mode='flow' automation 을 economy 모드로 마이그레이션.
+ * 기존 nodes/edges 는 그대로 유지하되 origin='manual' 마커를 주입해
+ * 새로 생성되는 Faucet 동기화의 영향을 받지 않게 함.
+ */
+export function migrateFlowToEconomy(flow: Automation): Automation {
+  const nodes = flow.nodes.map((n) => {
+    if (n.type === 'flow' && (n.subtype === 'source' || n.subtype === 'sink')) {
+      const cfg = n.config as Record<string, unknown>;
+      if (!cfg.origin) {
+        return { ...n, config: { ...cfg, origin: 'manual' } };
+      }
+    }
+    return n;
+  });
+  return {
+    ...flow,
+    mode: 'economy',
+    nodes,
+    economy: flow.economy ?? {
+      config: { ...DEFAULT_CONFIG },
+      faucets: DEFAULT_FAUCETS.map((f) => ({ ...f })),
+      sinks: DEFAULT_SINKS.map((s) => ({ ...s })),
+      gameMode: 'online',
+      singleConfig: { ...DEFAULT_SINGLE_CONFIG },
+      singleSources: DEFAULT_SINGLE_SOURCES.map((s) => ({ ...s })),
+      singleSinks: DEFAULT_SINGLE_SINKS.map((s) => ({ ...s })),
+    },
+    updatedAt: Date.now(),
+  };
 }
 
 /** 새 자동화 생성 — 비어있는 trigger 노드 1개와 함께. */
