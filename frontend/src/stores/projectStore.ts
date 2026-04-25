@@ -54,7 +54,7 @@ export interface ProjectState {
   cellSelectionMode: CellSelectionMode;
 
   // 프로젝트 액션
-  createProject: (name: string, description?: string) => string;
+  createProject: (name: string, description?: string, options?: { seedStarter?: boolean }) => string;
   createFromSample: (
     sampleId: string,
     name: string,

@@ -237,6 +237,19 @@ export default function Home() {
         const savedProjects = await loadProjects();
         if (savedProjects.length > 0) {
           setProjects(savedProjects);
+        } else {
+          // Notion 식 — 첫 진입 (저장된 프로젝트 0개) 시 starter pack 자동 시드.
+          // localStorage 의 'balruno:starter-seeded' 로 1회만 실행 (사용자가 모두 지운 후 다시 안 만들도록).
+          const seededKey = 'balruno:starter-seeded';
+          const seeded = typeof window !== 'undefined' ? localStorage.getItem(seededKey) : '1';
+          if (!seeded) {
+            createProject('튜토리얼', undefined, { seedStarter: true });
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(seededKey, '1');
+              // starter 시드 사용자에겐 OnboardingGuide 모달 자동 skip — starter 시트가 그 역할 대신
+              localStorage.setItem('balruno_onboarding_completed', 'starter-seed');
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to load projects:', error);
@@ -245,7 +258,7 @@ export default function Home() {
       }
     };
     init();
-  }, [setProjects]);
+  }, [setProjects, createProject]);
 
   // Auto save / 자동 백업 / 변경 디바운스 — useAutoSave hook
   useAutoSave(isLoading, projects);
