@@ -212,6 +212,81 @@ export function InlineTaskLink({
   );
 }
 
+/**
+ * link 셀 인라인 렌더 — 다른 시트의 row 참조를 chip 으로 표시 + 클릭 시 점프.
+ * task-link 와 비슷하지만 status/assignee 메타 없이 대상 시트의 displayColumn 라벨만 사용.
+ */
+export function InlineLink({
+  value,
+  column,
+  linkedSheet,
+  onOpen,
+}: {
+  value: CellValue;
+  column: Column;
+  linkedSheet?: Sheet;
+  onOpen?: (rowId: string) => void;
+}) {
+  if (!linkedSheet) {
+    return (
+      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+        (대상 시트 없음)
+      </span>
+    );
+  }
+
+  const rowIds = String(value ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (rowIds.length === 0) {
+    return (
+      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+        —
+      </span>
+    );
+  }
+
+  const displayColId =
+    column.linkedDisplayColumnId ??
+    linkedSheet.columns.find((c) => c.type === 'general')?.id ??
+    linkedSheet.columns[0]?.id;
+
+  return (
+    <div className="flex flex-wrap gap-1 items-center">
+      {rowIds.map((rid) => {
+        const row = linkedSheet.rows.find((r) => r.id === rid);
+        const label = row && displayColId
+          ? String(row.cells[displayColId] ?? rid).trim() || rid.slice(0, 6)
+          : rid.slice(0, 6) + '?';
+        const isOrphan = !row;
+        return (
+          <button
+            key={rid}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isOrphan) onOpen?.(rid);
+            }}
+            disabled={isOrphan}
+            className="inline-flex items-center gap-1 text-caption px-1.5 py-0.5 rounded border transition-colors hover:bg-[var(--bg-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              borderColor: isOrphan ? 'var(--border-primary)' : 'var(--accent)',
+              background: isOrphan ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+              color: isOrphan ? 'var(--text-tertiary)' : 'var(--text-primary)',
+              maxWidth: 200,
+            }}
+            title={isOrphan ? `삭제된 row: ${rid}` : `${linkedSheet.name} → ${label}`}
+          >
+            <span className="truncate">{label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function InlineRating({
   value,
   max = 5,

@@ -749,6 +749,42 @@ export function insertRowInDoc(
   });
 }
 
+/**
+ * 단일 row 를 새 위치(targetIndex) 로 이동.
+ * Kanban 같은 컬럼 내 정렬 + cross-column 이동에서 사용.
+ * Y.Array 는 in-place 이동 API 가 없어 delete + insert 패턴.
+ * cellStyles/cellMemos 같은 Y.Map 자식은 rebuildRowYMapFromJSON 으로 재구성.
+ */
+export function reorderRowInDoc(
+  doc: Y.Doc,
+  sheetId: string,
+  rowId: string,
+  targetIndex: number
+): void {
+  doc.transact(() => {
+    const found = findSheetMap(doc, sheetId);
+    if (!found) return;
+    const rows = found.sheet.get('rows') as Y.Array<Y.Map<unknown>>;
+
+    let fromIdx = -1;
+    for (let i = 0; i < rows.length; i++) {
+      if (rows.get(i).get('id') === rowId) {
+        fromIdx = i;
+        break;
+      }
+    }
+    if (fromIdx < 0) return;
+
+    const json = rows.get(fromIdx).toJSON();
+    rows.delete(fromIdx, 1);
+    // 삭제 후 인덱스 보정 — 원래 인덱스보다 뒤로 가는 경우 -1
+    const adjusted = targetIndex > fromIdx ? targetIndex - 1 : targetIndex;
+    const clamped = Math.max(0, Math.min(adjusted, rows.length));
+    rows.insert(clamped, [rebuildRowYMapFromJSON(json)]);
+    touchSheet(found.sheet);
+  });
+}
+
 export function updateRowInDoc(
   doc: Y.Doc,
   sheetId: string,
