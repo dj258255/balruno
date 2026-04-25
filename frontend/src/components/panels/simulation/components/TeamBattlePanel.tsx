@@ -5,7 +5,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Play, RefreshCw, User, Sparkles, Target, Zap, Clock, BarChart3, Trophy, Skull, ChevronDown, ChevronUp, TrendingUp, Swords, Crosshair, Brain, Gauge } from 'lucide-react';
+import { X, Play, RefreshCw, User, Sparkles, Target, Zap, Clock, BarChart3, Trophy, Skull, ChevronDown, ChevronUp, TrendingUp, Swords, Crosshair, Brain, Gauge, ArrowLeftRight } from 'lucide-react';
 import type { UnitStats, TeamBattleConfig, Skill } from '@/lib/simulation/types';
 import type { TeamResult, TeamUnitModalState } from '../hooks/useSimulationState';
 import { UnitPicker } from './UnitPicker';
@@ -14,6 +14,10 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { useTranslations } from 'next-intl';
 import CustomSelect from '@/components/ui/CustomSelect';
 import ReplayTimeline, { type ReplayUnit } from '@/components/simulation/ReplayTimeline';
+import { commitTeamResult } from '@/lib/simulation/resultCommit';
+import { useProjectStore } from '@/stores/projectStore';
+import { toast } from '@/components/ui/Toast';
+import { FileSpreadsheet } from 'lucide-react';
 
 interface UnitWithSkills extends UnitStats {
   skills?: Skill[];
@@ -209,6 +213,8 @@ interface TeamBattlePanelProps {
   onAddToTeam: (team: 1 | 2, unit: UnitStats) => void;
   onRemoveFromTeam: (team: 1 | 2, unitId: string) => void;
   onOpenModal: (state: TeamUnitModalState) => void;
+  /** team1 ↔ team2 일괄 교환 — 자동 분배 후 한 번에 뒤집기 */
+  onSwapTeams?: () => void;
 }
 
 export function TeamBattlePanel({
@@ -225,6 +231,7 @@ export function TeamBattlePanel({
   onAddToTeam,
   onRemoveFromTeam,
   onOpenModal,
+  onSwapTeams,
 }: TeamBattlePanelProps) {
   const t = useTranslations('simulation');
 
@@ -328,6 +335,26 @@ export function TeamBattlePanel({
         </div>
       </div>
 
+      {/* 팀 swap 버튼 — 자동 분배 결과를 한 번에 뒤집기 */}
+      {onSwapTeams && (team1Units.length > 0 || team2Units.length > 0) && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={onSwapTeams}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors hover:bg-[var(--bg-hover)]"
+            style={{
+              background: 'var(--bg-tertiary)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-primary)',
+            }}
+            title="Team 1 ↔ Team 2 일괄 교환"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" />
+            팀 swap
+          </button>
+        </div>
+      )}
+
       {/* 타겟팅 모드 선택 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <label className="block text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{t('targetingMode')}</label>
@@ -413,14 +440,66 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
   const team1UnitStats = teamResult.unitStats?.filter(u => u.team === 'team1') || [];
   const team2UnitStats = teamResult.unitStats?.filter(u => u.team === 'team2') || [];
 
+  const handleSaveToSheet = () => {
+    const store = useProjectStore.getState();
+    const { currentProjectId, currentSheetId, projects, addRow, addColumn } = store;
+    if (!currentProjectId || !currentSheetId) {
+      toast.error('저장할 시트를 먼저 선택하세요');
+      return;
+    }
+    const sheet = projects
+      .find((p) => p.id === currentProjectId)
+      ?.sheets.find((s) => s.id === currentSheetId);
+    if (!sheet) return;
+
+    const addColumnFn = (data: { name: string; type: import('@/types').ColumnType }) => {
+      const newColId = addColumn(currentProjectId, currentSheetId, { name: data.name, type: data.type });
+      if (!newColId) return null;
+      const updated = useProjectStore
+        .getState()
+        .projects.find((p) => p.id === currentProjectId)
+        ?.sheets.find((s) => s.id === currentSheetId);
+      return updated?.columns.find((c) => c.id === newColId) ?? null;
+    };
+
+    const team1Name = team1Units.length > 0 ? `Team 1 (${team1Units.length})` : 'Team 1';
+    const team2Name = team2Units.length > 0 ? `Team 2 (${team2Units.length})` : 'Team 2';
+
+    const rowId = commitTeamResult(
+      {
+        sheet,
+        addRow: (cells) => addRow(currentProjectId, currentSheetId, cells),
+        addColumn: addColumnFn,
+      },
+      teamResult,
+      team1Name,
+      team2Name,
+    );
+    if (rowId) {
+      toast.success(`${sheet.name} 에 팀 시뮬 결과 저장됨`);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {/* 승률 */}
+      {/* 승률 + 저장 버튼 */}
       <div className="p-4 rounded-xl" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}>
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('teamWinRate')}</div>
-          <div className="text-sm px-2 py-1 rounded-full" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
-            {teamResult.totalRuns.toLocaleString()}전
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSaveToSheet}
+              className="text-sm px-2 py-1 rounded inline-flex items-center gap-1 transition-colors"
+              style={{ background: 'var(--accent)', color: 'white' }}
+              title="현재 시트에 결과 row 추가 + 누락 컬럼 자동 생성"
+            >
+              <FileSpreadsheet className="w-3 h-3" />
+              시트에 저장
+            </button>
+            <div className="text-sm px-2 py-1 rounded-full" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+              {teamResult.totalRuns.toLocaleString()}전
+            </div>
           </div>
         </div>
 
