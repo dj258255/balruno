@@ -7,19 +7,20 @@
  *  - "분석": Faucet/Sink 수치 + 인플레이션/공급 곡선 (기존 EconomyPanel 본문).
  *  - "다이어그램": Source/Pool/Gate/Converter/Sink 노드 그래프 + Monte Carlo (기존 DiagramView).
  *
- * 분리되어 있던 두 도구를 사용자가 하나의 워크벤치로 쓰도록 묶음.
- * 내부 데이터 모델은 당분간 독립 — 분석은 로컬 state, 다이어그램은 automations(mode='flow').
- * 향후 단일 EconomyDesign 모델로 통합할 수 있도록 경계를 얕게 둠.
+ * 두 탭은 하나의 economy automation 을 공유 — Faucet 추가/삭제/수정 시 다이어그램의
+ * Source/Sink 노드가 자동 동기화. (origin='manual' 노드는 보호.)
+ *
+ * 탭 전환 시 비활성 탭은 언마운트 — 숨긴 채 유지하면 recharts ResponsiveContainer 가
+ * 0×0 부모 안에서 차트를 못 그리는 경고가 발생함. 데이터는 design 핸들에 persist 되어
+ * 보존됨.
  */
 
 import { useState } from 'react';
-import dynamic from 'next/dynamic';
 import { BarChart3, Workflow } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useProjectStore } from '@/stores/projectStore';
-
-const EconomyPanel = dynamic(() => import('@/components/panels/EconomyPanel'), { ssr: false });
-const DiagramView = dynamic(() => import('@/components/views/DiagramView'), { ssr: false });
+import { useEconomyDesign } from '@/hooks/useEconomyDesign';
+import EconomyPanel from '@/components/panels/EconomyPanel';
+import DiagramView from '@/components/views/DiagramView';
 
 type WorkbenchMode = 'analytics' | 'diagram';
 
@@ -36,63 +37,75 @@ export default function EconomyWorkbench({ onClose }: Props) {
     const project = s.projects.find((p) => p.id === s.currentProjectId);
     return project?.sheets.find((sh) => sh.id === s.currentSheetId) ?? null;
   });
+  // 시트당 단일 economy automation. 분석 탭 ↔ 다이어그램 탭이 같은 핸들 공유.
+  const design = useEconomyDesign(projectId, sheet?.name ?? null);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
-      {/* 워크벤치 탭 */}
-      <div
-        role="tablist"
-        aria-label="경제 워크벤치 모드"
-        className="flex items-center gap-1 px-3 py-2 border-b"
-        style={{ borderColor: 'var(--border-primary)' }}
-      >
-        <WorkbenchTab
-          active={mode === 'analytics'}
-          onClick={() => setMode('analytics')}
-          icon={BarChart3}
-          label="분석"
-          hint="Faucet/Sink·인플레이션"
-        />
-        <WorkbenchTab
-          active={mode === 'diagram'}
-          onClick={() => setMode('diagram')}
-          icon={Workflow}
-          label="다이어그램"
-          hint="Source → Pool → Sink 흐름"
-        />
+      {/* 모드 선택 — SimulationPanel 1v1/팀 토글과 동일한 segmented control 패턴 */}
+      <div className="px-3 pt-3 pb-2 shrink-0">
+        <ModeSelector mode={mode} setMode={setMode} />
       </div>
 
-      {/* 탭 컨텐츠 — 언마운트 하지 않고 display 토글해 상태 보존 */}
-      <div className="flex-1 min-h-0 relative">
-        <div className={cn('absolute inset-0 flex flex-col', mode === 'analytics' ? '' : 'hidden')}>
-          <EconomyPanel onClose={onClose} />
-        </div>
-        <div className={cn('absolute inset-0 flex flex-col', mode === 'diagram' ? '' : 'hidden')}>
-          {projectId && sheetId && sheet ? (
-            <DiagramView projectId={projectId} sheet={sheet} />
+      {/* 탭 컨텐츠 — 활성 탭만 마운트 (recharts 0×0 회피, 데이터는 design 에 persist) */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        {mode === 'analytics' && (
+          <EconomyPanel onClose={onClose} design={design} />
+        )}
+        {mode === 'diagram' && (
+          projectId && sheetId && sheet ? (
+            <DiagramView projectId={projectId} sheet={sheet} design={design} />
           ) : (
             <div className="flex-1 flex items-center justify-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
               시트를 선택하면 다이어그램이 로드됩니다
             </div>
-          )}
-        </div>
+          )
+        )}
       </div>
     </div>
   );
 }
 
-function WorkbenchTab({
+function ModeSelector({
+  mode,
+  setMode,
+}: {
+  mode: WorkbenchMode;
+  setMode: (m: WorkbenchMode) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="경제 워크벤치 모드"
+      className="flex gap-1 p-1 rounded-lg"
+      style={{ background: 'var(--bg-tertiary)' }}
+    >
+      <ModeButton
+        active={mode === 'analytics'}
+        onClick={() => setMode('analytics')}
+        icon={BarChart3}
+        label="분석"
+      />
+      <ModeButton
+        active={mode === 'diagram'}
+        onClick={() => setMode('diagram')}
+        icon={Workflow}
+        label="다이어그램"
+      />
+    </div>
+  );
+}
+
+function ModeButton({
   active,
   onClick,
   icon: Icon,
   label,
-  hint,
 }: {
   active: boolean;
   onClick: () => void;
   icon: typeof BarChart3;
   label: string;
-  hint: string;
 }) {
   return (
     <button
@@ -100,20 +113,15 @@ function WorkbenchTab({
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={cn(
-        'flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors',
-        active ? 'font-semibold' : 'hover:bg-[var(--bg-hover)]'
-      )}
+      className="flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
       style={{
-        background: active ? 'var(--bg-tertiary)' : 'transparent',
-        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+        background: active ? 'var(--bg-primary)' : 'transparent',
+        color: active ? 'var(--accent)' : 'var(--text-secondary)',
+        boxShadow: active ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
       }}
     >
-      <Icon className="w-3.5 h-3.5" />
-      <span>{label}</span>
-      <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-        · {hint}
-      </span>
+      <Icon className="w-4 h-4" />
+      {label}
     </button>
   );
 }

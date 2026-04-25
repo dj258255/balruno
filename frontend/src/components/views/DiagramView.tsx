@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Droplet, Filter, Target, Database, RefreshCw, Play, Loader2, Plus, Trash2,
-  Copy, Scissors, ExternalLink, Download,
+  Copy, Scissors, ExternalLink, Download, Grid3X3, X,
 } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import type { Sheet } from '@/types';
@@ -31,10 +31,18 @@ import {
   saveAutomations,
 } from '@/lib/automations';
 import { DIAGRAM_TEMPLATES } from '@/lib/diagramTemplates';
+import { formatSheetRef, parseSheetRef } from '@/lib/diagramSheetBridge';
+import type { EconomyDesignHandle } from '@/hooks/useEconomyDesign';
 
 interface Props {
   projectId: string;
   sheet: Sheet;
+  /**
+   * EconomyWorkbench 가 hold 한 통합 design 핸들. 있으면 해당 automation 의 nodes/edges 를
+   * 단일 source of truth 로 사용 (분석 탭의 Faucet 변경이 즉시 반영). 없으면 legacy mode='flow'
+   * automation 을 자체 로드.
+   */
+  design?: EconomyDesignHandle | null;
 }
 
 type EconomyNodeSubtype = 'source' | 'gate' | 'sink' | 'pool' | 'converter';
@@ -63,29 +71,30 @@ const NODE_LABELS: Record<EconomyNodeSubtype, string> = {
   converter: 'Converter',
 };
 
-export default function DiagramView({ projectId, sheet }: Props) {
-  const [automations, setAutomations] = useState<Automation[]>([]);
-  const [currentFlowId, setCurrentFlowId] = useState<string | null>(null);
+export default function DiagramView({ projectId, sheet, design }: Props) {
+  // legacy 경로용 — design 이 없을 때만 사용
+  const [legacyAutomations, setLegacyAutomations] = useState<Automation[]>([]);
+  const [legacyFlowId, setLegacyFlowId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [result, setResult] = useState<FlowSimResult | null>(null);
   const [running, setRunning] = useState(false);
 
-  // 시트 이름으로 Flow 매칭 — "Economy_{sheetName}" 규칙
+  // 시트 이름으로 Flow 매칭 — "Economy: {sheetName}" 규칙
   const flowName = useMemo(() => `Economy: ${sheet.name}`, [sheet.name]);
 
   useEffect(() => {
+    if (design) return; // design 모드에선 legacy 로드 불필요
     const list = loadAutomations(projectId).filter((a) => a.mode === 'flow');
-    setAutomations(list);
+    setLegacyAutomations(list);
     const match = list.find((a) => a.name === flowName);
-    setCurrentFlowId(match?.id ?? null);
-  }, [projectId, flowName]);
+    setLegacyFlowId(match?.id ?? null);
+  }, [projectId, flowName, design]);
 
-  const currentFlow = automations.find((a) => a.id === currentFlowId);
+  const currentFlow = design ? design.automation : legacyAutomations.find((a) => a.id === legacyFlowId);
 
-  const persist = useCallback(
+  const legacyPersist = useCallback(
     (updated: Automation[]) => {
-      setAutomations(updated);
-      // 다른 (non-flow) automations 는 유지해서 같이 저장
+      setLegacyAutomations(updated);
       const all = loadAutomations(projectId);
       const nonFlow = all.filter((a) => a.mode !== 'flow');
       saveAutomations(projectId, [...nonFlow, ...updated]);
@@ -94,24 +103,30 @@ export default function DiagramView({ projectId, sheet }: Props) {
   );
 
   const createFlow = () => {
+    if (design) return; // design 모드에선 economy automation 이 hook 단계에서 보장됨
     const flow = createBlankFlow(flowName);
     flow.nodes[0].position = { x: 100, y: 150 };
-    persist([...automations, flow]);
-    setCurrentFlowId(flow.id);
+    legacyPersist([...legacyAutomations, flow]);
+    setLegacyFlowId(flow.id);
   };
 
   const createFromTemplate = (templateId: string) => {
+    if (design) return;
     const tpl = DIAGRAM_TEMPLATES.find((t) => t.id === templateId);
     if (!tpl) return;
     const flow = tpl.build(flowName);
-    persist([...automations, flow]);
-    setCurrentFlowId(flow.id);
+    legacyPersist([...legacyAutomations, flow]);
+    setLegacyFlowId(flow.id);
   };
 
   const updateFlow = (updater: (flow: Automation) => Automation) => {
+    if (design) {
+      design.updateAutomation(updater);
+      return;
+    }
     if (!currentFlow) return;
-    const updated = automations.map((a) => (a.id === currentFlow.id ? updater(a) : a));
-    persist(updated);
+    const updated = legacyAutomations.map((a) => (a.id === currentFlow.id ? updater(a) : a));
+    legacyPersist(updated);
   };
 
   const addNode = (subtype: EconomyNodeSubtype) => {
@@ -127,7 +142,8 @@ export default function DiagramView({ projectId, sheet }: Props) {
         id: generateNodeId(),
         type: 'flow',
         subtype: subtype as never,
-        config: defaults[subtype],
+        // origin='manual' — 분석 탭의 Faucet/Sink 동기화 대상에서 제외
+        config: { ...defaults[subtype], origin: 'manual' },
         position: { x: 200 + flow.nodes.length * 140, y: 150 },
       };
       return { ...flow, nodes: [...flow.nodes, newNode], updatedAt: Date.now() };
@@ -814,15 +830,10 @@ function NodeInspector({
   if (node.subtype === 'source') {
     return (
       <Field label="Rate (tokens/iter)">
-        <input
-          type="text"
-          value={String(cfg.rate ?? '')}
-          onChange={(e) => {
-            const n = Number(e.target.value);
-            set({ rate: Number.isFinite(n) ? n : e.target.value });
-          }}
-          className="w-full px-2 py-1 text-xs rounded border bg-transparent font-mono"
-          style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+        <RefAwareNumberInput
+          fieldLabel="Source rate"
+          value={cfg.rate}
+          onChange={(v) => set({ rate: v })}
         />
       </Field>
     );
@@ -832,25 +843,17 @@ function NodeInspector({
     return (
       <>
         <Field label="Probability (0-1)">
-          <input
-            type="text"
-            value={String(cfg.probability ?? '')}
-            onChange={(e) => {
-              const n = Number(e.target.value);
-              set({ probability: Number.isFinite(n) ? n : e.target.value });
-            }}
-            className="w-full px-2 py-1 text-xs rounded border bg-transparent font-mono"
-            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+          <RefAwareNumberInput
+            fieldLabel="Gate probability"
+            value={cfg.probability}
+            onChange={(v) => set({ probability: v })}
           />
         </Field>
         <Field label="Multiplier">
-          <input
-            type="number"
-            step="0.1"
-            value={Number(cfg.multiplier ?? 1)}
-            onChange={(e) => set({ multiplier: Number(e.target.value) })}
-            className="w-full px-2 py-1 text-xs rounded border bg-transparent font-mono"
-            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+          <RefAwareNumberInput
+            fieldLabel="Gate multiplier"
+            value={cfg.multiplier ?? 1}
+            onChange={(v) => set({ multiplier: v })}
           />
         </Field>
       </>
@@ -874,21 +877,17 @@ function NodeInspector({
     return (
       <>
         <Field label="Capacity">
-          <input
-            type="number"
-            value={Number(cfg.capacity ?? 0)}
-            onChange={(e) => set({ capacity: Number(e.target.value) })}
-            className="w-full px-2 py-1 text-xs rounded border bg-transparent font-mono"
-            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+          <RefAwareNumberInput
+            fieldLabel="Pool capacity"
+            value={cfg.capacity ?? 0}
+            onChange={(v) => set({ capacity: v })}
           />
         </Field>
         <Field label="Initial">
-          <input
-            type="number"
-            value={Number(cfg.initial ?? 0)}
-            onChange={(e) => set({ initial: Number(e.target.value) })}
-            className="w-full px-2 py-1 text-xs rounded border bg-transparent font-mono"
-            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+          <RefAwareNumberInput
+            fieldLabel="Pool initial"
+            value={cfg.initial ?? 0}
+            onChange={(v) => set({ initial: v })}
           />
         </Field>
       </>
@@ -899,23 +898,17 @@ function NodeInspector({
     return (
       <>
         <Field label="Input rate">
-          <input
-            type="number"
-            step="0.1"
-            value={Number(cfg.inputRate ?? 1)}
-            onChange={(e) => set({ inputRate: Number(e.target.value) })}
-            className="w-full px-2 py-1 text-xs rounded border bg-transparent font-mono"
-            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+          <RefAwareNumberInput
+            fieldLabel="Converter input"
+            value={cfg.inputRate ?? 1}
+            onChange={(v) => set({ inputRate: v })}
           />
         </Field>
         <Field label="Output rate">
-          <input
-            type="number"
-            step="0.1"
-            value={Number(cfg.outputRate ?? 1)}
-            onChange={(e) => set({ outputRate: Number(e.target.value) })}
-            className="w-full px-2 py-1 text-xs rounded border bg-transparent font-mono"
-            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+          <RefAwareNumberInput
+            fieldLabel="Converter output"
+            value={cfg.outputRate ?? 1}
+            onChange={(v) => set({ outputRate: v })}
           />
         </Field>
       </>
@@ -923,6 +916,90 @@ function NodeInspector({
   }
 
   return null;
+}
+
+/**
+ * 숫자 또는 sheet 참조(`=sheetId!colId!rowId`)를 받는 input.
+ * 우측 grid 아이콘 클릭 → cellSelection 모드 진입 → 유저가 시트 셀 클릭 → ref 자동 입력.
+ * X 아이콘으로 ref 해제 후 일반 숫자로 복귀.
+ */
+function RefAwareNumberInput({
+  fieldLabel,
+  value,
+  onChange,
+}: {
+  fieldLabel: string;
+  value: unknown;
+  onChange: (v: number | string) => void;
+}) {
+  const startCellSelection = useProjectStore((s) => s.startCellSelection);
+  const cellSelectionActive = useProjectStore((s) => s.cellSelectionMode.active);
+  const ref = parseSheetRef(value);
+  const isRef = ref !== null;
+
+  const handlePick = () => {
+    const sheetId = useProjectStore.getState().currentSheetId;
+    if (!sheetId) return;
+    startCellSelection(fieldLabel, (_value, rowId, columnId) => {
+      if (!rowId || !columnId) return;
+      onChange(formatSheetRef({ sheetId, columnId, rowId }));
+    });
+  };
+
+  const handleClear = () => onChange(0);
+
+  if (isRef) {
+    return (
+      <div
+        className="w-full flex items-center gap-1 px-2 py-1 text-xs rounded border font-mono"
+        style={{
+          borderColor: 'var(--primary-purple)',
+          background: 'var(--bg-tertiary)',
+          color: 'var(--primary-purple)',
+        }}
+        title={`참조: ${value}`}
+      >
+        <Grid3X3 className="w-3 h-3 shrink-0" />
+        <span className="flex-1 truncate">cell ref</span>
+        <button
+          type="button"
+          onClick={handleClear}
+          className="p-0.5 rounded hover:bg-[var(--bg-hover)]"
+          aria-label="참조 해제"
+          title="참조 해제 (숫자로 복귀)"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={String(value ?? '')}
+        onChange={(e) => {
+          const raw = e.target.value;
+          const n = Number(raw);
+          onChange(Number.isFinite(n) && raw.trim() !== '' ? n : raw);
+        }}
+        className="w-full px-2 py-1 pr-7 text-xs rounded border bg-transparent font-mono"
+        style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+      />
+      {!cellSelectionActive && (
+        <button
+          type="button"
+          onClick={handlePick}
+          className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-[var(--bg-hover)]"
+          title="시트 셀 선택"
+          aria-label="시트 셀 선택"
+        >
+          <Grid3X3 className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
+        </button>
+      )}
+    </div>
+  );
 }
 
 function CtxButton({
