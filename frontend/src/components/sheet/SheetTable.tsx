@@ -52,6 +52,8 @@ import {
 import SheetCell from './SheetCell';
 import { CellEditor } from './CellEditor';
 import SheetKindEmptyState from './SheetKindEmptyState';
+import { isUnitMappable, rowToUnitStats, rowsToUnitStats } from '@/lib/simulation/rowToUnits';
+import { useSimulationPreload } from '@/stores/simulationPreloadStore';
 import { InlineCheckbox, InlineRating, InlineTaskLink, InlineLink } from './InlineCellControls';
 import InlineStatSnapshot from './InlineStatSnapshot';
 import FormulaBar from './FormulaBar';
@@ -1811,6 +1813,51 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           rowIndex={rowContextMenu.rowIndex}
           isLocked={rowContextMenu.row.locked || false}
           onClose={() => setRowContextMenu(null)}
+          runSimulation={(() => {
+            // 시트 컬럼이 unit-mappable (hp + atk 컬럼 존재) 일 때만 진입점 노출
+            if (!isUnitMappable(sheet.columns)) return null;
+            // 다중 행 선택 시 (2+) 팀 시뮬, 단일 행이면 1v1 (vs 다음 행 자동)
+            const uniqueRowIds = Array.from(new Set(selectedCells.map((c) => c.rowId)));
+            const usingMulti = uniqueRowIds.length >= 2;
+            if (usingMulti) {
+              const selectedRows = uniqueRowIds
+                .map((rid) => sheet.rows.find((r) => r.id === rid))
+                .filter((r): r is Row => Boolean(r));
+              if (selectedRows.length < 2) return null;
+              const half = Math.ceil(selectedRows.length / 2);
+              const team1Rows = selectedRows.slice(0, half);
+              const team2Rows = selectedRows.slice(half);
+              return {
+                label: `선택한 ${selectedRows.length}행으로 팀 시뮬`,
+                onClick: () => {
+                  useSimulationPreload.getState().queue({
+                    mode: 'team',
+                    team1: rowsToUnitStats(team1Rows, sheet.columns),
+                    team2: rowsToUnitStats(team2Rows, sheet.columns),
+                    source: sheet.name,
+                  });
+                  window.dispatchEvent(new CustomEvent('balruno:open-panel', { detail: { panel: 'simulation' } }));
+                  setRowContextMenu(null);
+                },
+              };
+            }
+            // 단일 행 — 시트의 다음 행 (없으면 첫 행) 을 unit2 로
+            const idx = sheet.rows.findIndex((r) => r.id === rowContextMenu.row.id);
+            const partner = sheet.rows[idx + 1] ?? sheet.rows.find((r) => r.id !== rowContextMenu.row.id);
+            return {
+              label: '이 행으로 시뮬 실행',
+              onClick: () => {
+                useSimulationPreload.getState().queue({
+                  mode: '1v1',
+                  unit1: rowToUnitStats(rowContextMenu.row, sheet.columns),
+                  unit2: partner ? rowToUnitStats(partner, sheet.columns) : undefined,
+                  source: sheet.name,
+                });
+                window.dispatchEvent(new CustomEvent('balruno:open-panel', { detail: { panel: 'simulation' } }));
+                setRowContextMenu(null);
+              },
+            };
+          })()}
           onOpenDetail={() => {
             useRecordDetail.getState().openRecord({
               projectId,

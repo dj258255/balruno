@@ -4,8 +4,9 @@
  * SimulationPanel의 모든 상태를 하나의 훅으로 관리
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useProjectStore } from '@/stores/projectStore';
+import { useSimulationPreload } from '@/stores/simulationPreloadStore';
 import type {
   UnitStats,
   SimulationResult,
@@ -324,6 +325,23 @@ export function useSimulationState() {
     setTeamResult(null);
     setProgress(0);
     setSelectedBattleIndex(0);
+  }, []);
+
+  // 외부 진입점 (시트 행 우클릭 등) 에서 push 한 preload 를 마운트 시 consume.
+  // 1v1: unit1Stats / unit2Stats 자동 채움 + 모드 전환
+  // team: team1Units / team2Units 자동 채움 + 모드 전환
+  useEffect(() => {
+    const payload = useSimulationPreload.getState().consume();
+    if (!payload) return;
+    if (payload.mode === '1v1') {
+      setBattleMode('1v1');
+      setUnit1Stats({ ...payload.unit1 });
+      if (payload.unit2) setUnit2Stats({ ...payload.unit2 });
+    } else {
+      setBattleMode('team');
+      setTeam1Units(payload.team1);
+      setTeam2Units(payload.team2);
+    }
   }, []);
 
   return {
