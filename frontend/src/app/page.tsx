@@ -673,9 +673,12 @@ export default function Home() {
       {/* starter 시드 사용자 5단계 가이드 — floating card, dismissible */}
       <StarterCoachmark />
 
-      {/* 첫 진입 — 장르 picker (starter pack 선택) */}
+      {/* 첫 진입 — 장르 picker (starter pack 선택). 닫기 시 빈 워크스페이스 */}
       {showStarterPicker && (
-        <StarterPickerModal onPick={handlePickStarter} />
+        <StarterPickerModal
+          onPick={handlePickStarter}
+          onClose={() => handlePickStarter('blank')}
+        />
       )}
 
       {/* Command Palette (⌘K) */}

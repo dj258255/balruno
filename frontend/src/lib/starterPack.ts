@@ -20,6 +20,21 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import {
+  Sparkles,
+  Swords,
+  Crosshair,
+  Shield,
+  Castle,
+  Hourglass,
+  SquareStack,
+  ListTodo,
+  Bug,
+  Map as MapIcon,
+  TestTube,
+  FilePlus2,
+  type LucideIcon,
+} from 'lucide-react';
 import type { Project, Sheet, Column, Row, Doc } from '@/types';
 
 const now = () => Date.now();
@@ -387,8 +402,7 @@ function welcomeDoc(genreLabel: string, sheetNames: string[], extraTip?: string)
   return {
     id: uuidv4(),
     name: 'Welcome',
-    icon: '👋',
-    content: `<h1>${genreLabel} 시작 팩 👋</h1>
+    content: `<h1>${genreLabel} 시작 팩</h1>
 <p>${genreLabel} 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>
 <h2>이 워크스페이스에 든 것</h2>
 <ul>${tips}</ul>
@@ -415,7 +429,9 @@ export interface StarterEntry {
   id: string;
   label: string;
   description: string;
-  emoji: string;
+  icon: LucideIcon;
+  /** lucide 아이콘 색 강조 — 카테고리별 시각 구분 */
+  color: string;
   build: () => Project;
 }
 
@@ -423,7 +439,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'tutorial',
     label: '튜토리얼 (기본)',
-    emoji: '👋',
+    icon: Sparkles,
+    color: '#8b5cf6',
     description: '캐릭터 + 스프린트 — 처음 사용자에게 추천',
     build: () => buildProject('튜토리얼', '시작용 예시 — 자유롭게 편집/삭제하세요',
       [characterSheet(), sprintBacklogSheet()],
@@ -432,7 +449,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'rpg',
     label: 'RPG',
-    emoji: '⚔️',
+    icon: Swords,
+    color: '#dc2626',
     description: '캐릭터 스탯 · 무기 · EXP 곡선 · 가챠',
     build: () => buildProject('RPG 프로젝트', 'RPG 밸런싱 시작 팩',
       [characterSheet(), weaponSheet(), expCurveSheet(), gachaSheet()],
@@ -442,7 +460,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'fps',
     label: 'FPS 슈터',
-    emoji: '🎯',
+    icon: Crosshair,
+    color: '#ea580c',
     description: 'TTK · 무기 카테고리 · 반동',
     build: () => buildProject('FPS 프로젝트', 'FPS 슈터 밸런싱',
       [fpsWeaponSheet(), sprintBacklogSheet()],
@@ -452,7 +471,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'moba',
     label: 'MOBA',
-    emoji: '🛡️',
+    icon: Shield,
+    color: '#0ea5e9',
     description: '챔피언 스탯 · 포지션',
     build: () => buildProject('MOBA 프로젝트', 'MOBA 챔피언 밸런싱',
       [mobaChampionSheet(), sprintBacklogSheet()],
@@ -462,7 +482,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'rts',
     label: 'RTS / 전략',
-    emoji: '🏰',
+    icon: Castle,
+    color: '#16a34a',
     description: '유닛 코스트 · 카운터 매트릭스',
     build: () => buildProject('RTS 프로젝트', 'RTS 유닛 밸런싱',
       [rtsUnitSheet(), sprintBacklogSheet()],
@@ -472,7 +493,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'idle',
     label: 'Idle 클리커',
-    emoji: '⏳',
+    icon: Hourglass,
+    color: '#f59e0b',
     description: '업그레이드 비용 곡선 · 회수 시간',
     build: () => buildProject('Idle 프로젝트', 'Idle 클리커 밸런싱',
       [idleUpgradeSheet(), sprintBacklogSheet()],
@@ -482,7 +504,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'roguelike',
     label: '로그라이크 덱빌더',
-    emoji: '🃏',
+    icon: SquareStack,
+    color: '#7c3aed',
     description: '카드 덱 · 시너지 · 희귀도',
     build: () => buildProject('덱빌더 프로젝트', '로그라이크 덱빌더 밸런싱',
       [roguelikeDeckSheet(), sprintBacklogSheet()],
@@ -492,7 +515,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'sprint',
     label: '스프린트 보드',
-    emoji: '📋',
+    icon: ListTodo,
+    color: '#3b82f6',
     description: '백로그 · 우선순위 · 마감일',
     build: () => buildProject('스프린트 보드', 'PM 작업 관리',
       [sprintBacklogSheet()],
@@ -502,7 +526,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'bug',
     label: '버그 트래커',
-    emoji: '🐞',
+    icon: Bug,
+    color: '#ef4444',
     description: '심각도 · 재현 단계',
     build: () => buildProject('버그 트래커', '버그 관리',
       [bugTrackerSheet()],
@@ -511,7 +536,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'roadmap',
     label: '에픽 로드맵',
-    emoji: '🗺️',
+    icon: MapIcon,
+    color: '#10b981',
     description: '분기별 임팩트 큰 작업',
     build: () => buildProject('로드맵', '에픽 로드맵',
       [epicRoadmapSheet()],
@@ -521,7 +547,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'playtest',
     label: '플레이테스트 세션',
-    emoji: '🧪',
+    icon: TestTube,
+    color: '#06b6d4',
     description: '세션별 피드백 누적',
     build: () => buildProject('플레이테스트', '플레이테스트 세션 기록',
       [playtestSheet()],
@@ -531,7 +558,8 @@ export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'blank',
     label: '빈 워크스페이스',
-    emoji: '🆕',
+    icon: FilePlus2,
+    color: '#94a3b8',
     description: '시트 없이 시작 — 직접 만들기',
     build: () => buildProject('새 프로젝트', '', [], undefined),
   },

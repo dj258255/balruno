@@ -6,8 +6,14 @@
  *
  * 트리거: page.tsx 의 init 흐름 — savedProjects.length === 0 + 'balruno:starter-seeded' 없음
  * 선택 후: createProject(name, desc, { seedStarterId: 'rpg' }) 호출 → 시트 자동 생성
+ *
+ * 닫기:
+ *  - ESC / 외부 클릭 / X 버튼 → 'blank' (빈 워크스페이스) 자동 선택 (사용자 강제 X)
+ *  - 또는 카드 클릭 → 해당 starter 시드
  */
 
+import { useEffect } from 'react';
+import { X } from 'lucide-react';
 import { STARTER_CATALOG } from '@/lib/starterPack';
 
 interface Props {
@@ -16,6 +22,15 @@ interface Props {
 }
 
 export default function StarterPickerModal({ onPick, onClose }: Props) {
+  // ESC 키로 닫기 — onClose 가 있으면 그걸로 (빈 워크스페이스 자동 선택), 없으면 무시
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
     <div
       className="fixed inset-0 z-[1300] flex items-center justify-center p-4"
@@ -27,6 +42,18 @@ export default function StarterPickerModal({ onPick, onClose }: Props) {
         style={{ background: 'var(--bg-primary)' }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* 닫기 버튼 — 우상단 */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-3 right-3 p-1.5 rounded-md transition-colors hover:bg-[var(--bg-hover)]"
+            aria-label="닫기"
+          >
+            <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+          </button>
+        )}
+
         {/* Header */}
         <div className="px-6 pt-6 pb-3 text-center border-b" style={{ borderColor: 'var(--border-primary)' }}>
           <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -39,26 +66,34 @@ export default function StarterPickerModal({ onPick, onClose }: Props) {
 
         {/* Catalog grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4">
-          {STARTER_CATALOG.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => onPick(entry.id)}
-              className="group flex flex-col items-start gap-2 p-4 rounded-xl border-2 transition-all text-left hover:border-[var(--accent)] hover:scale-[1.02]"
-              style={{
-                background: 'var(--bg-secondary)',
-                borderColor: 'var(--border-primary)',
-              }}
-            >
-              <div className="text-2xl">{entry.emoji}</div>
-              <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                {entry.label}
-              </div>
-              <div className="text-caption line-clamp-2" style={{ color: 'var(--text-tertiary)' }}>
-                {entry.description}
-              </div>
-            </button>
-          ))}
+          {STARTER_CATALOG.map((entry) => {
+            const Icon = entry.icon;
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                onClick={() => onPick(entry.id)}
+                className="group flex flex-col items-start gap-2 p-4 rounded-xl border-2 transition-all text-left hover:border-[var(--accent)] hover:scale-[1.02]"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  borderColor: 'var(--border-primary)',
+                }}
+              >
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center"
+                  style={{ background: `${entry.color}20`, color: entry.color }}
+                >
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {entry.label}
+                </div>
+                <div className="text-caption line-clamp-2" style={{ color: 'var(--text-tertiary)' }}>
+                  {entry.description}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Footer */}

@@ -427,7 +427,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                     {patchNotes}
                   </pre>
                   <div className="px-4 py-2 border-t text-caption" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
-                    💡 Markdown 형식 — 그대로 Notion / Discord / 깃허브 릴리스에 붙여넣을 수 있습니다.
+                    Markdown 형식 — 그대로 Notion / Discord / 깃허브 릴리스에 붙여넣을 수 있습니다.
                   </div>
                 </div>
               )}
