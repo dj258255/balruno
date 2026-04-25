@@ -27,6 +27,7 @@ export function useSheetSelection({ projectId, sheet, computedRows }: UseSheetSe
     completeCellSelection,
     updateCell,
     addMultipleRows,
+    addColumn,
   } = useProjectStore();
 
   // x-spreadsheet 패턴: Selector로 선택 관리 (null = 선택 없음)
@@ -388,15 +389,23 @@ export function useSheetSelection({ projectId, sheet, computedRows }: UseSheetSe
       if (neededRows > 0) {
         addMultipleRows(projectId, sheet.id, neededRows);
       }
-      // 컬럼 부족분은 자동 추가하지 않고 데이터만 잘림 (컬럼 추가는 명시적 의도가 필요)
-      const colOverflow = Math.max(0, (rows[0]?.length ?? 0) + startColIdx - sheet.columns.length);
+      // 컬럼 부족 시 자동 추가 — 데이터에 맞춰 batch 생성. type='general' 로 시작 (사용자가 후속 변환).
+      const widestRow = rows.reduce((m, r) => Math.max(m, r.length), 0);
+      const colOverflow = Math.max(0, widestRow + startColIdx - sheet.columns.length);
+      for (let i = 0; i < colOverflow; i++) {
+        addColumn(projectId, sheet.id, {
+          name: `Column ${sheet.columns.length + i + 1}`,
+          type: 'general',
+        });
+      }
 
-      // 갱신된 sheet snapshot — 새로 추가한 row 도 포함
+      // 갱신된 sheet snapshot — 새로 추가한 row + column 모두 포함
       const refreshed = useProjectStore
         .getState()
         .projects.find((p) => p.id === projectId)
         ?.sheets.find((s) => s.id === sheet.id);
       const targetRows = refreshed?.rows ?? sheet.rows;
+      const targetColumns = refreshed?.columns ?? sheet.columns;
 
       for (let ri = 0; ri < rows.length; ri++) {
         const targetRowIdx = startRowIdx + ri;
@@ -406,9 +415,9 @@ export function useSheetSelection({ projectId, sheet, computedRows }: UseSheetSe
 
         for (let ci = 0; ci < rows[ri].length; ci++) {
           const targetColIdx = startColIdx + ci;
-          if (targetColIdx >= sheet.columns.length) break;
+          if (targetColIdx >= targetColumns.length) break;
 
-          const targetCol = sheet.columns[targetColIdx];
+          const targetCol = targetColumns[targetColIdx];
           if (targetCol.locked || targetRow.locked) continue;
 
           let value: CellValue = rows[ri][ci];
@@ -423,10 +432,10 @@ export function useSheetSelection({ projectId, sheet, computedRows }: UseSheetSe
         }
       }
       if (colOverflow > 0 && typeof window !== 'undefined') {
-        // 사용자에게 컬럼 부족 안내 (자동 추가 X)
+        // 자동 추가된 컬럼 수 안내
         window.dispatchEvent(
           new CustomEvent('balruno:toast', {
-            detail: { kind: 'info', message: `${colOverflow}개 컬럼 부족 — 추가하려면 헤더 + 버튼` },
+            detail: { kind: 'info', message: `${colOverflow}개 컬럼 자동 추가됨` },
           }),
         );
       }

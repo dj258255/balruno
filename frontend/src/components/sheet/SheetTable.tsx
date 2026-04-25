@@ -1013,6 +1013,14 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                 linkedSheet={linkedSheet}
                 linkedDisplayColumnId={editingColumn?.linkedDisplayColumnId}
                 linkedMultiple={editingColumn?.linkedMultiple}
+                rowIndex={editingCell ? sheet.rows.findIndex((r) => r.id === editingCell.rowId) : undefined}
+                onConvertColumn={
+                  editingColumn
+                    ? (newType) => {
+                        updateColumn(projectId, sheet.id, editingColumn.id, { type: newType });
+                      }
+                    : undefined
+                }
                 onChange={(value) => {
                   setEditValue(value);
                   setFormulaBarValue(value);
@@ -1814,8 +1822,14 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           isLocked={rowContextMenu.row.locked || false}
           onClose={() => setRowContextMenu(null)}
           runSimulation={(() => {
-            // 시트 컬럼이 unit-mappable (hp + atk 컬럼 존재) 일 때만 진입점 노출
-            if (!isUnitMappable(sheet.columns)) return null;
+            // unit-mappable 안 되면 disabled hint 항목으로 표시 — 사용자가 왜 시뮬 진입이 없는지 알도록
+            if (!isUnitMappable(sheet.columns)) {
+              return {
+                label: '시뮬 진입 — hp/atk 컬럼 필요',
+                onClick: () => {},
+                disabled: true,
+              };
+            }
             // 다중 행 선택 시 (2+) 팀 시뮬, 단일 행이면 1v1 (vs 다음 행 자동)
             const uniqueRowIds = Array.from(new Set(selectedCells.map((c) => c.rowId)));
             const usingMulti = uniqueRowIds.length >= 2;

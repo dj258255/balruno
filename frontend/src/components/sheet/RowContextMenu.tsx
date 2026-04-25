@@ -30,8 +30,9 @@ interface RowContextMenuProps {
   onInsertBelow: () => void;
   /** 레코드 상세 패널 열기 — 제공 시 메뉴 최상단에 표시 */
   onOpenDetail?: () => void;
-  /** 시뮬 진입점 — 시트 컬럼이 unit-mappable 일 때만 제공. 라벨은 "이 행으로 시뮬" / "선택한 N행으로 팀 시뮬". */
-  runSimulation?: { label: string; onClick: () => void } | null;
+  /** 시뮬 진입점 — 시트 컬럼이 unit-mappable 일 때만 제공. 라벨은 "이 행으로 시뮬" / "선택한 N행으로 팀 시뮬".
+   *  disabled=true 면 hint 로만 표시 (왜 진입 안 되는지 알리는 용). */
+  runSimulation?: { label: string; onClick: () => void; disabled?: boolean } | null;
 }
 
 interface MenuItem {
@@ -42,6 +43,7 @@ interface MenuItem {
   divider?: boolean;
   hasSubmenu?: boolean;
   submenuId?: string;
+  disabled?: boolean;
 }
 
 const ROW_HEADER_FONT_SIZES = [10, 11, 12, 13, 14, 16, 18, 20, 24];
@@ -121,6 +123,7 @@ export default function RowContextMenu({
             icon: <Swords className="w-4 h-4" />,
             onClick: runSimulation.onClick,
             divider: true,
+            disabled: runSimulation.disabled,
           } as MenuItem,
         ]
       : []),
@@ -191,7 +194,9 @@ export default function RowContextMenu({
       {menuItems.map((item, index) => (
         <div key={index} className="relative">
           <button
+            disabled={item.disabled}
             onClick={() => {
+              if (item.disabled) return;
               if (item.hasSubmenu) {
                 setOpenSubmenu(openSubmenu === item.submenuId ? null : item.submenuId ?? null);
               } else if (item.onClick) {
@@ -200,6 +205,7 @@ export default function RowContextMenu({
               }
             }}
             onMouseEnter={(e) => {
+              if (item.disabled) return;
               e.currentTarget.style.background = item.danger
                 ? 'var(--primary-red-light)'
                 : 'var(--bg-hover)';
@@ -210,10 +216,15 @@ export default function RowContextMenu({
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'transparent';
             }}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors disabled:cursor-not-allowed"
             style={{
-              color: item.danger ? 'var(--primary-red)' : 'var(--text-primary)',
-              cursor: 'pointer',
+              color: item.disabled
+                ? 'var(--text-tertiary)'
+                : item.danger
+                  ? 'var(--primary-red)'
+                  : 'var(--text-primary)',
+              cursor: item.disabled ? 'not-allowed' : 'pointer',
+              opacity: item.disabled ? 0.6 : 1,
             }}
           >
             <span>{item.icon}</span>
