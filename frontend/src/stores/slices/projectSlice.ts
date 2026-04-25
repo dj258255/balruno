@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { StoreApi } from 'zustand';
 import type { Project, Sheet, Folder, CellValue, CellStyle } from '@/types';
 import { getSampleById } from '@/data/sampleProjects';
+import { buildStarterProject } from '@/lib/starterPack';
 import type { ProjectState } from '../projectStore';
 import {
   getProjectDoc,
@@ -29,17 +30,24 @@ type SetFn = StoreApi<ProjectState>['setState'];
 type GetFn = StoreApi<ProjectState>['getState'];
 
 export const createProjectActions = (set: SetFn, get: GetFn) => ({
-  createProject: (name: string, description?: string): string => {
+  createProject: (name: string, description?: string, options?: { seedStarter?: boolean }): string => {
     const id = uuidv4();
     const now = Date.now();
-    const newProject: Project = {
-      id,
-      name,
-      description,
-      createdAt: now,
-      updatedAt: now,
-      sheets: [],
-    };
+    let newProject: Project;
+    if (options?.seedStarter) {
+      // Notion 식 — 빈 화면 대신 캐릭터/스프린트/Welcome doc 미리 박힘
+      const starter = buildStarterProject(name);
+      newProject = { ...starter, id, description: description ?? starter.description };
+    } else {
+      newProject = {
+        id,
+        name,
+        description,
+        createdAt: now,
+        updatedAt: now,
+        sheets: [],
+      };
+    }
 
     // Y.Doc 선제 hydrate → 이후 write 가 observer 로 sync 되도록
     hydrateDocFromProject(getProjectDoc(id), newProject);
@@ -47,6 +55,8 @@ export const createProjectActions = (set: SetFn, get: GetFn) => ({
     set((state) => ({
       projects: [...state.projects, newProject],
       currentProjectId: id,
+      currentSheetId: newProject.sheets[0]?.id ?? null,
+      openTabs: newProject.sheets[0] ? [{ kind: 'sheet' as const, id: newProject.sheets[0].id }] : [],
     }));
 
     return id;
