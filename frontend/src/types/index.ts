@@ -32,6 +32,9 @@ export interface Project {
   syncRoomId?: string;         // 클라우드 모드 시 협업 룸 ID
   /** 사이드바 섹션 분류 — 없으면 'teamspace' 로 간주 (기본 팀 공유) */
   visibility?: ProjectVisibility;
+  /** STARTER_CATALOG 의 entry id (rpg/fps/moba/...). starter pack 시드된 프로젝트만 set.
+   *  StarterCoachmark 가 이 값으로 장르별 5단계 가이드 매칭. */
+  starterId?: string;
 }
 
 // GDD · 설계안 문서 (Tiptap 기반)
