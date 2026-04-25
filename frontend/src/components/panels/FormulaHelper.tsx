@@ -170,15 +170,10 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
     if (funcName.includes('.')) {
       return fallback;
     }
-    // next-intl 은 missing key 에 대해 에러 throw → try-catch 로 fallback
-    // (Excel 호환 함수 등 신규 추가분은 i18n 누락 허용)
-    try {
-      const key = `formulaHelper.functions.${funcName}`;
-      const translated = t(key);
-      return translated === key ? fallback : translated;
-    } catch {
-      return fallback;
-    }
+    // next-intl 의 t() 는 missing key 시 console.error 를 직접 호출해 try-catch 로 못 잡음.
+    // t.has() 로 존재 체크 후 lookup — Excel 호환 함수 등 i18n 누락분은 silent fallback.
+    const key = `formulaHelper.functions.${funcName}`;
+    return t.has(key) ? t(key) : fallback;
   };
 
   const filteredFunctions = useMemo(() => {

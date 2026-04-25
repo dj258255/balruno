@@ -51,7 +51,8 @@ import {
 // 컴포넌트
 import SheetCell from './SheetCell';
 import { CellEditor } from './CellEditor';
-import { InlineCheckbox, InlineRating, InlineTaskLink } from './InlineCellControls';
+import SheetKindEmptyState from './SheetKindEmptyState';
+import { InlineCheckbox, InlineRating, InlineTaskLink, InlineLink } from './InlineCellControls';
 import InlineStatSnapshot from './InlineStatSnapshot';
 import FormulaBar from './FormulaBar';
 import FormulaAutocomplete, { type FormulaAutocompleteRef } from './FormulaAutocomplete';
@@ -1320,12 +1321,8 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
             >
               {table.getRowModel().rows.length === 0 ? (
                 <tr style={{ display: 'flex', position: 'absolute', width: tableWidth }}>
-                  <td
-                    colSpan={columns.length}
-                    className="text-center py-12"
-                    style={{ color: 'var(--text-tertiary)', width: tableWidth }}
-                  >
-                    {t('table.noData')}
+                  <td colSpan={columns.length} style={{ width: tableWidth, padding: 0 }}>
+                    <SheetKindEmptyState sheet={sheet} onAddRow={() => addRow(projectId, sheet.id)} />
                   </td>
                 </tr>
               ) : (
@@ -1530,6 +1527,30 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                                       value={rawValue}
                                       max={max}
                                       onChange={(next) => updateCell(projectId, sheet.id, rowData.id, columnId, next)}
+                                    />
+                                  );
+                                }
+                                if (column.type === 'link' && column.linkedSheetId) {
+                                  const linkedSheet = currentProject?.sheets.find((s) => s.id === column.linkedSheetId);
+                                  return (
+                                    <InlineLink
+                                      value={rawValue}
+                                      column={column}
+                                      linkedSheet={linkedSheet}
+                                      onOpen={(rid) => {
+                                        // 대상 시트 전환 + 전역 RecordDetail 슬라이드 열기
+                                        useProjectStore.getState().setCurrentSheet(column.linkedSheetId!);
+                                        useRecordDetail.getState().openRecord({
+                                          projectId,
+                                          sheetId: column.linkedSheetId!,
+                                          rowId: rid,
+                                        });
+                                        window.dispatchEvent(
+                                          new CustomEvent('balruno:focus-cell', {
+                                            detail: { sheetId: column.linkedSheetId, rowId: rid, columnId: '' },
+                                          })
+                                        );
+                                      }}
                                     />
                                   );
                                 }

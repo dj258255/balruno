@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { TestTube, Play, AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react';
+import { TestTube, Play, AlertTriangle, CheckCircle, XCircle, Info, Sparkles } from 'lucide-react';
 import PanelShell from '@/components/ui/PanelShell';
 import {
   runPlaytest,
@@ -82,15 +82,39 @@ export default function AiPlaytestPanel({ onClose }: Props) {
       </div>
 
       {!report && !running && (
-        <div className="p-6 rounded-lg text-center" style={{ background: 'var(--bg-tertiary)' }}>
-          <Info className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--text-tertiary)' }} />
-          <p className="text-label" style={{ color: 'var(--text-secondary)' }}>
-            실행 버튼을 눌러 배치 시뮬을 시작하세요.
-          </p>
-          <p className="text-caption mt-1" style={{ color: 'var(--text-tertiary)' }}>
-            10~30초 소요 · 결과: 종합 점수 + issue 리스트 + 도메인별 health
-          </p>
-        </div>
+        <>
+          {/* 첫 사용자 — AI Playtest 가 뭐고 왜 쓰는지 */}
+          <div className="p-4 rounded-lg space-y-3" style={{ background: 'var(--bg-tertiary)', borderLeft: '3px solid #10b981' }}>
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#10b98120' }}>
+                <Sparkles className="w-4 h-4" style={{ color: '#10b981' }} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-label font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  AI Playtest 란?
+                </h3>
+                <p className="text-caption mt-1" style={{ color: 'var(--text-secondary)' }}>
+                  실제 사람 플레이테스트 전에, AI 가 다양한 시나리오를 자동 시뮬해서 imbalance·막히는 구간·이상 패턴을 찾아주는 1차 검증 도구. 진짜 테스터에게 보내기 전 자동 회귀 체크용.
+                </p>
+              </div>
+            </div>
+            <ul className="space-y-1 text-caption pl-1" style={{ color: 'var(--text-secondary)' }}>
+              <li>· 도메인별 시나리오 (유닛 대칭 / FPS / 덱 / MOBA …) 를 한 번에 실행</li>
+              <li>· 각 도메인 validator 가 win-rate skew · TTK 편차 · 클리어율 자동 탐지</li>
+              <li>· critical / warn / ok 로 분류된 리포트로 우선순위 한눈에</li>
+            </ul>
+          </div>
+
+          <div className="p-6 rounded-lg text-center" style={{ background: 'var(--bg-tertiary)' }}>
+            <Info className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--text-tertiary)' }} />
+            <p className="text-label" style={{ color: 'var(--text-secondary)' }}>
+              실행 버튼을 눌러 배치 시뮬을 시작하세요.
+            </p>
+            <p className="text-caption mt-1" style={{ color: 'var(--text-tertiary)' }}>
+              10~30초 소요 · 결과: 종합 점수 + issue 리스트 + 도메인별 health
+            </p>
+          </div>
+        </>
       )}
 
       {report && (

@@ -39,6 +39,7 @@ import {
   updateCellStyleInDoc,
   updateCellsStyleInDoc,
   deleteRowInDoc,
+  reorderRowInDoc,
   addMultipleRowsInDoc,
   addStickerInDoc,
   updateStickerInDoc,
@@ -409,6 +410,10 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
 
   deleteRow: (projectId: string, sheetId: string, rowId: string) => {
     deleteRowInDoc(getProjectDoc(projectId), sheetId, rowId);
+  },
+
+  reorderRow: (projectId: string, sheetId: string, rowId: string, targetIndex: number) => {
+    reorderRowInDoc(getProjectDoc(projectId), sheetId, rowId, targetIndex);
   },
 
   addMultipleRows: (projectId: string, sheetId: string, count: number) => {

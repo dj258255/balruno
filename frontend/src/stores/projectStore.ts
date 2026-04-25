@@ -155,6 +155,8 @@ export interface ProjectState {
     columnId: string
   ) => CellStyle | undefined;
   deleteRow: (projectId: string, sheetId: string, rowId: string) => void;
+  /** 단일 row 를 sheet.rows 안의 새 위치(targetIndex) 로 이동. Kanban 컬럼 내 정렬용. */
+  reorderRow: (projectId: string, sheetId: string, rowId: string, targetIndex: number) => void;
   addMultipleRows: (projectId: string, sheetId: string, count: number) => void;
 
   // 유틸리티

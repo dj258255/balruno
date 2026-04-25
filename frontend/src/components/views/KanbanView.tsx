@@ -7,12 +7,13 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Settings2, Check } from 'lucide-react';
+import { Settings2, Check, Zap } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { useRecordDetail } from '@/stores/recordDetailStore';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { formatDisplayValue } from '@/components/sheet/utils';
 import { applyFilter } from '@/lib/filterEval';
+import { findCyclesSheet, detectCurrent } from '@/lib/cycleDetection';
 import type { Sheet, Row, CellValue } from '@/types';
 import RecordContextMenu, { type RecordContextMenuState } from './RecordContextMenu';
 
@@ -25,8 +26,13 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
   const t = useTranslations();
   const updateSheet = useProjectStore((s) => s.updateSheet);
   const updateCell = useProjectStore((s) => s.updateCell);
+  const reorderRow = useProjectStore((s) => s.reorderRow);
   const addRow = useProjectStore((s) => s.addRow);
   const deleteRow = useProjectStore((s) => s.deleteRow);
+  // 카드 드래그 — drop indicator 위치 (target row + before/after)
+  const [dropIndicator, setDropIndicator] = useState<{ rowId: string; position: 'before' | 'after' } | null>(null);
+  // 현재 Sprint 만 보기 토글 (cycle 컬럼이 있는 PM 시트에서만 의미)
+  const [showOnlyCurrentSprint, setShowOnlyCurrentSprint] = useState(false);
   // 전역 recordDetailStore 로 행 선택 / 상세 패널 연동
   const openedRowId = useRecordDetail((s) =>
     s.opened && s.opened.sheetId === sheet.id ? s.opened.rowId : null,
@@ -47,11 +53,48 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
     selectColumns[0]?.id;
   const groupCol = sheet.columns.find((c) => c.id === groupColId);
 
-  // SavedView 필터 적용 후 그룹핑
-  const filteredRows = useMemo(
-    () => applyFilter(sheet.rows, sheet.filterGroup, sheet.columns),
-    [sheet.rows, sheet.filterGroup, sheet.columns],
+  // 현재 프로젝트의 Sprint(Cycle) 정보 — 칸반 카드의 cycle 컬럼 매칭에 사용
+  const currentProject = useProjectStore((s) => s.projects.find((p) => p.id === projectId));
+  const cycleInfo = useMemo(() => {
+    if (!currentProject) return null;
+    const ctx = findCyclesSheet(currentProject);
+    if (!ctx) return null;
+    const detected = detectCurrent(ctx);
+    if (!detected.current) return null;
+    return { currentCycleId: detected.current.id, ctx };
+  }, [currentProject]);
+
+  // 이 시트에 cycle 참조 컬럼이 있는지 — 있으면 sprint 배지/필터 활성화
+  const cycleRefColumn = useMemo(
+    () =>
+      sheet.columns.find(
+        (c) =>
+          (c.type === 'task-link' || c.type === 'link') &&
+          /cycle|sprint|사이클|스프린트/i.test(c.name),
+      ),
+    [sheet.columns],
   );
+
+  const isInCurrentSprint = (row: Row): boolean => {
+    if (!cycleInfo || !cycleRefColumn) return false;
+    const v = row.cells[cycleRefColumn.id];
+    if (!v) return false;
+    const ids = String(v).split(',').map((s) => s.trim());
+    return ids.includes(cycleInfo.currentCycleId);
+  };
+
+  // SavedView 필터 + 옵션의 "현재 Sprint 만 보기" 적용
+  const filteredRows = useMemo(() => {
+    let rows = applyFilter(sheet.rows, sheet.filterGroup, sheet.columns);
+    if (showOnlyCurrentSprint && cycleInfo && cycleRefColumn) {
+      rows = rows.filter((row) => {
+        const v = row.cells[cycleRefColumn.id];
+        if (!v) return false;
+        return String(v).split(',').map((s) => s.trim()).includes(cycleInfo.currentCycleId);
+      });
+    }
+    return rows;
+  }, [sheet.rows, sheet.filterGroup, sheet.columns, showOnlyCurrentSprint, cycleInfo, cycleRefColumn]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, Row[]>();
@@ -112,6 +155,26 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
     updateCell(projectId, sheet.id, rowId, groupCol.id, newValue);
   };
 
+  /**
+   * 카드를 다른 카드 앞/뒤로 정렬 — same-column 이면 순서만, cross-column 이면 status 변경 + 순서.
+   * sheet.rows 의 절대 인덱스 기준으로 reorderRow 호출.
+   */
+  const dropOnCard = (draggedRowId: string, targetRowId: string, position: 'before' | 'after', targetOptionId: string) => {
+    if (draggedRowId === targetRowId || !groupCol) return;
+    // cross-column 이면 그룹값 먼저 갱신
+    const draggedRow = sheet.rows.find((r) => r.id === draggedRowId);
+    const draggedCurrentOpt = draggedRow ? String(draggedRow.cells[groupCol.id] ?? '') || '_ungrouped' : '_ungrouped';
+    if (draggedCurrentOpt !== targetOptionId) {
+      const newValue: CellValue = targetOptionId === '_ungrouped' ? '' : targetOptionId;
+      updateCell(projectId, sheet.id, draggedRowId, groupCol.id, newValue);
+    }
+    // sheet.rows 의 target 인덱스 기반으로 새 위치 계산
+    const targetIdx = sheet.rows.findIndex((r) => r.id === targetRowId);
+    if (targetIdx < 0) return;
+    const newIdx = position === 'before' ? targetIdx : targetIdx + 1;
+    reorderRow(projectId, sheet.id, draggedRowId, newIdx);
+  };
+
   return (
     <div className="flex-1 flex overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -130,9 +193,26 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
             size="sm"
           />
         </div>
+        {/* 현재 Sprint 만 보기 토글 — cycle 컬럼이 있는 시트에서만 표시 */}
+        {cycleInfo && cycleRefColumn && (
+          <button
+            type="button"
+            onClick={() => setShowOnlyCurrentSprint((v) => !v)}
+            className="ml-auto flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+            style={{
+              background: showOnlyCurrentSprint ? '#f59e0b20' : 'transparent',
+              color: showOnlyCurrentSprint ? '#f59e0b' : 'var(--text-secondary)',
+              border: `1px solid ${showOnlyCurrentSprint ? '#f59e0b40' : 'var(--border-primary)'}`,
+            }}
+            title="현재 진행 중인 Sprint 의 카드만 보기"
+          >
+            <Zap className="w-3 h-3" />
+            현재 Sprint 만
+          </button>
+        )}
         <button
           onClick={() => setShowSettings((v) => !v)}
-          className="ml-auto p-1.5 rounded hover:bg-[var(--bg-tertiary)]"
+          className={cycleInfo && cycleRefColumn ? 'p-1.5 rounded hover:bg-[var(--bg-tertiary)]' : 'ml-auto p-1.5 rounded hover:bg-[var(--bg-tertiary)]'}
           aria-label="카드 설정"
           title="카드 설정"
         >
@@ -221,8 +301,20 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                 aria-label={`${col.label} · ${rows.length}개`}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
+                  // 컬럼 자체에 drop. dropIndicator 가 *이 컬럼* 의 row 를 가리키면 카드 onDrop 이
+                  // 처리한 것이라 skip. 다른 컬럼 row 면 stale 이므로 무시하고 컬럼 drop 진행
+                  // (예: 다른 컬럼 카드 위 hover 했다가 빈 doing 컬럼에 drop).
                   const rowId = e.dataTransfer.getData('text/plain');
-                  if (rowId) moveCard(rowId, col.id);
+                  if (!rowId) return;
+                  const indicatorRow = dropIndicator
+                    ? sheet.rows.find((r) => r.id === dropIndicator.rowId)
+                    : null;
+                  const indicatorOpt = indicatorRow && groupCol
+                    ? String(indicatorRow.cells[groupCol.id] ?? '') || '_ungrouped'
+                    : null;
+                  const handledByCard = indicatorOpt === col.id;
+                  if (!handledByCard) moveCard(rowId, col.id);
+                  setDropIndicator(null);
                 }}
               >
                 <div
@@ -247,14 +339,46 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                     const titleVal = cardColumns[0]
                       ? String(row.cells[cardColumns[0].id] ?? '').trim()
                       : '';
+                    const indicator = dropIndicator?.rowId === row.id ? dropIndicator.position : null;
                     return (
-                      <div
-                        key={row.id}
+                      <div key={row.id} className="relative">
+                        {indicator === 'before' && (
+                          <div className="absolute -top-1 left-0 right-0 h-0.5 rounded-full" style={{ background: 'var(--accent)' }} />
+                        )}
+                        <div
                         draggable
                         role="button"
                         tabIndex={0}
                         aria-label={titleVal || `${col.label} 카드`}
-                        onDragStart={(e) => e.dataTransfer.setData('text/plain', row.id)}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', row.id);
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        onDragOver={(e) => {
+                          // 카드 위 mouse Y 위치로 before/after 판정 + indicator 갱신
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const offsetY = e.clientY - rect.top;
+                          const position = offsetY < rect.height / 2 ? 'before' : 'after';
+                          if (dropIndicator?.rowId !== row.id || dropIndicator.position !== position) {
+                            setDropIndicator({ rowId: row.id, position });
+                          }
+                        }}
+                        onDragLeave={(e) => {
+                          // 다른 카드/컬럼으로 넘어갈 때만 reset — 자식으로의 leave 는 무시
+                          const related = e.relatedTarget as Node | null;
+                          if (related && e.currentTarget.contains(related)) return;
+                          // 같은 row 가 여전히 indicator 면 유지 (다른 곳으로 넘어갔다면 dragOver 가 갱신)
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const draggedId = e.dataTransfer.getData('text/plain');
+                          const position = dropIndicator?.position ?? 'after';
+                          setDropIndicator(null);
+                          if (draggedId) dropOnCard(draggedId, row.id, position, col.id);
+                        }}
                         onClick={() => selectRow(row.id)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
@@ -279,6 +403,21 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                             className="absolute left-0 top-0 bottom-0 w-1 z-10"
                             style={{ background: col.color }}
                           />
+                        )}
+                        {/* 현재 Sprint 배지 — 카드가 진행 중 cycle 에 속하면 우측 상단 */}
+                        {isInCurrentSprint(row) && (
+                          <span
+                            className="absolute top-1.5 right-1.5 z-10 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-caption font-semibold"
+                            style={{
+                              background: '#f59e0b20',
+                              color: '#f59e0b',
+                              border: '1px solid #f59e0b40',
+                            }}
+                            title="현재 진행 중 Sprint 의 카드"
+                          >
+                            <Zap className="w-2.5 h-2.5" />
+                            Sprint
+                          </span>
                         )}
                         {/* 커버 이미지 */}
                         {coverUrl && /^https?:\/\/.+/.test(coverUrl) && (
@@ -307,6 +446,10 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                             </div>
                           ))}
                         </div>
+                        </div>
+                        {indicator === 'after' && (
+                          <div className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full" style={{ background: 'var(--accent)' }} />
+                        )}
                       </div>
                     );
                   })}

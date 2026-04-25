@@ -338,7 +338,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
           </div>
 
           <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-            💡 같은 프로젝트 안의 시트 <strong>A</strong> 와 시트 <strong>B</strong> 의 cell 단위 차이를 계산합니다.
+            같은 프로젝트 안의 시트 <strong>A</strong> 와 시트 <strong>B</strong> 의 cell 단위 차이를 계산합니다.
             같은 시트의 시간 경과 변화를 보려면 카메라 아이콘으로 <strong>스냅샷</strong>을 만들어 비교하세요.
           </p>
 
