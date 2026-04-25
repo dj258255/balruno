@@ -51,6 +51,7 @@ const OnboardingGuide = dynamic(() => import('@/components/modals/OnboardingGuid
 const PersonaModal = dynamic(() => import('@/components/modals/PersonaModal'), { ssr: false });
 const ProductIntroModal = dynamic(() => import('@/components/modals/ProductIntroModal'), { ssr: false });
 const StarterCoachmark = dynamic(() => import('@/components/onboarding/StarterCoachmark'), { ssr: false });
+const StarterPickerModal = dynamic(() => import('@/components/onboarding/StarterPickerModal'), { ssr: false });
 const ExportModal = dynamic(() => import('@/components/modals/ExportModal'), { ssr: false });
 const ImportModal = dynamic(() => import('@/components/modals/ImportModal'), { ssr: false });
 
@@ -154,6 +155,7 @@ export default function Home() {
   const [showReferences, setShowReferences] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showStarterPicker, setShowStarterPicker] = useState(false);
   const { showOnboarding, setShowOnboarding } = useOnboardingStatus();
 
   // ProductIntro 최초 자동 노출 — persona 선택 끝났고 아직 intro 본 적 없을 때.
@@ -241,24 +243,13 @@ export default function Home() {
         if (savedProjects.length > 0) {
           setProjects(savedProjects);
         } else {
-          // Notion 식 — 첫 진입 (저장된 프로젝트 0개) 시 starter pack 자동 시드.
-          // localStorage 의 'balruno:starter-seeded' 로 1회만 실행 (사용자가 모두 지운 후 다시 안 만들도록).
+          // 첫 진입 (저장된 프로젝트 0개) 시 starter picker 모달 표시.
+          // 사용자가 자기 게임 장르를 골라 즉시 시드.
+          // localStorage 의 'balruno:starter-seeded' 로 1회만 (사용자가 모두 지운 후 다시 안 뜨도록).
           const seededKey = 'balruno:starter-seeded';
           const seeded = typeof window !== 'undefined' ? localStorage.getItem(seededKey) : '1';
           if (!seeded) {
-            createProject('튜토리얼', undefined, { seedStarter: true });
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(seededKey, '1');
-              // starter 시드 사용자에겐 onboarding/persona/intro 모달 모두 자동 skip
-              // — 튜토리얼 시트 + Welcome doc 이 첫 사용자 가이드 역할 대신함.
-              localStorage.setItem('balruno_onboarding_completed', 'starter-seed');
-              try {
-                const { usePersona } = await import('@/stores/personaStore');
-                usePersona.getState().dismissModal();
-              } catch {
-                // ignore
-              }
-            }
+            setShowStarterPicker(true);
           }
         }
       } catch (error) {
@@ -268,7 +259,28 @@ export default function Home() {
       }
     };
     init();
-  }, [setProjects, createProject]);
+  }, [setProjects]);
+
+  // starter picker 에서 사용자가 선택했을 때 처리
+  const handlePickStarter = async (starterId: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('balruno:starter-seeded', '1');
+      // starter 시드 사용자에겐 onboarding/persona/intro 모달 모두 자동 skip
+      localStorage.setItem('balruno_onboarding_completed', 'starter-seed');
+      try {
+        const { usePersona } = await import('@/stores/personaStore');
+        usePersona.getState().dismissModal();
+      } catch {
+        // ignore
+      }
+    }
+    if (starterId === 'blank') {
+      createProject('새 프로젝트');
+    } else {
+      createProject('', undefined, { seedStarterId: starterId });
+    }
+    setShowStarterPicker(false);
+  };
 
   // Auto save / 자동 백업 / 변경 디바운스 — useAutoSave hook
   useAutoSave(isLoading, projects);
@@ -660,6 +672,11 @@ export default function Home() {
 
       {/* starter 시드 사용자 5단계 가이드 — floating card, dismissible */}
       <StarterCoachmark />
+
+      {/* 첫 진입 — 장르 picker (starter pack 선택) */}
+      {showStarterPicker && (
+        <StarterPickerModal onPick={handlePickStarter} />
+      )}
 
       {/* Command Palette (⌘K) */}
       <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />
