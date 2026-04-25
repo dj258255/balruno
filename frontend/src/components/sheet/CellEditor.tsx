@@ -11,6 +11,7 @@
 
 import React, { forwardRef, useEffect, useRef, useState, useMemo } from 'react';
 import type { CellStyle, ColumnType, SelectOption, Sheet } from '@/types';
+import { availableFunctions } from '@/lib/formulaEngine';
 
 interface CellEditorProps {
   value: string;
@@ -204,8 +205,8 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
     }
 
     return (
-      <input
-        ref={(node) => {
+      <SmartInput
+        innerRef={(node) => {
           internalInputRef.current = node;
           if (typeof ref === 'function') {
             ref(node);
@@ -213,21 +214,328 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
             ref.current = node;
           }
         }}
-        type={inputType}
+        inputType={inputType}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         onKeyDown={onKeyDown}
         onBlur={onBlur}
-        className="absolute z-50"
-        style={baseStyle}
-        autoComplete="off"
-        spellCheck={false}
+        baseStyle={baseStyle}
+        position={position}
+        isFormula={isFormula}
       />
     );
   }
 );
 
 CellEditor.displayName = 'CellEditor';
+
+// ============================================================================
+// SmartInput — 일반 input + 두 가지 popover
+//   1. formula 모드: caret 직전 단어로 함수 자동완성
+//   2. 일반 모드: '/' 시작 시 quick command (today/now/uuid)
+// ============================================================================
+
+interface SlashCommand {
+  name: string;
+  label: string;
+  hint: string;
+  resolve: () => string;
+}
+
+const SLASH_COMMANDS: SlashCommand[] = [
+  {
+    name: 'today',
+    label: '오늘 날짜',
+    hint: 'YYYY-MM-DD',
+    resolve: () => new Date().toISOString().slice(0, 10),
+  },
+  {
+    name: 'now',
+    label: '현재 시간',
+    hint: 'ISO timestamp',
+    resolve: () => new Date().toISOString(),
+  },
+  {
+    name: 'uuid',
+    label: 'UUID 8자리',
+    hint: '랜덤 식별자',
+    resolve: () => {
+      try {
+        return crypto.randomUUID().slice(0, 8);
+      } catch {
+        return Math.random().toString(36).slice(2, 10);
+      }
+    },
+  },
+];
+
+function SmartInput({
+  innerRef,
+  inputType,
+  value,
+  onChange,
+  onKeyDown,
+  onBlur,
+  baseStyle,
+  position,
+  isFormula,
+}: {
+  innerRef: (node: HTMLInputElement | null) => void;
+  inputType: string;
+  value: string;
+  onChange: (v: string) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onBlur?: (e?: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  baseStyle: React.CSSProperties;
+  position: { top: number; left: number; width: number; height: number };
+  isFormula: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [caretPos, setCaretPos] = useState<number | null>(null);
+  const [acIndex, setAcIndex] = useState(0);
+  const [slashIndex, setSlashIndex] = useState(0);
+  const [suppressUntilWord, setSuppressUntilWord] = useState<string | null>(null);
+
+  // Formula 자동완성 — caret 직전 단어 추출
+  const acState = useMemo(() => {
+    if (!isFormula) return null;
+    const v = String(value ?? '');
+    if (!v.startsWith('=')) return null;
+    const pos = caretPos ?? v.length;
+    const before = v.slice(0, pos);
+    const m = before.match(/[A-Za-z_]+$/);
+    if (!m || !m[0]) return null;
+    const word = m[0];
+    if (word.length < 1) return null;
+    if (suppressUntilWord === word) return null;
+    const upper = word.toUpperCase();
+    const items = availableFunctions
+      .filter((f) => f.name.toUpperCase().startsWith(upper))
+      .slice(0, 8);
+    if (items.length === 0) return null;
+    return { word, start: pos - word.length, pos, items };
+  }, [value, caretPos, isFormula, suppressUntilWord]);
+
+  useEffect(() => {
+    setAcIndex(0);
+  }, [acState?.word]);
+  useEffect(() => {
+    if (suppressUntilWord && acState?.word !== suppressUntilWord) setSuppressUntilWord(null);
+  }, [acState?.word, suppressUntilWord]);
+
+  // 슬래시 명령 — formula 아닐 때, '/' 시작이면 popover
+  const slashState = useMemo(() => {
+    if (isFormula) return null;
+    const v = String(value ?? '');
+    if (!v.startsWith('/')) return null;
+    const q = v.slice(1).toLowerCase();
+    const matched = SLASH_COMMANDS.filter(
+      (c) => q === '' || c.name.toLowerCase().includes(q) || c.label.toLowerCase().includes(q),
+    );
+    if (matched.length === 0) return null;
+    return { items: matched };
+  }, [value, isFormula]);
+  useEffect(() => {
+    setSlashIndex(0);
+  }, [slashState?.items.length]);
+
+  const insertFunc = (name: string) => {
+    if (!acState) return;
+    const v = String(value ?? '');
+    const newValue = v.slice(0, acState.start) + name + '(' + v.slice(acState.pos);
+    const newCaret = acState.start + name.length + 1;
+    onChange(newValue);
+    requestAnimationFrame(() => {
+      const input = inputRef.current;
+      if (input) {
+        input.setSelectionRange(newCaret, newCaret);
+        input.focus();
+      }
+      setCaretPos(newCaret);
+    });
+  };
+
+  const applySlash = (cmd: SlashCommand) => {
+    const next = cmd.resolve();
+    onChange(next);
+    requestAnimationFrame(() => {
+      const input = inputRef.current;
+      if (input) {
+        input.setSelectionRange(next.length, next.length);
+        input.focus();
+      }
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (acState && acState.items.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setAcIndex((i) => Math.min(i + 1, acState.items.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setAcIndex((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        insertFunc(acState.items[acIndex].name);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setSuppressUntilWord(acState.word);
+        return;
+      }
+    }
+    if (slashState && slashState.items.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSlashIndex((i) => Math.min(i + 1, slashState.items.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSlashIndex((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        applySlash(slashState.items[slashIndex]);
+        return;
+      }
+    }
+    onKeyDown(e);
+  };
+
+  return (
+    <>
+      <input
+        ref={(node) => {
+          inputRef.current = node;
+          innerRef(node);
+        }}
+        type={inputType}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setCaretPos(e.target.selectionStart);
+        }}
+        onSelect={(e) => setCaretPos((e.target as HTMLInputElement).selectionStart)}
+        onKeyDown={handleKeyDown}
+        onBlur={onBlur}
+        className="absolute z-50"
+        style={baseStyle}
+        autoComplete="off"
+        spellCheck={false}
+      />
+      {acState && acState.items.length > 0 && (
+        <div
+          className="absolute z-[100] rounded-md shadow-xl border overflow-hidden"
+          style={{
+            top: position.top + position.height + 4,
+            left: position.left,
+            minWidth: Math.max(280, position.width),
+            background: 'var(--bg-primary)',
+            borderColor: 'var(--border-primary)',
+          }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {acState.items.map((f, idx) => (
+            <button
+              key={f.name}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                insertFunc(f.name);
+              }}
+              onMouseEnter={() => setAcIndex(idx)}
+              className="w-full text-left px-2 py-1.5 flex flex-col gap-0.5 transition-colors"
+              style={{
+                background: idx === acIndex ? 'var(--bg-tertiary)' : 'transparent',
+                borderTop: idx > 0 ? '1px solid var(--border-primary)' : 'none',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-semibold" style={{ color: 'var(--accent)' }}>
+                  {f.name}
+                </span>
+                <span className="text-caption truncate" style={{ color: 'var(--text-secondary)' }}>
+                  {f.description}
+                </span>
+              </div>
+              <div className="text-caption font-mono" style={{ color: 'var(--text-tertiary)' }}>
+                {f.syntax}
+              </div>
+            </button>
+          ))}
+          <div
+            className="px-2 py-1 text-caption"
+            style={{
+              borderTop: '1px solid var(--border-primary)',
+              background: 'var(--bg-secondary)',
+              color: 'var(--text-tertiary)',
+            }}
+          >
+            ↑↓ 선택 · Tab/Enter 삽입 · Esc 닫기
+          </div>
+        </div>
+      )}
+      {slashState && slashState.items.length > 0 && (
+        <div
+          className="absolute z-[100] rounded-md shadow-xl border overflow-hidden"
+          style={{
+            top: position.top + position.height + 4,
+            left: position.left,
+            minWidth: Math.max(220, position.width),
+            background: 'var(--bg-primary)',
+            borderColor: 'var(--border-primary)',
+          }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {slashState.items.map((c, idx) => (
+            <button
+              key={c.name}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                applySlash(c);
+              }}
+              onMouseEnter={() => setSlashIndex(idx)}
+              className="w-full text-left px-2 py-1.5 flex items-center gap-2 transition-colors"
+              style={{
+                background: idx === slashIndex ? 'var(--bg-tertiary)' : 'transparent',
+                borderTop: idx > 0 ? '1px solid var(--border-primary)' : 'none',
+              }}
+            >
+              <span className="font-mono text-xs font-semibold" style={{ color: 'var(--accent)' }}>
+                /{c.name}
+              </span>
+              <span className="text-xs flex-1 truncate" style={{ color: 'var(--text-primary)' }}>
+                {c.label}
+              </span>
+              <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                {c.hint}
+              </span>
+            </button>
+          ))}
+          <div
+            className="px-2 py-1 text-caption"
+            style={{
+              borderTop: '1px solid var(--border-primary)',
+              background: 'var(--bg-secondary)',
+              color: 'var(--text-tertiary)',
+            }}
+          >
+            ↑↓ 선택 · Tab/Enter 삽입
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 /** 링크 레코드 피커 — 검색 + 단일/다중 선택. */
 function LinkRecordPicker({

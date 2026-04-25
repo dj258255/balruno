@@ -270,6 +270,35 @@ export default function ColumnModal({
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               {t('column.type')}
             </label>
+            {/* 빠른 preset — 4 가지 흔한 컬럼 즉시 선택 */}
+            <div className="grid grid-cols-4 gap-1.5 mb-2">
+              {([
+                { id: 'general', label: '텍스트/숫자', hint: '자동 감지' },
+                { id: 'date', label: '날짜', hint: 'YYYY-MM-DD' },
+                { id: 'select', label: '선택', hint: '드롭다운' },
+                { id: 'link', label: '링크', hint: '다른 시트 row 참조' },
+              ] as Array<{ id: ColumnType; label: string; hint: string }>).map((p) => {
+                const active = type === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setType(p.id)}
+                    className="px-2 py-2 rounded-md text-xs font-medium transition-colors text-left"
+                    style={{
+                      background: active ? 'var(--accent)' : 'var(--bg-secondary)',
+                      color: active ? 'white' : 'var(--text-primary)',
+                      border: `1px solid ${active ? 'var(--accent)' : 'var(--border-primary)'}`,
+                    }}
+                  >
+                    <div className="font-semibold">{p.label}</div>
+                    <div className="text-caption mt-0.5" style={{ color: active ? 'rgba(255,255,255,0.8)' : 'var(--text-tertiary)' }}>
+                      {p.hint}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
             <CustomSelect
               value={type}
               onChange={(v) => setType(v as ColumnType)}

@@ -11,12 +11,13 @@
  */
 
 import { useState, useMemo } from 'react';
-import { X, Check, Copy, Trash2, Star, History, ArrowRight } from 'lucide-react';
+import { X, Check, Copy, Trash2, Star, History, ArrowRight, FileText, Link2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { toast } from '@/components/ui/Toast';
 import Select from '@/components/ui/Select';
 import type { Sheet, Row, Column, CellValue, ChangeEntry } from '@/types';
+import { buildRowBacklinks } from '@/lib/docBacklinks';
 
 interface RecordEditorProps {
   projectId: string;
@@ -236,6 +237,21 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
       .slice(0, 20);
   }, [project?.changelog, row.id]);
 
+  // 이 row 를 @mention 으로 참조하는 Doc 들 — backlink 인덱스 빌드
+  const referencingDocs = useMemo(() => {
+    if (!project) return [];
+    const map = buildRowBacklinks(project);
+    const docIds = map.get(`${sheet.id}:${row.id}`) ?? [];
+    return docIds
+      .map((did) => project.docs?.find((d) => d.id === did))
+      .filter((d): d is import('@/types').Doc => Boolean(d));
+  }, [project, sheet.id, row.id]);
+
+  const openDoc = (docId: string) => {
+    useProjectStore.getState().setCurrentDoc(docId);
+    onClose();
+  };
+
   const jumpToChange = (entry: ChangeEntry) => {
     if (!project?.sheets.find((s) => s.id === entry.sheetId)) return;
     setCurrentSheet(entry.sheetId);
@@ -396,6 +412,40 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
                 sheets={project?.sheets ?? []}
                 onJump={jumpToChange}
               />
+            )}
+            {/* Doc backlink — 이 row 를 @mention 으로 참조하는 문서 */}
+            {referencingDocs.length > 0 && (
+              <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--border-primary)' }}>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Link2 className="w-3.5 h-3.5" style={{ color: 'var(--text-tertiary)' }} />
+                  <span className="text-overline" style={{ color: 'var(--text-tertiary)' }}>
+                    이 레코드를 참조하는 문서
+                  </span>
+                  <span
+                    className="text-caption px-1.5 py-0.5 rounded-full"
+                    style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                  >
+                    {referencingDocs.length}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {referencingDocs.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => openDoc(d.id)}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-[var(--bg-hover)]"
+                      style={{ background: 'var(--bg-secondary)' }}
+                    >
+                      <FileText className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--accent)' }} />
+                      <span className="text-sm truncate flex-1" style={{ color: 'var(--text-primary)' }}>
+                        {d.icon ? `${d.icon} ` : ''}{d.name || '(제목 없음)'}
+                      </span>
+                      <ArrowRight className="w-3 h-3 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </>
         )}
