@@ -58,13 +58,16 @@ export function FilterBuilder({ columns, value, onChange }: Props) {
   const addCondition = () => {
     const firstCol = columns[0];
     if (!firstCol) return;
+    const ops = operatorsFor(firstCol);
     const next: FilterCondition = {
       id: genConditionId(),
       columnId: firstCol.id,
-      operator: operatorsFor(firstCol)[0],
+      operator: ops[0] ?? 'equals',
       value: '',
     };
-    onChange({ ...group, conditions: [...group.conditions, next] });
+    // group.conditions stale 방지 — value (sheet.filterGroup) 가 undefined 인 경우 빈 그룹 사용
+    const base = value ?? createEmptyFilterGroup();
+    onChange({ ...base, conditions: [...base.conditions, next] });
   };
 
   const updateCondition = (idx: number, patch: Partial<FilterCondition>) => {
@@ -194,8 +197,10 @@ export function FilterBuilder({ columns, value, onChange }: Props) {
       <button
         type="button"
         onClick={addCondition}
-        className="flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors hover:bg-[var(--bg-hover)]"
+        disabled={columns.length === 0}
+        className="flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed"
         style={{ color: 'var(--accent)' }}
+        title={columns.length === 0 ? '시트에 컬럼이 없어 필터를 만들 수 없어요 — 컬럼을 먼저 추가하세요' : '필터 조건 추가'}
       >
         <Plus className="w-3 h-3" />
         조건 추가
