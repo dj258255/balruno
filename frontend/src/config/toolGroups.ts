@@ -45,7 +45,6 @@ export type ToolId =
   | 'frameData'
   | 'aiBehavior'
   | 'matchupMatrix'
-  | 'replayTimeline'
   | 'snapshotCompare'
   | 'mobaLaning'
   | 'rtsBuildOrder'
@@ -110,7 +109,6 @@ export const TOOL_ICONS: Record<ToolId, LucideIcon> = {
   dpsVariance: BarChart2,
   lootSimulator: Dice5,
   economy: Coins,
-  replayTimeline: Play,
   mobaLaning: Swords,
   rtsBuildOrder: Factory,
   mmoRaid: Sword,
@@ -149,7 +147,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'simulate',
     titleKey: 'toolGroups.simulate',
     color: '#e11d48',
-    tools: ['simulation', 'fpsSimulation', 'fpsTeamSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy', 'replayTimeline', 'mobaLaning', 'rtsBuildOrder', 'mmoRaid', 'autoBattler', 'hordeSurvivor'],
+    tools: ['simulation', 'fpsSimulation', 'fpsTeamSimulation', 'deckSimulation', 'frameData', 'dpsVariance', 'lootSimulator', 'economy', 'mobaLaning', 'rtsBuildOrder', 'mmoRaid', 'autoBattler', 'hordeSurvivor'],
   },
   {
     id: 'compare',
@@ -194,7 +192,6 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   balanceValidator: 'toolDesc.balanceValidator', // 런칭 전 룰 기반 최종 검증
   sensitivity: 'toolDesc.sensitivity',         // 변수 민감도 · Tornado/Spider
   matchupMatrix: 'toolDesc.matchupMatrix',     // N×N 매치업 heatmap · Perfect Imbalance
-  replayTimeline: 'toolDesc.replayTimeline',   // 전투 로그 scrubber · step-by-step 디버깅
   snapshotCompare: 'toolDesc.snapshotCompare', // 시뮬 스냅샷 저장 · rebalance 전후 diff
   mobaLaning: 'toolDesc.mobaLaning',           // LoL/Dota 라인전 CS/gold/XP 곡선
   rtsBuildOrder: 'toolDesc.rtsBuildOrder',     // SC2/AoE 빌드 오더 경제·병력 타이밍

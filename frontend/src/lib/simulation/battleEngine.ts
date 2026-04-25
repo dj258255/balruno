@@ -219,14 +219,14 @@ export function simulateBattle(
   while (time < cfg.maxDuration && state1.hp > 0 && state2.hp > 0) {
     time += cfg.timeStep;
 
-    // 동시 공격 처리: 같은 타임스텝에서 양쪽 데미지를 먼저 계산한 뒤 적용
+    // 동시 공격 처리: 양쪽 데미지를 먼저 계산하되, speed 빠른 쪽 먼저 적용.
+    // 죽이는 순간 같은 timeStep 의 보복 공격은 cancel — 죽은 자는 공격 못 함.
     const unit1Attacks = time >= unit1NextAttack;
     const unit2Attacks = time >= unit2NextAttack;
 
     let unit1Result: ReturnType<typeof calculateDamage> | null = null;
     let unit2Result: ReturnType<typeof calculateDamage> | null = null;
 
-    // 데미지 계산 (아직 적용 전)
     if (unit1Attacks) {
       unit1Result = calculateDamage(state1, state2, cfg.damageFormula, cfg.defenseFormula, cfg.armorPenetration);
     }
@@ -234,54 +234,55 @@ export function simulateBattle(
       unit2Result = calculateDamage(state2, state1, cfg.damageFormula, cfg.defenseFormula, cfg.armorPenetration);
     }
 
-    // 데미지 적용 (동시에)
-    if (unit1Result && !unit1Result.isMiss) {
-      state2.hp = cfg.allowOverkill
-        ? state2.hp - unit1Result.damage
-        : Math.max(0, state2.hp - unit1Result.damage);
+    // Speed 순 적용 — 같은 speed 면 unit1 우선 (안정적 순서)
+    const order: Array<'unit1' | 'unit2'> = state1.speed >= state2.speed
+      ? ['unit1', 'unit2']
+      : ['unit2', 'unit1'];
 
-      unit1TotalDamage += unit1Result.damage;
-      unit1Hits++;
-      if (unit1Result.isCrit) unit1Crits++;
-    }
-
-    if (unit2Result && !unit2Result.isMiss) {
-      state1.hp = cfg.allowOverkill
-        ? state1.hp - unit2Result.damage
-        : Math.max(0, state1.hp - unit2Result.damage);
-
-      unit2TotalDamage += unit2Result.damage;
-      unit2Hits++;
-      if (unit2Result.isCrit) unit2Crits++;
-    }
-
-    // 로그 기록
-    if (unit1Result) {
-      log.push({
-        time: Math.round(time * 100) / 100,
-        actor: state1.name,
-        action: 'attack',
-        target: state2.name,
-        damage: unit1Result.damage,
-        isCrit: unit1Result.isCrit,
-        isMiss: unit1Result.isMiss,
-        remainingHp: state2.hp,
-      });
-      unit1NextAttack = time + 1 / state1.speed;
-    }
-
-    if (unit2Result) {
-      log.push({
-        time: Math.round(time * 100) / 100,
-        actor: state2.name,
-        action: 'attack',
-        target: state1.name,
-        damage: unit2Result.damage,
-        isCrit: unit2Result.isCrit,
-        isMiss: unit2Result.isMiss,
-        remainingHp: state1.hp,
-      });
-      unit2NextAttack = time + 1 / state2.speed;
+    for (const who of order) {
+      if (who === 'unit1' && unit1Result) {
+        if (state1.hp <= 0) continue; // unit1 이 같은 timeStep 에 이미 죽었으면 cancel
+        if (!unit1Result.isMiss) {
+          state2.hp = cfg.allowOverkill
+            ? state2.hp - unit1Result.damage
+            : Math.max(0, state2.hp - unit1Result.damage);
+          unit1TotalDamage += unit1Result.damage;
+          unit1Hits++;
+          if (unit1Result.isCrit) unit1Crits++;
+        }
+        log.push({
+          time: Math.round(time * 100) / 100,
+          actor: state1.name,
+          action: 'attack',
+          target: state2.name,
+          damage: unit1Result.damage,
+          isCrit: unit1Result.isCrit,
+          isMiss: unit1Result.isMiss,
+          remainingHp: state2.hp,
+        });
+        unit1NextAttack = time + 1 / state1.speed;
+      } else if (who === 'unit2' && unit2Result) {
+        if (state2.hp <= 0) continue;
+        if (!unit2Result.isMiss) {
+          state1.hp = cfg.allowOverkill
+            ? state1.hp - unit2Result.damage
+            : Math.max(0, state1.hp - unit2Result.damage);
+          unit2TotalDamage += unit2Result.damage;
+          unit2Hits++;
+          if (unit2Result.isCrit) unit2Crits++;
+        }
+        log.push({
+          time: Math.round(time * 100) / 100,
+          actor: state2.name,
+          action: 'attack',
+          target: state1.name,
+          damage: unit2Result.damage,
+          isCrit: unit2Result.isCrit,
+          isMiss: unit2Result.isMiss,
+          remainingHp: state1.hp,
+        });
+        unit2NextAttack = time + 1 / state2.speed;
+      }
     }
   }
 
@@ -1145,6 +1146,8 @@ export function simulateTeamBattle(
   let time = 0;
   let team1TotalDamage = 0;
   let team2TotalDamage = 0;
+  // Replay 로그 — 다대다 timeline 입력. 다른 팀 시뮬과 1v1 BattleResult.log 형태 호환.
+  const log: BattleLogEntry[] = [];
 
   while (time < cfg.maxDuration) {
     time += cfg.timeStep;
@@ -1201,8 +1204,15 @@ export function simulateTeamBattle(
       }
     }
 
-    // 데미지 일괄 적용 (동시 처리)
+    // Speed 빠른 attacker 의 공격을 먼저 적용 — 죽이는 순간 같은 timeStep 의 보복 공격은 cancel.
+    // 같은 speed 끼리는 push 순서 유지 (stable sort) → mutual kill 가능.
+    pendingAttacks.sort((a, b) => b.attacker.speed - a.attacker.speed);
+
+    // 순차 적용 + 적용 직전 attacker.alive 체크 + 즉시 사망 처리
     for (const attack of pendingAttacks) {
+      // 이전 attack 으로 attacker 가 죽었으면 그의 공격은 cancel — 죽은 자는 공격 못 함
+      if (!attack.attacker.alive || attack.attacker.currentHp <= 0) continue;
+
       if (!attack.isMiss) {
         attack.target.currentHp = Math.max(0, attack.target.currentHp - attack.damage);
         attack.target.damageTaken += attack.damage;
@@ -1214,13 +1224,26 @@ export function simulateTeamBattle(
           team2TotalDamage += attack.damage;
         }
       }
-    }
+      log.push({
+        time: Math.round(time * 100) / 100,
+        actor: attack.attacker.id,
+        action: 'attack',
+        target: attack.target.id,
+        damage: attack.isMiss ? 0 : attack.damage,
+        isMiss: attack.isMiss,
+        remainingHp: attack.target.currentHp,
+      });
 
-    // 사망 처리 (데미지 적용 후)
-    for (const attack of pendingAttacks) {
+      // 즉시 사망 처리 — 다음 attack 의 attacker.alive 체크에 반영
       if (!attack.isMiss && attack.target.currentHp <= 0 && attack.target.alive) {
         attack.target.alive = false;
         attack.attacker.kills++;
+        log.push({
+          time: Math.round(time * 100) / 100,
+          actor: attack.target.id,
+          action: 'death',
+          remainingHp: 0,
+        });
       }
     }
   }
@@ -1273,6 +1296,7 @@ export function simulateTeamBattle(
         kills: u.kills,
       })),
     ],
+    log,
   };
 }
 
@@ -1978,6 +2002,8 @@ export function simulateTeamBattleWithSkills(
   let time = 0;
   let team1TotalDamage = 0;
   let team2TotalDamage = 0;
+  // Replay 로그 — 다대다 timeline 입력. 스킬 이벤트는 깊은 분기에 산재해 추후 추가.
+  const log: BattleLogEntry[] = [];
 
   while (time < cfg.maxDuration) {
     time += cfg.timeStep;
@@ -2076,8 +2102,13 @@ export function simulateTeamBattleWithSkills(
       }
     }
 
-    // 데미지 일괄 적용 (동시 처리)
+    // Speed 빠른 attacker 먼저 — 죽이는 순간 같은 timeStep 의 보복 공격 cancel.
+    pendingAttacks.sort((a, b) => b.attacker.speed - a.attacker.speed);
+
+    // 순차 적용 + alive 체크 + 즉시 사망/부활 처리
     for (const attack of pendingAttacks) {
+      if (!attack.attacker.alive || attack.attacker.currentHp <= 0) continue;
+
       if (!attack.isMiss) {
         attack.target.currentHp = Math.max(0, attack.target.currentHp - attack.damage);
         attack.target.damageTaken += attack.damage;
@@ -2089,19 +2120,40 @@ export function simulateTeamBattleWithSkills(
           team2TotalDamage += attack.damage;
         }
       }
-    }
+      log.push({
+        time: Math.round(time * 100) / 100,
+        actor: attack.attacker.id,
+        action: 'attack',
+        target: attack.target.id,
+        damage: attack.isMiss ? 0 : attack.damage,
+        isMiss: attack.isMiss,
+        remainingHp: attack.target.currentHp,
+      });
 
-    // 사망 처리 및 부활 체크 (데미지 적용 후)
-    for (const attack of pendingAttacks) {
+      // 즉시 사망 처리 + 부활 체크
       if (!attack.isMiss && attack.target.currentHp <= 0 && attack.target.alive) {
         attack.target.alive = false;
         attack.attacker.kills++;
+        log.push({
+          time: Math.round(time * 100) / 100,
+          actor: attack.target.id,
+          action: 'death',
+          remainingHp: 0,
+        });
         const targetSkills = attack.target.team === 'team1'
           ? team1Skills.get(attack.target.id) || []
           : team2Skills.get(attack.target.id) || [];
         const targetAllies = attack.target.team === 'team1' ? team1States : team2States;
         const targetSkillsMap = attack.target.team === 'team1' ? team1Skills : team2Skills;
-        checkRevive(attack.target, targetSkills, targetAllies, targetSkillsMap, time);
+        const wasRevived = checkRevive(attack.target, targetSkills, targetAllies, targetSkillsMap, time);
+        if (wasRevived) {
+          log.push({
+            time: Math.round(time * 100) / 100,
+            actor: attack.target.id,
+            action: 'revive',
+            remainingHp: attack.target.currentHp,
+          });
+        }
       }
     }
   }
@@ -2152,5 +2204,6 @@ export function simulateTeamBattleWithSkills(
         kills: u.kills,
       })),
     ],
+    log,
   };
 }

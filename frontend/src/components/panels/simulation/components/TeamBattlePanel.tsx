@@ -13,6 +13,7 @@ import { Histogram } from './Histogram';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useTranslations } from 'next-intl';
 import CustomSelect from '@/components/ui/CustomSelect';
+import ReplayTimeline, { type ReplayUnit } from '@/components/simulation/ReplayTimeline';
 
 interface UnitWithSkills extends UnitStats {
   skills?: Skill[];
@@ -885,6 +886,29 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                     </span>
                     {' '}| {t('battleTime')}: {teamResult.sampleBattles[selectedSampleIndex].duration.toFixed(1)}s
                   </div>
+
+                  {/* 시뮬 리플레이 — 다대다 timeline + scrubber */}
+                  {teamResult.sampleBattles[selectedSampleIndex].log && (
+                    <div className="pt-3 border-t" style={{ borderColor: 'var(--border-primary)' }}>
+                      <div className="text-sm mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>시뮬 리플레이</div>
+                      <ReplayTimeline
+                        units={[
+                          ...team1Units.map((u): ReplayUnit => ({ id: u.id, name: u.name, maxHp: u.maxHp, team: 'team1' })),
+                          ...team2Units.map((u): ReplayUnit => ({ id: u.id, name: u.name, maxHp: u.maxHp, team: 'team2' })),
+                        ]}
+                        log={teamResult.sampleBattles[selectedSampleIndex].log ?? []}
+                        summary={{
+                          winnerLabel:
+                            teamResult.sampleBattles[selectedSampleIndex].winner === 'team1'
+                              ? 'Team 1'
+                              : teamResult.sampleBattles[selectedSampleIndex].winner === 'team2'
+                                ? 'Team 2'
+                                : t('draw'),
+                          duration: teamResult.sampleBattles[selectedSampleIndex].duration,
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

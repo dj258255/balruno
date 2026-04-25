@@ -49,7 +49,6 @@ export function usePanelStates(): {
   const [frameData, setFrameData] = useState(false);
   const [aiBehavior, setAiBehavior] = useState(false);
   const [matchupMatrix, setMatchupMatrix] = useState(false);
-  const [replayTimeline, setReplayTimeline] = useState(false);
   const [snapshotCompare, setSnapshotCompare] = useState(false);
   const [mobaLaning, setMobaLaning] = useState(false);
   const [rtsBuildOrder, setRtsBuildOrder] = useState(false);
@@ -89,7 +88,6 @@ export function usePanelStates(): {
     frameData: { show: frameData, setShow: setFrameData },
     aiBehavior: { show: aiBehavior, setShow: setAiBehavior },
     matchupMatrix: { show: matchupMatrix, setShow: setMatchupMatrix },
-    replayTimeline: { show: replayTimeline, setShow: setReplayTimeline },
     snapshotCompare: { show: snapshotCompare, setShow: setSnapshotCompare },
     mobaLaning: { show: mobaLaning, setShow: setMobaLaning },
     rtsBuildOrder: { show: rtsBuildOrder, setShow: setRtsBuildOrder },
@@ -103,7 +101,7 @@ export function usePanelStates(): {
     economy, dpsVariance, curveFitting, formulaHelper, balanceValidator,
     difficultyCurve, simulation, entityDefinition, autoBalancer, lootSimulator,
     powerCurveCompare, comments, interfaceDesigner, automations, sensitivity,
-    changeHistory, fpsSimulation, fpsTeamSimulation, deckSimulation, frameData, aiBehavior, matchupMatrix, replayTimeline, snapshotCompare, mobaLaning, rtsBuildOrder, mmoRaid, autoBattler, hordeSurvivor, aiPlaytest, formulaVerifier,
+    changeHistory, fpsSimulation, fpsTeamSimulation, deckSimulation, frameData, aiBehavior, matchupMatrix, snapshotCompare, mobaLaning, rtsBuildOrder, mmoRaid, autoBattler, hordeSurvivor, aiPlaytest, formulaVerifier,
   ]);
 
   const openByName = useCallback((name: string) => {

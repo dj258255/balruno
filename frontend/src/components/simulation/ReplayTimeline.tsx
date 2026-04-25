@@ -1,63 +1,43 @@
 'use client';
 
 /**
- * 시뮬 리플레이 타임라인 — Overwatch kill cam / Dota 2 replay 방식.
+ * ReplayTimeline — 전투 로그 timeline 재생기 (1v1 + 다대다 통합).
  *
- * 기존 simulateBattleWithSkills 의 BattleLogEntry[] 를 받아 시각화.
- *  - Scrubber 로 임의 시점 탐색
- *  - 이벤트 타입별 아이콘 + 색상 (attack/skill/heal/death/invincible)
- *  - 현재 시점 HP 게이지 실시간 표시
- *  - Step-by-step (prev/next) 키보드 조작
+ * SimulationPanel 안에서 inline 으로 렌더되며, 1회 전투 결과를 props 로 받음.
+ * 단독 패널 (PanelShell) 아님 — 시뮬 결과 영역 아래에 자연스럽게 흐름.
+ *
+ * 다중 유닛 지원:
+ *  - units 배열로 N 개 유닛 받음 (1v1 = 2개, 팀 전투 = 2-12개)
+ *  - 각 유닛에 team 정보 (team1/team2/undef) 로 색상 자동 결정
+ *  - log 의 actor/target 이 id 또는 name 일 수 있어 둘 다 매칭 (1v1=name, 팀=id 의 호환층)
  *
  * 업계 레퍼런스:
  *  - Overwatch 2 "Highlight" 시스템 (킬캠)
  *  - Rocket League 리플레이 scrubber
- *  - Dota 2 timeline 중 death/fight filter
+ *  - Dota 2 timeline 의 death/fight filter
  */
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Rewind, Swords, Heart, Shield, Skull, Zap, RefreshCw, Sparkles, Info } from 'lucide-react';
-import PanelShell from '@/components/ui/PanelShell';
-import { simulateBattleWithSkills } from '@/lib/simulation/battleEngine';
-import type { UnitStats, Skill, BattleLogEntry } from '@/lib/simulation/types';
-import { useReplayStore } from '@/stores/replayStore';
+import { Play, Pause, SkipBack, SkipForward, Swords, Heart, Shield, Skull, Zap, RefreshCw, Sparkles } from 'lucide-react';
+import type { BattleLogEntry } from '@/lib/simulation/types';
+
+export interface ReplayUnit {
+  id: string;
+  name: string;
+  maxHp: number;
+  team?: 'team1' | 'team2';
+}
+
+export interface ReplaySummary {
+  winnerLabel?: string;
+  duration?: number;
+}
 
 interface Props {
-  onClose: () => void;
+  units: ReplayUnit[];
+  log: BattleLogEntry[];
+  summary?: ReplaySummary;
 }
-
-// ============================================================================
-// 샘플 시나리오 — 데모용 (실제 프로젝트에선 context 에서 유닛/스킬 주입)
-// ============================================================================
-
-function defaultScenario(): { unit1: UnitStats; unit2: UnitStats; skills1: Skill[]; skills2: Skill[] } {
-  return {
-    unit1: {
-      id: 'hero', name: '영웅', hp: 800, maxHp: 800, atk: 80, def: 10, speed: 1.2,
-      critRate: 0.2, critDamage: 1.5,
-    },
-    unit2: {
-      id: 'boss', name: '보스', hp: 1200, maxHp: 1200, atk: 60, def: 20, speed: 0.8,
-      critRate: 0.1, critDamage: 2.0,
-    },
-    skills1: [
-      { id: 'heal', name: '회복', damage: 0, damageType: 'flat', cooldown: 8,
-        skillType: 'heal', healAmount: 30, healType: 'percent',
-        trigger: { type: 'hp_below', value: 50, chance: 1 } },
-      { id: 'strike', name: '강타', damage: 2.5, damageType: 'multiplier', cooldown: 5,
-        skillType: 'damage' },
-    ],
-    skills2: [
-      { id: 'rage', name: '광폭', damage: 3.0, damageType: 'multiplier', cooldown: 10,
-        skillType: 'damage',
-        trigger: { type: 'hp_below', value: 40, chance: 1 } },
-    ],
-  };
-}
-
-// ============================================================================
-// 이벤트 메타 (아이콘 + 색상)
-// ============================================================================
 
 const ACTION_META: Record<BattleLogEntry['action'], { Icon: typeof Swords; color: string; label: string }> = {
   attack:          { Icon: Swords,     color: '#ef4444', label: '공격' },
@@ -73,52 +53,32 @@ const ACTION_META: Record<BattleLogEntry['action'], { Icon: typeof Swords; color
   revive:          { Icon: RefreshCw,  color: '#ec4899', label: '부활' },
 };
 
-// ============================================================================
-// 메인 패널
-// ============================================================================
+const TEAM_COLOR: Record<string, string> = {
+  team1: '#3b82f6', // 파랑
+  team2: '#ef4444', // 빨강
+};
+const NEUTRAL_COLOR = '#8b5cf6';
 
-export default function ReplayTimelinePanel({ onClose }: Props) {
-  const published = useReplayStore((s) => s.scenario);
-  const clearPublished = useReplayStore((s) => s.clear);
+const matchesUnit = (u: ReplayUnit, key: string | undefined): boolean =>
+  key !== undefined && (u.id === key || u.name === key);
 
-  // 외부에서 publish 된 시나리오가 있으면 그걸 사용, 아니면 데모
-  const demoScenario = useMemo(() => defaultScenario(), []);
-  const usingPublished = !!published;
-  const scenario = useMemo(() => {
-    if (published) {
-      return {
-        unit1: published.unit1,
-        unit2: published.unit2,
-        skills1: published.skills1,
-        skills2: published.skills2,
-      };
-    }
-    return demoScenario;
-  }, [published, demoScenario]);
-
-  const [seed, setSeed] = useState(0); // 재시뮬 트리거
+export default function ReplayTimeline({ units, log, summary }: Props) {
   const [cursorIdx, setCursorIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
 
-  const result = useMemo(() => {
-    // published 가 있으면 그 결과 그대로 재생 (재시뮬 안 함)
-    if (published) return published.result;
-    void seed; // force re-run
-    return simulateBattleWithSkills(
-      scenario.unit1, scenario.unit2,
-      scenario.skills1, scenario.skills2,
-      { maxDuration: 120, timeStep: 0.1 },
-    );
-  }, [published, scenario, seed]);
+  // log 가 바뀌면 (새 시뮬 결과) cursor 리셋
+  useEffect(() => {
+    setCursorIdx(0);
+    setPlaying(false);
+  }, [log]);
 
-  const log = result.log;
   const cursor = log[Math.min(cursorIdx, log.length - 1)];
   const totalDuration = log.length > 0 ? log[log.length - 1].time : 0;
 
-  // playback
+  // 자동 재생
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || log.length === 0) return;
     const timer = setInterval(() => {
       setCursorIdx((i) => {
         const next = i + 1;
@@ -132,92 +92,61 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
     return () => clearInterval(timer);
   }, [playing, speed, log.length]);
 
-  // 현재 시점까지의 누적 HP 복원
-  const { unit1Hp, unit2Hp } = useMemo(() => {
-    let u1 = scenario.unit1.maxHp;
-    let u2 = scenario.unit2.maxHp;
+  // 현재 시점까지의 누적 HP — 모든 유닛 id 별 추적
+  const currentHpByUnitId = useMemo(() => {
+    const hp = new Map<string, number>();
+    for (const u of units) hp.set(u.id, u.maxHp);
     for (let i = 0; i <= cursorIdx && i < log.length; i++) {
       const e = log[i];
-      if (e.action === 'attack' || e.action === 'skill') {
-        if (!e.isMiss && e.damage) {
-          if (e.target === scenario.unit1.name) u1 -= e.damage;
-          else if (e.target === scenario.unit2.name) u2 -= e.damage;
-        }
-      } else if (e.action === 'heal' || e.action === 'hot_tick') {
-        if (e.healAmount) {
-          if (e.actor === scenario.unit1.name) u1 = Math.min(scenario.unit1.maxHp, u1 + e.healAmount);
-          else if (e.actor === scenario.unit2.name) u2 = Math.min(scenario.unit2.maxHp, u2 + e.healAmount);
-        }
+      const target = units.find((u) => matchesUnit(u, e.target));
+      const actor = units.find((u) => matchesUnit(u, e.actor));
+      if ((e.action === 'attack' || e.action === 'skill') && target && !e.isMiss && e.damage) {
+        hp.set(target.id, Math.max(0, (hp.get(target.id) ?? target.maxHp) - e.damage));
+      } else if ((e.action === 'heal' || e.action === 'hot_tick') && actor && e.healAmount) {
+        hp.set(actor.id, Math.min(actor.maxHp, (hp.get(actor.id) ?? actor.maxHp) + e.healAmount));
+      } else if (e.action === 'death' && actor) {
+        hp.set(actor.id, 0);
+      } else if (e.action === 'revive' && actor && e.remainingHp !== undefined) {
+        hp.set(actor.id, e.remainingHp);
       }
     }
-    return { unit1Hp: Math.max(0, u1), unit2Hp: Math.max(0, u2) };
-  }, [cursorIdx, log, scenario]);
+    return hp;
+  }, [cursorIdx, log, units]);
 
-  const keyStep = useCallback((delta: number) => {
-    setCursorIdx((i) => Math.max(0, Math.min(log.length - 1, i + delta)));
-    setPlaying(false);
-  }, [log.length]);
+  const keyStep = useCallback(
+    (delta: number) => {
+      setCursorIdx((i) => Math.max(0, Math.min(log.length - 1, i + delta)));
+      setPlaying(false);
+    },
+    [log.length],
+  );
+
+  if (log.length === 0) {
+    return (
+      <div
+        className="p-3 rounded-lg text-caption"
+        style={{ background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }}
+      >
+        시뮬을 1회 이상 실행하면 리플레이 타임라인이 표시됩니다.
+      </div>
+    );
+  }
+
+  // 팀별 그룹핑 — 다중 유닛일 때 시각적 구분
+  const team1Units = units.filter((u) => u.team === 'team1');
+  const team2Units = units.filter((u) => u.team === 'team2');
+  const neutralUnits = units.filter((u) => !u.team);
 
   return (
-    <PanelShell
-      title="시뮬 리플레이"
-      subtitle="타임라인 scrubber · step-by-step 디버깅"
-      icon={Play}
-      iconColor="#8b5cf6"
-      onClose={onClose}
-      bodyClassName="p-3 space-y-3 overflow-y-auto"
-    >
-      {/* 상태 배너 — 데모 vs 실제 */}
-      <div
-        className="p-2 rounded-lg flex items-center gap-2 text-caption"
-        style={{
-          background: usingPublished ? '#10b98118' : '#f59e0b18',
-          borderLeft: `3px solid ${usingPublished ? '#10b981' : '#f59e0b'}`,
-        }}
-      >
-        <Info className="w-3.5 h-3.5 shrink-0" style={{ color: usingPublished ? '#10b981' : '#f59e0b' }} />
-        <div className="flex-1" style={{ color: 'var(--text-primary)' }}>
-          {usingPublished ? (
-            <>
-              <span className="font-semibold" style={{ color: '#10b981' }}>실제 시뮬 결과</span>
-              {' '}— 전투 시뮬 패널에서 돌린 마지막 1:1 전투 재생 중
-              {published?.source && ` (${published.source})`}
-            </>
-          ) : (
-            <>
-              <span className="font-semibold" style={{ color: '#f59e0b' }}>데모 모드</span>
-              {' '}— 고정 시나리오 (영웅 vs 보스). 실제 결과를 보려면 전투 시뮬 패널에서 실행 후 여기서 재생
-            </>
-          )}
-        </div>
-        {usingPublished && (
-          <button
-            onClick={clearPublished}
-            className="px-2 py-0.5 rounded text-caption"
-            style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
-            title="데모로 돌아가기"
-          >
-            데모로
-          </button>
-        )}
-      </div>
-
+    <div className="space-y-3">
       {/* 컨트롤 바 */}
-      <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: 'var(--bg-tertiary)' }}>
-        <button
-          onClick={() => setSeed((s) => s + 1)}
-          disabled={usingPublished}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded text-caption disabled:opacity-30 disabled:cursor-not-allowed"
-          style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
-          title={usingPublished ? '외부 전투 시뮬 결과 재생 중 — 데모 모드로 돌아가 재시뮬' : '새 시뮬 (다른 난수 seed)'}
-        >
-          <Rewind className="w-3 h-3" /> 재시뮬
-        </button>
+      <div className="p-3 rounded-lg flex items-center gap-2 flex-wrap" style={{ background: 'var(--bg-tertiary)' }}>
         <button
           onClick={() => keyStep(-1)}
           disabled={cursorIdx === 0}
           className="p-1.5 rounded disabled:opacity-30"
           style={{ background: 'var(--bg-primary)' }}
+          aria-label="이전 이벤트"
         >
           <SkipBack className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
         </button>
@@ -225,9 +154,10 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
           onClick={() => setPlaying((p) => !p)}
           className="p-1.5 rounded"
           style={{ background: playing ? 'var(--accent)' : 'var(--bg-primary)' }}
+          aria-label={playing ? '일시정지' : '재생'}
         >
           {playing ? (
-            <Pause className="w-4 h-4" style={{ color: playing ? 'white' : 'var(--text-secondary)' }} />
+            <Pause className="w-4 h-4" style={{ color: 'white' }} />
           ) : (
             <Play className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
           )}
@@ -237,6 +167,7 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
           disabled={cursorIdx >= log.length - 1}
           className="p-1.5 rounded disabled:opacity-30"
           style={{ background: 'var(--bg-primary)' }}
+          aria-label="다음 이벤트"
         >
           <SkipForward className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
         </button>
@@ -265,7 +196,7 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
         </div>
       </div>
 
-      {/* Scrubber */}
+      {/* Scrubber + 이벤트 밀도 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <input
           type="range"
@@ -276,7 +207,6 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
           className="w-full"
           style={{ accentColor: 'var(--accent)' }}
         />
-        {/* 이벤트 밀도 막대 — 이벤트 타입별 색상 도트 */}
         <div className="relative h-2 mt-1 rounded overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
           {log.map((entry, i) => {
             const pct = log.length > 1 ? (i / (log.length - 1)) * 100 : 0;
@@ -298,11 +228,25 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
         </div>
       </div>
 
-      {/* HP 게이지 */}
-      <div className="grid grid-cols-2 gap-2">
-        <HpGauge name={scenario.unit1.name} hp={unit1Hp} maxHp={scenario.unit1.maxHp} color="#3b82f6" />
-        <HpGauge name={scenario.unit2.name} hp={unit2Hp} maxHp={scenario.unit2.maxHp} color="#ef4444" />
-      </div>
+      {/* HP 게이지 — 팀별 그룹 + 다중 유닛 */}
+      {(team1Units.length > 0 || team2Units.length > 0) ? (
+        <div className="grid grid-cols-2 gap-3">
+          <TeamColumn label="Team 1" color={TEAM_COLOR.team1} units={team1Units} hpMap={currentHpByUnitId} />
+          <TeamColumn label="Team 2" color={TEAM_COLOR.team2} units={team2Units} hpMap={currentHpByUnitId} />
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          {neutralUnits.map((u) => (
+            <HpGauge
+              key={u.id}
+              name={u.name}
+              hp={currentHpByUnitId.get(u.id) ?? u.maxHp}
+              maxHp={u.maxHp}
+              color={NEUTRAL_COLOR}
+            />
+          ))}
+        </div>
+      )}
 
       {/* 현재 이벤트 카드 */}
       {cursor && (
@@ -313,10 +257,7 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
             borderLeft: `4px solid ${ACTION_META[cursor.action].color}`,
           }}
         >
-          <div
-            className="p-2 rounded-lg"
-            style={{ background: `${ACTION_META[cursor.action].color}20` }}
-          >
+          <div className="p-2 rounded-lg" style={{ background: `${ACTION_META[cursor.action].color}20` }}>
             {(() => {
               const Icon = ACTION_META[cursor.action].Icon;
               return <Icon className="w-6 h-6" style={{ color: ACTION_META[cursor.action].color }} />;
@@ -324,13 +265,15 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-label font-semibold" style={{ color: 'var(--text-primary)' }}>
-              {cursor.actor} {ACTION_META[cursor.action].label}
-              {cursor.target && <span style={{ color: 'var(--text-tertiary)' }}> → {cursor.target}</span>}
+              {displayName(cursor.actor, units)} {ACTION_META[cursor.action].label}
+              {cursor.target && (
+                <span style={{ color: 'var(--text-tertiary)' }}> → {displayName(cursor.target, units)}</span>
+              )}
               {cursor.skillName && <span style={{ color: '#8b5cf6' }}> · {cursor.skillName}</span>}
             </div>
             <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>
               t = {cursor.time.toFixed(2)}s
-              {cursor.damage !== undefined && (
+              {cursor.damage !== undefined && cursor.damage > 0 && (
                 <span className="ml-2">
                   피해 <span className="font-bold tabular-nums" style={{ color: '#ef4444' }}>{cursor.damage.toFixed(0)}</span>
                   {cursor.isCrit && <span className="ml-1 px-1 rounded text-caption" style={{ background: '#f59e0b30', color: '#f59e0b' }}>CRIT</span>}
@@ -353,22 +296,20 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
       )}
 
       {/* 결과 요약 */}
-      <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
-        <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          전투 결과
+      {summary && (
+        <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+          <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+            전투 결과
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <ResultChip label="승자" value={summary.winnerLabel ?? '—'} color="#3b82f6" />
+            <ResultChip label="지속" value={summary.duration !== undefined ? `${summary.duration.toFixed(1)}s` : '—'} color="#8b5cf6" />
+            <ResultChip label="이벤트" value={log.length.toString()} color="#10b981" />
+          </div>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <ResultChip
-            label="승자"
-            value={result.winner === 'unit1' ? scenario.unit1.name : result.winner === 'unit2' ? scenario.unit2.name : '무승부'}
-            color={result.winner === 'unit1' ? '#3b82f6' : result.winner === 'unit2' ? '#ef4444' : '#6b7280'}
-          />
-          <ResultChip label="지속" value={`${result.duration.toFixed(1)}s`} color="#8b5cf6" />
-          <ResultChip label="이벤트" value={log.length.toString()} color="#10b981" />
-        </div>
-      </div>
+      )}
 
-      {/* 이벤트 목록 (최근 주변 +- 10개) */}
+      {/* 이벤트 스트림 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
           이벤트 스트림
@@ -393,10 +334,10 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
                 </span>
                 <meta.Icon className="w-3 h-3 shrink-0" style={{ color: meta.color }} />
                 <span className="truncate">
-                  <span className="font-semibold">{entry.actor}</span>
+                  <span className="font-semibold">{displayName(entry.actor, units)}</span>
                   <span style={{ color: 'var(--text-tertiary)' }}> {meta.label}</span>
-                  {entry.target && <span> → {entry.target}</span>}
-                  {entry.damage !== undefined && <span style={{ color: '#ef4444' }}> ({entry.damage.toFixed(0)})</span>}
+                  {entry.target && <span> → {displayName(entry.target, units)}</span>}
+                  {entry.damage !== undefined && entry.damage > 0 && <span style={{ color: '#ef4444' }}> ({entry.damage.toFixed(0)})</span>}
                   {entry.isCrit && <span style={{ color: '#f59e0b' }}> CRIT</span>}
                   {entry.isMiss && <span style={{ color: '#6b7280' }}> MISS</span>}
                 </span>
@@ -405,21 +346,54 @@ export default function ReplayTimelinePanel({ onClose }: Props) {
           })}
         </div>
       </div>
-    </PanelShell>
+    </div>
   );
 }
 
-// ============================================================================
-// 서브 컴포넌트
-// ============================================================================
+function displayName(key: string | undefined, units: ReplayUnit[]): string {
+  if (!key) return '—';
+  const match = units.find((u) => matchesUnit(u, key));
+  return match?.name ?? key;
+}
+
+function TeamColumn({
+  label,
+  color,
+  units,
+  hpMap,
+}: {
+  label: string;
+  color: string;
+  units: ReplayUnit[];
+  hpMap: Map<string, number>;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="text-caption font-semibold" style={{ color }}>
+        {label} ({units.length})
+      </div>
+      <div className="space-y-1.5">
+        {units.map((u) => (
+          <HpGauge
+            key={u.id}
+            name={u.name}
+            hp={hpMap.get(u.id) ?? u.maxHp}
+            maxHp={u.maxHp}
+            color={color}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function HpGauge({ name, hp, maxHp, color }: { name: string; hp: number; maxHp: number; color: string }) {
   const pct = Math.max(0, (hp / maxHp) * 100);
   const dead = hp <= 0;
   return (
-    <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)', borderLeft: `4px solid ${color}`, opacity: dead ? 0.5 : 1 }}>
+    <div className="p-2 rounded-lg" style={{ background: 'var(--bg-tertiary)', borderLeft: `3px solid ${color}`, opacity: dead ? 0.5 : 1 }}>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-label font-semibold" style={{ color }}>
+        <span className="text-caption font-semibold truncate" style={{ color }}>
           {name}
           {dead && <Skull className="w-3 h-3 inline ml-1" style={{ color: '#6b7280' }} />}
         </span>
@@ -427,7 +401,7 @@ function HpGauge({ name, hp, maxHp, color }: { name: string; hp: number; maxHp: 
           {Math.round(hp)} / {maxHp}
         </span>
       </div>
-      <div className="h-2 rounded overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+      <div className="h-1.5 rounded overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
         <div className="h-full transition-all duration-200" style={{ width: `${pct}%`, background: color }} />
       </div>
     </div>

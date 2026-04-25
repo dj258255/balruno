@@ -317,6 +317,8 @@ export interface TeamBattleResult {
     damageTaken: number;
     kills: number;
   }[];
+  /** Replay 용 이벤트 로그 — actor/target 은 unit.id. */
+  log?: BattleLogEntry[];
 }
 
 // 시뮬레이션 옵션
