@@ -11,6 +11,7 @@ import { HpTimelineGraph } from './HpTimelineGraph';
 import { ConfidenceBar } from './ConfidenceBar';
 import { useTranslations } from 'next-intl';
 import CustomSelect from '@/components/ui/CustomSelect';
+import ReplayTimeline, { type ReplayUnit } from '@/components/simulation/ReplayTimeline';
 
 interface SimulationResultsProps {
   result: SimulationResult;
@@ -303,7 +304,7 @@ export function SimulationResults({
             />
           </div>
 
-          {/* HP 타임라인 그래프 */}
+          {/* HP 타임라인 그래프 — 전체 전투 한 눈에 (정적) */}
           {result.sampleBattles[selectedBattleIndex]?.log && (
             <div className="pt-2">
               <div className="text-sm mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('hpTimeline')}</div>
@@ -313,6 +314,29 @@ export function SimulationResults({
                 unit2Name={unit2Stats.name}
                 unit1MaxHp={unit1Stats.maxHp}
                 unit2MaxHp={unit2Stats.maxHp}
+              />
+            </div>
+          )}
+
+          {/* 시뮬 리플레이 — scrubber + step-by-step 인터랙티브 재생 */}
+          {result.sampleBattles[selectedBattleIndex]?.log && (
+            <div className="pt-2">
+              <div className="text-sm mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>시뮬 리플레이</div>
+              <ReplayTimeline
+                units={[
+                  { id: unit1Stats.id, name: unit1Stats.name, maxHp: unit1Stats.maxHp } satisfies ReplayUnit,
+                  { id: unit2Stats.id, name: unit2Stats.name, maxHp: unit2Stats.maxHp } satisfies ReplayUnit,
+                ]}
+                log={result.sampleBattles[selectedBattleIndex].log}
+                summary={{
+                  winnerLabel:
+                    result.sampleBattles[selectedBattleIndex].winner === 'unit1'
+                      ? unit1Stats.name
+                      : result.sampleBattles[selectedBattleIndex].winner === 'unit2'
+                        ? unit2Stats.name
+                        : t('draw'),
+                  duration: result.sampleBattles[selectedBattleIndex].duration,
+                }}
               />
             </div>
           )}
