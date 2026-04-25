@@ -12,23 +12,24 @@
 import type { Column, Row } from '@/types';
 import type { UnitStats } from './types';
 
-/** 컬럼 이름 → 표준 필드 매칭 (소문자 비교, 부분 일치 OK) */
+/** 컬럼 이름 → 표준 필드 매칭 (소문자 비교, 부분 일치 OK).
+ *  MOBA/RPG/FPS 등 다양한 도메인 표기 흡수 — ad/ap/range 처럼 게임 장르별 약어도 포함. */
 const FIELD_ALIASES: Record<keyof UnitStats, string[]> = {
   id:           [],
-  name:         ['name', 'unit', 'character', '이름', '캐릭터', '유닛', '이름/id', 'title'],
-  hp:           ['hp', 'health', 'currenthp', '체력', '현재체력'],
-  maxHp:        ['maxhp', 'max hp', 'max_hp', 'maxhealth', '최대체력', '최대hp', 'hp max', 'hpmax'],
-  atk:          ['atk', 'attack', 'attackpower', 'damage', 'dmg', 'power', '공격력', '공격', 'pow'],
-  def:          ['def', 'defense', 'defence', 'armor', '방어력', '방어'],
-  speed:        ['speed', 'spd', 'attackspeed', 'attack speed', 'atkspeed', 'as', '속도', '공격속도', '공속'],
-  critRate:     ['critrate', 'crit rate', 'crit_rate', 'crit%', 'crit chance', 'critchance', '치확', '크리티컬확률', '치명타확률'],
-  critDamage:   ['critdamage', 'crit damage', 'crit_damage', 'critdmg', 'critmult', '치피', '치명타데미지', '크리티컬배율'],
+  name:         ['name', 'unit', 'character', 'champion', 'hero', 'class', '이름', '캐릭터', '유닛', '챔피언', '영웅', 'title'],
+  hp:           ['hp', 'health', 'currenthp', 'life', '체력', '현재체력', '생명력'],
+  maxHp:        ['maxhp', 'maxhealth', 'maxlife', '최대체력', '최대hp', '최대생명력'],
+  atk:          ['atk', 'attack', 'attackpower', 'damage', 'dmg', 'power', 'ad', 'ap', '공격력', '공격', '데미지', '주문력'],
+  def:          ['def', 'defense', 'defence', 'armor', 'mr', 'magicresist', '방어력', '방어', '마저', '마법저항'],
+  speed:        ['speed', 'spd', 'attackspeed', 'atkspeed', 'as', 'movement', 'movespeed', 'ms', '속도', '공격속도', '공속', '이동속도'],
+  critRate:     ['critrate', 'critchance', 'crit', '치확', '크리티컬확률', '치명타확률', '크리율'],
+  critDamage:   ['critdamage', 'critdmg', 'critmult', '치피', '치명타데미지', '크리티컬배율', '크리피해'],
   accuracy:     ['accuracy', 'acc', 'hit', 'hitrate', '명중률', '명중'],
-  evasion:      ['evasion', 'eva', 'dodge', 'dodgerate', '회피율', '회피'],
-  aimSkill:     ['aimskill', 'aim', 'aim skill', '에임', '명중실력'],
+  evasion:      ['evasion', 'eva', 'dodge', 'dodgerate', 'agi', 'agility', '회피율', '회피', '민첩'],
+  aimSkill:     ['aimskill', 'aim', '에임', '명중실력'],
   reactionSkill:['reactionskill', 'reaction', '반응속도', '반응실력'],
-  decisionSkill:['decisionskill', 'decision', '판단', '판단실력'],
-  aiRules:      [], // 시트에서 직접 매핑하지 않음
+  decisionSkill:['decisionskill', 'decision', 'iq', '판단', '판단실력'],
+  aiRules:      [],
 };
 
 const NUMERIC_FIELDS: Array<keyof UnitStats> = [

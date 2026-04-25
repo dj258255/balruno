@@ -267,6 +267,18 @@ const SLASH_COMMANDS: SlashCommand[] = [
       }
     },
   },
+  {
+    name: 'random',
+    label: '랜덤 정수 0-99',
+    hint: 'Math.floor(random×100)',
+    resolve: () => String(Math.floor(Math.random() * 100)),
+  },
+  {
+    name: 'clear',
+    label: '셀 비우기',
+    hint: '빈 값',
+    resolve: () => '',
+  },
 ];
 
 function SmartInput({

@@ -26,6 +26,7 @@ export function useSheetSelection({ projectId, sheet, computedRows }: UseSheetSe
     cellSelectionMode,
     completeCellSelection,
     updateCell,
+    addMultipleRows,
   } = useProjectStore();
 
   // x-spreadsheet 패턴: Selector로 선택 관리 (null = 선택 없음)
@@ -381,11 +382,27 @@ export function useSheetSelection({ projectId, sheet, computedRows }: UseSheetSe
     if (clipboardText) {
       const rows = clipboardText.split('\n').map((line) => line.split('\t'));
 
+      // 행 부족 시 자동 추가 — 데이터가 시트 끝을 넘치면 그만큼 행 batch 생성.
+      // Y.Doc 의 transact 가 동기적이라 호출 직후 store getState 로 새 sheet 가져오면 갱신된 상태 OK.
+      const neededRows = startRowIdx + rows.length - sheet.rows.length;
+      if (neededRows > 0) {
+        addMultipleRows(projectId, sheet.id, neededRows);
+      }
+      // 컬럼 부족분은 자동 추가하지 않고 데이터만 잘림 (컬럼 추가는 명시적 의도가 필요)
+      const colOverflow = Math.max(0, (rows[0]?.length ?? 0) + startColIdx - sheet.columns.length);
+
+      // 갱신된 sheet snapshot — 새로 추가한 row 도 포함
+      const refreshed = useProjectStore
+        .getState()
+        .projects.find((p) => p.id === projectId)
+        ?.sheets.find((s) => s.id === sheet.id);
+      const targetRows = refreshed?.rows ?? sheet.rows;
+
       for (let ri = 0; ri < rows.length; ri++) {
         const targetRowIdx = startRowIdx + ri;
-        if (targetRowIdx >= sheet.rows.length) break;
+        if (targetRowIdx >= targetRows.length) break;
 
-        const targetRow = sheet.rows[targetRowIdx];
+        const targetRow = targetRows[targetRowIdx];
 
         for (let ci = 0; ci < rows[ri].length; ci++) {
           const targetColIdx = startColIdx + ci;
@@ -404,6 +421,14 @@ export function useSheetSelection({ projectId, sheet, computedRows }: UseSheetSe
 
           updateCell(projectId, sheet.id, targetRow.id, targetCol.id, value);
         }
+      }
+      if (colOverflow > 0 && typeof window !== 'undefined') {
+        // 사용자에게 컬럼 부족 안내 (자동 추가 X)
+        window.dispatchEvent(
+          new CustomEvent('balruno:toast', {
+            detail: { kind: 'info', message: `${colOverflow}개 컬럼 부족 — 추가하려면 헤더 + 버튼` },
+          }),
+        );
       }
 
       // 붙여넣기 후 범위 선택
