@@ -50,6 +50,7 @@ const ReferencesModal = dynamic(() => import('@/components/modals/ReferencesModa
 const OnboardingGuide = dynamic(() => import('@/components/modals/OnboardingGuide'), { ssr: false });
 const PersonaModal = dynamic(() => import('@/components/modals/PersonaModal'), { ssr: false });
 const ProductIntroModal = dynamic(() => import('@/components/modals/ProductIntroModal'), { ssr: false });
+const StarterCoachmark = dynamic(() => import('@/components/onboarding/StarterCoachmark'), { ssr: false });
 const ExportModal = dynamic(() => import('@/components/modals/ExportModal'), { ssr: false });
 const ImportModal = dynamic(() => import('@/components/modals/ImportModal'), { ssr: false });
 
@@ -656,6 +657,9 @@ export default function Home() {
 
       {/* 앱 소개 — persona 선택 후 최초 1 회 자동, 이후 WorkspaceSwitcher 에서 재접근 */}
       <ProductIntroModal />
+
+      {/* starter 시드 사용자 5단계 가이드 — floating card, dismissible */}
+      <StarterCoachmark />
 
       {/* Command Palette (⌘K) */}
       <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />
