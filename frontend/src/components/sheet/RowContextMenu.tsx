@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Check,
   Maximize2,
+  Swords,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useSheetUIStore } from '@/stores/sheetUIStore';
@@ -29,6 +30,8 @@ interface RowContextMenuProps {
   onInsertBelow: () => void;
   /** 레코드 상세 패널 열기 — 제공 시 메뉴 최상단에 표시 */
   onOpenDetail?: () => void;
+  /** 시뮬 진입점 — 시트 컬럼이 unit-mappable 일 때만 제공. 라벨은 "이 행으로 시뮬" / "선택한 N행으로 팀 시뮬". */
+  runSimulation?: { label: string; onClick: () => void } | null;
 }
 
 interface MenuItem {
@@ -55,6 +58,7 @@ export default function RowContextMenu({
   onInsertAbove,
   onInsertBelow,
   onOpenDetail,
+  runSimulation,
 }: RowContextMenuProps) {
   const t = useTranslations();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -106,6 +110,16 @@ export default function RowContextMenu({
             label: t('contextMenu.openRecordDetail'),
             icon: <Maximize2 className="w-4 h-4" />,
             onClick: onOpenDetail,
+            divider: true,
+          } as MenuItem,
+        ]
+      : []),
+    ...(runSimulation
+      ? [
+          {
+            label: runSimulation.label,
+            icon: <Swords className="w-4 h-4" />,
+            onClick: runSimulation.onClick,
             divider: true,
           } as MenuItem,
         ]
