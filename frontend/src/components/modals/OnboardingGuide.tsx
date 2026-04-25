@@ -194,15 +194,9 @@ const getToolsCategoriesData = (t: (key: string) => string) => [
 ];
 
 // Helper function to get tutorial steps with translations.
-// 'sample-select' step 은 첫 진입 시 별도로 표시되는 StarterPickerModal 이 대신 처리해 제거.
+// 'sample-select' step 은 첫 진입 시 자동 시드되는 starter pack 이 대체.
+// 'tools' step 은 사이드바/독바에 도구가 명확히 보이고 ? 단축키로 도움말 가능해 중복 제거.
 const getTutorialSteps = (t: (key: string) => string): TutorialStep[] => [
-  {
-    id: 'tools',
-    title: t('onboarding.steps.tools.title'),
-    description: t('onboarding.steps.tools.description'),
-    tip: t('onboarding.steps.tools.tip'),
-    isToolsStep: true,
-  },
   {
     id: 'survey',
     title: t('onboarding.steps.survey.title'),
