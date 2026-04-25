@@ -36,10 +36,14 @@ interface CellEditorProps {
   linkedDisplayColumnId?: string;
   /** link 타입 — 다중 선택 허용 */
   linkedMultiple?: boolean;
+  /** 슬래시 명령에서 row 인덱스 기반 명령(/seq) 활성화용. 없으면 미사용. */
+  rowIndex?: number;
+  /** 슬래시 명령에서 컬럼 type 변환 — 제공 시 /checkbox /select /date /number /text /link 명령 추가. */
+  onConvertColumn?: (newType: ColumnType) => void;
 }
 
 export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
-  ({ value, onChange, onKeyDown, onBlur, isFormula = false, position, cellStyle, columnType, selectOptions, linkedSheet, linkedDisplayColumnId, linkedMultiple }, ref) => {
+  ({ value, onChange, onKeyDown, onBlur, isFormula = false, position, cellStyle, columnType, selectOptions, linkedSheet, linkedDisplayColumnId, linkedMultiple, rowIndex, onConvertColumn }, ref) => {
     const internalInputRef = useRef<HTMLInputElement>(null);
 
     // 값이 변경될 때마다 커서가 보이도록 스크롤
@@ -222,6 +226,8 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
         baseStyle={baseStyle}
         position={position}
         isFormula={isFormula}
+        rowIndex={rowIndex}
+        onConvertColumn={onConvertColumn}
       />
     );
   }
@@ -291,6 +297,8 @@ function SmartInput({
   baseStyle,
   position,
   isFormula,
+  rowIndex,
+  onConvertColumn,
 }: {
   innerRef: (node: HTMLInputElement | null) => void;
   inputType: string;
@@ -301,7 +309,46 @@ function SmartInput({
   baseStyle: React.CSSProperties;
   position: { top: number; left: number; width: number; height: number };
   isFormula: boolean;
+  rowIndex?: number;
+  onConvertColumn?: (newType: ColumnType) => void;
 }) {
+  // 동적 SLASH 명령 — context 에 따라 추가 항목 (/seq, /checkbox 등)
+  const slashCommands = useMemo<SlashCommand[]>(() => {
+    const list: SlashCommand[] = [...SLASH_COMMANDS];
+    if (typeof rowIndex === 'number') {
+      list.push({
+        name: 'seq',
+        label: '행 번호',
+        hint: `${rowIndex + 1}`,
+        resolve: () => String(rowIndex + 1),
+      });
+    }
+    if (onConvertColumn) {
+      const convert = (target: ColumnType, label: string): SlashCommand => ({
+        name: target,
+        label: `컬럼 → ${label}`,
+        hint: '컬럼 type 변경',
+        resolve: () => {
+          // 다른 셀에 영향 — confirm 후 실행. resolve 가 셀 값을 반환하는 구조라
+          // 여기서 부수 효과(컬럼 변환) 처리 후 빈 값 반환해 슬래시 명령 자체는 셀 값을 비움.
+          if (typeof window !== 'undefined') {
+            const ok = window.confirm(`이 컬럼의 type 을 "${label}" 로 바꿉니다. 다른 행에도 영향을 줄 수 있어요. 계속할까요?`);
+            if (!ok) return value;
+          }
+          onConvertColumn(target);
+          return '';
+        },
+      });
+      list.push(convert('checkbox', '체크박스'));
+      list.push(convert('select', '선택지'));
+      list.push(convert('date', '날짜'));
+      list.push(convert('url', 'URL'));
+      list.push(convert('rating', '별점'));
+      list.push(convert('formula', '수식'));
+    }
+    return list;
+  }, [rowIndex, onConvertColumn, value]);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const [caretPos, setCaretPos] = useState<number | null>(null);
   const [acIndex, setAcIndex] = useState(0);
@@ -341,12 +388,12 @@ function SmartInput({
     const v = String(value ?? '');
     if (!v.startsWith('/')) return null;
     const q = v.slice(1).toLowerCase();
-    const matched = SLASH_COMMANDS.filter(
+    const matched = slashCommands.filter(
       (c) => q === '' || c.name.toLowerCase().includes(q) || c.label.toLowerCase().includes(q),
     );
     if (matched.length === 0) return null;
     return { items: matched };
-  }, [value, isFormula]);
+  }, [value, isFormula, slashCommands]);
   useEffect(() => {
     setSlashIndex(0);
   }, [slashState?.items.length]);
