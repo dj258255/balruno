@@ -319,6 +319,14 @@ export function useSimulationState() {
     }
   }, []);
 
+  // 팀 swap — team1 ↔ team2 일괄 교환 (자동 분배 후 사용자가 한 번에 뒤집기)
+  const swapTeams = useCallback(() => {
+    setTeam1Units((prev1) => {
+      setTeam2Units(prev1);
+      return team2Units;
+    });
+  }, [team2Units]);
+
   // 결과 초기화
   const resetResults = useCallback(() => {
     setResult(null);
@@ -419,6 +427,7 @@ export function useSimulationState() {
     addToTeam,
     removeFromTeam,
     updateTeamUnit,
+    swapTeams,
     resetResults,
   };
 }

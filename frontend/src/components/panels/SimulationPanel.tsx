@@ -8,6 +8,7 @@ import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import { useTranslations } from 'next-intl';
 import CustomSelect from '@/components/ui/CustomSelect';
 import type { SimulationResult, UnitStats } from '@/lib/simulation/types';
+import { commit1v1Result } from '@/lib/simulation/resultCommit';
 
 // 분리된 훅과 컴포넌트들
 import { useSimulationState } from './simulation/hooks';
@@ -108,6 +109,7 @@ export default function SimulationPanel({ onClose, showHelp: externalShowHelp, s
             onAddToTeam={state.addToTeam}
             onRemoveFromTeam={state.removeFromTeam}
             onOpenModal={state.setTeamUnitModal}
+            onSwapTeams={state.swapTeams}
           />
         )}
       </div>
@@ -212,12 +214,12 @@ function ModeSelector({ battleMode, setBattleMode, t }: ModeSelectorProps) {
 }
 
 /**
- * 시뮬 결과를 현재 시트에 행으로 commit. 컬럼명 매칭되면 그 셀, 아니면 fallback.
- * stat-snapshot 컬럼 있으면 JSON 으로 스냅샷 저장.
+ * 시뮬 결과를 현재 시트에 행으로 commit.
+ * commit 헬퍼는 lib/simulation/resultCommit 에 1v1/팀 통합 — 누락 컬럼 자동 추가까지.
  */
 function saveSimResultToCurrentSheet(result: SimulationResult, unit1: UnitStats, unit2: UnitStats) {
   const store = useProjectStore.getState();
-  const { currentProjectId, currentSheetId, projects, addRow } = store;
+  const { currentProjectId, currentSheetId, projects, addRow, addColumn } = store;
   if (!currentProjectId || !currentSheetId) {
     toast.error('저장할 시트를 먼저 선택하세요');
     return;
@@ -226,53 +228,28 @@ function saveSimResultToCurrentSheet(result: SimulationResult, unit1: UnitStats,
   const sheet = project?.sheets.find((s) => s.id === currentSheetId);
   if (!sheet) return;
 
-  const payload: Record<string, string | number> = {
-    timestamp: new Date().toISOString(),
-    unit1: unit1.name || 'Unit 1',
-    unit2: unit2.name || 'Unit 2',
-    winRate: Math.round((result.unit1WinRate ?? 0) * 100) / 100,
-    avgDuration: Math.round((result.avgDuration ?? 0) * 100) / 100,
-    totalRuns: result.totalRuns,
+  // addColumn 콜백: 누락된 metric 컬럼을 시트에 자동 추가하고 갱신된 컬럼 객체 반환.
+  const addColumnFn = (data: { name: string; type: import('@/types').ColumnType }) => {
+    const newColId = addColumn(currentProjectId, currentSheetId, { name: data.name, type: data.type });
+    if (!newColId) return null;
+    // store 가 갱신된 후 새 컬럼 lookup
+    const updated = useProjectStore
+      .getState()
+      .projects.find((p) => p.id === currentProjectId)
+      ?.sheets.find((s) => s.id === currentSheetId);
+    return updated?.columns.find((c) => c.id === newColId) ?? null;
   };
 
-  const matchCol = (...names: string[]) => {
-    const needles = names.map((n) => n.toLowerCase().replace(/\s/g, ''));
-    return sheet.columns.find((c) => {
-      const cn = c.name.toLowerCase().replace(/\s/g, '');
-      return needles.some((n) => cn === n || cn.includes(n));
-    });
-  };
-
-  const cells: Record<string, string | number> = {};
-  const tsCol = matchCol('timestamp', 'date', '일시', '날짜');
-  const u1Col = matchCol('unit1', 'attacker', '유닛1', '공격');
-  const u2Col = matchCol('unit2', 'defender', '유닛2', '방어');
-  const wrCol = matchCol('winrate', 'win', '승률');
-  const durCol = matchCol('duration', 'time', '시간', '소요');
-  const runsCol = matchCol('runs', 'iterations', 'samples', '반복');
-  const snapCol = sheet.columns.find((c) => c.type === 'stat-snapshot');
-
-  if (tsCol) cells[tsCol.id] = payload.timestamp;
-  if (u1Col) cells[u1Col.id] = payload.unit1;
-  if (u2Col) cells[u2Col.id] = payload.unit2;
-  if (wrCol) cells[wrCol.id] = payload.winRate;
-  if (durCol) cells[durCol.id] = payload.avgDuration;
-  if (runsCol) cells[runsCol.id] = payload.totalRuns;
-  if (snapCol) {
-    cells[snapCol.id] = JSON.stringify({
-      capturedAt: Date.now(),
-      sourceRowId: '',
-      stats: payload,
-      label: `${payload.unit1} vs ${payload.unit2}`,
-    });
-  }
-
-  if (Object.keys(cells).length === 0) {
-    const textCol = sheet.columns.find((c) => c.type === 'general');
-    if (textCol) cells[textCol.id] = `${payload.unit1} vs ${payload.unit2} · WR ${payload.winRate}%`;
-  }
-
-  const rowId = addRow(currentProjectId, currentSheetId, cells);
+  const rowId = commit1v1Result(
+    {
+      sheet,
+      addRow: (cells) => addRow(currentProjectId, currentSheetId, cells),
+      addColumn: addColumnFn,
+    },
+    result,
+    unit1,
+    unit2,
+  );
   if (rowId) {
     toast.success(`${sheet.name} 에 시뮬 결과 저장됨`);
   }
