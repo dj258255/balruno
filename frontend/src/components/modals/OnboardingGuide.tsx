@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useEscapeKey } from '@/hooks';
 import { SAMPLE_PROJECTS } from '@/data/sampleProjects';
@@ -668,14 +668,9 @@ export default function OnboardingGuide({ onClose }: OnboardingGuideProps) {
 
 // 온보딩 완료 여부 확인 훅
 export function useOnboardingStatus() {
+  // 자동 표시 X — starter pack 자동 시드 + StarterCoachmark 가 이미 첫 사용자 가이드 역할.
+  // 사용자가 사이드바/메뉴의 "도움말" 항목으로 명시 호출할 때만 표시 (resetOnboarding).
   const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
-    const completed = localStorage.getItem('balruno_onboarding_completed');
-    if (!completed) {
-      setShowOnboarding(true);
-    }
-  }, []);
 
   const resetOnboarding = () => {
     localStorage.removeItem('balruno_onboarding_completed');
