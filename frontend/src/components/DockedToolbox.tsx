@@ -375,6 +375,21 @@ function SingleToolHeader({ toolId, color }: { toolId: ToolId; color: string }) 
  * 인라인 도구 드롭다운 — Calculator 의 수식 선택 스타일 재사용.
  * glass-card 트리거(좌측 그룹색 accent) + glass-panel 드롭다운 + 외부 클릭 backdrop.
  */
+/** 장르 특화 시뮬 — 신규 사용자에게 한 번에 보이면 압도적이라 collapsible 로 분리. */
+const GENRE_TOOLS: Set<ToolId> = new Set([
+  'fpsSimulation',
+  'fpsTeamSimulation',
+  'deckSimulation',
+  'frameData',
+  'mobaLaning',
+  'rtsBuildOrder',
+  'mmoRaid',
+  'autoBattler',
+  'hordeSurvivor',
+]);
+
+const GENRE_EXPAND_KEY = 'balruno:tools-genre-expanded';
+
 function ToolDropdown({
   tools, current, color, onChange,
 }: {
@@ -385,6 +400,27 @@ function ToolDropdown({
 }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
+  const [genreExpanded, setGenreExpanded] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(GENRE_EXPAND_KEY) === '1';
+  });
+
+  // 사용자가 현재 장르 도구를 활성화한 상태면 자동 펼침
+  useEffect(() => {
+    if (GENRE_TOOLS.has(current) && !genreExpanded) setGenreExpanded(true);
+  }, [current, genreExpanded]);
+
+  const essentialTools = tools.filter((tid) => !GENRE_TOOLS.has(tid));
+  const genreTools = tools.filter((tid) => GENRE_TOOLS.has(tid));
+  const hasGenre = genreTools.length > 0;
+
+  const toggleGenre = () => {
+    const next = !genreExpanded;
+    setGenreExpanded(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(GENRE_EXPAND_KEY, next ? '1' : '0');
+    }
+  };
   const CurrentIcon = TOOL_ICONS[current];
   const currentLabel = t(TOOL_LABEL_KEYS[current] as 'sidebar.calculator');
   const currentDescription = t(TOOL_DESCRIPTIONS[current] as 'toolDesc.calculator');
@@ -438,53 +474,105 @@ function ToolDropdown({
             role="listbox"
             className="absolute left-0 right-0 top-full mt-1 glass-panel z-50 overflow-hidden p-1 max-h-[70vh] overflow-y-auto"
           >
-            {tools.map((tid) => {
-              const label = t(TOOL_LABEL_KEYS[tid] as 'sidebar.calculator');
-              const description = t(TOOL_DESCRIPTIONS[tid] as 'toolDesc.calculator');
-              const Icon = TOOL_ICONS[tid];
-              const isActive = tid === current;
-              return (
+            {essentialTools.map((tid) => (
+              <ToolOption
+                key={tid}
+                tid={tid}
+                isActive={tid === current}
+                color={color}
+                onClick={() => {
+                  onChange(tid);
+                  setOpen(false);
+                }}
+                t={t}
+              />
+            ))}
+            {hasGenre && (
+              <>
                 <button
-                  key={tid}
                   type="button"
-                  onClick={() => {
-                    onChange(tid);
-                    setOpen(false);
-                  }}
-                  role="option"
-                  aria-selected={isActive}
-                  className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
-                    isActive ? '' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                  }`}
-                  style={{ background: isActive ? `${color}15` : undefined }}
+                  onClick={toggleGenre}
+                  className="w-full flex items-center gap-2 px-3 py-2 mt-1 rounded-md text-caption font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                  style={{ color: 'var(--text-secondary)', borderTop: '1px solid var(--border-primary)' }}
+                  aria-expanded={genreExpanded}
                 >
-                  {Icon && (
-                    <Icon
-                      size={16}
-                      style={{ color: isActive ? color : 'var(--text-secondary)', flexShrink: 0, marginTop: 2 }}
-                      aria-hidden
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className="text-sm font-semibold truncate"
-                      style={{ color: isActive ? color : 'var(--text-primary)' }}
-                    >
-                      {label}
-                    </div>
-                    <div
-                      className="text-caption truncate mt-0.5"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {description}
-                    </div>
-                  </div>
+                  <ChevronDown
+                    className={`w-3 h-3 transition-transform ${genreExpanded ? '' : '-rotate-90'}`}
+                  />
+                  <span className="flex-1 text-left">장르 특화 ({genreTools.length})</span>
+                  <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                    FPS · MOBA · MMO 등
+                  </span>
                 </button>
-              );
-            })}
+                {genreExpanded &&
+                  genreTools.map((tid) => (
+                    <ToolOption
+                      key={tid}
+                      tid={tid}
+                      isActive={tid === current}
+                      color={color}
+                      onClick={() => {
+                        onChange(tid);
+                        setOpen(false);
+                      }}
+                      t={t}
+                    />
+                  ))}
+              </>
+            )}
           </div>
         </>
       )}
     </div>
+  );
+}
+
+/** 단일 도구 옵션 행 — ToolDropdown 의 essential/genre 두 곳에서 재사용. */
+function ToolOption({
+  tid,
+  isActive,
+  color,
+  onClick,
+  t,
+}: {
+  tid: ToolId;
+  isActive: boolean;
+  color: string;
+  onClick: () => void;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const label = t(TOOL_LABEL_KEYS[tid] as 'sidebar.calculator');
+  const description = t(TOOL_DESCRIPTIONS[tid] as 'toolDesc.calculator');
+  const Icon = TOOL_ICONS[tid];
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      role="option"
+      aria-selected={isActive}
+      className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+        isActive ? '' : 'hover:bg-black/5 dark:hover:bg-white/5'
+      }`}
+      style={{ background: isActive ? `${color}15` : undefined }}
+    >
+      {Icon && (
+        <Icon
+          size={16}
+          style={{ color: isActive ? color : 'var(--text-secondary)', flexShrink: 0, marginTop: 2 }}
+          aria-hidden
+        />
+      )}
+      <div className="flex-1 min-w-0">
+        <div
+          className="text-sm font-semibold truncate"
+          style={{ color: isActive ? color : 'var(--text-primary)' }}
+        >
+          {label}
+        </div>
+        <div className="text-caption truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+          {description}
+        </div>
+      </div>
+    </button>
   );
 }

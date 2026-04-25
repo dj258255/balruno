@@ -155,9 +155,11 @@ export default function Home() {
   const [showImportModal, setShowImportModal] = useState(false);
   const { showOnboarding, setShowOnboarding } = useOnboardingStatus();
 
-  // ProductIntro 최초 자동 노출 — persona 선택 끝났고 아직 intro 본 적 없을 때
+  // ProductIntro 최초 자동 노출 — persona 선택 끝났고 아직 intro 본 적 없을 때.
+  // starter seed 사용자에겐 모달 자동 표시 skip (튜토리얼 시트 + Welcome doc 이 그 역할 대신).
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (window.localStorage.getItem('balruno:starter-seeded') === '1') return;
     const personaRaw = window.localStorage.getItem('balruno:persona');
     const hasPersona = (() => {
       try { return personaRaw ? JSON.parse(personaRaw).state?.hasChosen === true : false; } catch { return false; }
@@ -246,8 +248,15 @@ export default function Home() {
             createProject('튜토리얼', undefined, { seedStarter: true });
             if (typeof window !== 'undefined') {
               localStorage.setItem(seededKey, '1');
-              // starter 시드 사용자에겐 OnboardingGuide 모달 자동 skip — starter 시트가 그 역할 대신
+              // starter 시드 사용자에겐 onboarding/persona/intro 모달 모두 자동 skip
+              // — 튜토리얼 시트 + Welcome doc 이 첫 사용자 가이드 역할 대신함.
               localStorage.setItem('balruno_onboarding_completed', 'starter-seed');
+              try {
+                const { usePersona } = await import('@/stores/personaStore');
+                usePersona.getState().dismissModal();
+              } catch {
+                // ignore
+              }
             }
           }
         }
