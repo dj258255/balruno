@@ -396,7 +396,7 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
 
           {/* 검색 tip */}
           <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-            💡 <strong>fuzzy 검색</strong> (순서 불연속 매칭 OK) · <code>&gt;카테고리 키워드</code> 로 카테고리 강제 (예: <code>&gt;combat hp</code>)
+            <strong>fuzzy 검색</strong> (순서 불연속 매칭 OK) · <code>&gt;카테고리 키워드</code> 로 카테고리 강제 (예: <code>&gt;combat hp</code>)
           </p>
 
           {/* 카테고리 탭 + 즐겨찾기/최근 */}

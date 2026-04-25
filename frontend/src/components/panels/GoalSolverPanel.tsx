@@ -442,7 +442,7 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                             </div>
                           </div>
                           <div className="rounded-lg p-2.5 text-caption" style={{ background: 'var(--bg-primary)' }}>
-                            <div className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>💡 제안</div>
+                            <div className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>제안</div>
                             <ul className="list-disc list-inside space-y-0.5" style={{ color: 'var(--text-secondary)' }}>
                               <li>목표값을 조금 완화해보세요 (예: ±20%)</li>
                               <li>다른 파라미터 (예: baseline) 를 먼저 조정</li>
