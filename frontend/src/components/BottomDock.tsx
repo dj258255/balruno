@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { TOOL_GROUPS, type ToolGroupId, type ToolId } from '@/config/toolGroups';
 import { useToolLayoutStore } from '@/stores/toolLayoutStore';
+import { ChevronRight, Check } from 'lucide-react';
 
 const GROUP_ICONS: Record<ToolGroupId, LucideIcon> = {
   build: Hammer,
@@ -70,12 +71,57 @@ function calculateAdjacentScale(idx: number, hovered: number | null): number {
 
 const DOCK_HINT_KEY = 'balruno:dock-hint-seen';
 
+/** 그룹별 사용법 단계 — 도크의 해당 그룹을 pulse 강조 + 카드에 설명 */
+interface DockHintStep {
+  groupId: ToolGroupId | null; // null = intro (전체 안내)
+  title: string;
+  body: string;
+}
+const DOCK_HINT_STEPS: DockHintStep[] = [
+  {
+    groupId: null,
+    title: '여기가 도구 모음이에요',
+    body: '6 그룹으로 묶여 있어요. 한 번에 한 그룹만 활성. 각 그룹마다 어떤 도구가 있는지 한 번씩 둘러볼게요.',
+  },
+  {
+    groupId: 'build',
+    title: '만들기',
+    body: '데이터를 처음 설계할 때 — 수식 헬퍼 (90+ 함수 카탈로그), 엔티티 정의 (1-200렙 자동 생성), 계산기, 목표 역산 등.',
+  },
+  {
+    groupId: 'check',
+    title: '점검',
+    body: '데이터 입력 후 균형 확인 — 밸런스 분석, 불균형 감지, 민감도, 매치업 매트릭스, AI Playtest.',
+  },
+  {
+    groupId: 'simulate',
+    title: '시뮬',
+    body: '실제 게임 상황 시뮬레이션 — 1v1/팀 전투, FPS, MOBA 라이닝, 가챠, 경제 설계 (수익/지출 + 자원 흐름).',
+  },
+  {
+    groupId: 'compare',
+    title: '비교',
+    body: '여러 엔티티/시트 시각 비교 — 레이더 차트, 성장 곡선 라인, 곡선 피팅 (회귀).',
+  },
+  {
+    groupId: 'auto',
+    title: '자동',
+    body: 'AI 가 대신 — Auto-Balancer (자동 밸런싱), Automations (트리거-액션), AI Behavior (행동 규칙).',
+  },
+  {
+    groupId: 'share',
+    title: '공유',
+    body: '협업과 이력 — Comments, 변경 히스토리, 스냅샷 비교, 인터페이스 디자이너.',
+  },
+];
+
 export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
   const t = useTranslations();
   const sidebarWidth = useToolLayoutStore((s) => s.sidebarWidth);
   const [mounted, setMounted] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [hintStep, setHintStep] = useState(0);
   const visibleGroups = TOOL_GROUPS;
 
   useEffect(() => {
@@ -91,6 +137,13 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
     setShowHint(false);
     if (typeof window !== 'undefined') window.localStorage.setItem(DOCK_HINT_KEY, '1');
   };
+
+  const nextHintStep = () => {
+    if (hintStep < DOCK_HINT_STEPS.length - 1) setHintStep(hintStep + 1);
+    else dismissHint();
+  };
+
+  const currentHintGroupId = showHint ? DOCK_HINT_STEPS[hintStep].groupId : null;
 
   const isMobile = useIsMobile();
   const leftOffset = isMobile ? 0 : mounted ? sidebarWidth : 256;
@@ -125,52 +178,101 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
       className="fixed bottom-3 z-[45] flex items-end justify-center pointer-events-none"
       style={{ left: `${leftOffset}px`, right: 0, paddingTop: 32 }}
     >
-      {/* 첫 사용자 hint — 독바 위에 떠 있는 풍선. 1회 표시. */}
-      {showHint && !isModalOpen && (
-        <div
-          className="absolute bottom-full mb-3 max-w-[calc(100vw-2rem)] w-[420px] rounded-xl shadow-2xl border pointer-events-auto animate-slideUp"
-          style={{
-            background: 'var(--bg-primary)',
-            borderColor: 'var(--accent)',
-          }}
-          role="dialog"
-          aria-label="하단 도구바 안내"
-        >
-          <div className="flex items-start gap-2 p-3">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: 'var(--accent)15', color: 'var(--accent)' }}
-            >
-              <Hammer className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                여기가 도구 모음이에요
-              </div>
-              <p className="text-caption mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                6 그룹 — <span style={{ color: 'var(--text-primary)' }}>만들기 · 점검 · 시뮬 · 비교 · 자동 · 공유</span>. 아이콘을 클릭하면 우측에 도구 패널이 열려요. 한 번에 한 그룹만 활성.
-              </p>
-              <div className="text-caption mt-1.5" style={{ color: 'var(--text-tertiary)' }}>
-                팁: <code style={{ color: 'var(--accent)' }}>⌘K</code> 로 모든 도구 빠른 검색.
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={dismissHint}
-              className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors shrink-0"
-              aria-label="안내 닫기"
-            >
-              <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
-            </button>
-          </div>
-          {/* 아래쪽 꼬리 — 도크 가리키는 삼각형 */}
+      {/* 첫 사용자 hint — 도크 위 floating card + 단계별 그룹 pulse 강조 */}
+      {showHint && !isModalOpen && (() => {
+        const cur = DOCK_HINT_STEPS[hintStep];
+        const StepIcon = cur.groupId ? GROUP_ICONS[cur.groupId] : Hammer;
+        const stepGroup = cur.groupId ? TOOL_GROUPS.find((g) => g.id === cur.groupId) : null;
+        const accentColor = stepGroup?.color ?? 'var(--accent)';
+        const isLast = hintStep === DOCK_HINT_STEPS.length - 1;
+        return (
           <div
-            className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-3 h-3 rotate-45 border-r border-b"
-            style={{ background: 'var(--bg-primary)', borderColor: 'var(--accent)' }}
-            aria-hidden
-          />
-        </div>
-      )}
+            className="absolute bottom-full mb-3 max-w-[calc(100vw-2rem)] w-[440px] rounded-xl shadow-2xl border pointer-events-auto animate-slideUp"
+            style={{
+              background: 'var(--bg-primary)',
+              borderColor: accentColor,
+            }}
+            role="dialog"
+            aria-label="하단 도구바 안내"
+          >
+            {/* Progress bar */}
+            <div className="h-1" style={{ background: 'var(--bg-tertiary)' }}>
+              <div
+                className="h-full transition-all duration-300"
+                style={{
+                  width: `${((hintStep + 1) / DOCK_HINT_STEPS.length) * 100}%`,
+                  background: accentColor,
+                }}
+              />
+            </div>
+            <div className="flex items-start gap-2 p-3">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: `${accentColor}20`, color: accentColor }}
+              >
+                <StepIcon className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    {cur.title}
+                  </div>
+                  <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                    {hintStep + 1} / {DOCK_HINT_STEPS.length}
+                  </span>
+                </div>
+                <p className="text-caption mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                  {cur.body}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={dismissHint}
+                className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors shrink-0"
+                aria-label="안내 닫기"
+              >
+                <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+              </button>
+            </div>
+            <div
+              className="flex items-center justify-between p-2 border-t"
+              style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}
+            >
+              <button
+                type="button"
+                onClick={() => hintStep > 0 && setHintStep(hintStep - 1)}
+                disabled={hintStep === 0}
+                className="text-caption px-2 py-1 rounded transition-colors disabled:opacity-30 hover:bg-[var(--bg-hover)]"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                이전
+              </button>
+              <button
+                type="button"
+                onClick={nextHintStep}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"
+                style={{ background: accentColor, color: 'white' }}
+              >
+                {isLast ? (
+                  <>
+                    <Check className="w-3 h-3" /> 완료
+                  </>
+                ) : (
+                  <>
+                    다음 <ChevronRight className="w-3 h-3" />
+                  </>
+                )}
+              </button>
+            </div>
+            {/* 아래쪽 꼬리 — 도크 가리키는 삼각형 */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-3 h-3 rotate-45 border-r border-b"
+              style={{ background: 'var(--bg-secondary)', borderColor: accentColor }}
+              aria-hidden
+            />
+          </div>
+        );
+      })()}
 
       <div className="liquid-glass-dock flex items-center gap-1 px-2 py-1.5 pointer-events-auto transition-all duration-200 max-w-[92vw] overflow-x-auto touch-pan-x">
         {/* AI 로 시작 — 상시 접근 Quick Action */}
@@ -219,6 +321,7 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
           const isActive = group.tools.some((tid) => panels[tid].show);
           const isHovered = hoveredIdx === idx;
           const scale = calculateAdjacentScale(idx, hoveredIdx);
+          const isHinted = currentHintGroupId === group.id;
           return (
             <div
               key={group.id}
@@ -233,10 +336,12 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
                 aria-pressed={isActive}
                 onClick={() => handleGroupClick(group.id)}
                 style={{
-                  transform: `scale(${scale}) translateY(${isHovered ? -8 : 0}px)`,
-                  zIndex: isHovered ? 100 : 1,
+                  transform: `scale(${isHinted ? Math.max(scale, 1.2) : scale}) translateY(${isHovered || isHinted ? -8 : 0}px)`,
+                  zIndex: isHovered || isHinted ? 100 : 1,
                   transition:
-                    'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease',
+                    'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, box-shadow 0.2s ease',
+                  boxShadow: isHinted ? `0 0 0 3px ${group.color}, 0 0 16px ${group.color}80` : undefined,
+                  borderRadius: isHinted ? 12 : undefined,
                 }}
               >
                 <Icon
