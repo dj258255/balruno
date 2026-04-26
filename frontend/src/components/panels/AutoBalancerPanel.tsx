@@ -13,6 +13,7 @@ import { autoBalance, type AutoBalanceResult, type BalanceParam, type BalanceTar
 import type { UnitStats } from '@/lib/simulation/types';
 import ProgressBar from '@/components/ui/ProgressBar';
 import PanelShell from '@/components/ui/PanelShell';
+import ToolPanelHint from '@/components/onboarding/ToolPanelHint';
 
 interface Props {
   onClose: () => void;
@@ -107,6 +108,10 @@ export default function AutoBalancerPanel({ onClose }: Props) {
       onClose={onClose}
     >
       <div className="space-y-4">
+        <ToolPanelHint toolId="autoBalancer" title="AI Auto-Balancer — 목표 승률 자동 매칭" accentColor="#f43f5e">
+          <p>두 유닛 + 목표 승률 (예: <strong>55%</strong>) 입력 → 한 파라미터 (HP/공격력/방어력 중 선택) 의 추천값을 시뮬로 자동 찾음.</p>
+          <p>"이 캐릭터가 너무 셈, 공격력 얼마면 50:50 될까?" 같은 질문에 1-2초 안에 답.</p>
+        </ToolPanelHint>
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
           두 유닛 스탯과 목표 승률을 입력하면, bisection 시뮬로 한 파라미터의 추천값을 찾습니다.
         </p>

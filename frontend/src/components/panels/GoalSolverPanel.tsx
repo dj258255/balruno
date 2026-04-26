@@ -5,6 +5,7 @@ import { X, Target, Calculator, AlertTriangle, Check, Copy, ChevronDown, HelpCir
 import { solve, SOLVER_FORMULAS, verifyAndAnalyzeSensitivity, findAlternativeSolutions, solveGeneric, calculateStatWeights, solvePareto, solveMonteCarlo, type SolverFormula, type GenericSolverResult, type MCSolverResult } from '@/lib/goalSolver';
 import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip as RTooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
+import ToolPanelHint from '@/components/onboarding/ToolPanelHint';
 import { useTranslations } from 'next-intl';
 import { useCalculatorStore } from '@/stores/calculatorStore';
 import { useGoalSolverHistory } from '@/stores/goalSolverHistoryStore';
@@ -169,6 +170,10 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
       <style>{hideSpinnerStyle}</style>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-2">
+        <ToolPanelHint toolId="goal" title="목표 역산 — 결과에서 입력 찾기" accentColor="#06b6d4">
+          <p>"<strong>DPS 100 만들려면 공격력 얼마?</strong>" 같은 역방향 계산. bisection (이분법) 알고리즘으로 자동.</p>
+          <p>수식 + 목표값 + 변경할 변수 선택 → 답이 나옴. 시트의 셀 값을 그대로 가져오는 옵션도.</p>
+        </ToolPanelHint>
         {/* 도움말 패널 */}
         {showHelp && (
           <div className="mb-4 glass-card p-4 rounded-lg animate-slideDown">

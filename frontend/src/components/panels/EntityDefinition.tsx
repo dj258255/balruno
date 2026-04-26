@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Users, TrendingUp, Settings, Table2, Sliders, Check } from 'lucide-react';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
+import ToolPanelHint from '@/components/onboarding/ToolPanelHint';
 import EmptyState from '@/components/ui/EmptyState';
 
 import { useEntityDefinition } from './entity-definition/hooks/useEntityDefinition';
@@ -177,6 +178,11 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
       }
     >
       <style>{hideSpinnerStyle}</style>
+
+      <ToolPanelHint toolId="entityDefinition" title="엔티티 정의 — 1-200렙 자동 생성" accentColor="#06b6d4">
+        <p>"<strong>전사 1렙 hp 100, 200렙 hp 30000</strong>" 만 입력 → 1-200렙 행이 곡선 (선형/지수/로그) 따라 자동 생성된 시트가 만들어져요.</p>
+        <p>RPG/Idle 처럼 레벨별 데이터가 많은 게임에 핵심. 한 번 만들면 base/rate 만 바꿔도 200줄 다시 계산.</p>
+      </ToolPanelHint>
 
       {showHelp && <HelpPanel />}
 

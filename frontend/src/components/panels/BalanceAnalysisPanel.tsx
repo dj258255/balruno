@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { GitBranch, TrendingUp, BarChart2, AlertTriangle, Target, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
+import ToolPanelHint from '@/components/onboarding/ToolPanelHint';
 import SheetSelector from './SheetSelector';
 
 // 커스텀 스크롤바 스타일
@@ -105,6 +106,13 @@ export default function BalanceAnalysisPanel({
       actions={<HelpToggle active={showHelpVal} onToggle={() => setShowHelpVal(!showHelpVal)} color="#7c7ff2" />}
     >
       <style>{customScrollStyle}</style>
+
+      <div className="px-4 pt-3">
+        <ToolPanelHint toolId="balanceAnalysis" title="밸런스 분석 — 한눈에 점검" accentColor="#ec4899">
+          <p>현재 시트의 캐릭터/유닛/무기를 모아 <strong>매치업 매트릭스 · 파워 커브 · 상관관계 · 데드존</strong> 한 번에.</p>
+          <p>매트릭스 셀 클릭 → 그 매치업 1v1 시뮬 결과. 데드존은 "아무도 안 쓰는" 옵션을 자동 탐지.</p>
+        </ToolPanelHint>
+      </div>
 
       {/* 전체화면 모달 */}
       {showMatrixModal && matchupResult && (
