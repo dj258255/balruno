@@ -23,6 +23,7 @@ import {
   Bot,
   Share2,
   Wand2,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import { TOOL_GROUPS, type ToolGroupId, type ToolId } from '@/config/toolGroups';
@@ -67,22 +68,37 @@ function calculateAdjacentScale(idx: number, hovered: number | null): number {
   return 1;
 }
 
+const DOCK_HINT_KEY = 'balruno:dock-hint-seen';
+
 export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
   const t = useTranslations();
   const sidebarWidth = useToolLayoutStore((s) => s.sidebarWidth);
   const [mounted, setMounted] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [showHint, setShowHint] = useState(false);
   const visibleGroups = TOOL_GROUPS;
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== 'undefined' && !window.localStorage.getItem(DOCK_HINT_KEY)) {
+      // 첫 진입 시 약간 늦게 (1.5s) — 다른 UI 가 자리잡은 후 자연스럽게 등장
+      const t = setTimeout(() => setShowHint(true), 1500);
+      return () => clearTimeout(t);
+    }
   }, []);
+
+  const dismissHint = () => {
+    setShowHint(false);
+    if (typeof window !== 'undefined') window.localStorage.setItem(DOCK_HINT_KEY, '1');
+  };
 
   const isMobile = useIsMobile();
   const leftOffset = isMobile ? 0 : mounted ? sidebarWidth : 256;
 
   const handleGroupClick = (groupId: ToolGroupId) => {
     if (isModalOpen) return;
+    // 첫 그룹 클릭 시 hint 자동 dismiss
+    if (showHint) dismissHint();
     const group = TOOL_GROUPS.find((g) => g.id === groupId);
     if (!group) return;
     const anyOpen = group.tools.some((tid) => panels[tid].show);
@@ -109,6 +125,53 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
       className="fixed bottom-3 z-[45] flex items-end justify-center pointer-events-none"
       style={{ left: `${leftOffset}px`, right: 0, paddingTop: 32 }}
     >
+      {/* 첫 사용자 hint — 독바 위에 떠 있는 풍선. 1회 표시. */}
+      {showHint && !isModalOpen && (
+        <div
+          className="absolute bottom-full mb-3 max-w-[calc(100vw-2rem)] w-[420px] rounded-xl shadow-2xl border pointer-events-auto animate-slideUp"
+          style={{
+            background: 'var(--bg-primary)',
+            borderColor: 'var(--accent)',
+          }}
+          role="dialog"
+          aria-label="하단 도구바 안내"
+        >
+          <div className="flex items-start gap-2 p-3">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: 'var(--accent)15', color: 'var(--accent)' }}
+            >
+              <Hammer className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                여기가 도구 모음이에요
+              </div>
+              <p className="text-caption mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                6 그룹 — <span style={{ color: 'var(--text-primary)' }}>만들기 · 점검 · 시뮬 · 비교 · 자동 · 공유</span>. 아이콘을 클릭하면 우측에 도구 패널이 열려요. 한 번에 한 그룹만 활성.
+              </p>
+              <div className="text-caption mt-1.5" style={{ color: 'var(--text-tertiary)' }}>
+                팁: <code style={{ color: 'var(--accent)' }}>⌘K</code> 로 모든 도구 빠른 검색.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={dismissHint}
+              className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors shrink-0"
+              aria-label="안내 닫기"
+            >
+              <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+            </button>
+          </div>
+          {/* 아래쪽 꼬리 — 도크 가리키는 삼각형 */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-3 h-3 rotate-45 border-r border-b"
+            style={{ background: 'var(--bg-primary)', borderColor: 'var(--accent)' }}
+            aria-hidden
+          />
+        </div>
+      )}
+
       <div className="liquid-glass-dock flex items-center gap-1 px-2 py-1.5 pointer-events-auto transition-all duration-200 max-w-[92vw] overflow-x-auto touch-pan-x">
         {/* AI 로 시작 — 상시 접근 Quick Action */}
         <div
