@@ -26,6 +26,7 @@ import { convertExcelToBalruno, looksLikeExcel } from '@/lib/formulaConverter';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
+import ToolPanelHint from '@/components/onboarding/ToolPanelHint';
 
 // 카테고리 정의 — 기본 10개 + 확장 모드 4개 (Formualizer 엔진 필요)
 const CATEGORY_IDS = [
@@ -258,6 +259,10 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
       actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color="#8b5cf6" />}
     >
       <div className="p-4 space-y-5 overflow-y-auto overflow-x-hidden flex-1 scrollbar-slim">
+        <ToolPanelHint toolId="formulaHelper" title="수식 헬퍼 — 함수 카탈로그" accentColor="#06b6d4">
+          <p>Excel 320+ 함수 + <strong>게임 특화 70+</strong> (DAMAGE, DPS, SCALE, TTK 등). 검색창에 fuzzy 매칭 — "<code>dam</code>" 만 쳐도 DAMAGE 가 나옴.</p>
+          <p>각 함수 카드의 "예제 복사" 로 바로 시트 셀에 붙여넣기. 시트 셀에 <code>=</code> 입력 시 자동완성 popover 도 활성.</p>
+        </ToolPanelHint>
         {/* 도움말 섹션 */}
         {showHelp && (
           <div className="glass-card p-4 animate-slideDown space-y-4">

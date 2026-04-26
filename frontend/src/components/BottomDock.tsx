@@ -187,28 +187,18 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
         const isLast = hintStep === DOCK_HINT_STEPS.length - 1;
         return (
           <div
-            className="absolute bottom-full mb-3 max-w-[calc(100vw-2rem)] w-[440px] rounded-xl shadow-2xl border pointer-events-auto animate-slideUp"
+            className="absolute bottom-full mb-3 max-w-[calc(100vw-2rem)] w-[440px] rounded-xl shadow-2xl pointer-events-auto animate-slideUp overflow-hidden"
             style={{
               background: 'var(--bg-primary)',
-              borderColor: accentColor,
+              border: `1.5px solid ${accentColor}`,
             }}
             role="dialog"
             aria-label="하단 도구바 안내"
           >
-            {/* Progress bar */}
-            <div className="h-1" style={{ background: 'var(--bg-tertiary)' }}>
+            <div className="flex items-start gap-3 p-4">
               <div
-                className="h-full transition-all duration-300"
-                style={{
-                  width: `${((hintStep + 1) / DOCK_HINT_STEPS.length) * 100}%`,
-                  background: accentColor,
-                }}
-              />
-            </div>
-            <div className="flex items-start gap-2 p-3">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: `${accentColor}20`, color: accentColor }}
+                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: `${accentColor}1a`, color: accentColor }}
               >
                 <StepIcon className="w-4 h-4" />
               </div>
@@ -217,27 +207,28 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
                   <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                     {cur.title}
                   </div>
-                  <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                  <span
+                    className="text-caption px-1.5 py-0.5 rounded"
+                    style={{ background: `${accentColor}15`, color: accentColor }}
+                  >
                     {hintStep + 1} / {DOCK_HINT_STEPS.length}
                   </span>
                 </div>
-                <p className="text-caption mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-sm mt-1 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                   {cur.body}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={dismissHint}
-                className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors shrink-0"
+                className="p-1 -mt-1 -mr-1 rounded hover:bg-[var(--bg-hover)] transition-colors shrink-0"
                 aria-label="안내 닫기"
               >
                 <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
               </button>
             </div>
-            <div
-              className="flex items-center justify-between p-2 border-t"
-              style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}
-            >
+            {/* Footer — 점 indicator + 이전/다음. 카드 본체와 동일 배경으로 모서리 끊김 방지 */}
+            <div className="flex items-center justify-between gap-2 px-4 pb-3">
               <button
                 type="button"
                 onClick={() => hintStep > 0 && setHintStep(hintStep - 1)}
@@ -247,6 +238,23 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
               >
                 이전
               </button>
+              {/* 단계 점 indicator — 7 dots */}
+              <div className="flex items-center gap-1.5">
+                {DOCK_HINT_STEPS.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setHintStep(i)}
+                    className="rounded-full transition-all"
+                    style={{
+                      width: i === hintStep ? 14 : 6,
+                      height: 6,
+                      background: i <= hintStep ? accentColor : 'var(--border-primary)',
+                    }}
+                    aria-label={`${i + 1} 단계로`}
+                  />
+                ))}
+              </div>
               <button
                 type="button"
                 onClick={nextHintStep}
@@ -264,10 +272,14 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
                 )}
               </button>
             </div>
-            {/* 아래쪽 꼬리 — 도크 가리키는 삼각형 */}
+            {/* 아래쪽 꼬리 — 도크 가리키는 삼각형. border 와 배경 매끄럽게 */}
             <div
-              className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-3 h-3 rotate-45 border-r border-b"
-              style={{ background: 'var(--bg-secondary)', borderColor: accentColor }}
+              className="absolute left-1/2 -translate-x-1/2 -bottom-[7px] w-3 h-3 rotate-45"
+              style={{
+                background: 'var(--bg-primary)',
+                borderRight: `1.5px solid ${accentColor}`,
+                borderBottom: `1.5px solid ${accentColor}`,
+              }}
               aria-hidden
             />
           </div>

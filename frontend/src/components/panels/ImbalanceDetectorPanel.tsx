@@ -22,6 +22,7 @@ import { detectImbalances, getSeverityColor, type ImbalanceIssue, type Severity,
 import { reviewBalance } from '@/lib/balanceReview';
 import { Sparkles } from 'lucide-react';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
+import ToolPanelHint from '@/components/onboarding/ToolPanelHint';
 import { useTranslations } from 'next-intl';
 import SheetSelector from './SheetSelector';
 
@@ -138,6 +139,10 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
       actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color={PANEL_COLOR} />}
     >
       <>
+        <ToolPanelHint toolId="imbalance" title="이상치 탐지 — 평균에서 너무 벗어난 행" accentColor="#ec4899">
+          <p>시트의 수치 컬럼을 자동 스캔 → <strong>Z-score</strong> 로 평균에서 ±2σ 이상 벗어난 행을 빨강으로 표시.</p>
+          <p>OP/UP 캐릭터 1차 검출에 유용. 특정 컬럼만 검사하려면 위에서 컬럼 선택.</p>
+        </ToolPanelHint>
         {/* 프로젝트/시트 선택 */}
         <SheetSelector
           selectedProjectId={selectedProjectId}

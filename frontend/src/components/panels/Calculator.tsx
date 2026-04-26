@@ -9,6 +9,7 @@ import { useProjectStore } from '@/stores/projectStore';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useEscapeKey } from '@/hooks';
 import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
+import ToolPanelHint from '@/components/onboarding/ToolPanelHint';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { useCalculatorStore } from '@/stores/calculatorStore';
 import { bisect } from '@/lib/bisection';
@@ -607,6 +608,12 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
         bodyClassName="p-0 flex flex-col overflow-hidden"
         actions={setShowHelp ? <HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color={PANEL_COLOR} /> : undefined}
       >
+        <div className="px-4 pt-3">
+          <ToolPanelHint toolId="calculator" title="계산기 — 수식 즉시 계산" accentColor="#06b6d4">
+            <p>입력한 수치로 <strong>DPS / TTK / EHP</strong> 같은 게임 핵심 지표를 한눈에. 시트의 셀 값을 그대로 가져오는 옵션도 있어요.</p>
+            <p>좌측 상단에서 다른 수식 선택. 우측 "Goal Seek" 토글로 목표값 → 입력값 역산도 가능.</p>
+          </ToolPanelHint>
+        </div>
         {body}
       </PanelShell>
     );
