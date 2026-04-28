@@ -9,6 +9,7 @@
  */
 
 import { useState, useMemo, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 
 // 곡선 타입 정의
 export type CurveType = 'linear' | 'exponential' | 'logarithmic' | 'sigmoid' | 'sawtooth';
@@ -20,28 +21,28 @@ export const CURVE_TYPES: Record<CurveType, {
   formula: string;
 }> = {
   linear: {
-    name: '선형 (Linear)',
-    description: '일정한 난이도 증가. 예측 가능한 진행.',
+    name: 'Linear',
+    description: 'Constant growth. Predictable progression.',
     formula: 'f(x) = base + rate × x',
   },
   exponential: {
-    name: '지수 (Exponential)',
-    description: '초반 완만, 후반 급격한 상승. RPG/방치형 게임.',
+    name: 'Exponential',
+    description: 'Slow early, sharp late. RPG / idle games.',
     formula: 'f(x) = base × rate^x',
   },
   logarithmic: {
-    name: '로그 (Logarithmic)',
-    description: '초반 급격, 후반 완만한 상승. 숙련도 기반 게임.',
+    name: 'Logarithmic',
+    description: 'Sharp early, eased late. Skill-based games.',
     formula: 'f(x) = base + rate × log(x)',
   },
   sigmoid: {
-    name: '시그모이드 (S-Curve)',
-    description: 'S자 곡선. 초반/후반 완만, 중반 급격. 스토리 게임.',
+    name: 'S-Curve',
+    description: 'S-shaped. Eased early/late, sharp middle. Story games.',
     formula: 'f(x) = x^λ / (x^λ + σ^λ)',
   },
   sawtooth: {
-    name: '톱니 (Sawtooth)',
-    description: '주기적으로 상승 후 하락. 새 메카닉 도입 시 사용.',
+    name: 'Sawtooth',
+    description: 'Periodic rise and reset. New-mechanic introduction.',
     formula: 'f(x) = base + (x mod period) × rate',
   },
 };
@@ -81,26 +82,26 @@ export const WALL_TYPES: Record<WallType, {
   defaultStuckTime: number;
 }> = {
   boss: {
-    name: '보스 벽',
-    description: '강력한 보스 등장. 패턴 학습 필요.',
+    name: 'Boss wall',
+    description: 'Powerful boss. Requires pattern learning.',
     defaultIntensity: 1.8,
     defaultStuckTime: 2,
   },
   gear: {
-    name: '장비 벽',
-    description: '장비 강화/수집 필요. 파밍 구간.',
+    name: 'Gear wall',
+    description: 'Gear upgrades / drops needed. Farming gate.',
     defaultIntensity: 1.5,
     defaultStuckTime: 4,
   },
   level: {
-    name: '레벨 벽',
-    description: '레벨업 필요. 경험치 파밍.',
+    name: 'Level wall',
+    description: 'Level up needed. XP grind.',
     defaultIntensity: 1.3,
     defaultStuckTime: 3,
   },
   time: {
-    name: '시간 벽',
-    description: '소프트 게이트. 일정 시간 대기.',
+    name: 'Time wall',
+    description: 'Soft gate. Wait period.',
     defaultIntensity: 1.2,
     defaultStuckTime: 24,
   },
@@ -136,22 +137,22 @@ export interface MilestoneData {
 // 기본 난이도 곡선 프리셋
 export const CURVE_PRESETS = {
   casual: {
-    name: '캐주얼',
-    description: '느린 난이도 상승, 벽 적음',
+    name: 'Casual',
+    description: 'Slow growth, few walls',
     playerGrowth: 1.12,
     enemyGrowth: 1.08,
     wallInterval: 50,
   },
   balanced: {
-    name: '밸런스',
-    description: '적당한 난이도, 10스테이지마다 벽',
+    name: 'Balanced',
+    description: 'Moderate, walls every 10 stages',
     playerGrowth: 1.10,
     enemyGrowth: 1.10,
     wallInterval: 10,
   },
   hardcore: {
-    name: '하드코어',
-    description: '빠른 난이도 상승, 잦은 벽',
+    name: 'Hardcore',
+    description: 'Fast growth, frequent walls',
     playerGrowth: 1.08,
     enemyGrowth: 1.12,
     wallInterval: 5,
@@ -160,10 +161,10 @@ export const CURVE_PRESETS = {
 
 // 플레이타임 목표
 export const PLAYTIME_TARGETS = {
-  '30min': { name: '30분/일', stagesPerDay: 10, wallInterval: 5, targetDaysPerWall: 1 },
-  '1hr': { name: '1시간/일', stagesPerDay: 20, wallInterval: 10, targetDaysPerWall: 1 },
-  '2hr': { name: '2시간/일', stagesPerDay: 40, wallInterval: 20, targetDaysPerWall: 1 },
-  '4hr': { name: '4시간/일', stagesPerDay: 80, wallInterval: 40, targetDaysPerWall: 1 },
+  '30min': { name: '30 min/day', stagesPerDay: 10, wallInterval: 5, targetDaysPerWall: 1 },
+  '1hr': { name: '1 hr/day', stagesPerDay: 20, wallInterval: 10, targetDaysPerWall: 1 },
+  '2hr': { name: '2 hr/day', stagesPerDay: 40, wallInterval: 20, targetDaysPerWall: 1 },
+  '4hr': { name: '4 hr/day', stagesPerDay: 80, wallInterval: 40, targetDaysPerWall: 1 },
 };
 
 export type PresetKey = keyof typeof CURVE_PRESETS;
@@ -192,6 +193,7 @@ export const curveFunctions = {
 };
 
 export function useDifficultyCurve() {
+  const t = useTranslations('difficultyCurve.milestones');
   const [preset, setPreset] = useState<PresetKey>('balanced');
   const [playtime, setPlaytime] = useState<PlaytimeKey>('1hr');
   const [maxStage, setMaxStage] = useState(100);
@@ -208,10 +210,10 @@ export function useDifficultyCurve() {
   const wallStages = useMemo(() => wallData.map(w => w.stage), [wallData]);
 
   const [milestones, setMilestones] = useState<Record<number, MilestoneData>>({
-    10: { name: '장비 시스템 해금', powerBonus: 30 },
-    30: { name: '스킬 시스템 해금', powerBonus: 40 },
-    50: { name: '각성 시스템 해금', powerBonus: 50 },
-    100: { name: '엔드게임 콘텐츠', powerBonus: 0 },
+    10: { name: t('gear'), powerBonus: 30 },
+    30: { name: t('skill'), powerBonus: 40 },
+    50: { name: t('awaken'), powerBonus: 50 },
+    100: { name: t('endgame'), powerBonus: 0 },
   });
 
   // 곡선 타입 상태
@@ -570,14 +572,14 @@ export function useDifficultyCurve() {
 
     const newMilestones: Record<number, MilestoneData> = {};
     const milestoneTemplates: { name: string; powerBonus: number }[] = [
-      { name: '장비 시스템 해금', powerBonus: 30 },
-      { name: '스킬 시스템 해금', powerBonus: 40 },
-      { name: '펫 시스템 해금', powerBonus: 25 },
-      { name: '각성 시스템 해금', powerBonus: 50 },
-      { name: '길드 콘텐츠 해금', powerBonus: 20 },
-      { name: 'PvP 콘텐츠 해금', powerBonus: 15 },
-      { name: '레이드 콘텐츠 해금', powerBonus: 35 },
-      { name: '엔드게임 콘텐츠', powerBonus: 0 },
+      { name: t('gear'), powerBonus: 30 },
+      { name: t('skill'), powerBonus: 40 },
+      { name: t('pet'), powerBonus: 25 },
+      { name: t('awaken'), powerBonus: 50 },
+      { name: t('guild'), powerBonus: 20 },
+      { name: t('pvp'), powerBonus: 15 },
+      { name: t('raid'), powerBonus: 35 },
+      { name: t('endgame'), powerBonus: 0 },
     ];
 
     wallStagesList.forEach((wall, index) => {
@@ -617,9 +619,10 @@ export function useDifficultyCurve() {
   };
 
   // 휴식 포인트 추가/제거
-  const addRestPoint = useCallback((stage: number, duration: number = 1, reason: string = '휴식 구간') => {
-    setRestPoints(prev => [...prev, { stage, duration, reason }].sort((a, b) => a.stage - b.stage));
-  }, []);
+  const restPointDefault = t('restPoint');
+  const addRestPoint = useCallback((stage: number, duration: number = 1, reason?: string) => {
+    setRestPoints(prev => [...prev, { stage, duration, reason: reason ?? restPointDefault }].sort((a, b) => a.stage - b.stage));
+  }, [restPointDefault]);
 
   const removeRestPoint = useCallback((stage: number) => {
     setRestPoints(prev => prev.filter(rp => rp.stage !== stage));

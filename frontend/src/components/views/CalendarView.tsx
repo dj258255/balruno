@@ -23,7 +23,6 @@ interface CalendarViewProps {
   sheet: Sheet;
 }
 
-const WEEKDAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
 type CalendarMode = 'month' | 'week' | 'day';
 
 function startOfMonth(d: Date): Date {
@@ -51,9 +50,11 @@ function iso(d: Date): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
-function fmtHeader(d: Date, mode: CalendarMode): string {
+const WEEKDAY_KEYS = ['weekday_sun', 'weekday_mon', 'weekday_tue', 'weekday_wed', 'weekday_thu', 'weekday_fri', 'weekday_sat'] as const;
+
+function fmtHeader(d: Date, mode: CalendarMode, getWeekday: (i: number) => string): string {
   if (mode === 'day') {
-    return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()} (${WEEKDAYS_KO[d.getDay()]})`;
+    return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()} (${getWeekday(d.getDay())})`;
   }
   if (mode === 'week') {
     const wkStart = startOfWeek(d);
@@ -65,6 +66,9 @@ function fmtHeader(d: Date, mode: CalendarMode): string {
 
 export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
   const t = useTranslations();
+  const tCal = useTranslations('calendarView');
+  const getWeekday = (i: number) => tCal(WEEKDAY_KEYS[i]);
+  const WEEKDAYS = WEEKDAY_KEYS.map((k) => tCal(k));
   const updateSheet = useProjectStore((s) => s.updateSheet);
   const updateCell = useProjectStore((s) => s.updateCell);
   const addRow = useProjectStore((s) => s.addRow);
@@ -156,13 +160,13 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
     <div className="flex-1 flex overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="px-4 py-2 border-b flex items-center gap-3" style={{ borderColor: 'var(--border-primary)' }}>
-          <button onClick={stepBack} className="p-1 rounded hover:bg-[var(--bg-hover)]" aria-label="이전">
+          <button onClick={stepBack} className="p-1 rounded hover:bg-[var(--bg-hover)]" aria-label={tCal('previousAria')}>
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="text-sm font-medium min-w-[140px] text-center" style={{ color: 'var(--text-primary)' }}>
-            {fmtHeader(cursor, mode)}
+            {fmtHeader(cursor, mode, getWeekday)}
           </span>
-          <button onClick={stepForward} className="p-1 rounded hover:bg-[var(--bg-hover)]" aria-label="다음">
+          <button onClick={stepForward} className="p-1 rounded hover:bg-[var(--bg-hover)]" aria-label={tCal('nextAria')}>
             <ChevronRight className="w-4 h-4" />
           </button>
           <button
@@ -185,7 +189,7 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
                   color: mode === m ? 'white' : 'var(--text-secondary)',
                 }}
               >
-                {m === 'month' ? '월' : m === 'week' ? '주' : '일'}
+                {m === 'month' ? tCal('modeMonth') : m === 'week' ? tCal('modeWeek') : tCal('modeDay')}
               </button>
             ))}
           </div>
@@ -206,7 +210,7 @@ export default function CalendarView({ projectId, sheet }: CalendarViewProps) {
         <div
           className="flex-1 overflow-auto p-3"
           role="region"
-          aria-label={`${sheet.name} ${mode === 'month' ? '월간' : mode === 'week' ? '주간' : '일간'} 달력`}
+          aria-label={tCal('calendarAria', { sheet: sheet.name, label: mode === 'month' ? tCal('monthlyLabel') : mode === 'week' ? tCal('weeklyLabel') : tCal('dailyLabel') })}
         >
           {mode === 'month' && (
             <MonthGrid
@@ -281,6 +285,8 @@ function MonthGrid({
   onCardContextMenu: (rowId: string, x: number, y: number) => void;
   dragOverDate: string | null;
 }) {
+  const tCal = useTranslations('calendarView');
+  const WEEKDAYS = WEEKDAY_KEYS.map((k) => tCal(k));
   const firstDay = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const firstDayOfWeek = firstDay.getDay();
   const numDays = daysInMonth(cursor);
@@ -300,7 +306,7 @@ function MonthGrid({
       style={{ background: 'var(--border-primary)' }}
       role="grid"
     >
-      {WEEKDAYS_KO.map((w) => (
+      {WEEKDAYS.map((w) => (
         <div
           key={w}
           role="columnheader"
@@ -315,7 +321,7 @@ function MonthGrid({
         const isDragOver = dragOverDate === key;
         const isToday = key === todayKey;
         const cellLabel = cell.date
-          ? `${cell.date.getMonth() + 1}월 ${cell.date.getDate()}일${isToday ? ' (오늘)' : ''} · ${cell.rows.length}건`
+          ? tCal('cellTooltip', { m: cell.date.getMonth() + 1, d: cell.date.getDate(), today: isToday ? tCal('todayMark') : '', n: cell.rows.length })
           : '';
         return (
           <div
@@ -347,7 +353,7 @@ function MonthGrid({
                     onClick={() => cell.date && onCellClick(cell.date)}
                     className="opacity-0 group-hover:opacity-100 text-xs w-4 h-4 rounded-full flex items-center justify-center transition-opacity"
                     style={{ background: 'var(--accent)', color: 'white' }}
-                    aria-label="추가"
+                    aria-label={tCal('addAria')}
                   >
                     +
                   </button>
@@ -396,6 +402,8 @@ function WeekStrip({
   onCardDrop: (e: React.DragEvent, date: Date) => void;
   onCardContextMenu: (rowId: string, x: number, y: number) => void;
 }) {
+  const tCal = useTranslations('calendarView');
+  const getWeekday = (i: number) => tCal(WEEKDAY_KEYS[i]);
   const wkStart = startOfWeek(cursor);
   const days = Array.from({ length: 7 }).map((_, i) => addDays(wkStart, i));
   const todayKey = iso(new Date());
@@ -420,7 +428,7 @@ function WeekStrip({
           >
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="text-overline" style={{ color: 'var(--text-tertiary)' }}>{WEEKDAYS_KO[d.getDay()]}</div>
+                <div className="text-overline" style={{ color: 'var(--text-tertiary)' }}>{getWeekday(d.getDay())}</div>
                 <div className="text-sm font-semibold" style={{ color: isToday ? 'var(--accent)' : 'var(--text-primary)' }}>{d.getDate()}</div>
               </div>
               <button
@@ -469,22 +477,24 @@ function DayList({
   onAdd: () => void;
   onCardContextMenu: (rowId: string, x: number, y: number) => void;
 }) {
+  const tCal = useTranslations('calendarView');
+  const getWeekday = (i: number) => tCal(WEEKDAY_KEYS[i]);
   return (
     <div className="max-w-2xl mx-auto space-y-2">
       <div className="flex items-center justify-between px-2 py-1">
         <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-          {iso(date)} ({WEEKDAYS_KO[date.getDay()]})
+          {iso(date)} ({getWeekday(date.getDay())})
         </h3>
         <button
           onClick={onAdd}
           className="px-2 py-1 text-xs rounded"
           style={{ background: 'var(--accent)', color: 'white' }}
         >
-          + 추가
+          {tCal('addBtn')}
         </button>
       </div>
       {rows.length === 0 ? (
-        <p className="text-center text-xs py-12" style={{ color: 'var(--text-tertiary)' }}>이 날짜에 레코드가 없습니다</p>
+        <p className="text-center text-xs py-12" style={{ color: 'var(--text-tertiary)' }}>{tCal('noRecords')}</p>
       ) : (
         rows.map((row) => (
           <button

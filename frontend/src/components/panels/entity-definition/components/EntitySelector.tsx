@@ -1,6 +1,7 @@
 'use client';
 
 import { Users, Skull, Bot, Package } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { EntityDefinition } from '@/types';
 
 interface EntitySelectorProps {
@@ -43,6 +44,7 @@ export default function EntitySelector({
   onSelect,
   isColumnMapped = true,
 }: EntitySelectorProps) {
+  const t = useTranslations('entityDefinition');
   // 컬럼이 매핑되지 않은 경우
   if (!isColumnMapped) {
     return (
@@ -50,9 +52,9 @@ export default function EntitySelector({
         className="p-4 rounded-lg text-center text-sm"
         style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--text-secondary)' }}
       >
-        <p style={{ color: '#f59e0b' }}>컬럼 매핑이 필요합니다</p>
+        <p style={{ color: '#f59e0b' }}>{t('needColumnMapping')}</p>
         <p className="mt-1 text-xs">
-          위에서 ID 컬럼과 이름 컬럼을 먼저 선택하세요.
+          {t('needColumnMappingHelp')}
         </p>
       </div>
     );
@@ -65,10 +67,10 @@ export default function EntitySelector({
         className="p-4 rounded-lg text-center text-sm"
         style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--text-secondary)' }}
       >
-        <p style={{ color: '#ef4444' }}>엔티티를 찾을 수 없습니다</p>
+        <p style={{ color: '#ef4444' }}>{t('noEntity')}</p>
         <p className="mt-1 text-xs">
-          스탯 정의에서 소스 컬럼을 매핑하고,<br />
-          시트에 유효한 데이터(ID, 이름, 스탯 값)가 있는지 확인하세요.
+          {t('noEntityHelp1')}<br />
+          {t('noEntityHelp2')}
         </p>
       </div>
     );
@@ -76,8 +78,8 @@ export default function EntitySelector({
 
   return (
     <div className="space-y-2">
-      <div className="text-xs font-medium mb-2\" style={{ color: 'var(--text-tertiary)' }}>
-        엔티티 선택 ({entities.length}개)
+      <div className="text-xs font-medium mb-2" style={{ color: 'var(--text-tertiary)' }}>
+        {t('entitySelect', { count: entities.length })}
       </div>
 
       <div className="grid grid-cols-2 gap-2">

@@ -22,6 +22,7 @@ import { useEconomyDesign } from '@/hooks/useEconomyDesign';
 import EconomyPanel from '@/components/panels/EconomyPanel';
 import DiagramView from '@/components/views/DiagramView';
 
+import { useTranslations } from 'next-intl';
 type WorkbenchMode = 'analytics' | 'diagram';
 
 interface Props {
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export default function EconomyWorkbench({ onClose }: Props) {
+  const t = useTranslations();
   const [mode, setMode] = useState<WorkbenchMode>('analytics');
   const projectId = useProjectStore((s) => s.currentProjectId);
   const sheetId = useProjectStore((s) => s.currentSheetId);
@@ -57,7 +59,7 @@ export default function EconomyWorkbench({ onClose }: Props) {
             <DiagramView projectId={projectId} sheet={sheet} design={design} />
           ) : (
             <div className="flex-1 flex items-center justify-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              시트를 선택하면 다이어그램이 로드됩니다
+              {t('economy.selectSheetToLoad')}
             </div>
           )
         )}
@@ -73,10 +75,11 @@ function ModeSelector({
   mode: WorkbenchMode;
   setMode: (m: WorkbenchMode) => void;
 }) {
+  const t = useTranslations();
   return (
     <div
       role="tablist"
-      aria-label="경제 워크벤치 모드"
+      aria-label={t('economy.modeAria')}
       className="flex gap-1 p-1 rounded-lg"
       style={{ background: 'var(--bg-tertiary)' }}
     >
@@ -84,13 +87,13 @@ function ModeSelector({
         active={mode === 'analytics'}
         onClick={() => setMode('analytics')}
         icon={BarChart3}
-        label="분석"
+        label={t('economy.analysisLabel')}
       />
       <ModeButton
         active={mode === 'diagram'}
         onClick={() => setMode('diagram')}
         icon={Workflow}
-        label="다이어그램"
+        label={t('economy.diagramLabel')}
       />
     </div>
   );

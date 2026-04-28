@@ -14,6 +14,7 @@ import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import { Swords, Play, RefreshCw } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { simulateDPSVariance } from '@/lib/dpsVarianceSimulator';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -26,6 +27,8 @@ interface SimAttrs {
 }
 
 function SimulationView({ node, updateAttributes }: NodeViewProps) {
+  const t = useTranslations('docs');
+  const tSim = useTranslations('simulation');
   const attrs = node.attrs as SimAttrs;
   const [ranAt, setRanAt] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -81,7 +84,7 @@ function SimulationView({ node, updateAttributes }: NodeViewProps) {
           <div className="flex items-center gap-2">
             <Swords className="w-3.5 h-3.5" style={{ color: '#e11d48' }} />
             <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
-              DPS Monte Carlo · {attrs.iterations.toLocaleString()}회
+              {t('simHeader', { iters: attrs.iterations.toLocaleString() })}
             </span>
           </div>
           <button
@@ -96,24 +99,24 @@ function SimulationView({ node, updateAttributes }: NodeViewProps) {
             ) : (
               <Play className="w-3 h-3" />
             )}
-            재실행
+            {t('simRerun')}
           </button>
         </div>
 
         {/* Input row */}
         <div className="grid grid-cols-5 gap-2 px-3 py-2 border-b" style={{ borderColor: 'var(--border-primary)' }}>
-          <NumField label="DMG" value={attrs.damage} onChange={(v) => updateAttributes({ damage: v })} />
-          <NumField label="SPD" value={attrs.attackSpeed} onChange={(v) => updateAttributes({ attackSpeed: v })} step={0.1} />
-          <NumField label="Crit%" value={attrs.critRate} onChange={(v) => updateAttributes({ critRate: v })} step={0.01} />
-          <NumField label="CritX" value={attrs.critDamage} onChange={(v) => updateAttributes({ critDamage: v })} step={0.1} />
-          <NumField label="반복" value={attrs.iterations} onChange={(v) => updateAttributes({ iterations: v })} step={100} />
+          <NumField label={t('simNumLabelDmg')} value={attrs.damage} onChange={(v) => updateAttributes({ damage: v })} />
+          <NumField label={t('simNumLabelSpd')} value={attrs.attackSpeed} onChange={(v) => updateAttributes({ attackSpeed: v })} step={0.1} />
+          <NumField label={t('simNumLabelCrit')} value={attrs.critRate} onChange={(v) => updateAttributes({ critRate: v })} step={0.01} />
+          <NumField label={t('simNumLabelCritX')} value={attrs.critDamage} onChange={(v) => updateAttributes({ critDamage: v })} step={0.1} />
+          <NumField label={t('simNumLabelIter')} value={attrs.iterations} onChange={(v) => updateAttributes({ iterations: v })} step={100} />
         </div>
 
         {result ? (
           <div className="p-3 space-y-2">
             <div className="grid grid-cols-4 gap-2 text-center">
-              <Stat label="평균 DPS" value={result.mean.toFixed(1)} color="#e11d48" />
-              <Stat label="표준편차" value={result.stdDev.toFixed(1)} />
+              <Stat label={t('simStatMean')} value={result.mean.toFixed(1)} color="#e11d48" />
+              <Stat label={t('simStatStdDev')} value={result.stdDev.toFixed(1)} />
               <Stat label="P5" value={result.percentiles.p5.toFixed(1)} />
               <Stat label="P95" value={result.percentiles.p95.toFixed(1)} />
             </div>
@@ -136,7 +139,7 @@ function SimulationView({ node, updateAttributes }: NodeViewProps) {
           </div>
         ) : (
           <div className="p-3 text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
-            시뮬 준비 중
+            {t('simPreparing')}
           </div>
         )}
       </div>

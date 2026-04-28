@@ -100,10 +100,10 @@ export default function ProjectGalleryModal({ onClose }: Props) {
         >
           <div>
             <h2 id="gallery-title" className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-              새 프로젝트 시작
+              {t('projectGallery.newProjectStart')}
             </h2>
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              템플릿으로 빠르게 시작하거나 빈 프로젝트를 만드세요
+              {t('projectGallery.newProjectDesc')}
             </p>
           </div>
           <button
@@ -165,7 +165,7 @@ export default function ProjectGalleryModal({ onClose }: Props) {
                 style={{ borderColor: '#8b5cf6', color: '#8b5cf6' }}
               >
                 <Wand2 className="w-4 h-4" />
-                <span className="text-sm font-medium">AI 로 시작</span>
+                <span className="text-sm font-medium">{t('projectGallery.startWithAi')}</span>
               </button>
             </div>
           </div>

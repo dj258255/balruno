@@ -14,6 +14,7 @@
 
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { STARTER_CATALOG } from '@/lib/starterPack';
 
 interface Props {
@@ -22,6 +23,8 @@ interface Props {
 }
 
 export default function StarterPickerModal({ onPick, onClose }: Props) {
+  const t = useTranslations('onboarding');
+  const tStarter = useTranslations('starterPack');
   // ESC 키로 닫기 — onClose 가 있으면 그걸로 (빈 워크스페이스 자동 선택), 없으면 무시
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -48,19 +51,18 @@ export default function StarterPickerModal({ onPick, onClose }: Props) {
             type="button"
             onClick={onClose}
             className="absolute top-3 right-3 p-1.5 rounded-md transition-colors hover:bg-[var(--bg-hover)]"
-            aria-label="닫기"
+            aria-label={t('close')}
           >
             <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
           </button>
         )}
 
-        {/* Header */}
         <div className="px-6 pt-6 pb-3 text-center border-b" style={{ borderColor: 'var(--border-primary)' }}>
           <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            어떤 게임을 만들고 있어요?
+            {t('starterPickerTitle')}
           </h2>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            장르를 고르면 그에 맞는 시작용 시트가 자동으로 생성돼요. 나중에 자유롭게 편집/삭제 가능.
+            {t('starterPickerDesc')}
           </p>
         </div>
 
@@ -86,10 +88,10 @@ export default function StarterPickerModal({ onPick, onClose }: Props) {
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  {entry.label}
+                  {tStarter(`${entry.i18nKey}.label`)}
                 </div>
                 <div className="text-caption line-clamp-2" style={{ color: 'var(--text-tertiary)' }}>
-                  {entry.description}
+                  {tStarter(`${entry.i18nKey}.description`)}
                 </div>
               </button>
             );
@@ -101,8 +103,8 @@ export default function StarterPickerModal({ onPick, onClose }: Props) {
           className="px-6 py-3 border-t flex items-center justify-between text-caption"
           style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}
         >
-          <span>총 {STARTER_CATALOG.length} 가지 시작 팩</span>
-          <span>나중에 사이드바 + 버튼으로 더 추가할 수 있어요</span>
+          <span>{t('starterPickerCount', { count: STARTER_CATALOG.length })}</span>
+          <span>{t('starterPickerFooter')}</span>
         </div>
       </div>
     </div>

@@ -74,45 +74,17 @@ const DOCK_HINT_KEY = 'balruno:dock-hint-seen';
 /** 그룹별 사용법 단계 — 도크의 해당 그룹을 pulse 강조 + 카드에 설명 */
 interface DockHintStep {
   groupId: ToolGroupId | null; // null = intro (전체 안내)
-  title: string;
-  body: string;
+  titleKey: string;
+  bodyKey: string;
 }
 const DOCK_HINT_STEPS: DockHintStep[] = [
-  {
-    groupId: null,
-    title: '여기가 도구 모음이에요',
-    body: '6 그룹으로 묶여 있어요. 한 번에 한 그룹만 활성. 각 그룹마다 어떤 도구가 있는지 한 번씩 둘러볼게요.',
-  },
-  {
-    groupId: 'build',
-    title: '만들기',
-    body: '데이터를 처음 설계할 때 — 수식 헬퍼 (90+ 함수 카탈로그), 엔티티 정의 (1-200렙 자동 생성), 계산기, 목표 역산 등.',
-  },
-  {
-    groupId: 'check',
-    title: '점검',
-    body: '데이터 입력 후 균형 확인 — 밸런스 분석, 불균형 감지, 민감도, 매치업 매트릭스, AI Playtest.',
-  },
-  {
-    groupId: 'simulate',
-    title: '시뮬',
-    body: '실제 게임 상황 시뮬레이션 — 1v1/팀 전투, FPS, MOBA 라이닝, 가챠, 경제 설계 (수익/지출 + 자원 흐름).',
-  },
-  {
-    groupId: 'compare',
-    title: '비교',
-    body: '여러 엔티티/시트 시각 비교 — 레이더 차트, 성장 곡선 라인, 곡선 피팅 (회귀).',
-  },
-  {
-    groupId: 'auto',
-    title: '자동',
-    body: 'AI 가 대신 — Auto-Balancer (자동 밸런싱), Automations (트리거-액션), AI Behavior (행동 규칙).',
-  },
-  {
-    groupId: 'share',
-    title: '공유',
-    body: '협업과 이력 — Comments, 변경 히스토리, 스냅샷 비교, 인터페이스 디자이너.',
-  },
+  { groupId: null, titleKey: 'bottomDock.introTitle', bodyKey: 'bottomDock.introBody' },
+  { groupId: 'build', titleKey: 'bottomDock.createTitle', bodyKey: 'bottomDock.createBody' },
+  { groupId: 'check', titleKey: 'bottomDock.inspectTitle', bodyKey: 'bottomDock.inspectBody' },
+  { groupId: 'simulate', titleKey: 'bottomDock.simTitle', bodyKey: 'bottomDock.simBody' },
+  { groupId: 'compare', titleKey: 'bottomDock.compareTitle', bodyKey: 'bottomDock.compareBody' },
+  { groupId: 'auto', titleKey: 'bottomDock.autoTitle', bodyKey: 'bottomDock.autoBody' },
+  { groupId: 'share', titleKey: 'bottomDock.shareTitle', bodyKey: 'bottomDock.shareBody' },
 ];
 
 export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
@@ -193,7 +165,7 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
               border: `1.5px solid ${accentColor}`,
             }}
             role="dialog"
-            aria-label="하단 도구바 안내"
+            aria-label={t('bottomDock.guideAria')}
           >
             <div className="flex items-start gap-3 p-4">
               <div
@@ -205,7 +177,7 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    {cur.title}
+                    {t(cur.titleKey as 'bottomDock.introTitle')}
                   </div>
                   <span
                     className="text-caption px-1.5 py-0.5 rounded"
@@ -215,14 +187,14 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
                   </span>
                 </div>
                 <p className="text-sm mt-1 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  {cur.body}
+                  {t(cur.bodyKey as 'bottomDock.introBody')}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={dismissHint}
                 className="p-1 -mt-1 -mr-1 rounded hover:bg-[var(--bg-hover)] transition-colors shrink-0"
-                aria-label="안내 닫기"
+                aria-label={t('bottomDock.closeGuide')}
               >
                 <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
               </button>
@@ -236,7 +208,7 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
                 className="text-caption px-2 py-1 rounded transition-colors disabled:opacity-30 hover:bg-[var(--bg-hover)]"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                이전
+                {t('bottomDock.previous')}
               </button>
               {/* 단계 점 indicator — 7 dots */}
               <div className="flex items-center gap-1.5">
@@ -251,7 +223,7 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
                       height: 6,
                       background: i <= hintStep ? accentColor : 'var(--border-primary)',
                     }}
-                    aria-label={`${i + 1} 단계로`}
+                    aria-label={t('bottomDock.stepAria', { n: i + 1 })}
                   />
                 ))}
               </div>
@@ -263,11 +235,11 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
               >
                 {isLast ? (
                   <>
-                    <Check className="w-3 h-3" /> 완료
+                    <Check className="w-3 h-3" /> {t('bottomDock.done')}
                   </>
                 ) : (
                   <>
-                    다음 <ChevronRight className="w-3 h-3" />
+                    {t('bottomDock.next')} <ChevronRight className="w-3 h-3" />
                   </>
                 )}
               </button>
@@ -296,8 +268,8 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
           <button
             type="button"
             className="dock-item flex flex-col items-center gap-0.5"
-            aria-label="AI 로 시작"
-            title="AI 로 새 프로젝트 생성"
+            aria-label={t('bottomDock.aiStartAria')}
+            title={t('bottomDock.aiStartTitle')}
             onClick={() => {
               if (isModalOpen) return;
               window.dispatchEvent(new Event('balruno:open-ai-setup'));
@@ -316,7 +288,7 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
               className="text-caption font-medium pointer-events-none leading-tight whitespace-nowrap mt-0.5"
               style={{ color: 'var(--text-secondary)' }}
             >
-              AI 시작
+              {t('bottomDock.aiStartLabel')}
             </span>
           </button>
         </div>

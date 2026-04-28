@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import type { Sheet, CellValue } from '@/types';
 import { useProjectStore } from '@/stores/projectStore';
 import { useHistoryStore } from '@/stores/historyStore';
@@ -25,6 +26,7 @@ export function useSheetEditing({
   setFormulaBarValue,
   setSelectedCells,
 }: UseSheetEditingProps) {
+  const t = useTranslations('sheet');
   const { updateCell, projects, loadProjects } = useProjectStore();
   const { pushState, undo: historyUndo, redo: historyRedo, canUndo, canRedo } = useHistoryStore();
 
@@ -55,7 +57,7 @@ export function useSheetEditing({
         const current = row?.cells[columnId];
         const isTrue = current === 'true' || current === 1 || current === '1';
         const next: CellValue = isTrue ? '' : 'true';
-        pushState(projects, '체크박스 토글');
+        pushState(projects, t('historyToggleCheckbox'));
         updateCell(projectId, sheet.id, rowId, columnId, next);
         return;
       }
@@ -64,9 +66,9 @@ export function useSheetEditing({
       if (column?.type === 'rating') {
         const max = column.ratingMax ?? 5;
         const current = row?.cells[columnId];
-        const n = typeof current === 'number' ? current : parseFloat(String(current)) || 0;
+        const n = typeof current === 'number' ? current : Number(String(current)) || 0;
         const nextN = n >= max ? 0 : Math.floor(n) + 1;
-        pushState(projects, '별점 변경');
+        pushState(projects, t('historyChangeRating'));
         updateCell(projectId, sheet.id, rowId, columnId, nextN);
         return;
       }
@@ -97,12 +99,12 @@ export function useSheetEditing({
     if (column?.validation && !finalValue.startsWith('=')) {
       const result = validateCellValue(value, column.validation);
       if (!result.isValid) {
-        setValidationError(result.error || '잘못된 값입니다');
+        setValidationError(result.error || t('validationInvalid'));
         setTimeout(() => setValidationError(null), 3000);
       }
     }
 
-    pushState(projects, '셀 편집');
+    pushState(projects, t('historyEditCell'));
     updateCell(projectId, sheet.id, editingCell.rowId, editingCell.columnId, value);
     setEditingCell(null);
     setEditValue('');
@@ -116,7 +118,7 @@ export function useSheetEditing({
 
     const value = parseValue(formulaBarValue);
 
-    pushState(projects, '셀 편집');
+    pushState(projects, t('historyEditCell'));
     updateCell(projectId, sheet.id, selectedCell.rowId, selectedCell.columnId, value);
     setIsFormulaBarFocused(false);
   }, [selectedCell, formulaBarValue, projectId, sheet.id, updateCell, pushState, projects]);
@@ -144,7 +146,7 @@ export function useSheetEditing({
     const cellToSave = { ...editingCell };
     const finalValue = parseValue(value);
 
-    pushState(projects, '셀 편집');
+    pushState(projects, t('historyEditCell'));
     updateCell(projectId, sheet.id, cellToSave.rowId, cellToSave.columnId, finalValue);
     setEditingCell(null);
     setEditValue('');

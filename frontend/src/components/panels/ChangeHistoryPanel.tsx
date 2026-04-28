@@ -14,6 +14,7 @@ import { Clock, ArrowRight, X, MessageSquare } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { getProjectDoc, updateChangelogReason } from '@/lib/ydoc';
 import type { ChangeEntry, CellValue } from '@/types';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
@@ -26,23 +27,24 @@ interface EnrichedEntry extends ChangeEntry {
   columnName: string;
 }
 
-function formatTime(ts: number): string {
+function formatTime(t: ReturnType<typeof useTranslations>, ts: number): string {
   const d = new Date(ts);
   const now = Date.now();
   const diff = now - ts;
-  if (diff < 60_000) return '방금';
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}분 전`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}시간 전`;
-  if (diff < 7 * 86_400_000) return `${Math.floor(diff / 86_400_000)}일 전`;
+  if (diff < 60_000) return t('changeHistory.justNow');
+  if (diff < 3_600_000) return t('changeHistory.minutesAgo', { m: Math.floor(diff / 60_000) });
+  if (diff < 86_400_000) return t('changeHistory.hoursAgo', { h: Math.floor(diff / 3_600_000) });
+  if (diff < 7 * 86_400_000) return t('changeHistory.daysAgo', { d: Math.floor(diff / 86_400_000) });
   return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 }
 
-function formatValue(v: CellValue): string {
-  if (v === null || v === '') return '(빈 값)';
+function formatValue(t: ReturnType<typeof useTranslations>, v: CellValue): string {
+  if (v === null || v === '') return t('changeHistory.emptyValue');
   return String(v);
 }
 
 export default function ChangeHistoryPanel({ onClose }: Props) {
+  const t = useTranslations();
   const projects = useProjectStore((s) => s.projects);
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
   const setCurrentDoc = useProjectStore((s) => s.setCurrentDoc);
@@ -64,8 +66,8 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
           ...e,
           projectId: project.id,
           projectName: project.name,
-          sheetName: sheet?.name ?? '(삭제된 시트)',
-          columnName: column?.name ?? '(삭제된 컬럼)',
+          sheetName: sheet?.name ?? t('changeHistory.deletedSheet'),
+          columnName: column?.name ?? t('changeHistory.deletedColumn'),
         });
       }
     }
@@ -120,7 +122,7 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
           <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-            변경 이력
+            {t('changeHistory.header')}
           </h2>
           <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
             {filtered.length} / {allEntries.length}
@@ -130,7 +132,7 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
           onClick={onClose}
           className="p-1.5 rounded-md hover:bg-[var(--bg-hover)]"
           style={{ color: 'var(--text-secondary)' }}
-          aria-label="닫기"
+          aria-label={t('changeHistory.closeAria')}
         >
           <X className="w-4 h-4" />
         </button>
@@ -151,7 +153,7 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
             color: 'var(--text-primary)',
           }}
         >
-          <option value="all">전체 프로젝트</option>
+          <option value="all">{t('changeHistory.allProjects')}</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -168,7 +170,7 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
             color: 'var(--text-primary)',
           }}
         >
-          <option value="all">전체 사용자</option>
+          <option value="all">{t('changeHistory.allUsers')}</option>
           {users.map((u) => (
             <option key={u} value={u}>
               {u}
@@ -184,10 +186,10 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
             <div className="text-center">
               <Clock className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--text-tertiary)' }} />
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                변경 이력이 없습니다
+                {t('changeHistory.noChanges')}
               </p>
               <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                셀 값을 수정하면 자동으로 기록됩니다
+                {t('changeHistory.noChangesHelp')}
               </p>
             </div>
           </div>
@@ -210,13 +212,13 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
                           {entry.userName}
                         </span>
                         <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                          · {formatTime(entry.timestamp)}
+                          · {formatTime(t, entry.timestamp)}
                         </span>
                         <button
                           onClick={() => jumpTo(entry)}
                           className="text-xs hover:underline"
                           style={{ color: 'var(--text-secondary)' }}
-                          title="해당 셀로 이동"
+                          title={t('changeHistory.jumpToCell')}
                         >
                           {entry.projectName} / {entry.sheetName} / {entry.columnName}
                         </button>
@@ -230,7 +232,7 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
                             textDecoration: 'line-through',
                           }}
                         >
-                          {formatValue(entry.before)}
+                          {formatValue(t, entry.before)}
                         </span>
                         <ArrowRight className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
                         <span
@@ -240,7 +242,7 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
                             color: 'var(--accent)',
                           }}
                         >
-                          {formatValue(entry.after)}
+                          {formatValue(t, entry.after)}
                         </span>
                       </div>
 
@@ -259,7 +261,7 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
                               }
                             }}
                             autoFocus
-                            placeholder="왜 이렇게 바꿨나요?"
+                            placeholder={t('changeHistory.reasonPlaceholder')}
                             className="flex-1 px-2 py-1 text-xs rounded border focus:outline-none"
                             style={{
                               background: 'var(--bg-secondary)',
@@ -272,7 +274,7 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
                             className="text-xs px-2 py-1 rounded"
                             style={{ background: 'var(--accent)', color: 'white' }}
                           >
-                            저장
+                            {t('changeHistory.saveLabel')}
                           </button>
                         </div>
                       ) : entry.reason ? (
@@ -290,7 +292,7 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
                           style={{ color: 'var(--text-tertiary)' }}
                         >
                           <MessageSquare className="w-3 h-3" />
-                          이유 추가
+                          {t('changeHistory.addReason')}
                         </button>
                       )}
                     </div>

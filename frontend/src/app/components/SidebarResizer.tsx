@@ -10,9 +10,11 @@
  */
 
 import { useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { useToolLayoutStore } from '@/stores/toolLayoutStore';
 
 export default function SidebarResizer() {
+  const t = useTranslations('app');
   const setSidebarWidth = useToolLayoutStore((s) => s.setSidebarWidth);
   const sidebarWidth = useToolLayoutStore((s) => s.sidebarWidth);
   const activeRef = useRef(false);
@@ -46,7 +48,7 @@ export default function SidebarResizer() {
       className="hidden md:block relative w-1 cursor-col-resize flex-shrink-0 group"
       style={{ touchAction: 'none' }}
       role="separator"
-      aria-label="사이드바 폭 조절"
+      aria-label={t('sidebarResize')}
       aria-orientation="vertical"
     >
       {/* 넓은 hit area (보이지 않음, 좌우 각 4px 씩 hover 영역 확장) */}

@@ -1,9 +1,11 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useTheme } from '@/contexts/ThemeContext';
 import './ThemeToggle.css';
 
 export default function ThemeToggle() {
+  const t = useTranslations('ui');
   const { theme, toggleTheme } = useTheme();
 
   const handleKey = (e: React.KeyboardEvent) => {
@@ -21,7 +23,7 @@ export default function ThemeToggle() {
       role="switch"
       tabIndex={0}
       aria-checked={theme === 'dark'}
-      aria-label={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+      aria-label={theme === 'dark' ? t('themeToLight') : t('themeToDark')}
     >
       <div className="toggle-track">
         {/* 구름 (라이트 모드) */}

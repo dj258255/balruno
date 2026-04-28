@@ -2,6 +2,7 @@
 
 import { Plus, X, Edit3 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { StatOverride, EntityDefinition } from '@/types';
 
 interface OverrideEditorProps {
@@ -21,6 +22,7 @@ export default function OverrideEditor({
   onUpdate,
   maxLevel,
 }: OverrideEditorProps) {
+  const t = useTranslations('entityDefinition');
   const [newLevel, setNewLevel] = useState<number>(10);
   const [editingCell, setEditingCell] = useState<{ level: number; stat: string } | null>(null);
 
@@ -45,7 +47,7 @@ export default function OverrideEditor({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-          오버라이드 포인트 ({overrides.length}개)
+          {t('overrideEditorTitle', { count: overrides.length })}
         </div>
       </div>
 
@@ -54,7 +56,7 @@ export default function OverrideEditor({
         className="px-3 py-2 rounded-lg text-xs"
         style={{ background: 'rgba(145, 121, 242, 0.08)', color: 'var(--text-tertiary)' }}
       >
-        특정 레벨의 스탯을 수동으로 지정합니다. 나머지 레벨은 성장 곡선 공식으로 계산됩니다.
+        {t('overrideEditorHelp')}
       </div>
 
       {/* 오버라이드 추가 */}
@@ -65,7 +67,7 @@ export default function OverrideEditor({
           onChange={(e) => setNewLevel(parseInt(e.target.value) || 1)}
           min={1}
           max={maxLevel}
-          placeholder="레벨"
+          placeholder={t('levelInput')}
           className="w-20 input-base hide-spinner"
           style={{
             background: 'var(--bg-secondary)',
@@ -83,7 +85,7 @@ export default function OverrideEditor({
           }}
         >
           <Plus className="w-4 h-4" />
-          레벨 {newLevel} 추가
+          {t('addLevel', { n: newLevel })}
         </button>
       </div>
 
@@ -97,7 +99,7 @@ export default function OverrideEditor({
             <thead>
               <tr style={{ background: 'var(--bg-secondary)' }}>
                 <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                  레벨
+                  {t('levelHeader')}
                 </th>
                 {statNames.map((stat) => (
                   <th key={stat} className="px-3 py-2 text-right text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>

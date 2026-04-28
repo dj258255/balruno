@@ -5,6 +5,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Sword, Shield, Heart, Skull, Timer, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import PanelShell from '@/components/ui/PanelShell';
 import {
@@ -33,6 +34,7 @@ const ROLE_COLOR: Record<RaiderRole, string> = {
 };
 
 export default function MmoRaidPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [raiders, setRaiders] = useState<Raider[]>(defaultRaidParty());
   const [boss, setBoss] = useState<RaidBoss>(BOSS_PRESETS[0]);
 
@@ -50,9 +52,9 @@ export default function MmoRaidPanel({ onClose }: Props) {
     : result.outcome === 'wipe'   ? Skull
     : Timer;
   const outcomeLabel =
-    result.outcome === 'kill'   ? `킬 (${(result.durationSec / 60).toFixed(1)}분)`
-    : result.outcome === 'wipe'   ? '공대 전멸 (wipe)'
-    : '분노 (enrage timer)';
+    result.outcome === 'kill'   ? t('mmoRaid.killOutcome', { m: (result.durationSec / 60).toFixed(1) })
+    : result.outcome === 'wipe'   ? t('mmoRaid.wipeOutcome')
+    : t('mmoRaid.enrageOutcome');
 
   const updateRaider = <K extends keyof Raider>(idx: number, key: K, value: Raider[K]) =>
     setRaiders((prev) => prev.map((r, i) => (i === idx ? { ...r, [key]: value } : r)));
@@ -60,7 +62,7 @@ export default function MmoRaidPanel({ onClose }: Props) {
   return (
     <PanelShell
       title="MMO Raid DPS Race"
-      subtitle="WoW/FFXIV · 공대 vs 보스 페이즈 전투"
+      subtitle={t('mmoRaid.subtitleHeader')}
       icon={Sword}
       iconColor="#ef4444"
       onClose={onClose}
@@ -68,7 +70,7 @@ export default function MmoRaidPanel({ onClose }: Props) {
     >
       {/* 보스 선택 */}
       <div className="p-3 rounded-lg flex items-center gap-3" style={{ background: 'var(--bg-tertiary)' }}>
-        <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>보스</span>
+        <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>{t('mmoRaid.bossLabel')}</span>
         <select
           value={boss.id}
           onChange={(e) => {
@@ -80,7 +82,7 @@ export default function MmoRaidPanel({ onClose }: Props) {
           {BOSS_PRESETS.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
         <span className="text-caption tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-          HP {(boss.totalHp / 1_000_000).toFixed(1)}M · Enrage {Math.floor(boss.enrageAtSec / 60)}분
+          {t('mmoRaid.hpEnrage', { hp: (boss.totalHp / 1_000_000).toFixed(1), min: Math.floor(boss.enrageAtSec / 60) })}
         </span>
       </div>
 
@@ -90,14 +92,14 @@ export default function MmoRaidPanel({ onClose }: Props) {
         <div className="flex-1">
           <div className="text-heading font-bold" style={{ color: outcomeColor }}>{outcomeLabel}</div>
           <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-            최종 보스 HP {Math.round(result.bossHpPct * 100)}% ·
-            생존 {result.survivors}/{raiders.length} ·
-            공대 평균 DPS {Math.round(result.averageRaidDps).toLocaleString()} ·
-            평균 HPS {Math.round(result.averageRaidHps).toLocaleString()}
+            {t('mmoRaid.bossHpRemain', { pct: Math.round(result.bossHpPct * 100) })}
+            {t('mmoRaid.survivors', { n: result.survivors, total: raiders.length })}
+            {t('mmoRaid.avgRaidDps', { dps: Math.round(result.averageRaidDps).toLocaleString() })}
+            {t('mmoRaid.avgRaidHps', { hps: Math.round(result.averageRaidHps).toLocaleString() })}
           </div>
         </div>
         <div>
-          <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>킬 필요 DPS</div>
+          <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('mmoRaid.killNeededDps')}</div>
           <div className="text-2xl font-bold tabular-nums" style={{ color: '#ef4444' }}>
             {Math.round(result.requiredDpsForKill).toLocaleString()}
           </div>
@@ -106,7 +108,7 @@ export default function MmoRaidPanel({ onClose }: Props) {
 
       {/* 페이즈 타임라인 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
-        <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>페이즈 진입 타임라인</div>
+        <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>{t('mmoRaid.phaseTimeline')}</div>
         <div className="space-y-1">
           {boss.phases.map((phase, idx) => {
             const entered = result.phaseEnterTimes[idx];
@@ -141,7 +143,7 @@ export default function MmoRaidPanel({ onClose }: Props) {
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="w-4 h-4" style={{ color: '#ef4444' }} />
             <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-              사망 ({result.deaths.length}/{raiders.length})
+              {t('mmoRaid.deaths', { d: result.deaths.length, total: raiders.length })}
             </span>
           </div>
           <div className="flex items-center gap-1 flex-wrap">
@@ -164,7 +166,7 @@ export default function MmoRaidPanel({ onClose }: Props) {
       {/* 공대원 편집 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          공대원 ({raiders.length})
+          {t('mmoRaid.raidersHeader', { n: raiders.length })}
         </div>
         <div className="grid grid-cols-2 gap-1.5">
           {raiders.map((r, idx) => {
@@ -212,7 +214,7 @@ export default function MmoRaidPanel({ onClose }: Props) {
       </div>
 
       <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        <Clock className="w-3 h-3 inline" /> 1초 tick · 버스트 쿨기 자동 순환 · 힐 분배는 탱커 40% + 나머지 균등.
+        <Clock className="w-3 h-3 inline" />{t('mmoRaid.mechanicsNote')}
       </p>
     </PanelShell>
   );

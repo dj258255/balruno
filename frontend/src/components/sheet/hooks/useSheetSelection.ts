@@ -8,6 +8,7 @@
  */
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import type { Sheet, Row, CellValue } from '@/types';
 import { useProjectStore, type SelectedRowData } from '@/stores/projectStore';
 import type { CellPosition, ClipboardData } from '../types';
@@ -20,6 +21,7 @@ interface UseSheetSelectionProps {
 }
 
 export function useSheetSelection({ projectId, sheet, computedRows }: UseSheetSelectionProps) {
+  const t = useTranslations('sheet');
   const {
     toggleRowSelection,
     selectedRows,
@@ -435,7 +437,7 @@ export function useSheetSelection({ projectId, sheet, computedRows }: UseSheetSe
         // 자동 추가된 컬럼 수 안내
         window.dispatchEvent(
           new CustomEvent('balruno:toast', {
-            detail: { kind: 'info', message: `${colOverflow}개 컬럼 자동 추가됨` },
+            detail: { kind: 'info', message: t('toastColumnsAdded', { count: colOverflow }) },
           }),
         );
       }

@@ -105,11 +105,11 @@ export default function ComparisonChart({ onClose, isPanel = false, showHelp: ex
 
       let name = '';
       if (nameCol && computedCells[nameCol.id]) {
-        name = `${selectedSheet.name} - ${index + 1}행 (${computedCells[nameCol.id]})`;
+        name = t('comparisonChart.rowLabelWithName', { sheet: selectedSheet.name, index: index + 1, name: String(computedCells[nameCol.id]) });
       } else if (idCol && computedCells[idCol.id]) {
-        name = `${selectedSheet.name} - ${index + 1}행 (${computedCells[idCol.id]})`;
+        name = t('comparisonChart.rowLabelWithName', { sheet: selectedSheet.name, index: index + 1, name: String(computedCells[idCol.id]) });
       } else {
-        name = `${selectedSheet.name} - ${index + 1}행`;
+        name = t('comparisonChart.rowLabel', { sheet: selectedSheet.name, index: index + 1 });
       }
 
       return { id: row.id, name, cells: computedCells as Record<string, CellValue> };
@@ -826,7 +826,7 @@ export default function ComparisonChart({ onClose, isPanel = false, showHelp: ex
     return (
       <PanelShell
         title={t('fullTitle')}
-        subtitle="여러 엔티티 레이더 비교"
+        subtitle={t('comparisonChart.subtitleHeader')}
         icon={PieChart}
         iconColor={PANEL_COLOR}
         onClose={onClose}

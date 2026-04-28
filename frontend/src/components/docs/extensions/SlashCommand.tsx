@@ -19,10 +19,16 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Heading1, Heading2, Heading3, List, ListOrdered, Quote, Code, Minus,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export interface SlashCommandItem {
-  title: string;
+  /** legacy: 직접 string 으로 표시할 때 사용 */
+  title?: string;
+  /** i18n 키. 우선됨. */
+  titleKey?: string;
   description?: string;
+  /** i18n 키 — description 우선됨 */
+  descKey?: string;
   icon?: LucideIcon;
   keywords?: string[];
   command: (args: { editor: Editor; range: Range }) => void;
@@ -30,26 +36,26 @@ export interface SlashCommandItem {
 
 const DEFAULT_ITEMS: SlashCommandItem[] = [
   {
-    title: '제목 1',
-    description: '큰 제목',
+    titleKey: 'slashCommand.h1Title',
+    descKey: 'slashCommand.h1Desc',
     icon: Heading1,
-    keywords: ['h1', 'heading1', 'title', '제목'],
+    keywords: ['h1', 'heading1', 'title'],
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).setNode('heading', { level: 1 }).run();
     },
   },
   {
-    title: '제목 2',
-    description: '섹션 제목',
+    titleKey: 'slashCommand.h2Title',
+    descKey: 'slashCommand.h2Desc',
     icon: Heading2,
-    keywords: ['h2', 'heading2', '섹션'],
+    keywords: ['h2', 'heading2'],
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).setNode('heading', { level: 2 }).run();
     },
   },
   {
-    title: '제목 3',
-    description: '하위 제목',
+    titleKey: 'slashCommand.h3Title',
+    descKey: 'slashCommand.h3Desc',
     icon: Heading3,
     keywords: ['h3', 'heading3'],
     command: ({ editor, range }) => {
@@ -57,46 +63,46 @@ const DEFAULT_ITEMS: SlashCommandItem[] = [
     },
   },
   {
-    title: '글머리 목록',
-    description: '단순 리스트',
+    titleKey: 'slashCommand.ulTitle',
+    descKey: 'slashCommand.ulDesc',
     icon: List,
-    keywords: ['bullet', 'ul', 'list', '목록'],
+    keywords: ['bullet', 'ul', 'list'],
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).toggleBulletList().run();
     },
   },
   {
-    title: '번호 목록',
-    description: '순서 있는 리스트',
+    titleKey: 'slashCommand.olTitle',
+    descKey: 'slashCommand.olDesc',
     icon: ListOrdered,
-    keywords: ['ol', 'numbered', '번호'],
+    keywords: ['ol', 'numbered'],
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).toggleOrderedList().run();
     },
   },
   {
-    title: '인용문',
-    description: '블록 인용',
+    titleKey: 'slashCommand.quoteTitle',
+    descKey: 'slashCommand.quoteDesc',
     icon: Quote,
-    keywords: ['quote', 'blockquote', '인용'],
+    keywords: ['quote', 'blockquote'],
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).toggleBlockquote().run();
     },
   },
   {
-    title: '코드 블록',
-    description: '여러 줄 코드',
+    titleKey: 'slashCommand.codeTitle',
+    descKey: 'slashCommand.codeDesc',
     icon: Code,
-    keywords: ['code', 'codeblock', '코드'],
+    keywords: ['code', 'codeblock'],
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).toggleCodeBlock().run();
     },
   },
   {
-    title: '구분선',
-    description: '수평선',
+    titleKey: 'slashCommand.hrTitle',
+    descKey: 'slashCommand.hrDesc',
     icon: Minus,
-    keywords: ['hr', 'divider', 'rule', '구분'],
+    keywords: ['hr', 'divider', 'rule'],
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).setHorizontalRule().run();
     },
@@ -112,6 +118,7 @@ const SlashMenuList = forwardRef<
   { onKeyDown: (props: { event: KeyboardEvent }) => boolean },
   SlashMenuListProps
 >((props, ref) => {
+  const t = useTranslations();
   const [selected, setSelected] = useState(0);
 
   useEffect(() => setSelected(0), [props.items]);
@@ -146,7 +153,7 @@ const SlashMenuList = forwardRef<
     >
       {props.items.length === 0 ? (
         <div className="px-3 py-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          결과 없음
+          {t('slashCommand.noResult')}
         </div>
       ) : (
         props.items.map((item, i) => {
@@ -154,7 +161,7 @@ const SlashMenuList = forwardRef<
           const isActive = i === selected;
           return (
             <button
-              key={item.title}
+              key={t(item.titleKey as 'slashCommand.h1Title')}
               onClick={() => selectItem(i)}
               onMouseEnter={() => setSelected(i)}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors"
@@ -172,10 +179,10 @@ const SlashMenuList = forwardRef<
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">{item.title}</div>
-                {item.description && (
+                <div className="text-sm font-medium truncate">{item.titleKey ? t(item.titleKey as 'slashCommand.h1Title') : (item.title ?? '')}</div>
+                {(item.descKey || item.description) && (
                   <div className="text-caption truncate" style={{ color: 'var(--text-tertiary)' }}>
-                    {item.description}
+                    {item.descKey ? t(item.descKey as 'slashCommand.h1Desc') : item.description}
                   </div>
                 )}
               </div>
@@ -219,7 +226,8 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
           if (!q) return items.slice(0, 10);
           return items
             .filter((item) => {
-              if (item.title.toLowerCase().includes(q)) return true;
+              const title = item.title ?? item.titleKey ?? '';
+              if (title.toLowerCase().includes(q)) return true;
               if (item.keywords?.some((k) => k.toLowerCase().includes(q))) return true;
               return false;
             })

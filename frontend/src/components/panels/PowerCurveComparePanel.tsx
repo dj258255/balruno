@@ -18,6 +18,7 @@ import { useProjectStore } from '@/stores/projectStore';
 import { computeSheetRows } from '@/lib/formulaEngine';
 import PanelShell from '@/components/ui/PanelShell';
 
+import { useTranslations } from 'next-intl';
 interface Props {
   onClose: () => void;
 }
@@ -37,6 +38,7 @@ interface Series {
 }
 
 export default function PowerCurveComparePanel({ onClose }: Props) {
+  const t = useTranslations();
   const { projects, currentProjectId } = useProjectStore();
   const project = projects.find((p) => p.id === currentProjectId);
 
@@ -154,13 +156,13 @@ export default function PowerCurveComparePanel({ onClose }: Props) {
   return (
     <PanelShell
       title="Power Curve Compare"
-      subtitle="여러 시트 곡선 오버레이"
+      subtitle={t('powerCurveCompare.subtitleHeader')}
       icon={Layers}
       onClose={onClose}
     >
       <div className="space-y-3">
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-          여러 시트의 (X, Y) 곡선을 한 화면에 겹쳐 비교합니다 — 직업별 파워, 무기 티어별 DPS 등.
+          {t('powerCurveCompare.description')}
         </p>
 
         {/* Chart */}
@@ -248,7 +250,7 @@ export default function PowerCurveComparePanel({ onClose }: Props) {
             </svg>
           ) : (
             <div className="text-center text-xs py-12" style={{ color: 'var(--text-secondary)' }}>
-              시리즈를 추가하세요.
+              {t('powerCurveCompare.addSeriesHint')}
             </div>
           )}
         </div>
@@ -271,15 +273,15 @@ export default function PowerCurveComparePanel({ onClose }: Props) {
         {/* Series editor */}
         <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>시리즈</h4>
+            <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{t('powerCurveCompare.seriesHeading')}</h4>
             <button
               onClick={addSeries}
               disabled={allSheets.length === 0}
-              title={allSheets.length === 0 ? '현재 프로젝트에 시트가 없습니다 — 먼저 시트를 만들어주세요' : '새 시리즈 추가'}
+              title={allSheets.length === 0 ? t('powerCurveCompare.noSheetsTitle') : t('powerCurveCompare.addSeriesTitle')}
               className="text-xs flex items-center gap-1 px-2 py-1 rounded transition-colors hover:bg-[var(--bg-tertiary)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               style={{ color: 'var(--accent)' }}
             >
-              <Plus size={12} /> 시리즈 추가
+              <Plus size={12} /> {t('powerCurveCompare.addSeriesBtn')}
             </button>
           </div>
 
@@ -324,7 +326,7 @@ export default function PowerCurveComparePanel({ onClose }: Props) {
                       className="px-1.5 py-0.5 text-caption rounded border bg-transparent"
                       style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                     >
-                      <option value="">X 컬럼</option>
+                      <option value="">{t('powerCurveCompare.xColumn')}</option>
                       {cols.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                     </select>
                     <select
@@ -333,14 +335,14 @@ export default function PowerCurveComparePanel({ onClose }: Props) {
                       className="px-1.5 py-0.5 text-caption rounded border bg-transparent"
                       style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                     >
-                      <option value="">Y 컬럼</option>
+                      <option value="">{t('powerCurveCompare.yColumn')}</option>
                       {cols.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                     </select>
                   </div>
                   <div className="text-caption flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
                     <span>#{idx + 1}</span>
                     <span>·</span>
-                    <span>{computedSeries.find((cs) => cs.id === s.id)?.points.length ?? 0} 점</span>
+                    <span>{t('powerCurveCompare.pointsCount', { n: computedSeries.find((cs) => cs.id === s.id)?.points.length ?? 0 })}</span>
                   </div>
                 </div>
               );
@@ -348,8 +350,8 @@ export default function PowerCurveComparePanel({ onClose }: Props) {
             {series.length === 0 && (
               <p className="text-xs text-center py-3" style={{ color: 'var(--text-secondary)' }}>
                 {allSheets.length === 0
-                  ? '프로젝트에 시트가 없습니다. 왼쪽 사이드바에서 시트를 먼저 만들어주세요.'
-                  : '“시리즈 추가” 버튼을 눌러 곡선을 얹어주세요.'}
+                  ? t('powerCurveCompare.noSheetsHelp')
+                  : t('powerCurveCompare.addSeriesHelp')}
               </p>
             )}
           </div>

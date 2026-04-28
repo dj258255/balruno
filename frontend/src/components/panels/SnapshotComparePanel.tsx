@@ -25,6 +25,7 @@ import {
   type SnapshotDomain,
 } from '@/lib/simSnapshots';
 import { simulateBattle } from '@/lib/simulation/battleEngine';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
@@ -35,8 +36,9 @@ interface Props {
 // ============================================================================
 
 function captureDemoUnitSnapshot(label: string, atk: number, def: number): Omit<SimSnapshot, 'id' | 'createdAt'> {
-  const unit1 = { id: 'a', name: '영웅', hp: 800, maxHp: 800, atk, def, speed: 1.2 };
-  const unit2 = { id: 'b', name: '보스', hp: 1200, maxHp: 1200, atk: 60, def: 20, speed: 0.8 };
+  const t = useTranslations();
+  const unit1 = { id: 'a', name: t('snapshotCompare.demoHero'), hp: 800, maxHp: 800, atk, def, speed: 1.2 };
+  const unit2 = { id: 'b', name: t('snapshotCompare.demoBoss'), hp: 1200, maxHp: 1200, atk: 60, def: 20, speed: 0.8 };
 
   // 200 런 Monte Carlo
   let aWins = 0;
@@ -67,6 +69,7 @@ function captureDemoUnitSnapshot(label: string, atk: number, def: number): Omit<
 // ============================================================================
 
 export default function SnapshotComparePanel({ onClose }: Props) {
+  const t = useTranslations();
   const [snapshots, setSnapshots] = useState<SimSnapshot[]>([]);
   const [selectedIds, setSelectedIds] = useState<[string | null, string | null]>([null, null]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -116,8 +119,8 @@ export default function SnapshotComparePanel({ onClose }: Props) {
 
   return (
     <PanelShell
-      title="스냅샷 비교"
-      subtitle="rebalance 전후 · A/B 테스트 diff"
+      title={t('snapshotCompare.titleHeader')}
+      subtitle={t('snapshotCompare.subtitleHeader')}
       icon={Camera}
       iconColor="#ec4899"
       onClose={onClose}
@@ -126,13 +129,13 @@ export default function SnapshotComparePanel({ onClose }: Props) {
       {/* 데모 스냅샷 저장 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          빠른 데모 — 영웅 스탯 변경 시뮬 저장
+          {t('snapshotCompare.demoFastSection')}
         </div>
         <div className="flex gap-1 flex-wrap">
-          <DemoButton label="기본 (ATK 80, DEF 10)"   onClick={() => saveDemo('기본',            80,  10)} />
-          <DemoButton label="ATK 버프 (100)"         onClick={() => saveDemo('ATK 100 버프',     100, 10)} />
-          <DemoButton label="DEF 너프 (5)"           onClick={() => saveDemo('DEF 5 너프',       80,  5)} />
-          <DemoButton label="탱커 (ATK 60, DEF 25)"  onClick={() => saveDemo('탱커 빌드',        60,  25)} />
+          <DemoButton label={t('snapshotCompare.demoBaseLabel')}   onClick={() => saveDemo(t('snapshotCompare.demoBaseName'), 80, 10)} />
+          <DemoButton label={t('snapshotCompare.demoAtkBuffLabel')} onClick={() => saveDemo(t('snapshotCompare.demoAtkBuffName'), 100, 10)} />
+          <DemoButton label={t('snapshotCompare.demoDefNerfLabel')} onClick={() => saveDemo(t('snapshotCompare.demoDefNerfName'), 80, 5)} />
+          <DemoButton label={t('snapshotCompare.demoTankLabel')} onClick={() => saveDemo(t('snapshotCompare.demoTankName'), 60, 25)} />
         </div>
       </div>
 
@@ -140,15 +143,15 @@ export default function SnapshotComparePanel({ onClose }: Props) {
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-            저장된 스냅샷 ({snapshots.length})
+            {t('snapshotCompare.savedSnapshots', { n: snapshots.length })}
           </span>
           <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-            비교할 2개를 선택 (before → after)
+            {t('snapshotCompare.pickTwoForCompare')}
           </span>
         </div>
         {snapshots.length === 0 ? (
           <p className="text-caption italic text-center py-6" style={{ color: 'var(--text-tertiary)' }}>
-            위 버튼으로 첫 스냅샷을 만들어 보세요
+            {t('snapshotCompare.createFirstSnap')}
           </p>
         ) : (
           <div className="space-y-1">
@@ -203,14 +206,14 @@ export default function SnapshotComparePanel({ onClose }: Props) {
                   <button
                     onClick={() => { setEditingId(snap.id); setEditName(snap.name); }}
                     className="p-1 rounded hover:bg-[var(--bg-tertiary)]"
-                    title="이름 변경"
+                    title={t('snapshotCompare.renameTitle')}
                   >
                     <Pencil className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
                   </button>
                   <button
                     onClick={() => handleDelete(snap.id)}
                     className="p-1 rounded hover:bg-[var(--bg-tertiary)]"
-                    title="삭제"
+                    title={t('snapshotCompare.deleteTitle')}
                   >
                     <Trash2 className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
                   </button>
@@ -238,7 +241,7 @@ export default function SnapshotComparePanel({ onClose }: Props) {
           <table className="w-full text-caption">
             <thead>
               <tr style={{ color: 'var(--text-tertiary)' }}>
-                <th className="text-left px-2 py-1">지표</th>
+                <th className="text-left px-2 py-1">{t('snapshotCompare.metricLabel')}</th>
                 <th className="text-right px-2 py-1">Before (A)</th>
                 <th className="text-right px-2 py-1">After (B)</th>
                 <th className="text-right px-2 py-1">Δ</th>
@@ -279,7 +282,7 @@ export default function SnapshotComparePanel({ onClose }: Props) {
           </table>
           {diff.rows.length === 0 && (
             <p className="text-caption italic text-center py-4" style={{ color: 'var(--text-tertiary)' }}>
-              공통 metric key 가 없습니다 — 같은 도메인의 스냅샷끼리 비교하세요
+              {t('snapshotCompare.noCommonMetric')}
             </p>
           )}
         </div>
@@ -287,12 +290,12 @@ export default function SnapshotComparePanel({ onClose }: Props) {
 
       {(!before || !after) && snapshots.length >= 2 && (
         <p className="text-caption italic text-center" style={{ color: 'var(--text-tertiary)' }}>
-          목록에서 before (A) 와 after (B) 스냅샷을 각각 클릭해 선택하세요
+          {t('snapshotCompare.pickBeforeAfter')}
         </p>
       )}
 
       <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        localStorage 기반 · 최대 50개 유지 · JSON 직렬화 가능한 설정만 저장
+        {t('snapshotCompare.storageNote')}
       </p>
     </PanelShell>
   );

@@ -54,6 +54,7 @@ function SectionDivider({
   /** 이 step 이 완료됐는지 — 완료 시 체크마크 + 색상 가득 (Progressive Disclosure 피드백) */
   complete?: boolean;
 }) {
+  const tStep = useTranslations('entityDefinition');
   return (
     <div className="flex items-center gap-3 pt-2 pb-1">
       <div
@@ -90,7 +91,7 @@ function SectionDivider({
           </span>
           {complete && (
             <span className="text-caption" style={{ color }}>
-              ✓ 완료
+              {tStep('stepDone')}
             </span>
           )}
         </div>
@@ -167,8 +168,8 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
 
   return (
     <PanelShell
-      title="엔티티 정의"
-      subtitle="시트 → 엔티티 → 레벨 테이블 자동 생성"
+      title={t('titleHeader')}
+      subtitle={t('subtitleHeader')}
       icon={Users}
       iconColor={PANEL_COLOR}
       onClose={onClose ?? (() => {})}
@@ -179,9 +180,9 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
     >
       <style>{hideSpinnerStyle}</style>
 
-      <ToolPanelHint toolId="entityDefinition" title="엔티티 정의 — 1-200렙 자동 생성" accentColor="#06b6d4">
-        <p>"<strong>전사 1렙 hp 100, 200렙 hp 30000</strong>" 만 입력 → 1-200렙 행이 곡선 (선형/지수/로그) 따라 자동 생성된 시트가 만들어져요.</p>
-        <p>RPG/Idle 처럼 레벨별 데이터가 많은 게임에 핵심. 한 번 만들면 base/rate 만 바꿔도 200줄 다시 계산.</p>
+      <ToolPanelHint toolId="entityDefinition" title={t('hintTitle')} accentColor="#06b6d4">
+        <p>{t.rich('hintP1', { strong: (chunks) => <strong>{chunks}</strong> })}</p>
+        <p>{t('hintP2')}</p>
       </ToolPanelHint>
 
       {showHelp && <HelpPanel />}
@@ -190,8 +191,8 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
       {!hasProjects && (
         <EmptyState
           icon={Users}
-          title="프로젝트가 없습니다"
-          description="왼쪽 사이드바에서 프로젝트를 먼저 만들어주세요."
+          title={t('noProjectTitle')}
+          description={t('noProjectDesc')}
           size="compact"
         />
       )}
@@ -200,10 +201,10 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
         <>
           <SectionDivider
             icon={Users}
-            title="소스 선택"
+            title={t('stepSourceTitle')}
             color={PANEL_COLOR}
             step="1/5"
-            description="엔티티 데이터가 있는 시트를 고릅니다"
+            description={t('stepSourceDesc')}
             complete={!!selectedSourceSheetId}
           />
 
@@ -213,14 +214,14 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
             onProjectChange={selectProject}
             selectedSheetId={selectedSourceSheetId}
             onSheetChange={(id) => selectSourceSheet(id || null)}
-            label="엔티티 데이터가 있는 시트"
+            label={t('sheetLabel')}
             color={PANEL_COLOR}
           />
 
           {/* 프로젝트 선택됐지만 시트 없을 때 */}
           {selectedProjectId && !hasSheets && (
             <p className="text-caption text-center py-2" style={{ color: 'var(--text-tertiary)' }}>
-              선택한 프로젝트에 시트가 없습니다. 왼쪽에서 시트를 만들어주세요.
+              {t('noSheetInProject')}
             </p>
           )}
         </>
@@ -231,10 +232,10 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
         <>
           <SectionDivider
             icon={Table2}
-            title="컬럼 매핑"
+            title={t('stepMappingTitle')}
             color="#3b82f6"
             step="2/5"
-            description="ID·이름·레벨 컬럼이 무엇인지 지정"
+            description={t('stepMappingDesc')}
             complete={!!idColumn && !!nameColumn && !!levelColumn}
           />
 
@@ -252,10 +253,10 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
 
           <SectionDivider
             icon={Sliders}
-            title="스탯 정의"
+            title={t('stepStatsTitle')}
             color="#f59e0b"
             step="3/5"
-            description="HP/ATK 등 스탯별 소스 컬럼과 성장 곡선 설정"
+            description={t('stepStatsDesc')}
             complete={statDefinitions.length > 0}
           />
 
@@ -270,7 +271,7 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
             title={t('sectionEntity')}
             color="#5a9cf5"
             step="4/5"
-            description="레벨 테이블을 만들 개체(캐릭터·몬스터) 선택"
+            description={t('stepEntityDesc')}
             complete={!!selectedEntityId}
           />
 
@@ -296,7 +297,7 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
             icon={TrendingUp}
             title={t('sectionGrowth')}
             color="#22c55e"
-            description="선택한 엔티티의 레벨별 스탯 곡선 미리보기"
+            description={t('stepPreviewDesc')}
           />
 
           <CurvePreview
@@ -315,7 +316,7 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
             icon={Settings}
             title={t('sectionOverride')}
             color="#f59e0b"
-            description="특정 레벨의 스탯을 직접 지정해 곡선 미세 조정"
+            description={t('stepFineTuneDesc')}
           />
 
           <InterpolationTypeSelector
@@ -337,7 +338,7 @@ export default function EntityDefinition({ onClose }: EntityDefinitionProps) {
             title={t('sectionGenerate')}
             color="#9179f2"
             step="5/5"
-            description="최종 레벨 테이블을 새 시트로 저장"
+            description={t('stepExportDesc')}
             complete={previewData.length > 0}
           />
 

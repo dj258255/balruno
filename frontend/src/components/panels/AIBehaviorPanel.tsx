@@ -18,12 +18,14 @@ import {
   type BehaviorAction,
   type ConditionOp,
 } from '@/lib/aiBehavior';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
 }
 
 export default function AIBehaviorPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [rules, setRules] = useState<BehaviorRule[]>(RULE_PRESETS.tactical);
 
   const loadPreset = (key: string) => {
@@ -35,7 +37,7 @@ export default function AIBehaviorPanel({ onClose }: Props) {
       ...prev,
       {
         id: `rule-${Date.now()}`,
-        name: '새 규칙',
+        name: t('aiBehavior.newRule'),
         condition: { type: 'always' },
         action: { type: 'attack' },
       },
@@ -60,8 +62,8 @@ export default function AIBehaviorPanel({ onClose }: Props) {
 
   return (
     <PanelShell
-      title="AI Behavior 에디터"
-      subtitle="조건 → 액션 규칙 체인 · decisionSkill 연동"
+      title={t('aiBehavior.titleHeader')}
+      subtitle={t('aiBehavior.subtitleHeader')}
       icon={Brain}
       iconColor="#8b5cf6"
       onClose={onClose}
@@ -70,7 +72,7 @@ export default function AIBehaviorPanel({ onClose }: Props) {
       {/* 프리셋 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          프리셋 불러오기
+          {t('aiBehavior.loadPreset')}
         </div>
         <div className="flex gap-2">
           {Object.keys(RULE_PRESETS).map((key) => (
@@ -85,7 +87,7 @@ export default function AIBehaviorPanel({ onClose }: Props) {
           ))}
         </div>
         <p className="text-caption italic mt-2" style={{ color: 'var(--text-tertiary)' }}>
-          aggressive: 공격 극대화 · defensive: 생존 우선 · tactical: 상황 맞춤
+          {t('aiBehavior.presetExplain')}
         </p>
       </div>
 
@@ -93,10 +95,10 @@ export default function AIBehaviorPanel({ onClose }: Props) {
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-            규칙 ({rules.length}) — 위에서부터 순서대로 평가
+            {t('aiBehavior.rulesHeader', { n: rules.length })}
           </span>
           <button onClick={addRule} className="btn-primary text-caption inline-flex items-center gap-1">
-            <Plus className="w-3 h-3" /> 추가
+            <Plus className="w-3 h-3" /> {t('aiBehavior.addRule')}
           </button>
         </div>
 
@@ -114,14 +116,14 @@ export default function AIBehaviorPanel({ onClose }: Props) {
           ))}
           {rules.length === 0 && (
             <p className="text-caption italic text-center py-4" style={{ color: 'var(--text-tertiary)' }}>
-              규칙이 없습니다. 프리셋을 로드하거나 직접 추가하세요.
+              {t('aiBehavior.noRules')}
             </p>
           )}
         </div>
       </div>
 
       <div className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        규칙은 위에서 아래로 평가됨 — 첫 매칭 규칙의 액션 실행. decisionSkill 이 낮으면 규칙 무시 후 기본 공격.
+        {t('aiBehavior.evaluationHelp')}
       </div>
     </PanelShell>
   );
@@ -142,6 +144,7 @@ function RuleEditor({
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
 }) {
+  const t = useTranslations();
   const showValue = rule.condition.type !== 'always';
 
   return (
@@ -160,7 +163,7 @@ function RuleEditor({
           value={rule.name}
           onChange={(e) => onUpdate({ name: e.target.value })}
           className="input-compact flex-1 min-w-0"
-          placeholder="규칙 이름"
+          placeholder={t('aiBehavior.rulePlaceholder')}
         />
         <button onClick={() => onMove(1)} disabled={idx === total - 1} className="opacity-40 hover:opacity-100 disabled:opacity-20 text-label">
           ↓
@@ -171,7 +174,7 @@ function RuleEditor({
       </div>
 
       <div className="flex items-center gap-2 text-label">
-        <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>만약</span>
+        <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('aiBehavior.ifLabel')}</span>
         <select
           value={rule.condition.type}
           onChange={(e) =>

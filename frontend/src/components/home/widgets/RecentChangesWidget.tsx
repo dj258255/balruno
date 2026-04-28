@@ -7,24 +7,12 @@
 
 import { useEffect, useRef } from 'react';
 import { History, ArrowRight } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 import type { TodaysWork } from '@/hooks/useTodaysWork';
 import { useProjectStore } from '@/stores/projectStore';
 
 interface Props {
   work: TodaysWork;
-}
-
-function formatRelative(ts: number): string {
-  const diff = Date.now() - ts;
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return `${s}초 전`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}일 전`;
-  return new Date(ts).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 }
 
 function formatValue(v: unknown): string {
@@ -34,10 +22,25 @@ function formatValue(v: unknown): string {
 }
 
 export default function RecentChangesWidget({ work }: Props) {
+  const t = useTranslations('home');
+  const locale = useLocale();
   const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
   const projects = useProjectStore((s) => s.projects);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const formatRelative = (ts: number): string => {
+    const diff = Date.now() - ts;
+    const s = Math.floor(diff / 1000);
+    if (s < 60) return t('relSecAgo', { n: s });
+    const m = Math.floor(s / 60);
+    if (m < 60) return t('relMinAgo', { n: m });
+    const h = Math.floor(m / 60);
+    if (h < 24) return t('relHourAgo', { n: h });
+    const d = Math.floor(h / 24);
+    if (d < 7) return t('relDayAgo', { n: d });
+    return new Date(ts).toLocaleDateString(locale === 'ko' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric' });
+  };
 
   // Inbox 클릭 시 scroll 이벤트 리스닝 — 이 위젯으로 스크롤 + 하이라이트
   useEffect(() => {
@@ -81,10 +84,10 @@ export default function RecentChangesWidget({ work }: Props) {
       <div className="flex items-center gap-2 mb-3">
         <History className="w-4 h-4" style={{ color: '#10b981' }} />
         <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-          최근 변경 (Inbox)
+          {t('recentChanges')}
         </h3>
         <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
-          {work.recentChanges.length}개
+          {t('recentChangesCount', { count: work.recentChanges.length })}
         </span>
       </div>
 

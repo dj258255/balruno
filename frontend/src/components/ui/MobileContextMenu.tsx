@@ -13,6 +13,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 
 export interface MobileContextMenuItem {
   id: string;
@@ -36,6 +37,7 @@ export function MobileContextMenu({
   title,
   items,
 }: MobileContextMenuProps) {
+  const t = useTranslations('ui');
   const menuRef = useRef<HTMLDivElement>(null);
 
   // 배경 클릭 시 닫기
@@ -156,7 +158,7 @@ export function MobileContextMenu({
             onClick={onClose}
             style={{ color: 'var(--accent)' }}
           >
-            취소
+            {t('cancel')}
           </button>
         </div>
       </div>

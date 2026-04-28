@@ -181,7 +181,7 @@ export function ProjectList({
     }
     return (
       <div onContextMenu={handleEmptyContextMenu}>
-        {renderEmptyContextMenu(emptyMenu, setEmptyMenu)}
+        {renderEmptyContextMenu(emptyMenu, setEmptyMenu, t)}
         {title && <div className="pt-2 px-2"><SectionTitle>{title}</SectionTitle></div>}
         <EmptyProjectsCTA />
       </div>
@@ -263,7 +263,7 @@ export function ProjectList({
 
   return (
     <div className="p-2" onContextMenu={handleEmptyContextMenu}>
-      {renderEmptyContextMenu(emptyMenu, setEmptyMenu)}
+      {renderEmptyContextMenu(emptyMenu, setEmptyMenu, t)}
       {title && <SectionTitle>{title}</SectionTitle>}
       <div className="space-y-1.5">
         {projects.map((project, projectIndex) => {
@@ -623,6 +623,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function renderEmptyContextMenu(
   menu: { x: number; y: number } | null,
   close: (v: null) => void,
+  t: (key: string) => string,
 ) {
   if (!menu) return null;
 
@@ -649,7 +650,7 @@ function renderEmptyContextMenu(
         style={{ color: 'var(--text-primary)' }}
       >
         <FolderPlus className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-        새 프로젝트
+        {t('sidebar.newProjectShort')}
       </button>
       <button
         type="button"
@@ -658,7 +659,7 @@ function renderEmptyContextMenu(
         style={{ color: 'var(--text-primary)' }}
       >
         <LayoutTemplate className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-        템플릿 갤러리에서 시작
+        {t('sidebar.fromTemplateGallery')}
       </button>
     </div>
   );

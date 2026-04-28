@@ -6,6 +6,7 @@
  */
 
 import { Clock, FileSpreadsheet } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { TodaysWork } from '@/hooks/useTodaysWork';
 import { useProjectStore } from '@/stores/projectStore';
 
@@ -13,19 +14,20 @@ interface Props {
   work: TodaysWork;
 }
 
-function formatRelative(ts: number): string {
-  const diff = Date.now() - ts;
-  const m = Math.floor(diff / 60_000);
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const d = Math.floor(h / 24);
-  return `${d}일 전`;
-}
-
 export default function RecentEditsWidget({ work }: Props) {
+  const t = useTranslations('home');
   const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
+
+  const formatRelative = (ts: number): string => {
+    const diff = Date.now() - ts;
+    const m = Math.floor(diff / 60_000);
+    if (m < 60) return t('relMinAgo', { n: m });
+    const h = Math.floor(m / 60);
+    if (h < 24) return t('relHourAgo', { n: h });
+    const d = Math.floor(h / 24);
+    return t('relDayAgo', { n: d });
+  };
 
   const jump = (projectId: string, sheetId: string) => {
     setCurrentProject(projectId);
@@ -40,16 +42,16 @@ export default function RecentEditsWidget({ work }: Props) {
       <div className="flex items-center gap-2 mb-3">
         <Clock className="w-4 h-4" style={{ color: '#6366f1' }} />
         <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-          최근 편집
+          {t('recentEdits')}
         </h3>
         <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
-          7일 이내
+          {t('withinDays')}
         </span>
       </div>
 
       {work.recentSheets.length === 0 ? (
         <p className="text-xs italic py-4 text-center" style={{ color: 'var(--text-tertiary)' }}>
-          최근 편집된 시트가 없습니다
+          {t('noRecentEdits')}
         </p>
       ) : (
         <div className="space-y-0.5 max-h-56 overflow-y-auto">

@@ -53,7 +53,7 @@ export default function EmptySheetView({ onCreateSheet }: EmptySheetViewProps) {
               {t('sheet.createSheet')}
             </div>
             <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              빈 시트로 바로 시작
+              {t('sheet.startBlank')}
             </div>
           </button>
 
@@ -64,10 +64,10 @@ export default function EmptySheetView({ onCreateSheet }: EmptySheetViewProps) {
           >
             <Wand2 className="w-6 h-6 mb-2" style={{ color: '#8b5cf6' }} />
             <div className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-              AI 로 시작
+              {t('sheet.startWithAi')}
             </div>
             <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              요구사항 → 자동 생성
+              {t('sheet.startWithAiDesc')}
             </div>
           </button>
 
@@ -78,10 +78,10 @@ export default function EmptySheetView({ onCreateSheet }: EmptySheetViewProps) {
           >
             <FolderPlus className="w-6 h-6 mb-2" style={{ color: '#10b981' }} />
             <div className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-              템플릿 둘러보기
+              {t('sheet.browseTemplates')}
             </div>
             <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              RPG · FPS · 팀 PM
+              {t('sheet.browseTemplatesDesc')}
             </div>
           </button>
 
@@ -92,10 +92,10 @@ export default function EmptySheetView({ onCreateSheet }: EmptySheetViewProps) {
           >
             <FileSpreadsheet className="w-6 h-6 mb-2" style={{ color: '#f59e0b' }} />
             <div className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-              Excel 가져오기
+              {t('sheet.importExcel')}
             </div>
             <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              기존 시트에서 시작
+              {t('sheet.importExcelDesc')}
             </div>
           </button>
         </div>

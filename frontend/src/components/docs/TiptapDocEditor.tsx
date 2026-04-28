@@ -17,6 +17,7 @@ import { useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import { useTranslations } from 'next-intl';
 import SlashCommand, { type SlashCommandItem } from './extensions/SlashCommand';
 import { createMentionExtension } from './extensions/MentionSuggestion';
 import LiveCellBlock from './extensions/LiveCellBlock';
@@ -39,6 +40,7 @@ interface Props {
 }
 
 export default function TiptapDocEditor({ content, onChange, placeholder, projectId }: Props) {
+  const t = useTranslations('docs');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialized = useRef(false);
 
@@ -75,26 +77,24 @@ export default function TiptapDocEditor({ content, onChange, placeholder, projec
     }
   };
 
-  // Slash 메뉴에 custom blocks 추가
   const slashItems: SlashCommandItem[] = [
-    { title: '제목 1', description: '큰 제목', icon: Heading1, keywords: ['h1', '제목'],
+    { title: t('slashH1Title'), description: t('slashH1Desc'), icon: Heading1, keywords: ['h1', '제목', 'heading'],
       command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setNode('heading', { level: 1 }).run() },
-    { title: '제목 2', description: '섹션 제목', icon: Heading2, keywords: ['h2', '섹션'],
+    { title: t('slashH2Title'), description: t('slashH2Desc'), icon: Heading2, keywords: ['h2', '섹션', 'section'],
       command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setNode('heading', { level: 2 }).run() },
-    { title: '제목 3', description: '하위 제목', icon: Heading3, keywords: ['h3'],
+    { title: t('slashH3Title'), description: t('slashH3Desc'), icon: Heading3, keywords: ['h3'],
       command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setNode('heading', { level: 3 }).run() },
-    { title: '글머리 목록', description: '·  점 리스트', icon: List, keywords: ['bullet', 'list', '목록'],
+    { title: t('slashBulletTitle'), description: t('slashBulletDesc'), icon: List, keywords: ['bullet', 'list', '목록'],
       command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run() },
-    { title: '번호 목록', description: '1. 순서 리스트', icon: ListOrdered, keywords: ['ol', '번호'],
+    { title: t('slashOrderedTitle'), description: t('slashOrderedDesc'), icon: ListOrdered, keywords: ['ol', '번호', 'numbered'],
       command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run() },
-    { title: '인용문', description: '>  블록 인용', icon: Quote, keywords: ['quote', '인용'],
+    { title: t('slashQuoteTitle'), description: t('slashQuoteDesc'), icon: Quote, keywords: ['quote', '인용'],
       command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBlockquote().run() },
-    { title: '코드 블록', description: '여러 줄 코드', icon: Code, keywords: ['code', '코드'],
+    { title: t('slashCodeTitle'), description: t('slashCodeDesc'), icon: Code, keywords: ['code', '코드'],
       command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run() },
-    { title: '구분선', description: '수평선', icon: Minus, keywords: ['hr', 'divider', '구분'],
+    { title: t('slashHrTitle'), description: t('slashHrDesc'), icon: Minus, keywords: ['hr', 'divider', '구분'],
       command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run() },
-    // Custom blocks (M2)
-    { title: 'Live Cell', description: '시트 셀 값 실시간', icon: FileSpreadsheet, keywords: ['cell', '셀'],
+    { title: t('slashLiveCellTitle'), description: t('slashLiveCellDesc'), icon: FileSpreadsheet, keywords: ['cell', '셀'],
       command: ({ editor, range }) => {
         const p = projectRef.current;
         const firstSheet = p?.sheets?.[0];
@@ -111,7 +111,7 @@ export default function TiptapDocEditor({ content, onChange, placeholder, projec
           },
         }).run();
       } },
-    { title: 'Chart', description: '라인/바 차트 (시트 기반)', icon: BarChart3, keywords: ['chart', '차트'],
+    { title: t('slashChartTitle'), description: t('slashChartDesc'), icon: BarChart3, keywords: ['chart', '차트'],
       command: ({ editor, range }) => {
         const p = projectRef.current;
         const firstSheet = p?.sheets?.[0];
@@ -127,7 +127,7 @@ export default function TiptapDocEditor({ content, onChange, placeholder, projec
           },
         }).run();
       } },
-    { title: 'Task Card', description: '태스크 미리보기', icon: Zap, keywords: ['task', '태스크'],
+    { title: t('slashTaskTitle'), description: t('slashTaskDesc'), icon: Zap, keywords: ['task', '태스크'],
       command: ({ editor, range }) => {
         const p = projectRef.current;
         const firstPmRow = p?.sheets.flatMap((s) => s.rows)[0];
@@ -136,14 +136,14 @@ export default function TiptapDocEditor({ content, onChange, placeholder, projec
           attrs: { projectId: p?.id ?? '', rowId: firstPmRow?.id ?? '' },
         }).run();
       } },
-    { title: 'Simulation', description: 'DPS Monte Carlo 인라인', icon: Swords, keywords: ['sim', 'dps', '시뮬'],
+    { title: t('slashSimTitle'), description: t('slashSimDesc'), icon: Swords, keywords: ['sim', 'dps', '시뮬'],
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).insertContent({
           type: 'simulationBlock',
           attrs: { damage: 100, attackSpeed: 1, critRate: 0.2, critDamage: 2, iterations: 1000 },
         }).run();
       } },
-    { title: 'Rationale', description: '셀 값 근거 자동 생성', icon: Lightbulb, keywords: ['rationale', '근거', 'why'],
+    { title: t('slashRationaleTitle'), description: t('slashRationaleDesc'), icon: Lightbulb, keywords: ['rationale', '근거', 'why'],
       command: ({ editor, range }) => {
         const p = projectRef.current;
         const firstSheet = p?.sheets?.[0];
@@ -167,10 +167,17 @@ export default function TiptapDocEditor({ content, onChange, placeholder, projec
         heading: { levels: [1, 2, 3] },
       }),
       Placeholder.configure({
-        placeholder: placeholder ?? '입력하세요... ("/" 으로 명령어, "@" 으로 참조)',
+        placeholder: placeholder ?? t('editorPlaceholder'),
       }),
       SlashCommand.configure({ items: slashItems }),
-      createMentionExtension(() => projectRef.current),
+      createMentionExtension(
+        () => projectRef.current,
+        () => ({
+          noTitle: t('noTitlePlaceholder'),
+          docHint: t('mentionDocHint'),
+          sheetHint: (cols: number, rows: number) => t('mentionSheetHint', { cols, rows }),
+        }),
+      ),
       LiveCellBlock,
       ChartBlock,
       TaskCardBlock,

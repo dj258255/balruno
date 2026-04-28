@@ -17,6 +17,7 @@ import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import { Lightbulb, ArrowRight, Link as LinkIcon, History } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { detectPmSheet } from '@/lib/pmSheetDetection';
 
@@ -27,17 +28,6 @@ interface RationaleAttrs {
   rowId: string;
 }
 
-function formatRelative(ts: number): string {
-  const diff = Date.now() - ts;
-  const m = Math.floor(diff / 60_000);
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}일 전`;
-  return new Date(ts).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-}
-
 function formatValue(v: unknown): string {
   if (v === null || v === undefined || v === '') return '—';
   const s = String(v);
@@ -45,6 +35,19 @@ function formatValue(v: unknown): string {
 }
 
 function RationaleView({ node }: NodeViewProps) {
+  const t = useTranslations('docs');
+  const tHome = useTranslations('home');
+  const locale = useLocale();
+  const formatRelative = (ts: number): string => {
+    const diff = Date.now() - ts;
+    const m = Math.floor(diff / 60_000);
+    if (m < 60) return tHome('relMinAgo', { n: m });
+    const h = Math.floor(m / 60);
+    if (h < 24) return tHome('relHourAgo', { n: h });
+    const d = Math.floor(h / 24);
+    if (d < 7) return tHome('relDayAgo', { n: d });
+    return new Date(ts).toLocaleDateString(locale === 'ko' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric' });
+  };
   const attrs = node.attrs as RationaleAttrs;
   const project = useProjectStore((s) => s.projects.find((p) => p.id === attrs.projectId));
   const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
@@ -137,7 +140,7 @@ function RationaleView({ node }: NodeViewProps) {
           }}
           contentEditable={false}
         >
-          근거 생성 실패 — 셀을 찾을 수 없음
+          {t('rationaleNotFound')}
         </div>
       </NodeViewWrapper>
     );
@@ -160,10 +163,10 @@ function RationaleView({ node }: NodeViewProps) {
         >
           <Lightbulb className="w-3.5 h-3.5" style={{ color: '#a855f7' }} />
           <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
-            근거 — {summary.sheet.name}/{summary.column.name}
+            {t('rationaleHeading', { sheet: summary.sheet.name, column: summary.column.name })}
           </span>
           <span className="ml-auto text-caption font-mono px-2 py-0.5 rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
-            현재 값: {formatValue(summary.currentValue)}
+            {t('rationaleCurrent', { value: formatValue(summary.currentValue) })}
           </span>
           <button
             type="button"
@@ -171,7 +174,7 @@ function RationaleView({ node }: NodeViewProps) {
             className="text-caption flex items-center gap-0.5 px-2 py-0.5 rounded hover:bg-[var(--bg-hover)]"
             style={{ color: '#a855f7' }}
           >
-            셀로
+            {t('rationaleJumpToCell')}
             <ArrowRight className="w-3 h-3" />
           </button>
         </div>
@@ -181,11 +184,11 @@ function RationaleView({ node }: NodeViewProps) {
           <section>
             <div className="flex items-center gap-1 text-overline mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
               <History className="w-3 h-3" />
-              변경 이력 {summary.cellChanges.length > 0 && `(${summary.cellChanges.length})`}
+              {t('rationaleHistory')} {summary.cellChanges.length > 0 && `(${summary.cellChanges.length})`}
             </div>
             {summary.cellChanges.length === 0 ? (
               <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-                변경 기록 없음 — 초기 값 유지
+                {t('rationaleHistoryEmpty')}
               </p>
             ) : (
               <div className="space-y-1">
@@ -234,7 +237,7 @@ function RationaleView({ node }: NodeViewProps) {
             <section>
               <div className="flex items-center gap-1 text-overline mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
                 <LinkIcon className="w-3 h-3" />
-                연결된 태스크 ({summary.linkedTasks.length})
+                {t('rationaleLinkedTasks')} ({summary.linkedTasks.length})
               </div>
               <div className="space-y-1">
                 {summary.linkedTasks.map((t) => (

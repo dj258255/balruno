@@ -204,17 +204,17 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
               color: showOnlyCurrentSprint ? '#f59e0b' : 'var(--text-secondary)',
               border: `1px solid ${showOnlyCurrentSprint ? '#f59e0b40' : 'var(--border-primary)'}`,
             }}
-            title="현재 진행 중인 Sprint 의 카드만 보기"
+            title={t('views.kanbanCurrentSprintTooltip')}
           >
             <Zap className="w-3 h-3" />
-            현재 Sprint 만
+            {t('views.kanbanCurrentSprintToggle')}
           </button>
         )}
         <button
           onClick={() => setShowSettings((v) => !v)}
           className={cycleInfo && cycleRefColumn ? 'p-1.5 rounded hover:bg-[var(--bg-tertiary)]' : 'ml-auto p-1.5 rounded hover:bg-[var(--bg-tertiary)]'}
-          aria-label="카드 설정"
-          title="카드 설정"
+          aria-label={t('views.kanbanCardSettings')}
+          title={t('views.kanbanCardSettings')}
         >
           <Settings2 size={14} style={{ color: 'var(--text-secondary)' }} />
         </button>
@@ -226,7 +226,7 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
             {/* 커버 이미지 섹션 */}
             <div className="p-3 border-b" style={{ borderColor: 'var(--border-primary)' }}>
               <div className="text-overline mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
-                커버 이미지
+                {t('views.kanbanCoverImage')}
               </div>
               <select
                 value={coverColId ?? ''}
@@ -234,14 +234,14 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                 className="w-full px-2.5 py-1.5 text-xs rounded-md border bg-transparent outline-none focus:ring-2 focus:ring-[var(--accent)]/30 transition"
                 style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
               >
-                <option value="">없음</option>
+                <option value="">{t('views.kanbanNone')}</option>
                 {urlColumns.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
               {urlColumns.length === 0 && (
                 <p className="text-caption mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                  url 타입 컬럼을 먼저 만들어주세요
+                  {t('views.kanbanUrlColFirst')}
                 </p>
               )}
             </div>
@@ -249,7 +249,7 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
             {/* 표시 필드 섹션 */}
             <div className="p-3">
               <div className="text-overline mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
-                카드에 표시할 필드
+                {t('views.kanbanCardFields')}
               </div>
               <div className="max-h-52 overflow-y-auto -mx-1">
                 {sheet.columns
@@ -287,7 +287,7 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
       <div
         className="flex-1 overflow-x-auto overflow-y-hidden p-4"
         role="region"
-        aria-label={`${sheet.name} 칸반 보드`}
+        aria-label={t('views.kanbanBoardAria', { name: sheet.name })}
       >
         <div className="flex gap-3 h-full">
           {columns.map((col) => {
@@ -298,7 +298,7 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                 className="flex flex-col w-72 flex-shrink-0 rounded-lg"
                 style={{ background: 'var(--bg-secondary)' }}
                 role="group"
-                aria-label={`${col.label} · ${rows.length}개`}
+                aria-label={t('views.kanbanColumnAria', { label: col.label, count: rows.length })}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   // 컬럼 자체에 drop. dropIndicator 가 *이 컬럼* 의 row 를 가리키면 카드 onDrop 이
@@ -349,7 +349,7 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                         draggable
                         role="button"
                         tabIndex={0}
-                        aria-label={titleVal || `${col.label} 카드`}
+                        aria-label={titleVal || t('views.kanbanCardAria', { label: col.label })}
                         onDragStart={(e) => {
                           e.dataTransfer.setData('text/plain', row.id);
                           e.dataTransfer.effectAllowed = 'move';
@@ -413,7 +413,7 @@ export default function KanbanView({ projectId, sheet }: KanbanViewProps) {
                               color: '#f59e0b',
                               border: '1px solid #f59e0b40',
                             }}
-                            title="현재 진행 중 Sprint 의 카드"
+                            title={t('views.kanbanInCurrentSprintTooltip')}
                           >
                             <Zap className="w-2.5 h-2.5" />
                             Sprint

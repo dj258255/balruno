@@ -120,14 +120,14 @@ export default function ShareModal({ onClose }: ShareModalProps) {
           style={{ background: 'var(--bg-primary)' }}
         >
           <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-            공유할 프로젝트가 없습니다. 먼저 프로젝트를 선택하세요.
+            {t('share.noProjectShare')}
           </p>
           <button
             onClick={onClose}
             className="mt-4 px-4 py-2 rounded-lg text-sm"
             style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
           >
-            닫기
+            {t('share.closeBtn')}
           </button>
         </div>
       </div>
@@ -162,7 +162,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
             </div>
             <div>
               <h2 id="share-modal-title" className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-                프로젝트 공유
+                {t('share.shareProject')}
               </h2>
               <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                 {project.name}
@@ -187,7 +187,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
             <div className="flex items-center gap-2 mb-1">
               <User className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
               <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                내 표시 이름 / 색상
+                {t('share.myDisplayNameColor')}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -215,7 +215,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                   border: '1px solid var(--border-primary)',
                   color: 'var(--text-primary)',
                 }}
-                placeholder="표시 이름"
+                placeholder={t('share.displayNamePlaceholder')}
               />
             </div>
             <div className="flex items-center gap-1.5 pt-1">
@@ -229,7 +229,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                     outline: c === myColor ? '2px solid var(--text-primary)' : 'none',
                     outlineOffset: 2,
                   }}
-                  aria-label={`색상 ${c}`}
+                  aria-label={t('share.colorAria', { color: c })}
                 />
               ))}
             </div>
@@ -248,7 +248,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                   <WifiOff className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
                 )}
                 <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  실시간 협업
+                  {t('share.liveCollab')}
                 </span>
               </div>
               <button
@@ -259,13 +259,13 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                   color: 'white',
                 }}
               >
-                {isActive ? '비활성화' : '활성화'}
+                {isActive ? t('share.deactivate') : t('share.activate')}
               </button>
             </div>
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
               {isActive
-                ? `WebRTC P2P 연결됨 — 다른 ${peerCount}명 접속 중`
-                : 'y-webrtc 공용 신호서버를 통한 P2P 협업. 활성화하면 링크를 받은 사람과 실시간 동기화.'}
+                ? t('share.connectedPeers', { n: peerCount })
+                : t('share.collabHelp')}
             </p>
           </div>
 
@@ -276,10 +276,10 @@ export default function ShareModal({ onClose }: ShareModalProps) {
               <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
                 <div>
                   <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-                    권한
+                    {t('share.permission')}
                   </div>
                   <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                    {readOnly ? '링크 받는 사람은 보기만 가능' : '편집 + 동기화 전체 허용'}
+                    {readOnly ? t('share.readOnlyDesc') : t('share.editAllowDesc')}
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -291,7 +291,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                       color: !readOnly ? 'white' : 'var(--text-secondary)',
                     }}
                   >
-                    편집
+                    {t('share.editLabel')}
                   </button>
                   <button
                     onClick={() => setReadOnly(true)}
@@ -301,7 +301,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                       color: readOnly ? 'white' : 'var(--text-secondary)',
                     }}
                   >
-                    읽기전용
+                    {t('share.readOnlyLabel')}
                   </button>
                 </div>
               </div>
@@ -310,10 +310,10 @@ export default function ShareModal({ onClose }: ShareModalProps) {
               <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
                 <div>
                   <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-                    링크 만료
+                    {t('share.linkExpiry')}
                   </div>
                   <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                    {expiryKey === 'none' ? '만료 없음 (room 이 살아있는 동안 유효)' : `${expiryKey} 후 자동 만료`}
+                    {expiryKey === 'none' ? t('share.noExpiry') : t('share.autoExpiry', { key: expiryKey })}
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -327,14 +327,14 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                         color: expiryKey === k ? 'white' : 'var(--text-secondary)',
                       }}
                     >
-                      {k === 'none' ? '없음' : k}
+                      {k === 'none' ? t('share.noneLabel') : k}
                     </button>
                   ))}
                 </div>
               </div>
 
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-                공유 링크
+                {t('share.shareLink')}
               </label>
               <div className="flex gap-2">
                 <input
@@ -359,17 +359,17 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                 >
                   {copied ? (
                     <>
-                      <Check className="w-4 h-4" /> 복사됨
+                      <Check className="w-4 h-4" /> {t('share.copied')}
                     </>
                   ) : (
                     <>
-                      <Copy className="w-4 h-4" /> 복사
+                      <Copy className="w-4 h-4" /> {t('share.copy')}
                     </>
                   )}
                 </button>
               </div>
               <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>
-                팀원에게 이 링크를 공유하세요. 같은 프로젝트가 자동으로 동기화됩니다.
+                {t('share.shareLinkHelp')}
               </p>
             </div>
           )}
@@ -384,7 +384,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                 className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs text-white"
                 style={{ background: '#3b82f6' }}
               >
-                나
+                {t('share.meLabel')}
               </div>
               {peerCount > 0 ? (
                 <div className="flex -space-x-2">
@@ -414,7 +414,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                 </div>
               ) : (
                 <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  현재 혼자 — 링크를 공유해서 팀원을 초대하세요
+                  {t('share.aloneInvite')}
                 </span>
               )}
             </div>
@@ -428,9 +428,9 @@ export default function ShareModal({ onClose }: ShareModalProps) {
               color: 'var(--warning)',
             }}
           >
-            <strong>MVP 안내:</strong> 공용 신호서버 사용 (signaling.yjs.dev).
-            데이터는 P2P 로 직접 전송되며 신호서버는 메타데이터만 봅니다.
-            대규모 팀에는 자체 신호서버 권장.
+            {t.rich('share.mvpNotice', { b: (chunks) => <strong>{chunks}</strong> })} 
+            {t('share.mvpNotice2')}
+            {t('share.mvpNotice3')}
           </div>
         </div>
       </div>

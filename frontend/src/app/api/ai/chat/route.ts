@@ -9,6 +9,7 @@
 
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { getServerT } from '@/lib/serverI18n';
 
 export const runtime = 'nodejs';
 
@@ -28,29 +29,23 @@ const MAX_TOKENS = 1024;
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  const t = await getServerT(req, 'aiApi');
 
   let body: ChatRequest;
   try {
     body = (await req.json()) as ChatRequest;
   } catch {
     return new Response(
-      JSON.stringify({ error: 'Invalid JSON body' }),
+      JSON.stringify({ error: t('invalidJson') }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
   if (!apiKey) {
-    // Fallback — 키 없으면 mock 답변
-    const fallback = `⚠ ANTHROPIC_API_KEY 가 설정되지 않았습니다.
-
-서버 환경변수에 \`ANTHROPIC_API_KEY\` 를 설정하면 실제 AI 답변이 동작합니다.
-
-지금은 프로젝트 컨텍스트만 요약해드립니다:
----
-${body.context.slice(0, 2000)}
----
-
-마지막 질문: "${body.messages[body.messages.length - 1]?.content ?? ''}"`;
+    const fallback = t('chatFallback', {
+      context: body.context.slice(0, 2000),
+      question: body.messages[body.messages.length - 1]?.content ?? '',
+    });
     return new Response(fallback, {
       status: 200,
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
@@ -63,7 +58,7 @@ ${body.context.slice(0, 2000)}
     const systemContent = [
       body.systemPrompt,
       '',
-      '## 현재 프로젝트 컨텍스트 (실시간)',
+      t('chatProjectContext'),
       '',
       body.context,
     ].join('\n');
@@ -96,7 +91,7 @@ ${body.context.slice(0, 2000)}
           }
         } catch (err) {
           controller.enqueue(
-            encoder.encode(`\n[오류: ${err instanceof Error ? err.message : String(err)}]`)
+            encoder.encode(t('streamError', { msg: err instanceof Error ? err.message : String(err) }))
           );
         } finally {
           controller.close();

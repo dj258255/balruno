@@ -655,10 +655,10 @@ export function CurveTypeSelector({
               }}
             >
               <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                {info.name}
+                {t(`curve.${type}`)}
               </div>
               <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                {info.description}
+                {t(`curve.${type}Desc`)}
               </div>
               <div className="text-xs mt-1 font-mono opacity-60" style={{ color: 'var(--text-tertiary)' }}>
                 {info.formula}

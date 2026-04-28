@@ -130,8 +130,8 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
 
   return (
     <PanelShell
-      title="이상치 탐지"
-      subtitle="Z-score 통계적 이상치 자동 탐지"
+      title={t('imbalanceDetector.titleHeader')}
+      subtitle={t('imbalanceDetector.subtitleHeader')}
       icon={AlertTriangle}
       iconColor={PANEL_COLOR}
       onClose={onClose}
@@ -139,9 +139,9 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
       actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color={PANEL_COLOR} />}
     >
       <>
-        <ToolPanelHint toolId="imbalance" title="이상치 탐지 — 평균에서 너무 벗어난 행" accentColor="#ec4899">
-          <p>시트의 수치 컬럼을 자동 스캔 → <strong>Z-score</strong> 로 평균에서 ±2σ 이상 벗어난 행을 빨강으로 표시.</p>
-          <p>OP/UP 캐릭터 1차 검출에 유용. 특정 컬럼만 검사하려면 위에서 컬럼 선택.</p>
+        <ToolPanelHint toolId="imbalance" title={t('imbalanceDetector.hintTitle')} accentColor="#ec4899">
+          <p>{t.rich('imbalanceDetector.hintP1', { z: (chunks) => <strong>{chunks}</strong> })}</p>
+          <p>{t('imbalanceDetector.hintP2')}</p>
         </ToolPanelHint>
         {/* 프로젝트/시트 선택 */}
         <SheetSelector
@@ -447,10 +447,10 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
                 >
                   <Sparkles size={14} style={{ color: 'var(--accent)' }} />
                   <span className="text-sm font-semibold flex-1 text-left" style={{ color: 'var(--text-primary)' }}>
-                    AI 밸런스 리뷰
+                    {t('imbalanceDetector.aiReview')}
                   </span>
                   <span className="text-caption px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
-                    점수 {aiReview.metrics.score}/100
+                    {t('imbalanceDetector.scoreOf', { score: aiReview.metrics.score })}
                   </span>
                   {showAiReview ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </button>
@@ -472,7 +472,7 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
 
                     {aiReview.actionable.length > 0 && (
                       <div>
-                        <div className="font-semibold mb-1">즉시 조치 가능 Top {aiReview.actionable.length}</div>
+                        <div className="font-semibold mb-1">{t('imbalanceDetector.actionableTop', { n: aiReview.actionable.length })}</div>
                         <ol className="list-decimal pl-5 space-y-0.5 text-caption" style={{ color: 'var(--text-secondary)' }}>
                           {aiReview.actionable.map((a, i) => (
                             <li key={i}>{a}</li>
@@ -482,7 +482,7 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
                     )}
 
                     <p className="text-caption italic pt-1 border-t" style={{ color: 'var(--text-tertiary)', borderColor: 'var(--border-primary)' }}>
-                      ※ 템플릿 기반 자동 리뷰. 백엔드 연동 시 실제 LLM 으로 업그레이드 예정.
+                      {t('imbalanceDetector.aiReviewNote')}
                     </p>
                   </div>
                 )}

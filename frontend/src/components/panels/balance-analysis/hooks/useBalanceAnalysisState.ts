@@ -3,6 +3,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import type { UnitStats } from '@/lib/simulation/types';
 import {
@@ -37,6 +38,7 @@ export function useBalanceAnalysisState(
   externalShowHelp?: boolean,
   externalSetShowHelp?: (value: boolean) => void
 ) {
+  const t = useTranslations('balanceAnalysis');
   const { projects, currentProjectId, currentSheetId } = useProjectStore();
   const [activeTab, setActiveTab] = useState<AnalysisTab>('matchup');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -84,9 +86,10 @@ export function useBalanceAnalysisState(
     if (!currentSheet) return [];
 
     return currentSheet.rows.map((row, index) => {
+      const fallback = t('defaultUnitName', { n: index + 1 });
       const name = columnMapping.name
-        ? String(row.cells[columnMapping.name] || `유닛${index + 1}`)
-        : `유닛${index + 1}`;
+        ? String(row.cells[columnMapping.name] || fallback)
+        : fallback;
       const hp = columnMapping.hp
         ? Number(row.cells[columnMapping.hp]) || 100
         : 100;
@@ -132,7 +135,7 @@ export function useBalanceAnalysisState(
     if (!currentSheet) return;
 
     if (!columnMapping.level) {
-      alert('레벨 컬럼을 선택해주세요.');
+      alert(t('alertSelectLevel'));
       return;
     }
 
@@ -155,7 +158,7 @@ export function useBalanceAnalysisState(
     );
 
     if (selectedStats.length < 2) {
-      alert('상관관계 분석을 위해 최소 2개 이상의 스탯 컬럼을 선택해주세요.');
+      alert(t('alertSelectStats'));
       return;
     }
 

@@ -11,6 +11,7 @@
  */
 
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   BarChart,
   Bar,
@@ -49,6 +50,7 @@ function toNumber(v: CellValue | undefined): number | null {
 }
 
 export default function SensitivityAnalysisPanel({ onClose, isPanel }: Props) {
+  const t = useTranslations();
   useEscapeKey(onClose);
 
   const projects = useProjectStore((s) => s.projects);
@@ -182,7 +184,7 @@ export default function SensitivityAnalysisPanel({ onClose, isPanel }: Props) {
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4" style={{ color: 'var(--primary-purple)' }} />
           <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            민감도 분석 — Tornado / Spider
+            {t('sensitivityAnalysis.header')}
           </h2>
         </div>
         <div className="flex gap-1">
@@ -227,20 +229,20 @@ export default function SensitivityAnalysisPanel({ onClose, isPanel }: Props) {
             setBaselineRowIdx(0);
             setSelectedInputs(new Set());
           }}
-          label="분석할 시트"
+          label={t('sensitivityAnalysis.analysisSheet')}
           color="#7c7ff2"
         />
 
         {sheet && formulaColumns.length > 0 && (
           <div>
             <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>
-              출력 (공식 컬럼)
+              {t('sensitivityAnalysis.outputFormulaCol')}
             </label>
             <Select
               value={outputColId}
               onChange={setOutputColId}
               options={[
-                { value: '', label: '— 선택하세요 —' },
+                { value: '', label: t('sensitivityAnalysis.selectPlaceholder') },
                 ...formulaColumns.map((c) => ({
                   value: c.id,
                   label: c.name,
@@ -254,7 +256,7 @@ export default function SensitivityAnalysisPanel({ onClose, isPanel }: Props) {
         {sheet && computedRows.length > 0 && (
           <div>
             <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>
-              기준 행 (baseline)
+              {t('sensitivityAnalysis.baselineRow')}
             </label>
             <Select
               value={String(baselineRowIdx)}
@@ -272,7 +274,7 @@ export default function SensitivityAnalysisPanel({ onClose, isPanel }: Props) {
         {sheet && numericColumns.length > 0 && (
           <div>
             <label className="text-xs font-medium block mb-2" style={{ color: 'var(--text-secondary)' }}>
-              흔들 입력 변수 ({selectedInputs.size}개 선택)
+              {t('sensitivityAnalysis.inputVarsToShake', { n: selectedInputs.size })}
             </label>
             <div className="grid grid-cols-2 gap-1.5">
               {numericColumns.map((col) => (
@@ -290,7 +292,7 @@ export default function SensitivityAnalysisPanel({ onClose, isPanel }: Props) {
 
         <div>
           <div className="text-xs font-medium mb-1 flex items-center justify-between" style={{ color: 'var(--text-secondary)' }}>
-            <span>변동 범위</span>
+            <span>{t('sensitivityAnalysis.variationRange')}</span>
             <span className="font-mono">±{(variation * 100).toFixed(0)}%</span>
           </div>
           <div className="flex items-center gap-2">
@@ -322,15 +324,15 @@ export default function SensitivityAnalysisPanel({ onClose, isPanel }: Props) {
 
         {tornadoBars.length === 0 && (
           <div className="text-xs text-center py-8" style={{ color: 'var(--text-tertiary)' }}>
-            시트 → 출력 공식 컬럼 → 기준 행 → 흔들 입력 변수를 선택하세요.
+            {t('sensitivityAnalysis.instructionFlow')}
           </div>
         )}
 
         {mode === 'tornado' && tornadoBars.length > 0 && (
           <div>
             <div className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-              기준값: <b style={{ color: 'var(--text-primary)' }}>{tornadoBars[0].baseline.toFixed(2)}</b>
-              {'  —  큰 영향일수록 위쪽'}
+              {t('sensitivityAnalysis.baselineLabel')} <b style={{ color: 'var(--text-primary)' }}>{tornadoBars[0].baseline.toFixed(2)}</b>
+              {t('sensitivityAnalysis.baselineExplain')}
             </div>
             <ResponsiveContainer width="100%" height={Math.max(180, tornadoBars.length * 38)}>
               <BarChart
@@ -370,7 +372,7 @@ export default function SensitivityAnalysisPanel({ onClose, isPanel }: Props) {
         {mode === 'spider' && spiderChartData.length > 0 && (
           <div>
             <div className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-              변수별 -50% ~ +50% 스윕. 기울기 큰 선이 민감한 변수.
+              {t('sensitivityAnalysis.spiderHelp')}
             </div>
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={spiderChartData}>
@@ -408,8 +410,8 @@ export default function SensitivityAnalysisPanel({ onClose, isPanel }: Props) {
 
         {tornadoBars.length > 0 && mode === 'tornado' && (
           <div className="text-caption p-2 rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
-            <b>해석</b>: 상위 변수 ±{(variation * 100).toFixed(0)}% 변화가 출력에 가장 큰 영향. 하위는 robust.
-            밸런싱 시 상위 변수를 먼저 튜닝하는 게 효율적입니다.
+            <b>{t('sensitivityAnalysis.interpretationLabel')}</b>{t('sensitivityAnalysis.interpretation', { pct: (variation * 100).toFixed(0) })}
+            {t('sensitivityAnalysis.tuningTip')}
           </div>
         )}
       </div>

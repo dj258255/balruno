@@ -22,7 +22,7 @@ export default function MobileHeader({ onMenuClick }: MobileHeaderProps) {
         onClick={onMenuClick}
         className="p-2 rounded-lg transition-colors"
         style={{ background: 'var(--bg-tertiary)' }}
-        aria-label="메뉴 열기"
+        aria-label={t('app.openMenu')}
       >
         <Menu className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
       </button>

@@ -16,6 +16,7 @@
 import { ReactNode, createContext, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { X, HelpCircle, type LucideIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 /**
@@ -74,6 +75,7 @@ export default function PanelShell({
   bodyClassName = 'p-3 space-y-3',
   hideHeader,
 }: PanelShellProps) {
+  const t = useTranslations('ui');
   useEscapeKey(onClose);
 
   // Context 값을 읽어 hideHeader 결정. prop 이 명시되면 그 값 우선.
@@ -115,7 +117,7 @@ export default function PanelShell({
             <button
               onClick={onClose}
               className="p-1 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
-              aria-label="패널 닫기"
+              aria-label={t('closePanel')}
             >
               <X size={14} style={{ color: 'var(--text-secondary)' }} />
             </button>
@@ -168,13 +170,14 @@ export function HelpToggle({
   onToggle: () => void;
   color?: string;
 }) {
+  const t = useTranslations('ui');
   return (
     <button
       onClick={onToggle}
       className="p-1 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
-      aria-label={active ? '도움말 숨기기' : '도움말 보기'}
+      aria-label={active ? t('helpHide') : t('helpShow')}
       aria-pressed={active}
-      title={active ? '도움말 숨기기' : '도움말 보기'}
+      title={active ? t('helpHide') : t('helpShow')}
     >
       <HelpCircle
         size={14}

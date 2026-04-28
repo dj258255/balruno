@@ -292,7 +292,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
           {/* DPS */}
           {activeTab === 'dps' && (
             <div className="space-y-4">
-              <CalcSection icon={Sliders} title="설정" color={tabColor}>
+              <CalcSection icon={Sliders} title={t('sectionSettings')} color={tabColor}>
                 <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.dps.description}</div>
                 <div className="grid grid-cols-2 gap-3">
                   <GlassInputField label={t('damage1hit')} value={dpsInputs.damage} onChange={(v) => setDpsWithHistory({ ...dpsInputs, damage: v })} />
@@ -301,17 +301,17 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   <GlassInputField label={t('critMultiplier')} value={dpsInputs.critDamage} onChange={(v) => setDpsWithHistory({ ...dpsInputs, critDamage: v })} step={0.1} />
                 </div>
               </CalcSection>
-              <CalcSection icon={BarChart3} title="결과" color={tabColor}>
+              <CalcSection icon={BarChart3} title={t('sectionResult')} color={tabColor}>
               <GlassResultCard label={t('dpsResult')} value={dpsResult.toFixed(2)} color={tabColor} numericValue={dpsResult} extra={`${t('baseDps')}: ${(dpsInputs.damage * dpsInputs.attackSpeed).toFixed(2)} | ${t('critBonus')}: +${((dpsResult / (dpsInputs.damage * dpsInputs.attackSpeed) - 1) * 100).toFixed(1)}%`} />
               <GlassFormulaBox formula="damage x (1 + critRate x (critDamage - 1)) x attackSpeed" hint={t('dpsFormulaHint')} color={tabColor} />
               <GoalSeekBox
                 color={tabColor}
                 targetLabel="DPS"
                 variables={[
-                  { key: 'damage', label: '데미지', min: 1, max: 10000 },
-                  { key: 'attackSpeed', label: '공격 속도', min: 0.1, max: 20 },
-                  { key: 'critRate', label: '치명 확률', min: 0, max: 1 },
-                  { key: 'critDamage', label: '치명 배율', min: 1, max: 10 },
+                  { key: 'damage', label: t('statDamage'), min: 1, max: 10000 },
+                  { key: 'attackSpeed', label: t('statAttackSpeed'), min: 0.1, max: 20 },
+                  { key: 'critRate', label: t('statCritRate'), min: 0, max: 1 },
+                  { key: 'critDamage', label: t('statCritDamage'), min: 1, max: 10 },
                 ]}
                 computeWithOverride={(k, v) => {
                   const o = { ...dpsInputs, [k]: v };
@@ -334,10 +334,10 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 color={tabColor}
                 inputs={dpsInputs}
                 variables={[
-                  { key: 'damage', label: '데미지' },
-                  { key: 'attackSpeed', label: '공격 속도' },
-                  { key: 'critRate', label: '치명 확률' },
-                  { key: 'critDamage', label: '치명 배율' },
+                  { key: 'damage', label: t('statDamage') },
+                  { key: 'attackSpeed', label: t('statAttackSpeed') },
+                  { key: 'critRate', label: t('statCritRate') },
+                  { key: 'critDamage', label: t('statCritDamage') },
                 ]}
                 computeResult={(o) => DPS(Number(o.damage), Number(o.attackSpeed), Number(o.critRate), Number(o.critDamage))}
               />
@@ -345,8 +345,8 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 color={tabColor}
                 steps={[
                   { label: 'Base DPS (damage × attackSpeed)', value: dpsInputs.damage * dpsInputs.attackSpeed },
-                  { label: 'Crit 보정 (1 + critRate × (critMul - 1))', value: 1 + dpsInputs.critRate * (dpsInputs.critDamage - 1), note: `×${(1 + dpsInputs.critRate * (dpsInputs.critDamage - 1)).toFixed(3)}` },
-                  { label: '최종 DPS', value: dpsResult, note: 'base × crit 보정' },
+                  { label: t('breakdownDpsCrit'), value: 1 + dpsInputs.critRate * (dpsInputs.critDamage - 1), note: t('breakdownDpsCritNote', { value: (1 + dpsInputs.critRate * (dpsInputs.critDamage - 1)).toFixed(3) }) },
+                  { label: t('breakdownDpsFinal'), value: dpsResult, note: t('breakdownDpsFinalNote') },
                 ]}
               />
               </CalcSection>
@@ -356,7 +356,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
           {/* TTK */}
           {activeTab === 'ttk' && (
             <div className="space-y-4">
-              <CalcSection icon={Sliders} title="설정" color={tabColor}>
+              <CalcSection icon={Sliders} title={t('sectionSettings')} color={tabColor}>
                 <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.ttk.description}</div>
                 <div className="grid grid-cols-3 gap-3">
                   <GlassInputField label={t('targetHp')} value={ttkInputs.targetHP} onChange={(v) => setTtkWithHistory({ ...ttkInputs, targetHP: v })} />
@@ -364,7 +364,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   <GlassInputField label={t('attackSpeed')} value={ttkInputs.attackSpeed} onChange={(v) => setTtkWithHistory({ ...ttkInputs, attackSpeed: v })} step={0.1} />
                 </div>
               </CalcSection>
-              <CalcSection icon={BarChart3} title="결과" color={tabColor}>
+              <CalcSection icon={BarChart3} title={t('sectionResult')} color={tabColor}>
               <div className="grid grid-cols-2 gap-3">
                 <GlassResultCard label={t('ttkResult')} value={ttkResult.ttk === Infinity ? '-' : `${ttkResult.ttk.toFixed(2)}s`} color={tabColor} numericValue={ttkResult.ttk === Infinity ? undefined : ttkResult.ttk} />
                 <GlassResultCard label={t('hitsRequired')} value={`${ttkResult.hitsNeeded}`} color="#e5a440" numericValue={ttkResult.hitsNeeded} />
@@ -372,10 +372,10 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
               <GlassFormulaBox formula="(ceil(targetHP / damage) - 1) / attackSpeed" hint={t('ttkFormulaHint')} color={tabColor} />
               <GoalSeekBox
                 color={tabColor}
-                targetLabel="TTK (초)"
+                targetLabel={t('ttkLabel')}
                 variables={[
-                  { key: 'damage', label: '데미지', min: 1, max: 10000 },
-                  { key: 'attackSpeed', label: '공격 속도', min: 0.1, max: 20 },
+                  { key: 'damage', label: t('statDamage'), min: 1, max: 10000 },
+                  { key: 'attackSpeed', label: t('statAttackSpeed'), min: 0.1, max: 20 },
                 ]}
                 computeWithOverride={(k, v) => {
                   const o = { ...ttkInputs, [k]: v };
@@ -403,9 +403,9 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 color={tabColor}
                 inputs={ttkInputs}
                 variables={[
-                  { key: 'targetHP', label: '타겟 HP' },
-                  { key: 'damage', label: '데미지' },
-                  { key: 'attackSpeed', label: '공격 속도' },
+                  { key: 'targetHP', label: t('statTargetHp') },
+                  { key: 'damage', label: t('statDamage') },
+                  { key: 'attackSpeed', label: t('statAttackSpeed') },
                 ]}
                 computeResult={(o) => {
                   const t = TTK(Number(o.targetHP), Number(o.damage), Number(o.attackSpeed));
@@ -415,9 +415,9 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
               <BreakdownBox
                 color={tabColor}
                 steps={[
-                  { label: '필요 히트 수 (ceil(HP / damage))', value: ttkResult.hitsNeeded },
-                  { label: '히트 간 간격 (1 / attackSpeed)', value: 1 / Math.max(0.001, ttkInputs.attackSpeed), note: `${(1 / Math.max(0.001, ttkInputs.attackSpeed)).toFixed(3)}s` },
-                  { label: '최종 TTK ((hits-1) × interval)', value: ttkResult.ttk === Infinity ? '∞' : `${ttkResult.ttk.toFixed(2)}s`, note: '첫 히트는 즉시' },
+                  { label: t('breakdownTtkHits'), value: ttkResult.hitsNeeded },
+                  { label: t('breakdownTtkInterval'), value: 1 / Math.max(0.001, ttkInputs.attackSpeed), note: t('breakdownTtkIntervalNote', { value: (1 / Math.max(0.001, ttkInputs.attackSpeed)).toFixed(3) }) },
+                  { label: t('breakdownTtkFinal'), value: ttkResult.ttk === Infinity ? '∞' : `${ttkResult.ttk.toFixed(2)}s`, note: t('breakdownTtkFinalNote') },
                 ]}
               />
               </CalcSection>
@@ -427,7 +427,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
           {/* EHP */}
           {activeTab === 'ehp' && (
             <div className="space-y-4">
-              <CalcSection icon={Sliders} title="설정" color={tabColor}>
+              <CalcSection icon={Sliders} title={t('sectionSettings')} color={tabColor}>
                 <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.ehp.description}</div>
                 <div className="grid grid-cols-3 gap-3">
                   <GlassInputField label={t('hp')} value={ehpInputs.hp} onChange={(v) => setEhpWithHistory({ ...ehpInputs, hp: v })} />
@@ -435,7 +435,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   <GlassInputField label={t('damageReduction')} value={ehpInputs.damageReduction} onChange={(v) => setEhpWithHistory({ ...ehpInputs, damageReduction: v })} step={0.01} min={0} max={0.99} />
                 </div>
               </CalcSection>
-              <CalcSection icon={BarChart3} title="결과" color={tabColor}>
+              <CalcSection icon={BarChart3} title={t('sectionResult')} color={tabColor}>
               <GlassResultCard label={t('ehpResult')} value={ehpResult.toFixed(0)} color={tabColor} numericValue={ehpResult} extra={`${t('vsOriginal')} ${((ehpResult / ehpInputs.hp) * 100).toFixed(1)}% (x${(ehpResult / ehpInputs.hp).toFixed(2)})`} />
               <GlassFormulaBox formula="hp x (1 + def/100) x (1 / (1 - damageReduction))" hint={t('ehpFormulaHint')} color={tabColor} />
               <GoalSeekBox
@@ -443,8 +443,8 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 targetLabel="EHP"
                 variables={[
                   { key: 'hp', label: 'HP', min: 1, max: 100000 },
-                  { key: 'def', label: '방어력', min: 0, max: 2000 },
-                  { key: 'damageReduction', label: '피해 감소', min: 0, max: 0.95 },
+                  { key: 'def', label: t('statDef'), min: 0, max: 2000 },
+                  { key: 'damageReduction', label: t('statDamageReduction'), min: 0, max: 0.95 },
                 ]}
                 computeWithOverride={(k, v) => {
                   const o = { ...ehpInputs, [k]: v };
@@ -469,8 +469,8 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 inputs={ehpInputs}
                 variables={[
                   { key: 'hp', label: 'HP' },
-                  { key: 'def', label: '방어력' },
-                  { key: 'damageReduction', label: '피해 감소' },
+                  { key: 'def', label: t('statDef') },
+                  { key: 'damageReduction', label: t('statDamageReduction') },
                 ]}
                 computeResult={(o) => EHP(Number(o.hp), Number(o.def), Number(o.damageReduction))}
               />
@@ -478,9 +478,9 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 color={tabColor}
                 steps={[
                   { label: 'HP', value: ehpInputs.hp },
-                  { label: 'DEF 보정 (1 + def/100)', value: 1 + ehpInputs.def / 100, note: `×${(1 + ehpInputs.def / 100).toFixed(3)}` },
-                  { label: '피해 감소 보정 (1 / (1 - DR))', value: 1 / Math.max(0.01, 1 - ehpInputs.damageReduction), note: `×${(1 / Math.max(0.01, 1 - ehpInputs.damageReduction)).toFixed(3)}` },
-                  { label: '최종 EHP', value: ehpResult, note: 'HP × DEF × DR 보정' },
+                  { label: t('breakdownEhpDef'), value: 1 + ehpInputs.def / 100, note: t('breakdownDpsCritNote', { value: (1 + ehpInputs.def / 100).toFixed(3) }) },
+                  { label: t('breakdownEhpReduction'), value: 1 / Math.max(0.01, 1 - ehpInputs.damageReduction), note: t('breakdownDpsCritNote', { value: (1 / Math.max(0.01, 1 - ehpInputs.damageReduction)).toFixed(3) }) },
+                  { label: t('breakdownEhpFinal'), value: ehpResult, note: t('breakdownEhpFinalNote') },
                 ]}
               />
               </CalcSection>
@@ -490,7 +490,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
           {/* DAMAGE */}
           {activeTab === 'damage' && (
             <div className="space-y-4">
-              <CalcSection icon={Sliders} title="설정" color={tabColor}>
+              <CalcSection icon={Sliders} title={t('sectionSettings')} color={tabColor}>
                 <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.damage.description}</div>
                 <div className="grid grid-cols-3 gap-3">
                   <GlassInputField label={t('atk')} value={damageInputs.atk} onChange={(v) => setDamageInputs({ ...damageInputs, atk: v })} />
@@ -498,7 +498,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   <GlassInputField label={t('skillMultiplier')} value={damageInputs.multiplier} onChange={(v) => setDamageInputs({ ...damageInputs, multiplier: v })} step={0.1} />
                 </div>
               </CalcSection>
-              <CalcSection icon={BarChart3} title="결과" color={tabColor}>
+              <CalcSection icon={BarChart3} title={t('sectionResult')} color={tabColor}>
                 <div className="grid grid-cols-2 gap-3">
                   <GlassResultCard label={t('finalDamage')} value={damageResult.toFixed(1)} color={tabColor} numericValue={damageResult} />
                   <GlassResultCard label={t('damageReductionRate')} value={`${((1 - 100 / (100 + damageInputs.def)) * 100).toFixed(1)}%`} color="var(--text-secondary)" />
@@ -511,7 +511,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
           {/* SCALE */}
           {activeTab === 'scale' && (
             <div className="space-y-4">
-              <CalcSection icon={Sliders} title="설정" color={tabColor}>
+              <CalcSection icon={Sliders} title={t('sectionSettings')} color={tabColor}>
                 <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>{TAB_HELP.scale.description}</div>
                 <div className="grid grid-cols-2 gap-3">
                   <GlassInputField label={t('baseValue')} value={scaleInputs.base} onChange={(v) => setScaleInputs({ ...scaleInputs, base: v })} />
@@ -534,7 +534,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                   </div>
                 </div>
               </CalcSection>
-              <CalcSection icon={BarChart3} title="결과" color={tabColor}>
+              <CalcSection icon={BarChart3} title={t('sectionResult')} color={tabColor}>
               {CURVE_TYPE_HELP[scaleInputs.curveType] && (
                 <div className="glass-section p-3">
                   <div className="flex items-center justify-between mb-2">
@@ -567,10 +567,10 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
               </div>
               <GoalSeekBox
                 color={tabColor}
-                targetLabel={`Lv ${scaleInputs.level} 값`}
+                targetLabel={t('lvValue', { level: scaleInputs.level })}
                 variables={[
-                  { key: 'base', label: '기본값', min: 1, max: 100000 },
-                  { key: 'rate', label: '성장률', min: 0.01, max: 5 },
+                  { key: 'base', label: t('statBase'), min: 1, max: 100000 },
+                  { key: 'rate', label: t('statRate'), min: 0.01, max: 5 },
                 ]}
                 computeWithOverride={(k, v) => {
                   const o = { ...scaleInputs, [k]: v };
@@ -583,7 +583,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
                 tabKey="scale"
                 currentInputs={scaleInputs}
                 computeResult={(o) => SCALE(Number(o.base), Number(o.level), Number(o.rate), String(o.curveType))}
-                resultLabel={`Lv ${scaleInputs.level} 값`}
+                resultLabel={t('lvValue', { level: scaleInputs.level })}
                 scenarioA={scenarioA}
                 scenarioB={scenarioB}
                 setScenarioA={setScenarioA}
@@ -609,9 +609,9 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
         actions={setShowHelp ? <HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color={PANEL_COLOR} /> : undefined}
       >
         <div className="px-4 pt-3">
-          <ToolPanelHint toolId="calculator" title="계산기 — 수식 즉시 계산" accentColor="#06b6d4">
-            <p>입력한 수치로 <strong>DPS / TTK / EHP</strong> 같은 게임 핵심 지표를 한눈에. 시트의 셀 값을 그대로 가져오는 옵션도 있어요.</p>
-            <p>좌측 상단에서 다른 수식 선택. 우측 "Goal Seek" 토글로 목표값 → 입력값 역산도 가능.</p>
+          <ToolPanelHint toolId="calculator" title={t('hintTitle')} accentColor="#06b6d4">
+            <p>{t.rich('hintP1', { strong: (chunks) => <strong>{chunks}</strong> })}</p>
+            <p>{t('hintP2')}</p>
           </ToolPanelHint>
         </div>
         {body}
@@ -630,6 +630,7 @@ export default function Calculator({ onClose, isPanel = false, showHelp = false,
 }
 
 function GlassInputField({ label, value, onChange, step = 1, min, max }: { label: string; value: number; onChange: (v: number) => void; step?: number; min?: number; max?: number }) {
+  const t = useTranslations('calculator');
   const [inputValue, setInputValue] = useState(String(value));
   const [isHovered, setIsHovered] = useState(false);
   const { startCellSelection, cellSelectionMode } = useProjectStore();
@@ -668,7 +669,7 @@ function GlassInputField({ label, value, onChange, step = 1, min, max }: { label
           onChange={(e) => { const newValue = e.target.value; if (newValue === '' || /^-?\d*\.?\d*$/.test(newValue)) { setInputValue(newValue); const num = parseFloat(newValue); if (!isNaN(num)) onChange(num); } }}
           onBlur={() => { const num = parseFloat(inputValue); if (isNaN(num) || inputValue === '') { setInputValue(String(min ?? 0)); onChange(min ?? 0); } else { setInputValue(String(num)); } }}
           onKeyDown={handleKeyDown}
-          title="↑↓ 로 값 조정 · Shift 10배 · Alt 0.1배"
+          title={t('tooltipKeyAdjust')}
           className="glass-input w-full pr-9 text-sm"
         />
         {isHovered && !cellSelectionMode.active && (
@@ -684,6 +685,7 @@ function GlassInputField({ label, value, onChange, step = 1, min, max }: { label
 }
 
 function AnsChip({ tabColor, activeTab, onApply }: { tabColor: string; activeTab: string; onApply: (value: number) => void }) {
+  const t = useTranslations('calculator');
   const ans = useCalculatorStore((s) => s.ans);
   const ansLabel = useCalculatorStore((s) => s.ansLabel);
   const clear = useCalculatorStore((s) => s.clear);
@@ -707,14 +709,14 @@ function AnsChip({ tabColor, activeTab, onApply }: { tabColor: string; activeTab
         onClick={() => onApply(ans)}
         className="ml-auto px-2 py-0.5 rounded text-caption font-semibold"
         style={{ background: tabColor, color: 'white' }}
-        title={`${activeTab} 탭의 첫 입력에 적용`}
+        title={t('tooltipApplyToTab', { tab: activeTab })}
       >
-        적용 →
+        {t('applyArrow')}
       </button>
       <button
         onClick={clear}
         className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/5"
-        title="ans 지우기"
+        title={t('tooltipClearAns')}
       >
         <X className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
       </button>
@@ -723,6 +725,7 @@ function AnsChip({ tabColor, activeTab, onApply }: { tabColor: string; activeTab
 }
 
 function GlassResultCard({ label, value, color, extra, numericValue }: { label: string; value: string; color: string; extra?: string; numericValue?: number }) {
+  const t = useTranslations('calculator');
   const setAns = useCalculatorStore((s) => s.setAns);
   const copyAns = () => {
     if (numericValue !== undefined && !isNaN(numericValue)) {
@@ -743,7 +746,7 @@ function GlassResultCard({ label, value, color, extra, numericValue }: { label: 
             onClick={copyAns}
             className="opacity-0 group-hover:opacity-100 text-caption px-1.5 py-0.5 rounded"
             style={{ background: `${color}20`, color }}
-            title="이 값을 ans 변수에 저장 (다른 탭 입력에서 불러오기)"
+            title={t('tooltipSaveAns')}
           >
             → ans
           </button>
@@ -809,6 +812,7 @@ function BreakdownBox({
   color: string;
   steps: { label: string; value: number | string; note?: string }[];
 }) {
+  const t = useTranslations('calculator');
   const [open, setOpen] = useState(false);
   return (
     <div className="glass-section p-3" style={{ borderLeft: `3px solid ${color}` }}>
@@ -817,7 +821,7 @@ function BreakdownBox({
         className="w-full flex items-center justify-between text-left"
       >
         <span className="text-sm font-semibold" style={{ color }}>
-          Breakdown — 계산 단계 분해
+          {t('breakdownHeader')}
         </span>
         <ChevronDown
           className={`w-4 h-4 transition-transform ${open ? '' : '-rotate-90'}`}
@@ -873,6 +877,7 @@ function SensitivityTornado<T extends Record<string, number | string>>({
   computeResult: (inputs: T) => number;
   delta?: number;
 }) {
+  const t = useTranslations('calculator');
   const base = computeResult(inputs);
   const rows = variables
     .map((v) => {
@@ -892,7 +897,7 @@ function SensitivityTornado<T extends Record<string, number | string>>({
     <div className="glass-section p-3" style={{ borderLeft: `3px solid ${color}` }}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-semibold" style={{ color }}>
-          Sensitivity — 입력 ±{Math.round(delta * 100)}% 영향도
+          {t('sensitivityHeader', { percent: Math.round(delta * 100) })}
         </span>
         <span className="text-caption tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
           baseline {base.toFixed(2)}
@@ -927,7 +932,7 @@ function SensitivityTornado<T extends Record<string, number | string>>({
         })}
       </div>
       <p className="text-caption italic mt-2" style={{ color: 'var(--text-tertiary)' }}>
-        각 입력 -{Math.round(delta * 100)}% / +{Math.round(delta * 100)}% 변동 시 결과 변화량 · range 넓은 순 정렬
+        {t('sensitivityHelp', { percent: Math.round(delta * 100) })}
       </p>
     </div>
   );
@@ -960,6 +965,7 @@ function ScenarioCompareBox<T extends Record<string, number | string>>({
   setScenarioB: (s: Record<string, Record<string, number | string>> | null) => void;
   formatResult?: (v: number) => string;
 }) {
+  const t = useTranslations('calculator');
   const snapshotA = scenarioA?.[tabKey] as T | undefined;
   const snapshotB = scenarioB?.[tabKey] as T | undefined;
   const fmt = formatResult ?? ((v: number) => v.toFixed(2));
@@ -983,10 +989,10 @@ function ScenarioCompareBox<T extends Record<string, number | string>>({
     <div className="glass-section p-3" style={{ borderLeft: `3px solid ${color}` }}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-semibold" style={{ color }}>
-          Scenario A/B 비교
+          {t('scenarioHeader')}
         </span>
         <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-          입력 세트 저장 + 결과 나란히
+          {t('scenarioSubheader')}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -1009,7 +1015,7 @@ function ScenarioCompareBox<T extends Record<string, number | string>>({
                     className="text-caption"
                     style={{ color: 'var(--text-tertiary)' }}
                   >
-                    지우기
+                    {t('scenarioClear')}
                   </button>
                 ) : (
                   <button
@@ -1017,7 +1023,7 @@ function ScenarioCompareBox<T extends Record<string, number | string>>({
                     className="text-caption px-2 py-0.5 rounded"
                     style={{ background: `${color}20`, color }}
                   >
-                    현재값 저장
+                    {t('scenarioSaveCurrent')}
                   </button>
                 )}
               </div>
@@ -1036,7 +1042,7 @@ function ScenarioCompareBox<T extends Record<string, number | string>>({
                 </>
               ) : (
                 <div className="text-caption italic py-3 text-center" style={{ color: 'var(--text-tertiary)' }}>
-                  (비어있음)
+                  {t('scenarioEmpty')}
                 </div>
               )}
             </div>
@@ -1049,7 +1055,7 @@ function ScenarioCompareBox<T extends Record<string, number | string>>({
           style={{ background: delta === 0 ? 'var(--bg-tertiary)' : delta > 0 ? '#10b98115' : '#ef444415' }}
         >
           <span className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-            B vs A {resultLabel} 변화:
+            {t('scenarioDelta', { label: resultLabel })}
           </span>
           <span
             className="font-bold tabular-nums"
@@ -1088,6 +1094,7 @@ function GoalSeekBox({
   computeWithOverride: (varKey: string, value: number) => number;
   onApply: (varKey: string, value: number) => void;
 }) {
+  const t = useTranslations('calculator');
   const [enabled, setEnabled] = useState(false);
   const [targetValue, setTargetValue] = useState(100);
   const [selectedVar, setSelectedVar] = useState(variables[0]?.key ?? '');
@@ -1120,17 +1127,17 @@ function GoalSeekBox({
           />
           <TargetIcon className="w-3.5 h-3.5" style={{ color }} />
           <span className="text-sm font-semibold" style={{ color }}>
-            Goal Seek — 목표값 역산
+            {t('goalSeekHeader')}
           </span>
         </label>
         <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-          Excel Goal Seek 방식 · bisection
+          {t('goalSeekSubheader')}
         </span>
       </div>
       {enabled && (
         <>
           <div className="grid grid-cols-[auto_1fr_auto_1fr_auto] gap-2 items-center">
-            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>목표 {targetLabel}</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('goalTargetLabel', { label: targetLabel })}</span>
             <input
               type="number"
               inputMode="decimal"
@@ -1138,7 +1145,7 @@ function GoalSeekBox({
               onChange={(e) => setTargetValue(parseFloat(e.target.value) || 0)}
               className="glass-input text-sm"
             />
-            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>역산할 변수</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('goalVarLabel')}</span>
             <select
               value={selectedVar}
               onChange={(e) => { setSelectedVar(e.target.value); setResult(null); }}
@@ -1153,7 +1160,7 @@ function GoalSeekBox({
               className="px-3 py-1.5 rounded text-sm font-semibold"
               style={{ background: color, color: 'white' }}
             >
-              계산
+              {t('goalRunBtn')}
             </button>
           </div>
           {result && (
@@ -1167,7 +1174,7 @@ function GoalSeekBox({
               {result.converged ? (
                 <>
                   <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    필요 {variables.find((v) => v.key === selectedVar)?.label}:
+                    {t('goalRequiredLabel', { label: variables.find((v) => v.key === selectedVar)?.label ?? '' })}
                   </span>
                   <span className="text-lg font-bold tabular-nums" style={{ color }}>
                     {result.value.toFixed(2)}
@@ -1177,12 +1184,12 @@ function GoalSeekBox({
                     className="ml-auto px-2 py-0.5 rounded text-caption font-semibold"
                     style={{ background: color, color: 'white' }}
                   >
-                    적용 →
+                    {t('goalApply')}
                   </button>
                 </>
               ) : (
                 <span className="text-sm" style={{ color: '#ef4444' }}>
-                  수렴 실패 — 목표값이 해당 변수 범위 밖입니다
+                  {t('goalConvergenceFail')}
                 </span>
               )}
             </div>

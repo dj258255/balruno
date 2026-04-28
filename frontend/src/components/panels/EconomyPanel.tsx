@@ -257,8 +257,8 @@ export default function EconomyPanel({ showHelp: externalShowHelp, setShowHelp: 
 
   return (
     <PanelShell
-      title="경제 시뮬"
-      subtitle="Faucet/Sink·인플레이션"
+      title={t('economy.titleHeader')}
+      subtitle={t('economy.subtitleHeader')}
       icon={Coins}
       iconColor={PANEL_COLOR}
       onClose={onClose ?? (() => {})}

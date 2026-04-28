@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { Target, Grid3X3 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { generateBalanceCurve } from '@/lib/balanceAnalysis';
 import { useProjectStore } from '@/stores/projectStore';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -24,6 +25,7 @@ function StatInputField({
   onChange: (v: number) => void;
   step?: number;
 }) {
+  const t = useTranslations('balanceAnalysis');
   const [inputValue, setInputValue] = useState(String(value));
   const [isHovered, setIsHovered] = useState(false);
   const { startCellSelection, cellSelectionMode } = useProjectStore();
@@ -67,7 +69,7 @@ function StatInputField({
           className="glass-input w-full pr-9 text-sm"
         />
         {isHovered && !cellSelectionMode.active && (
-          <Tooltip content="셀에서 선택" position="top">
+          <Tooltip content={t('cellSelect')} position="top">
             <button
               onClick={handleCellSelect}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
@@ -82,6 +84,7 @@ function StatInputField({
 }
 
 export function CurveGenerator() {
+  const t = useTranslations('balanceAnalysis');
   const [baseHp, setBaseHp] = useState(100);
   const [baseAtk, setBaseAtk] = useState(10);
   const [baseDef, setBaseDef] = useState(5);
@@ -105,19 +108,19 @@ export function CurveGenerator() {
     <div className="space-y-4">
       {/* 탭 설명 */}
       <div className="glass-section p-3 rounded-lg" style={{ borderLeft: '3px solid #9179f2' }}>
-        <div className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>밸런스 커브 생성</div>
+        <div className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{t('curveTitle')}</div>
         <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          레벨별 스탯 성장 곡선을 자동으로 생성합니다. 선형, 지수, 로그 등 다양한 성장 패턴을 지원합니다.
+          {t('curveDesc')}
         </div>
         <div className="text-sm mt-1.5" style={{ color: 'var(--text-secondary)' }}>
-          <strong>사용법:</strong> 기본 스탯, 최대 레벨, 성장률을 입력하고 성장 타입을 선택하세요. 생성된 테이블을 복사하여 스프레드시트에 붙여넣을 수 있습니다.
+          <strong>{t('curveHowToBold')}</strong>{t('curveHowToBody')}
         </div>
       </div>
 
       {/* 기본 스탯 입력 */}
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="glass-panel-header px-4 py-2.5">
-          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>기본 스탯 (레벨 1)</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('baseStatsLevel1')}</span>
         </div>
         <div className="grid grid-cols-2 gap-3 p-4">
           <StatInputField label="HP" value={baseHp} onChange={setBaseHp} />
@@ -130,20 +133,20 @@ export function CurveGenerator() {
       {/* 성장 설정 */}
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="glass-panel-header px-4 py-2.5">
-          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>성장 설정</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('growthSettings')}</span>
         </div>
         <div className="p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <StatInputField label="최대 레벨" value={maxLevel} onChange={setMaxLevel} />
-            <StatInputField label="레벨당 성장률" value={growthRate} onChange={setGrowthRate} step={0.05} />
+            <StatInputField label={t('maxLevel')} value={maxLevel} onChange={setMaxLevel} />
+            <StatInputField label={t('growthRate')} value={growthRate} onChange={setGrowthRate} step={0.05} />
           </div>
           <div>
-            <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>성장 타입</label>
+            <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{t('growthType')}</label>
             <div className="glass-tabs grid grid-cols-3 gap-2 mt-1 p-1 rounded-lg">
               {[
-                { value: 'linear', label: '선형', desc: '일정한 성장' },
-                { value: 'exponential', label: '지수', desc: '후반 급성장' },
-                { value: 'logarithmic', label: '로그', desc: '초반 급성장' },
+                { value: 'linear', label: t('linear'), desc: t('linearDesc') },
+                { value: 'exponential', label: t('exponential'), desc: t('exponentialDesc') },
+                { value: 'logarithmic', label: t('logarithmic'), desc: t('logarithmicDesc') },
               ].map(opt => (
                 <button
                   key={opt.value}
@@ -174,16 +177,16 @@ export function CurveGenerator() {
       >
         <div className="flex items-center justify-center gap-2">
           <Target className="w-4 h-4" />
-          커브 생성
+          {t('generateCurve')}
         </div>
       </button>
 
       {curve && (
         <div className="glass-card rounded-xl overflow-hidden">
           <div className="glass-panel-header px-4 py-2.5 flex items-center justify-between">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>생성된 성장표</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('generatedTable')}</span>
             <span className="glass-badge text-sm px-2 py-0.5 rounded-full" style={{ background: 'rgba(145, 121, 242, 0.15)', color: '#9179f2' }}>
-              {curve.levels.length} 레벨
+              {t('levelsCount', { count: curve.levels.length })}
             </span>
           </div>
           <div className="overflow-x-auto">

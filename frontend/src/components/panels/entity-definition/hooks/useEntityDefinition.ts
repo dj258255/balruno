@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import type { EntityDefinition, CurveType, StatOverride, LevelTableRow, InterpolationType, Sheet } from '@/types';
 import {
@@ -53,6 +54,7 @@ export interface EntityDefinitionState {
 }
 
 export function useEntityDefinition() {
+  const t = useTranslations('entityDefinition');
   const store = useProjectStore();
 
   // ===== State =====
@@ -70,7 +72,7 @@ export function useEntityDefinition() {
   const [editingOverrides, setEditingOverrides] = useState<StatOverride[]>([]);
   const [levelRange, setLevelRange] = useState({ min: 1, max: 50 });
   const [outputMode, setOutputMode] = useState<'new-sheet' | 'current-sheet'>('new-sheet');
-  const [sheetNamePattern, setSheetNamePattern] = useState('{entity}_레벨테이블');
+  const [sheetNamePattern, setSheetNamePattern] = useState(t('patternPlaceholder'));
   const [exportFieldNames, setExportFieldNames] = useState<ExportFieldNames>({
     entityId: '',
     entityName: '',
@@ -345,8 +347,8 @@ export function useEntityDefinition() {
 
           // 새 컬럼 추가 (엔티티ID, 엔티티명, 레벨, 스탯들) - 커스텀 필드명 사용 (비어있으면 컬럼명)
           const idFieldName = exportFieldNames.entityId || idColumn || 'ID';
-          const nameFieldName = exportFieldNames.entityName || nameColumn || '이름';
-          const levelFieldName = exportFieldNames.level || levelColumn || '레벨';
+          const nameFieldName = exportFieldNames.entityName || nameColumn || t('fallbackName');
+          const levelFieldName = exportFieldNames.level || levelColumn || t('fallbackLevel');
 
           store.addColumn(currentProject.id, sheetId, { name: idFieldName, type: 'general' });
           store.addColumn(currentProject.id, sheetId, { name: nameFieldName, type: 'general' });
@@ -406,7 +408,7 @@ export function useEntityDefinition() {
         store.setCurrentSheet(sheetId);
       }
     } catch (error) {
-      console.error('레벨 테이블 생성 실패:', error);
+      console.error('Level table generation failed:', error);
     } finally {
       setIsGenerating(false);
     }
@@ -438,8 +440,8 @@ export function useEntityDefinition() {
 
           // 커스텀 필드명 사용 (비어있으면 컬럼명)
           const idFieldName = exportFieldNames.entityId || idColumn || 'ID';
-          const nameFieldName = exportFieldNames.entityName || nameColumn || '이름';
-          const levelFieldName = exportFieldNames.level || levelColumn || '레벨';
+          const nameFieldName = exportFieldNames.entityName || nameColumn || t('fallbackName');
+          const levelFieldName = exportFieldNames.level || levelColumn || t('fallbackLevel');
 
           store.addColumn(currentProject.id, sheetId, { name: idFieldName, type: 'general' });
           store.addColumn(currentProject.id, sheetId, { name: nameFieldName, type: 'general' });
@@ -485,7 +487,7 @@ export function useEntityDefinition() {
         setGenerationProgress(Math.floor(((i + 1) / entities.length) * 100));
       }
     } catch (error) {
-      console.error('전체 레벨 테이블 생성 실패:', error);
+      console.error('Bulk level-table generation failed:', error);
     } finally {
       setIsGenerating(false);
     }

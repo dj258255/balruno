@@ -273,10 +273,10 @@ export default function ColumnModal({
             {/* 빠른 preset — 4 가지 흔한 컬럼 즉시 선택 */}
             <div className="grid grid-cols-4 gap-1.5 mb-2">
               {([
-                { id: 'general', label: '텍스트/숫자', hint: '자동 감지' },
-                { id: 'date', label: '날짜', hint: 'YYYY-MM-DD' },
-                { id: 'select', label: '선택', hint: '드롭다운' },
-                { id: 'link', label: '링크', hint: '다른 시트 row 참조' },
+                { id: 'general', label: t('column.presetTextNumber'), hint: t('column.presetTextNumberHint') },
+                { id: 'date', label: t('column.presetDate'), hint: t('column.presetDateHint') },
+                { id: 'select', label: t('column.presetSelect'), hint: t('column.presetSelectHint') },
+                { id: 'link', label: t('column.presetLink'), hint: t('column.presetLinkHint') },
               ] as Array<{ id: ColumnType; label: string; hint: string }>).map((p) => {
                 const active = type === p.id;
                 return (
@@ -327,7 +327,7 @@ export default function ColumnModal({
           {type === 'link' && (
             <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
               <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                참조 시트 / 표시 컬럼
+                {t('column.linkedSettingsLabel')}
               </label>
               <CustomSelect
                 value={linkedSheetId}
@@ -336,7 +336,7 @@ export default function ColumnModal({
                   setLinkedDisplayColumnId('');
                 }}
                 options={[
-                  { value: '', label: '— 시트 선택 —' },
+                  { value: '', label: t('column.placeholderSelectSheet') },
                   ...sheets.filter((s) => s.id !== currentSheetId).map((s) => ({
                     value: s.id,
                     label: s.name,
@@ -349,7 +349,7 @@ export default function ColumnModal({
                   value={linkedDisplayColumnId}
                   onChange={setLinkedDisplayColumnId}
                   options={[
-                    { value: '', label: '— 표시 컬럼 선택 —' },
+                    { value: '', label: t('column.placeholderSelectDisplayColumn') },
                     ...(sheets.find((s) => s.id === linkedSheetId)?.columns.map((c) => ({
                       value: c.id,
                       label: c.name,
@@ -364,7 +364,7 @@ export default function ColumnModal({
                   onChange={(e) => setLinkedMultiple(e.target.checked)}
                 />
                 <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  다중 선택 허용 (1:N)
+                  {t('column.linkedMultipleAllow')}
                 </span>
               </label>
             </div>
@@ -374,7 +374,7 @@ export default function ColumnModal({
           {(type === 'lookup' || type === 'rollup') && (
             <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
               <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                참조 경로 (이 시트의 link 컬럼 → 대상 시트의 컬럼)
+                {t('column.lookupPathLabel')}
               </label>
               <CustomSelect
                 value={lookupLinkColumnId}
@@ -383,7 +383,7 @@ export default function ColumnModal({
                   setLookupTargetColumnId('');
                 }}
                 options={[
-                  { value: '', label: '— link 컬럼 선택 —' },
+                  { value: '', label: t('column.placeholderSelectLinkColumn') },
                   ...columns.filter((c) => c.type === 'link' && c.id !== column?.id).map((c) => ({
                     value: c.id,
                     label: c.name,
@@ -399,7 +399,7 @@ export default function ColumnModal({
                     value={lookupTargetColumnId}
                     onChange={setLookupTargetColumnId}
                     options={[
-                      { value: '', label: '— 가져올 컬럼 —' },
+                      { value: '', label: t('column.placeholderSelectFetchColumn') },
                       ...(targetSheet?.columns.map((c) => ({
                         value: c.id,
                         label: c.name,
@@ -414,12 +414,12 @@ export default function ColumnModal({
                   value={rollupAggregate}
                   onChange={(v) => setRollupAggregate(v as typeof rollupAggregate)}
                   options={[
-                    { value: 'SUM', label: 'SUM (합)' },
-                    { value: 'AVG', label: 'AVG (평균)' },
-                    { value: 'MIN', label: 'MIN (최소)' },
-                    { value: 'MAX', label: 'MAX (최대)' },
-                    { value: 'COUNT', label: 'COUNT (개수)' },
-                    { value: 'CONCAT', label: 'CONCAT (이어붙이기)' },
+                    { value: 'SUM', label: t('column.aggSum') },
+                    { value: 'AVG', label: t('column.aggAvg') },
+                    { value: 'MIN', label: t('column.aggMin') },
+                    { value: 'MAX', label: t('column.aggMax') },
+                    { value: 'COUNT', label: t('column.aggCount') },
+                    { value: 'CONCAT', label: t('column.aggConcat') },
                   ]}
                   size="sm"
                 />
@@ -431,7 +431,7 @@ export default function ColumnModal({
           {type === 'stat-snapshot' && (
             <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
               <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                Snapshot 대상 시트 (entity 소스)
+                {t('column.snapshotTargetSheet')}
               </label>
               <CustomSelect
                 value={snapshotSheetId}
@@ -440,7 +440,7 @@ export default function ColumnModal({
                   setSnapshotColumnIds([]);
                 }}
                 options={[
-                  { value: '', label: '— 시트 선택 —' },
+                  { value: '', label: t('column.placeholderSelectSheet') },
                   ...sheets
                     .filter((s) => s.id !== currentSheetId)
                     .map((s) => ({ value: s.id, label: s.name })),
@@ -457,7 +457,7 @@ export default function ColumnModal({
                 return (
                   <div>
                     <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
-                      캡처할 stats (체크)
+                      {t('column.snapshotStatsLabel')}
                     </label>
                     <div className="grid grid-cols-2 gap-1 max-h-32 overflow-y-auto">
                       {targetSheet?.columns.map((c) => (
@@ -475,7 +475,7 @@ export default function ColumnModal({
                 );
               })()}
               <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-                Playtest 세션 row 에서 캡처 버튼 → 선택된 stats 가 JSON 으로 고정 저장됩니다.
+                {t('column.snapshotHelp')}
               </p>
             </div>
           )}
@@ -484,7 +484,7 @@ export default function ColumnModal({
           {type === 'task-link' && (
             <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
               <label className="block text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                Task/Sprint 시트 선택 + 상태·담당자 컬럼
+                {t('column.taskLinkSheetLabel')}
               </label>
               <CustomSelect
                 value={taskSheetId}
@@ -494,7 +494,7 @@ export default function ColumnModal({
                   setTaskAssigneeColumnId('');
                 }}
                 options={[
-                  { value: '', label: '— task 시트 선택 —' },
+                  { value: '', label: t('column.placeholderSelectTaskSheet') },
                   ...sheets
                     .filter((s) => s.id !== currentSheetId)
                     .map((s) => ({ value: s.id, label: s.name })),
@@ -504,7 +504,7 @@ export default function ColumnModal({
               {taskSheetId && (() => {
                 const targetSheet = sheets.find((s) => s.id === taskSheetId);
                 const colOpts = [
-                  { value: '', label: '— 선택 안 함 —' },
+                  { value: '', label: t('column.placeholderSelectNone') },
                   ...(targetSheet?.columns.map((c) => ({ value: c.id, label: c.name })) ?? []),
                 ];
                 return (
@@ -522,7 +522,7 @@ export default function ColumnModal({
                       size="sm"
                     />
                     <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-                      위: 상태 컬럼 (Kanban status 표시). 아래: 담당자 컬럼 (이름/avatar 표시).
+                      {t('column.taskLinkHelp')}
                     </p>
                   </>
                 );

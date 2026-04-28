@@ -175,7 +175,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
             {/* Recent */}
             {recentItems.length > 0 && !search && (
-              <Command.Group heading="최근">
+              <Command.Group heading={t('commandPalette.recent')}>
                 {recentItems.map((item) => (
                   <Command.Item
                     key={`recent-${item.sheetId}`}
@@ -264,17 +264,17 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
               >
                 <Wand2 className="w-4 h-4" style={{ color: 'var(--primary-purple)' }} />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                  AI 로 시작 (자연어 → 시트)
+                  {t('commandPalette.aiStart')}
                 </span>
               </Command.Item>
               <Command.Item
-                value="gallery template sample projects 템플릿"
+                value={t('commandPalette.searchValueGallery')}
                 onSelect={() => runAction(() => window.dispatchEvent(new Event('balruno:open-gallery')))}
                 className="cmdk-item"
               >
                 <FolderPlus className="w-4 h-4" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                  템플릿 갤러리 (샘플 프로젝트)
+                  {t('commandPalette.galleryTemplate')}
                 </span>
               </Command.Item>
               <Command.Item
@@ -284,7 +284,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
               >
                 <Upload className="w-4 h-4" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                  CSV / Excel 가져오기
+                  {t('commandPalette.csvImport')}
                 </span>
               </Command.Item>
               <Command.Item
@@ -294,7 +294,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
               >
                 <Download className="w-4 h-4" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                  내보내기 (JSON / CSV / 엔진 코드)
+                  {t('commandPalette.exportJson')}
                 </span>
               </Command.Item>
               {currentProjectId && (
@@ -305,7 +305,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
                 >
                   <Users className="w-4 h-4" />
                   <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                    프로젝트 공유 / 협업
+                    {t('commandPalette.shareCollab')}
                   </span>
                 </Command.Item>
               )}
@@ -313,7 +313,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
             {/* Views */}
             {currentSheetId && (
-              <Command.Group heading="뷰 전환">
+              <Command.Group heading={t('commandPalette.viewSwitch')}>
                 <Command.Item value="view grid sheet table" onSelect={() => runAction(() => emitSetView('grid'))} className="cmdk-item">
                   <Grid3x3 className="w-4 h-4" />
                   <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Grid</span>
@@ -396,7 +396,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
               </Command.Item>
               <Command.Item value="comments mentions thread team" onSelect={() => runAction(() => emitOpenPanel('comments'))} className="cmdk-item">
                 <Users className="w-4 h-4" />
-                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>코멘트 / 멘션</span>
+                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{t('commandPalette.commentsMentions')}</span>
               </Command.Item>
               <Command.Item value="interface designer dashboard widgets" onSelect={() => runAction(() => emitOpenPanel('interfaceDesigner'))} className="cmdk-item">
                 <Sparkles className="w-4 h-4" />
@@ -470,18 +470,18 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
               >
                 <Keyboard className="w-4 h-4" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                  키보드 단축키
+                  {t('commandPalette.keyboardShortcuts')}
                 </span>
                 <Kbd>?</Kbd>
               </Command.Item>
               <Command.Item
-                value="dedupe duplicate projects cleanup 중복 정리"
+                value={t('commandPalette.searchValueDedupe')}
                 onSelect={() => runAction(() => window.dispatchEvent(new CustomEvent('balruno:open-dedupe')))}
                 className="cmdk-item"
               >
                 <Trash2 className="w-4 h-4" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                  중복 프로젝트 정리
+                  {t('commandPalette.dedupeProjects')}
                 </span>
               </Command.Item>
             </Command.Group>

@@ -90,8 +90,8 @@
 ```
 
 ### 프로세스 구성
-- `powerbalance-api`: Spring Boot JAR (2GB 힙 기본)
-- `powerbalance-web`: Next.js standalone
+- `balruno-api`: Spring Boot JAR (2GB 힙 기본)
+- `balruno-web`: Next.js standalone
 - `db`: MySQL 8
 - `redis`: Redis 7
 - `caddy`: 프록시
@@ -783,7 +783,7 @@ public void updateSheet(UUID projectId, UUID sheetId, SheetUpdate update) {
 # Dockerfile
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY build/libs/powerbalance-api.jar app.jar
+COPY build/libs/balruno-api.jar app.jar
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
   CMD wget -q -O - http://localhost:8080/api/health || exit 1
@@ -797,16 +797,16 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 version: '3.8'
 services:
   web:
-    image: powerbalance/web:${VERSION:-latest}
+    image: balruno/web:${VERSION:-latest}
     depends_on: [api]
     restart: unless-stopped
     
   api:
-    image: powerbalance/api:${VERSION:-latest}
+    image: balruno/api:${VERSION:-latest}
     depends_on: [db, redis]
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/powerbalance?useSSL=true
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/balruno?useSSL=true
       SPRING_DATASOURCE_USERNAME: pb
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       SPRING_REDIS_HOST: redis
@@ -821,7 +821,7 @@ services:
     image: mysql:8.4
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: powerbalance
+      MYSQL_DATABASE: balruno
       MYSQL_USER: pb
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
@@ -867,7 +867,7 @@ volumes:
 
 1. 설치 파일 다운로드
    ```
-   git clone https://github.com/powerbalance/onprem
+   git clone https://github.com/balruno/onprem
    cd onprem
    ```
 
@@ -877,7 +877,7 @@ volumes:
    # .env 편집:
    # - DB_PASSWORD (강력한 비밀번호)
    # - JWT_SECRET (openssl rand -base64 32)
-   # - DOMAIN (예: powerbalance.internal.company.com)
+   # - DOMAIN (예: balruno.internal.company.com)
    ```
 
 3. 실행
@@ -897,18 +897,18 @@ docker compose up -d
 
 ## 백업
 ```
-docker exec db mysqldump -u pb -p powerbalance > backup_$(date +%Y%m%d).sql
+docker exec db mysqldump -u pb -p balruno > backup_$(date +%Y%m%d).sql
 ```
 
 ## 폐쇄망 설치
 1. 다른 인터넷 가능 환경에서:
    ```
-   docker save -o powerbalance.tar powerbalance/web:latest powerbalance/api:latest mysql:8.4 redis:7-alpine caddy:2
+   docker save -o balruno.tar balruno/web:latest balruno/api:latest mysql:8.4 redis:7-alpine caddy:2
    ```
 2. USB 등으로 반입
 3. 폐쇄망 서버에서:
    ```
-   docker load -i powerbalance.tar
+   docker load -i balruno.tar
    docker compose up -d
    ```
 ```
@@ -961,9 +961,9 @@ public class HealthController {
 logging:
   level:
     root: INFO
-    com.powerbalance: DEBUG
+    com.balruno: DEBUG
   file:
-    name: /var/log/powerbalance/api.log
+    name: /var/log/balruno/api.log
   pattern:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
   logback:

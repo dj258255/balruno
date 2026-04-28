@@ -7,11 +7,13 @@
 
 import { useEffect, useState } from 'react';
 import { Monitor, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const KEY = 'balruno:mobile-notice-dismissed';
 const TTL = 7 * 24 * 60 * 60 * 1000; // 1주
 
 export default function MobileNotice() {
+  const t = useTranslations('mobileNotice');
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -44,16 +46,16 @@ export default function MobileNotice() {
         borderColor: 'var(--border-primary)',
       }}
       role="status"
-      aria-label="모바일 안내"
+      aria-label={t('ariaLabel')}
     >
       <Monitor size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
       <div className="flex-1 text-caption" style={{ color: 'var(--text-primary)' }}>
-        <strong>모바일에선 조회 전용</strong>입니다. 수식 편집·시뮬레이션·대시보드 등 고급 기능은 데스크톱에서 이용하세요.
+        <strong>{t('title')}</strong>{t('body')}
       </div>
       <button
         onClick={dismiss}
         className="p-1 rounded hover:bg-[var(--bg-tertiary)] flex-shrink-0"
-        aria-label="닫기"
+        aria-label={t('dismiss')}
       >
         <X size={12} style={{ color: 'var(--text-secondary)' }} />
       </button>

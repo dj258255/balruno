@@ -62,8 +62,8 @@ export default function SimulationPanel({ onClose, showHelp: externalShowHelp, s
 
   return (
     <PanelShell
-      title="전투 시뮬"
-      subtitle="1:1/팀 전투 Monte Carlo"
+      title={t('titleHeader')}
+      subtitle={t('subtitleHeader')}
       icon={Swords}
       iconColor="#e11d48"
       onClose={onClose}
@@ -217,11 +217,13 @@ function ModeSelector({ battleMode, setBattleMode, t }: ModeSelectorProps) {
  * 시뮬 결과를 현재 시트에 행으로 commit.
  * commit 헬퍼는 lib/simulation/resultCommit 에 1v1/팀 통합 — 누락 컬럼 자동 추가까지.
  */
-function saveSimResultToCurrentSheet(result: SimulationResult, unit1: UnitStats, unit2: UnitStats) {
+type SimT = (key: string, values?: Record<string, string | number | Date>) => string;
+
+function saveSimResultToCurrentSheet(result: SimulationResult, unit1: UnitStats, unit2: UnitStats, t: SimT) {
   const store = useProjectStore.getState();
   const { currentProjectId, currentSheetId, projects, addRow, addColumn } = store;
   if (!currentProjectId || !currentSheetId) {
-    toast.error('저장할 시트를 먼저 선택하세요');
+    toast.error(t('errorSelectSheetFirst'));
     return;
   }
   const project = projects.find((p) => p.id === currentProjectId);
@@ -251,7 +253,7 @@ function saveSimResultToCurrentSheet(result: SimulationResult, unit1: UnitStats,
     unit2,
   );
   if (rowId) {
-    toast.success(`${sheet.name} 에 시뮬 결과 저장됨`);
+    toast.success(t('successSavedToSheet', { sheet: sheet.name }));
   }
 }
 
@@ -279,7 +281,7 @@ function OneVsOneMode({ state, actions, startCellSelection, t }: OneVsOneModePro
           onLoadFromSheet={(unit) => state.loadFromSheet(1, unit)}
           startCellSelection={startCellSelection}
           color="var(--primary-blue)"
-          placeholder="유닛 A"
+          placeholder={t('placeholderUnitA')}
         />
 
         <UnitStatsPanel
@@ -293,7 +295,7 @@ function OneVsOneMode({ state, actions, startCellSelection, t }: OneVsOneModePro
           onLoadFromSheet={(unit) => state.loadFromSheet(2, unit)}
           startCellSelection={startCellSelection}
           color="var(--primary-red)"
-          placeholder="유닛 B"
+          placeholder={t('placeholderUnitB')}
         />
       </div>
 
@@ -381,7 +383,7 @@ function OneVsOneMode({ state, actions, startCellSelection, t }: OneVsOneModePro
           selectedBattleIndex={state.selectedBattleIndex}
           setSelectedBattleIndex={state.setSelectedBattleIndex}
           onExport={(format) => actions.exportResults(format, state.result)}
-          onSaveToSheet={state.result ? () => saveSimResultToCurrentSheet(state.result!, state.unit1Stats, state.unit2Stats) : undefined}
+          onSaveToSheet={state.result ? () => saveSimResultToCurrentSheet(state.result!, state.unit1Stats, state.unit2Stats, t) : undefined}
         />
       )}
 

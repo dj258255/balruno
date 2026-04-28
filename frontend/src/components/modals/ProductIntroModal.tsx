@@ -32,28 +32,29 @@ interface Slide {
 }
 
 function useSlides(t: ReturnType<typeof useTranslations>): Slide[] {
+  const bold = (chunks: React.ReactNode) => <b>{chunks}</b>;
   return [
     {
       icon: Layers,
       accent: '#ef4444',
-      title: '5 개 창 지옥',
-      subtitle: '게임 스튜디오가 지금 매일 겪는 일',
+      title: t('productIntro.slide1Title'),
+      subtitle: t('productIntro.slide1Subtitle'),
       body: (
         <div className="space-y-3">
           <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            보스 HP 800 → 1000 수정 하나 반영하려면:
+            {t('productIntro.slide1Lead')}
           </p>
           <ol className="space-y-1.5 text-sm list-decimal list-inside" style={{ color: 'var(--text-primary)' }}>
-            <li>Google Sheets 에서 수치 수정</li>
-            <li>Confluence 에 이유 기록</li>
-            <li>Jira 에 반영 티켓 생성</li>
-            <li>Discord 에 멘션</li>
-            <li>엔지니어가 CSV export → Unity import</li>
-            <li>플레이테스트 결과가 또 Discord 로 흘러감</li>
-            <li>어제 왜 1000 이었는지 기록 날아감</li>
+            <li>{t('productIntro.slide1Step1')}</li>
+            <li>{t('productIntro.slide1Step2')}</li>
+            <li>{t('productIntro.slide1Step3')}</li>
+            <li>{t('productIntro.slide1Step4')}</li>
+            <li>{t('productIntro.slide1Step5')}</li>
+            <li>{t('productIntro.slide1Step6')}</li>
+            <li>{t('productIntro.slide1Step7')}</li>
           </ol>
           <p className="text-sm font-medium mt-2" style={{ color: 'var(--danger)' }}>
-            5 개 툴 창 · 6 홉 · 변경 맥락 유실.
+            {t('productIntro.slide1Note')}
           </p>
         </div>
       ),
@@ -61,40 +62,30 @@ function useSlides(t: ReturnType<typeof useTranslations>): Slide[] {
     {
       icon: Zap,
       accent: '#3b82f6',
-      title: '한 워크스페이스에서 연결',
-      subtitle: 'Balruno 의 핵심 약속',
+      title: t('productIntro.slide2Title'),
+      subtitle: t('productIntro.slide2Subtitle'),
       body: (
         <div className="space-y-3">
           <div className="grid grid-cols-1 gap-2 text-sm" style={{ color: 'var(--text-primary)' }}>
             <div className="flex items-start gap-2">
               <span style={{ color: '#3b82f6' }}>•</span>
-              <span>
-                <b>HP 수정</b> = 시트 셀 하나 편집 (수식 자동 재계산)
-              </span>
+              <span>{t.rich('productIntro.slide2HpEdit', { b: bold })}</span>
             </div>
             <div className="flex items-start gap-2">
               <span style={{ color: '#3b82f6' }}>•</span>
-              <span>
-                <b>변경 이유</b> = 셀 코멘트 + Epic 태스크 링크
-              </span>
+              <span>{t.rich('productIntro.slide2Reason', { b: bold })}</span>
             </div>
             <div className="flex items-start gap-2">
               <span style={{ color: '#3b82f6' }}>•</span>
-              <span>
-                <b>엔진 반영</b> = Export → Unity/Unreal/Godot 코드 생성
-              </span>
+              <span>{t.rich('productIntro.slide2Engine', { b: bold })}</span>
             </div>
             <div className="flex items-start gap-2">
               <span style={{ color: '#3b82f6' }}>•</span>
-              <span>
-                <b>플레이테스트</b> = 세션 시트 → 다시 밸런스 시트로 task-link
-              </span>
+              <span>{t.rich('productIntro.slide2Playtest', { b: bold })}</span>
             </div>
             <div className="flex items-start gap-2">
               <span style={{ color: '#3b82f6' }}>•</span>
-              <span>
-                <b>변경 이력</b> = 자동 기록, Inbox 에 집약
-              </span>
+              <span>{t.rich('productIntro.slide2History', { b: bold })}</span>
             </div>
           </div>
         </div>
@@ -103,46 +94,40 @@ function useSlides(t: ReturnType<typeof useTranslations>): Slide[] {
     {
       icon: Sparkles,
       accent: '#10b981',
-      title: '하루 흐름 — 10 명 인디 스튜디오',
-      subtitle: '실제로 어떻게 쓰이는가',
+      title: t('productIntro.slide3Title'),
+      subtitle: t('productIntro.slide3Subtitle'),
       body: (
         <div className="space-y-2 text-sm" style={{ color: 'var(--text-primary)' }}>
-          <DaySlot time="09:30" text="각자 Home 에서 내 Sprint / Inbox 확인" />
-          <DaySlot time="10:00" text="Kanban 뷰로 스탠드업 — Doing 열 공유" />
-          <DaySlot
-            time="10:30"
-            text="밸런서: 캐릭터 시트에서 HP 편집 → Goal Solver 역산 → Monte Carlo → 시트에 저장"
-          />
-          <DaySlot time="11:30" text="엔지니어: Slack 자동 알림 받고 → Export → Unity 빌드" />
-          <DaySlot time="14:00" text="플레이테스트 세션 기록 → 밸런스 시트에 task-link" />
-          <DaySlot
-            time="17:00"
-            text="프로듀서: Current Cycle 위젯에서 미완료 이관 · Velocity 확인"
-          />
+          <DaySlot time="09:30" text={t('productIntro.slide3Day930')} />
+          <DaySlot time="10:00" text={t('productIntro.slide3Day1000')} />
+          <DaySlot time="10:30" text={t('productIntro.slide3Day1100')} />
+          <DaySlot time="11:30" text={t('productIntro.slide3Day1130')} />
+          <DaySlot time="14:00" text={t('productIntro.slide3Day1400')} />
+          <DaySlot time="17:00" text={t('productIntro.slide3Day1700')} />
         </div>
       ),
     },
     {
       icon: FileSpreadsheet,
       accent: '#8b5cf6',
-      title: '데이터 — 입력 → 변환',
-      subtitle: '모든 데이터는 시트 · 문서 · 분석 패널에',
+      title: t('productIntro.slide4Title'),
+      subtitle: t('productIntro.slide4Subtitle'),
       body: (
         <div className="space-y-3 text-sm">
           <div>
-            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>입력</p>
+            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{t('productIntro.slide4InputTitle')}</p>
             <p style={{ color: 'var(--text-secondary)' }}>
-              Excel 식 셀 편집 · 수식 (한글 컬럼 참조 OK) · Form 뷰 · AI 수식 생성 · CSV/JSON import
+              {t('productIntro.slide4InputDesc')}
             </p>
           </div>
           <div>
-            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>편집</p>
+            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{t('productIntro.slide4EditTitle')}</p>
             <p style={{ color: 'var(--text-secondary)' }}>
-              14 컬럼 타입. 게임 특화: task-link (행 연결) · stat-snapshot (밸런스 버전) · person (담당자 아바타)
+              {t('productIntro.slide4EditDesc')}
             </p>
           </div>
           <div>
-            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>변환 (game-data kind 한정)</p>
+            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{t('productIntro.slide4ConvertTitle')}</p>
             <p style={{ color: 'var(--text-secondary)' }}>
               Unity ScriptableObject · Unreal DataTable · Godot Resource · Bevy · TypeScript · JSON / CSV
             </p>
@@ -153,26 +138,26 @@ function useSlides(t: ReturnType<typeof useTranslations>): Slide[] {
     {
       icon: BarChart3,
       accent: '#f59e0b',
-      title: '시각화 — 3 계층',
-      subtitle: '같은 데이터를 여러 관점으로',
+      title: t('productIntro.slide5Title'),
+      subtitle: t('productIntro.slide5Subtitle'),
       body: (
         <div className="space-y-3 text-sm">
           <div>
-            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>계층 A · 시트 내부 7 뷰</p>
+            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{t('productIntro.slide5LayerATitle')}</p>
             <p style={{ color: 'var(--text-secondary)' }}>
               Grid · Form · Kanban · Calendar · Gallery · Gantt · Diagram
             </p>
           </div>
           <div>
-            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>계층 B · Home 대시보드</p>
+            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{t('productIntro.slide5LayerBTitle')}</p>
             <p style={{ color: 'var(--text-secondary)' }}>
-              Current Cycle · Burndown · Velocity · My Sprint · Recent Changes · 9 위젯
+              {t('productIntro.slide5LayerBDesc')}
             </p>
           </div>
           <div>
-            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>계층 C · 분석 패널 (우측 도킹)</p>
+            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{t('productIntro.slide5LayerCTitle')}</p>
             <p style={{ color: 'var(--text-secondary)' }}>
-              Monte Carlo · Goal Solver · Economy Simulator · DPS Variance · 30+ 게임 특화 툴
+              {t('productIntro.slide5LayerCDesc')}
             </p>
           </div>
         </div>
@@ -252,7 +237,7 @@ export default function ProductIntroModal() {
           onClick={close}
           className="absolute top-3 right-3 p-1 rounded-md transition-colors hover:bg-[var(--bg-hover)] z-10"
           style={{ color: 'var(--text-tertiary)' }}
-          aria-label="닫기"
+          aria-label={t('productIntro.closeAria')}
         >
           <X className="w-4 h-4" />
         </button>
@@ -310,7 +295,7 @@ export default function ProductIntroModal() {
             }}
           >
             <ChevronLeft className="w-3.5 h-3.5" />
-            이전
+            {t('productIntro.previous')}
           </button>
 
           <div className="flex items-center gap-1.5">
@@ -324,7 +309,7 @@ export default function ProductIntroModal() {
                   background: i === index ? slide.accent : 'var(--border-primary)',
                   transform: i === index ? 'scale(1.5)' : 'scale(1)',
                 }}
-                aria-label={`슬라이드 ${i + 1}`}
+                aria-label={t('productIntro.slideAria', { n: i + 1 })}
               />
             ))}
           </div>
@@ -336,7 +321,7 @@ export default function ProductIntroModal() {
               className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-md"
               style={{ background: slide.accent, color: 'white' }}
             >
-              RPG 샘플로 시작
+              {t('productIntro.rpgSampleStart')}
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           ) : (
@@ -346,7 +331,7 @@ export default function ProductIntroModal() {
               className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-md"
               style={{ background: slide.accent, color: 'white' }}
             >
-              다음
+              {t('productIntro.next')}
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           )}

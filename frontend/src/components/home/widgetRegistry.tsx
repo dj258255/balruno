@@ -23,6 +23,7 @@ import BalanceHealthWidget from './widgets/BalanceHealthWidget';
 import BurndownWidget from './widgets/BurndownWidget';
 import VelocityWidget from './widgets/VelocityWidget';
 import CurrentCycleWidget from './widgets/CurrentCycleWidget';
+import { useTranslations } from 'next-intl';
 
 export type WidgetId =
   | 'hero'
@@ -41,8 +42,8 @@ export type WidgetSize = 'full' | 'half' | 'third';
 
 export interface WidgetMeta {
   id: WidgetId;
-  name: string;
-  description: string;
+  nameKey: string;
+  descKey: string;
   icon: LucideIcon;
   color: string;
   size: WidgetSize;
@@ -53,8 +54,8 @@ export interface WidgetMeta {
 export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   'hero': {
     id: 'hero',
-    name: '오늘의 작업',
-    description: '내 Sprint · 내 버그 · Playtest 요약 (3열 카드)',
+    nameKey: 'widgetRegistry.todayName',
+    descKey: 'widgetRegistry.todayDesc',
     icon: Sparkles,
     color: '#8b5cf6',
     size: 'full',
@@ -62,8 +63,8 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   },
   'recent-edits': {
     id: 'recent-edits',
-    name: '최근 편집',
-    description: '7일 이내 편집된 시트 목록',
+    nameKey: 'widgetRegistry.recentName',
+    descKey: 'widgetRegistry.recentDesc',
     icon: Clock,
     color: '#6366f1',
     size: 'half',
@@ -71,8 +72,8 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   },
   'quick-start': {
     id: 'quick-start',
-    name: '빠른 시작',
-    description: 'AI · 템플릿 · Excel 가져오기',
+    nameKey: 'widgetRegistry.quickStartName',
+    descKey: 'widgetRegistry.quickStartDesc',
     icon: Sparkles,
     color: '#8b5cf6',
     size: 'half',
@@ -80,8 +81,8 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   },
   'recent-changes': {
     id: 'recent-changes',
-    name: '최근 변경',
-    description: '셀 변경 히스토리 10개 (Trackchangelog)',
+    nameKey: 'widgetRegistry.recentChangesName',
+    descKey: 'widgetRegistry.recentChangesDesc',
     icon: History,
     color: '#10b981',
     size: 'full',
@@ -89,8 +90,8 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   },
   'my-sprint': {
     id: 'my-sprint',
-    name: '내 Sprint',
-    description: '현재 유저에게 assigned 된 활성 Sprint 아이템',
+    nameKey: 'widgetRegistry.mySprintName',
+    descKey: 'widgetRegistry.mySprintDesc',
     icon: Zap,
     color: '#3b82f6',
     size: 'half',
@@ -98,8 +99,8 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   },
   'my-bugs': {
     id: 'my-bugs',
-    name: '내 버그',
-    description: '내게 assigned 된 오픈 버그',
+    nameKey: 'widgetRegistry.myBugsName',
+    descKey: 'widgetRegistry.myBugsDesc',
     icon: Bug,
     color: '#ef4444',
     size: 'half',
@@ -107,8 +108,8 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   },
   'playtest': {
     id: 'playtest',
-    name: 'Playtest 세션',
-    description: '플레이테스트 세션 목록',
+    nameKey: 'widgetRegistry.playtestName',
+    descKey: 'widgetRegistry.playtestDesc',
     icon: Gamepad2,
     color: '#10b981',
     size: 'half',
@@ -116,8 +117,8 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   },
   'balance-health': {
     id: 'balance-health',
-    name: '밸런스 상태',
-    description: '프로젝트별 활성 시트 · 행 수',
+    nameKey: 'widgetRegistry.balanceStateName',
+    descKey: 'widgetRegistry.balanceStateDesc',
     icon: TrendingUp,
     color: '#f59e0b',
     size: 'half',
@@ -125,8 +126,8 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   },
   'burndown': {
     id: 'burndown',
-    name: '번다운 차트',
-    description: '스프린트 ideal vs 실제 진척 (changelog 기반)',
+    nameKey: 'widgetRegistry.burndownName',
+    descKey: 'widgetRegistry.burndownDesc',
     icon: Flame,
     color: '#ef4444',
     size: 'half',
@@ -134,8 +135,8 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   },
   'velocity': {
     id: 'velocity',
-    name: 'Velocity',
-    description: '최근 N 개 sprint 완료 points + 평균선',
+    nameKey: 'widgetRegistry.velocityName',
+    descKey: 'widgetRegistry.velocityDesc',
     icon: TrendingUp,
     color: '#10b981',
     size: 'half',
@@ -143,8 +144,8 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
   },
   'current-cycle': {
     id: 'current-cycle',
-    name: '현재 Cycle',
-    description: '활성 sprint/cycle · 남은 일수 · 미완료 이관',
+    nameKey: 'widgetRegistry.currentCycleName',
+    descKey: 'widgetRegistry.currentCycleDesc',
     icon: CalendarDays,
     color: '#3b82f6',
     size: 'half',

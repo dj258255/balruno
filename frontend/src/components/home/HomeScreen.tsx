@@ -16,6 +16,7 @@
 
 import { useState } from 'react';
 import { Settings, Plus, Trash2, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useTodaysWork } from '@/hooks/useTodaysWork';
 import { useHomeLayout } from '@/stores/homeLayoutStore';
 import { WIDGET_REGISTRY, type WidgetId } from './widgetRegistry';
@@ -24,6 +25,7 @@ import CurrentUserBadge from './CurrentUserBadge';
 import { GettingStartedChecklist } from './GettingStartedChecklist';
 
 export default function HomeScreen() {
+  const t = useTranslations();
   const work = useTodaysWork();
   const layout = useHomeLayout();
   const [editMode, setEditMode] = useState(false);
@@ -80,12 +82,12 @@ export default function HomeScreen() {
                     tabIndex={0}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (window.confirm(`"${iface.name}" Interface 를 삭제할까요?`)) {
+                      if (window.confirm(t('homeScreen.deleteIfaceConfirm', { name: iface.name }))) {
                         layout.deleteInterface(iface.id);
                       }
                     }}
                     className="ml-2 inline-flex items-center p-0.5 rounded hover:bg-[var(--bg-tertiary)]"
-                    aria-label="Interface 삭제"
+                    aria-label={t('homeScreen.deleteIfaceAria')}
                   >
                     <X className="w-3 h-3" />
                   </span>
@@ -97,7 +99,7 @@ export default function HomeScreen() {
             onClick={() => setShowCreateInterface(true)}
             className="px-2 py-2 text-sm opacity-60 hover:opacity-100 transition-opacity"
             style={{ color: 'var(--text-tertiary)' }}
-            title="새 Interface 만들기"
+            title={t('homeScreen.createIfaceTitle')}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -112,7 +114,7 @@ export default function HomeScreen() {
           }}
         >
           <Settings className="w-3.5 h-3.5" />
-          {editMode ? '편집 끝' : '편집'}
+          {editMode ? t('homeScreen.editEnd') : t('homeScreen.editLabel')}
         </button>
       </div>
 
@@ -123,12 +125,12 @@ export default function HomeScreen() {
           <header className="space-y-2 mb-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                안녕하세요, {work.currentUser}님
+                {t('homeScreen.greeting', { user: work.currentUser })}
               </h1>
               <CurrentUserBadge />
             </div>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              {editMode ? '위젯을 추가/삭제하거나 순서를 바꿀 수 있습니다' : `"${activeIface.name}" 뷰입니다. 모든 "@me" 필터는 위 유저 기준으로 작동합니다.`}
+              {editMode ? t('homeScreen.editModeHint') : t('homeScreen.viewHint', { name: activeIface.name })}
             </p>
           </header>
 
@@ -142,7 +144,7 @@ export default function HomeScreen() {
               style={{ borderColor: 'var(--border-primary)' }}
             >
               <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
-                이 Interface 에 위젯이 없습니다.
+                {t('homeScreen.noWidgetsInIface')}
               </p>
               <button
                 onClick={() => {
@@ -152,7 +154,7 @@ export default function HomeScreen() {
                 className="px-3 py-1.5 rounded-lg text-xs font-medium"
                 style={{ background: 'var(--accent)', color: 'white' }}
               >
-                위젯 추가하기
+                {t('homeScreen.addWidget')}
               </button>
             </div>
           ) : (
@@ -178,7 +180,7 @@ export default function HomeScreen() {
               }}
             >
               <Plus className="w-4 h-4" />
-              위젯 추가 ({layout.availableWidgets.length}개 사용 가능)
+              {t('homeScreen.addWidgetHeader', { n: layout.availableWidgets.length })}
             </button>
           )}
         </div>
@@ -328,6 +330,7 @@ function WidgetWrapper({
   onMove: (id: WidgetId, dir: 'up' | 'down') => void;
   children: React.ReactNode;
 }) {
+  const t = useTranslations();
   if (!editMode) return <>{children}</>;
 
   const meta = WIDGET_REGISTRY[widgetId];
@@ -341,7 +344,7 @@ function WidgetWrapper({
           onClick={() => onMove(widgetId, 'up')}
           disabled={isFirst}
           className="p-1 rounded hover:bg-[var(--bg-tertiary)] disabled:opacity-30"
-          title="위로"
+          title={t('homeScreen.moveUp')}
         >
           <ChevronUp className="w-3 h-3" />
         </button>
@@ -349,19 +352,19 @@ function WidgetWrapper({
           onClick={() => onMove(widgetId, 'down')}
           disabled={isLast}
           className="p-1 rounded hover:bg-[var(--bg-tertiary)] disabled:opacity-30"
-          title="아래로"
+          title={t('homeScreen.moveDown')}
         >
           <ChevronDown className="w-3 h-3" />
         </button>
         <button
           onClick={() => {
-            if (window.confirm(`"${meta.name}" 위젯을 제거할까요?`)) {
+            if (window.confirm(t('homeScreen.removeWidgetConfirm', { name: t(meta.nameKey as 'widgetRegistry.todayName') }))) {
               onRemove(widgetId);
             }
           }}
           className="p-1 rounded hover:bg-[var(--bg-tertiary)]"
           style={{ color: '#ef4444' }}
-          title="제거"
+          title={t('homeScreen.remove')}
         >
           <Trash2 className="w-3 h-3" />
         </button>
@@ -382,6 +385,7 @@ function WidgetCatalogModal({
   onAdd: (id: WidgetId) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations();
   return (
     <div
       className="fixed inset-0 z-[1100] flex items-center justify-center p-4"
@@ -397,7 +401,7 @@ function WidgetCatalogModal({
           style={{ borderColor: 'var(--border-primary)' }}
         >
           <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            위젯 추가
+            {t('homeScreen.addWidgetTitle')}
           </h3>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--bg-tertiary)]">
             <X className="w-4 h-4" />
@@ -406,7 +410,7 @@ function WidgetCatalogModal({
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {availableIds.length === 0 ? (
             <p className="text-sm text-center py-8" style={{ color: 'var(--text-tertiary)' }}>
-              모든 위젯이 이미 추가되어 있습니다.
+              {t('homeScreen.allWidgetsAdded')}
             </p>
           ) : (
             availableIds.map((id) => {
@@ -427,10 +431,10 @@ function WidgetCatalogModal({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      {meta.name}
+                      {t(meta.nameKey as 'widgetRegistry.todayName')}
                     </div>
                     <div className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                      {meta.description}
+                      {t(meta.descKey as 'widgetRegistry.todayDesc')}
                     </div>
                   </div>
                 </button>
@@ -454,6 +458,7 @@ function CreateInterfaceModal({
   onCreate: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations();
   return (
     <div
       className="fixed inset-0 z-[1100] flex items-center justify-center p-4"
@@ -466,10 +471,10 @@ function CreateInterfaceModal({
       >
         <div className="p-4 space-y-3">
           <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            새 Interface 만들기
+            {t('homeScreen.createIfaceHeader')}
           </h3>
           <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            같은 데이터 위에 다른 위젯 조합을 저장합니다. (Airtable Interface Designer 패턴)
+            {t('homeScreen.createIfaceDesc')}
           </p>
           <input
             autoFocus
@@ -479,7 +484,7 @@ function CreateInterfaceModal({
               if (e.key === 'Enter' && value.trim()) onCreate();
               if (e.key === 'Escape') onClose();
             }}
-            placeholder="예: QA 뷰, 마케팅 뷰"
+            placeholder={t('homeScreen.placeholderIfaceName')}
             className="w-full px-3 py-2 text-sm rounded-lg border bg-transparent outline-none"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
@@ -489,7 +494,7 @@ function CreateInterfaceModal({
               className="px-3 py-1.5 rounded-lg text-xs"
               style={{ color: 'var(--text-secondary)' }}
             >
-              취소
+              {t('homeScreen.cancelBtn')}
             </button>
             <button
               onClick={onCreate}
@@ -497,7 +502,7 @@ function CreateInterfaceModal({
               className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
               style={{ background: 'var(--accent)', color: 'white' }}
             >
-              만들기
+              {t('homeScreen.createBtn')}
             </button>
           </div>
         </div>

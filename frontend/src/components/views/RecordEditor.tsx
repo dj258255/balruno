@@ -35,6 +35,7 @@ function TypedInput({
   value: CellValue | undefined;
   onChange: (v: CellValue) => void;
 }) {
+  const t = useTranslations();
   const inputClass = 'w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]/30 transition';
   const inputStyle: React.CSSProperties = {
     background: 'var(--bg-primary)',
@@ -66,7 +67,7 @@ function TypedInput({
           >
             {checked && <Check size={11} color="white" strokeWidth={3} />}
           </span>
-          <span className="text-xs">{checked ? '예' : '아니오'}</span>
+          <span className="text-xs">{checked ? t('recordEditor.yes') : t('recordEditor.no')}</span>
         </button>
       );
     }
@@ -131,7 +132,7 @@ function TypedInput({
             );
           })}
           {(column.selectOptions?.length ?? 0) === 0 && (
-            <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>옵션이 없습니다</span>
+            <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('recordEditor.noOptions')}</span>
           )}
         </div>
       );
@@ -269,7 +270,7 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
 
   const handleDuplicate = () => {
     addRow(projectId, sheet.id, { ...row.cells });
-    toast.success('레코드를 복제했습니다');
+    toast.success(t('recordEditor.recordDuplicated'));
   };
 
   const handleDelete = () => {
@@ -279,7 +280,7 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
       return;
     }
     deleteRow(projectId, sheet.id, row.id);
-    toast.info('레코드를 삭제했습니다');
+    toast.info(t('recordEditor.recordDeleted'));
     onClose();
   };
 
@@ -337,8 +338,8 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
             <button
               onClick={handleDuplicate}
               className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
-              title="복제"
-              aria-label="레코드 복제"
+              title={t('recordEditor.duplicate')}
+              aria-label={t('recordEditor.duplicateAria')}
             >
               <Copy className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
             </button>
@@ -349,8 +350,8 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
                 background: confirmDelete ? 'rgba(239,68,68,0.15)' : 'transparent',
                 color: confirmDelete ? '#ef4444' : 'var(--text-secondary)',
               }}
-              title={confirmDelete ? '다시 클릭해 확인' : '삭제'}
-              aria-label="레코드 삭제"
+              title={confirmDelete ? t('recordEditor.clickAgainToConfirm') : t('recordEditor.delete')}
+              aria-label={t('recordEditor.deleteAria')}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -397,13 +398,13 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
         ) : (
           <>
             {metaCols.length > 0 && (
-              <FieldGroup label="기본" columns={metaCols} row={row} onChange={handleChange} />
+              <FieldGroup label={t('recordEditor.groupBasic')} columns={metaCols} row={row} onChange={handleChange} />
             )}
             {otherCols.length > 0 && (
-              <FieldGroup label="속성" columns={otherCols} row={row} onChange={handleChange} />
+              <FieldGroup label={t('recordEditor.groupProperties')} columns={otherCols} row={row} onChange={handleChange} />
             )}
             {dateCols.length > 0 && (
-              <FieldGroup label="일정" columns={dateCols} row={row} onChange={handleChange} />
+              <FieldGroup label={t('recordEditor.groupSchedule')} columns={dateCols} row={row} onChange={handleChange} />
             )}
             {/* 역방향 링크 — 이 task 가 연결된 셀 변경 history */}
             {relatedChanges.length > 0 && (
@@ -419,7 +420,7 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
                 <div className="flex items-center gap-1.5 mb-2">
                   <Link2 className="w-3.5 h-3.5" style={{ color: 'var(--text-tertiary)' }} />
                   <span className="text-overline" style={{ color: 'var(--text-tertiary)' }}>
-                    이 레코드를 참조하는 문서
+                    {t('recordEditor.referencingDocs')}
                   </span>
                   <span
                     className="text-caption px-1.5 py-0.5 rounded-full"
@@ -439,7 +440,7 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
                     >
                       <FileText className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--accent)' }} />
                       <span className="text-sm truncate flex-1" style={{ color: 'var(--text-primary)' }}>
-                        {d.icon ? `${d.icon} ` : ''}{d.name || '(제목 없음)'}
+                        {d.icon ? `${d.icon} ` : ''}{d.name || t('recordEditor.untitledDoc')}
                       </span>
                       <ArrowRight className="w-3 h-3 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
                     </button>
@@ -462,7 +463,7 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
       >
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-          자동 저장됨
+          {t('recordEditor.autoSaved')}
         </span>
         <kbd
           className="px-1.5 py-0.5 rounded border font-mono"
@@ -472,7 +473,7 @@ export default function RecordEditor({ projectId, sheet, row, onClose, variant =
             color: 'var(--text-secondary)',
           }}
         >
-          Esc 로 닫기
+          {t('recordEditor.closeWithEsc')}
         </kbd>
       </div>
     </aside>
@@ -522,22 +523,23 @@ function RelatedChangesSection({
   sheets: Sheet[];
   onJump: (entry: ChangeEntry) => void;
 }) {
+  const t = useTranslations();
   const sheetName = (id: string) =>
-    sheets.find((s) => s.id === id)?.name ?? '(삭제된 시트)';
+    sheets.find((s) => s.id === id)?.name ?? t('recordEditor.deletedSheet');
   const columnName = (sheetId: string, colId: string) =>
     sheets.find((s) => s.id === sheetId)?.columns.find((c) => c.id === colId)?.name
-    ?? '(삭제된 컬럼)';
+    ?? t('recordEditor.deletedColumn');
 
   const formatTime = (ts: number): string => {
     const diff = Date.now() - ts;
     const s = Math.floor(diff / 1000);
-    if (s < 60) return `${s}초 전`;
+    if (s < 60) return t('recordEditor.secondsAgo', { s });
     const m = Math.floor(s / 60);
-    if (m < 60) return `${m}분 전`;
+    if (m < 60) return t('recordEditor.minutesAgo', { m });
     const h = Math.floor(m / 60);
-    if (h < 24) return `${h}시간 전`;
+    if (h < 24) return t('recordEditor.hoursAgo', { h });
     const d = Math.floor(h / 24);
-    if (d < 7) return `${d}일 전`;
+    if (d < 7) return t('recordEditor.daysAgo', { d });
     return new Date(ts).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   };
 
@@ -558,7 +560,7 @@ function RelatedChangesSection({
           className="text-overline"
           style={{ color: 'var(--text-tertiary)' }}
         >
-          연결된 변경 ({changes.length})
+          {t('recordEditor.connectedChanges', { n: changes.length })}
         </span>
       </div>
       <div className="space-y-1">

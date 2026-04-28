@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useRef, useEffect } from 'react';
 import { X, GripHorizontal, Palette, Minus, Plus } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
@@ -7,14 +8,14 @@ import type { Sticker } from '@/types';
 
 // 스티커 색상 옵션
 const STICKER_COLORS = [
-  { name: '노랑', value: '#fef08a' },
-  { name: '분홍', value: '#fbcfe8' },
-  { name: '파랑', value: '#bfdbfe' },
-  { name: '초록', value: '#bbf7d0' },
-  { name: '보라', value: '#ddd6fe' },
-  { name: '주황', value: '#fed7aa' },
-  { name: '하늘', value: '#a5f3fc' },
-  { name: '회색', value: '#e5e7eb' },
+  { nameKey: 'sheet.stickerColorYellow', value: '#fef08a' },
+  { nameKey: 'sheet.stickerColorPink', value: '#fbcfe8' },
+  { nameKey: 'sheet.stickerColorBlue', value: '#bfdbfe' },
+  { nameKey: 'sheet.stickerColorGreen', value: '#bbf7d0' },
+  { nameKey: 'sheet.stickerColorPurple', value: '#ddd6fe' },
+  { nameKey: 'sheet.stickerColorOrange', value: '#fed7aa' },
+  { nameKey: 'sheet.stickerColorSky', value: '#a5f3fc' },
+  { nameKey: 'sheet.stickerColorGray', value: '#e5e7eb' },
 ];
 
 // 텍스트 크기 옵션
@@ -39,6 +40,7 @@ interface StickerItemProps {
 }
 
 function StickerItem({ sticker, projectId, sheetId, containerRef }: StickerItemProps) {
+  const t = useTranslations();
   const { updateSticker, deleteSticker } = useProjectStore();
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -245,7 +247,7 @@ function StickerItem({ sticker, projectId, sheetId, containerRef }: StickerItemP
                 onClick={handleFontSizeDecrease}
                 onMouseDown={(e) => e.stopPropagation()}
                 className="w-4 h-4 rounded flex items-center justify-center hover:bg-black/10 transition-colors"
-                title="글씨 작게"
+                title={t('sheet.stickerFontSmall')}
                 disabled={currentIndex === 0}
               >
                 <Minus className="w-2.5 h-2.5 text-gray-600" />
@@ -257,7 +259,7 @@ function StickerItem({ sticker, projectId, sheetId, containerRef }: StickerItemP
                 onClick={handleFontSizeIncrease}
                 onMouseDown={(e) => e.stopPropagation()}
                 className="w-4 h-4 rounded flex items-center justify-center hover:bg-black/10 transition-colors"
-                title="글씨 크게"
+                title={t('sheet.stickerFontLarge')}
                 disabled={currentIndex === FONT_SIZES.length - 1}
               >
                 <Plus className="w-2.5 h-2.5 text-gray-600" />
@@ -272,7 +274,7 @@ function StickerItem({ sticker, projectId, sheetId, containerRef }: StickerItemP
               }}
               onMouseDown={(e) => e.stopPropagation()}
               className="w-5 h-5 rounded flex items-center justify-center hover:bg-black/10 transition-colors"
-              title="색상 변경"
+              title={t('sheet.stickerColorChange')}
             >
               <Palette className="w-3 h-3 text-gray-600" />
             </button>
@@ -282,7 +284,7 @@ function StickerItem({ sticker, projectId, sheetId, containerRef }: StickerItemP
               onClick={handleDelete}
               onMouseDown={(e) => e.stopPropagation()}
               className="w-5 h-5 rounded flex items-center justify-center hover:bg-black/10 transition-colors"
-              title="삭제"
+              title={t('sheet.stickerDelete')}
             >
               <X className="w-3 h-3 text-gray-600" />
             </button>
@@ -307,7 +309,7 @@ function StickerItem({ sticker, projectId, sheetId, containerRef }: StickerItemP
                   background: c.value,
                   borderColor: sticker.color === c.value ? '#333' : 'transparent'
                 }}
-                title={c.name}
+                title={t(c.nameKey as 'sheet.stickerColorYellow')}
               />
             ))}
           </div>
@@ -333,14 +335,14 @@ function StickerItem({ sticker, projectId, sheetId, containerRef }: StickerItemP
               }}
               className="w-full bg-transparent resize-none outline-none"
               style={{ color: '#333', height: sticker.height - 24, fontSize: `${currentFontSize}px` }}
-              placeholder="메모 입력..."
+              placeholder={t('sheet.stickerMemoPlaceholder')}
             />
           ) : (
             <div
               className="whitespace-pre-wrap break-words h-full"
               style={{ color: sticker.text ? '#333' : '#999', fontSize: `${currentFontSize}px` }}
             >
-              {sticker.text || '클릭하여 입력...'}
+              {sticker.text || t('sheet.stickerClickToInput')}
             </div>
           )}
         </div>
@@ -371,6 +373,7 @@ interface StickerLayerProps {
 }
 
 export default function StickerLayer({ containerRef }: StickerLayerProps) {
+  const t = useTranslations();
   const { projects, currentProjectId, currentSheetId } = useProjectStore();
 
   const currentProject = projects.find(p => p.id === currentProjectId);

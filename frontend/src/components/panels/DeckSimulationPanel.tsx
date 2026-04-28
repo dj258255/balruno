@@ -10,12 +10,14 @@ import { useState, useMemo } from 'react';
 import { Layers, Plus, Trash2, BarChart3, Swords, Shield, ArrowUp, Ban, Moon, HelpCircle } from 'lucide-react';
 import PanelShell from '@/components/ui/PanelShell';
 import { simulateDeck, CARD_PRESETS, resolveIntent, type Card, type DeckConfig, type EnemyMob, type MobIntent, type IntentKind } from '@/lib/deckSimulation';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
 }
 
 export default function DeckSimulationPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [cards, setCards] = useState<Card[]>(CARD_PRESETS);
   const [handSize, setHandSize] = useState(5);
   const [baseEnergy, setBaseEnergy] = useState(3);
@@ -63,9 +65,10 @@ export default function DeckSimulationPanel({ onClose }: Props) {
   const result = useMemo(() => simulateDeck(cfg, runs), [cfg, runs]);
 
   const addCard = () => {
+    const t = useTranslations();
     setCards((prev) => [
       ...prev,
-      { id: `card-${Date.now()}`, name: '신규 카드', type: 'attack', cost: 1, damage: 6 },
+      { id: `card-${Date.now()}`, name: t('deckSim.newCard'), type: 'attack', cost: 1, damage: 6 },
     ]);
   };
 
@@ -75,7 +78,7 @@ export default function DeckSimulationPanel({ onClose }: Props) {
 
   const removeCard = (idx: number) => setCards((prev) => prev.filter((_, i) => i !== idx));
 
-  const addEnemy = () => setEnemies((prev) => [...prev, { id: `mob-${Date.now()}`, name: '몹', hp: 50 }]);
+  const addEnemy = () => setEnemies((prev) => [...prev, { id: `mob-${Date.now()}`, name: t('deckSim.newMob'), hp: 50 }]);
   const updateEnemy = <K extends keyof EnemyMob>(idx: number, key: K, value: EnemyMob[K]) =>
     setEnemies((prev) => prev.map((e, i) => (i === idx ? { ...e, [key]: value } : e)));
   const removeEnemy = (idx: number) => setEnemies((prev) => prev.filter((_, i) => i !== idx));
@@ -106,8 +109,8 @@ export default function DeckSimulationPanel({ onClose }: Props) {
 
   return (
     <PanelShell
-      title="덱빌더 확률 시뮬"
-      subtitle="Slay the Spire · 카드 기반 Monte Carlo"
+      title={t('deckSim.titleHeader')}
+      subtitle={t('deckSim.subtitleHeader')}
       icon={Layers}
       iconColor="#8b5cf6"
       onClose={onClose}
@@ -115,18 +118,18 @@ export default function DeckSimulationPanel({ onClose }: Props) {
     >
       {/* 전역 설정 */}
       <div className="p-3 rounded-lg grid grid-cols-2 gap-2" style={{ background: 'var(--bg-tertiary)' }}>
-        <NumRow label="턴당 드로우" value={handSize} min={3} max={10} onChange={setHandSize} />
-        <NumRow label="턴당 에너지" value={baseEnergy} min={1} max={10} onChange={setBaseEnergy} />
-        <NumRow label="전투 턴 수" value={turns} min={1} max={20} onChange={setTurns} />
-        <NumRow label="반복 수" value={runs} min={500} max={10000} step={500} onChange={setRuns} />
+        <NumRow label={t('deckSim.drawPerTurn')} value={handSize} min={3} max={10} onChange={setHandSize} />
+        <NumRow label={t('deckSim.energyPerTurn')} value={baseEnergy} min={1} max={10} onChange={setBaseEnergy} />
+        <NumRow label={t('deckSim.turns')} value={turns} min={1} max={20} onChange={setTurns} />
+        <NumRow label={t('deckSim.iterations')} value={runs} min={500} max={10000} step={500} onChange={setRuns} />
       </div>
 
       {/* 결과 요약 */}
       <div className="grid grid-cols-2 gap-2">
-        <Stat label="평균 DPT" value={result.avgDpt.toFixed(1)} sub={`중위 ${result.medianDpt.toFixed(1)}`} color="#ef4444" />
-        <Stat label="최악(P10)~최선(P90)" value={`${result.p10Dpt.toFixed(0)}~${result.p90Dpt.toFixed(0)}`} sub="80% 신뢰 구간" color="#3b82f6" />
-        <Stat label="Dead Hand" value={`${Math.round(result.deadHandRate * 100)}%`} sub="플레이 불가 턴 비율" color="#f59e0b" />
-        <Stat label="에너지 낭비" value={`${Math.round(result.avgEnergyWaste * 100)}%`} sub="미사용 에너지 비율" color="#10b981" />
+        <Stat label={t('deckSim.avgDpt')} value={result.avgDpt.toFixed(1)} sub={t('deckSim.medianSub', { n: result.medianDpt.toFixed(1) })} color="#ef4444" />
+        <Stat label={t('deckSim.p10p90')} value={`${result.p10Dpt.toFixed(0)}~${result.p90Dpt.toFixed(0)}`} sub={t('deckSim.p10p90Sub')} color="#3b82f6" />
+        <Stat label={t('deckSim.deadHand')} value={`${Math.round(result.deadHandRate * 100)}%`} sub={t('deckSim.deadHandSub')} color="#f59e0b" />
+        <Stat label={t('deckSim.energyWaste')} value={`${Math.round(result.avgEnergyWaste * 100)}%`} sub={t('deckSim.energyWasteSub')} color="#10b981" />
       </div>
 
       {/* 생존 시뮬 스위치 + 생존률 stats */}
@@ -134,11 +137,11 @@ export default function DeckSimulationPanel({ onClose }: Props) {
         <div className="flex items-center justify-between mb-2">
           <label className="flex items-center gap-2 text-label font-medium cursor-pointer" style={{ color: 'var(--text-primary)' }}>
             <input type="checkbox" checked={survivalMode} onChange={(e) => setSurvivalMode(e.target.checked)} />
-            생존 시뮬 모드 (몹 공격 받음)
+            {t('deckSim.survivalMode')}
           </label>
           {survivalMode && (
             <div className="flex items-center gap-2">
-              <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>플레이어 HP</span>
+              <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('deckSim.playerHp')}</span>
               <input
                 type="number"
                 value={playerHp}
@@ -153,14 +156,14 @@ export default function DeckSimulationPanel({ onClose }: Props) {
         {survivalMode && result.survivalRate !== undefined && (
           <div className="grid grid-cols-4 gap-2">
             <Stat
-              label="생존률"
+              label={t('deckSim.survivalRate')}
               value={`${Math.round(result.survivalRate * 100)}%`}
-              sub={`HP ${playerHp} 기준`}
+              sub={t('deckSim.survivalSub', { hp: playerHp })}
               color={result.survivalRate >= 0.7 ? '#10b981' : result.survivalRate >= 0.3 ? '#f59e0b' : '#ef4444'}
             />
-            <Stat label="평균 종료 HP" value={result.avgEndHp!.toFixed(1)} sub={`/ ${playerHp}`} color="#3b82f6" />
-            <Stat label="평균 피격" value={result.avgDamageTaken!.toFixed(1)} sub="실제 HP 손실" color="#ef4444" />
-            <Stat label="평균 차단" value={result.avgDamageBlocked!.toFixed(1)} sub="block 흡수" color="#8b5cf6" />
+            <Stat label={t('deckSim.avgEndHp')} value={result.avgEndHp!.toFixed(1)} sub={`/ ${playerHp}`} color="#3b82f6" />
+            <Stat label={t('deckSim.avgDmgTaken')} value={result.avgDamageTaken!.toFixed(1)} sub={t('deckSim.avgDmgTakenSub')} color="#ef4444" />
+            <Stat label={t('deckSim.avgBlocked')} value={result.avgDamageBlocked!.toFixed(1)} sub={t('deckSim.avgBlockedSub')} color="#8b5cf6" />
           </div>
         )}
       </div>
@@ -169,21 +172,21 @@ export default function DeckSimulationPanel({ onClose }: Props) {
       {result.avgKills !== undefined && (
         <div className="grid grid-cols-3 gap-2">
           <Stat
-            label="평균 킬 수"
+            label={t('deckSim.avgKills')}
             value={result.avgKills.toFixed(2)}
-            sub={`총 ${enemies.length}몹 중`}
+            sub={t('deckSim.avgKillsSub', { n: enemies.length })}
             color="#ef4444"
           />
           <Stat
-            label="전체 클리어율"
+            label={t('deckSim.allClearRate')}
             value={`${Math.round((result.clearRate ?? 0) * 100)}%`}
-            sub="모든 몹 처치한 run"
+            sub={t('deckSim.allClearSub')}
             color="#10b981"
           />
           <Stat
-            label="첫 킬 평균 턴"
+            label={t('deckSim.firstKillTurn')}
             value={(result.avgTurnToFirstKill ?? 0).toFixed(1)}
-            sub="처음 몹 눕힌 시점"
+            sub={t('deckSim.firstKillSub')}
             color="#f59e0b"
           />
         </div>
@@ -193,14 +196,14 @@ export default function DeckSimulationPanel({ onClose }: Props) {
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-            상대 몹 시퀀스 ({enemies.length})
+            {t('deckSim.enemySequence', { n: enemies.length })}
           </span>
           <button onClick={addEnemy} className="btn-primary text-caption inline-flex items-center gap-1">
-            <Plus className="w-3 h-3" /> 몹 추가
+            <Plus className="w-3 h-3" /> {t('deckSim.addMob')}
           </button>
         </div>
         <p className="text-caption italic mb-2" style={{ color: 'var(--text-tertiary)' }}>
-          왼쪽부터 순서대로 등장. 덱 DPT 를 누적해 처치 — 턴 안에 쓰러뜨리면 다음 몹.
+          {t('deckSim.enemySequenceHelp')}
         </p>
         <div className="space-y-1">
           {enemies.map((enemy, idx) => {
@@ -241,15 +244,15 @@ export default function DeckSimulationPanel({ onClose }: Props) {
                         onChange={(e) => updateEnemy(idx, 'attackDamage', parseInt(e.target.value) || 0)}
                         className="input-compact hide-spinner"
                         style={{ width: 60 }}
-                        title="턴당 공격력"
+                        title={t('deckSim.attackPerTurnTitle')}
                       />
                     </>
                   )}
-                  {nextIntent && <IntentBadge intent={nextIntent} label="다음 턴" />}
+                  {nextIntent && <IntentBadge intent={nextIntent} label={t('deckSim.nextTurnLabel')} />}
                   <span
                     className="text-caption tabular-nums w-12 text-right font-semibold"
                     style={{ color: killRate >= 0.8 ? '#10b981' : killRate >= 0.5 ? '#f59e0b' : '#ef4444' }}
-                    title="이 몹 처치율"
+                    title={t('deckSim.mobKillRateTitle')}
                   >
                     {Math.round(killRate * 100)}%
                   </span>
@@ -268,7 +271,7 @@ export default function DeckSimulationPanel({ onClose }: Props) {
           })}
           {enemies.length === 0 && (
             <p className="text-caption italic text-center py-4" style={{ color: 'var(--text-tertiary)' }}>
-              몹을 추가하면 킬 수/클리어율 분석이 표시됩니다
+              {t('deckSim.addMobsForAnalysis')}
             </p>
           )}
         </div>
@@ -279,7 +282,7 @@ export default function DeckSimulationPanel({ onClose }: Props) {
         <div className="flex items-center gap-2 mb-2">
           <BarChart3 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
           <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-            카드별 평균 사용 횟수 (전투당)
+            {t('deckSim.cardUsage')}
           </span>
         </div>
         <div className="space-y-1">
@@ -311,10 +314,10 @@ export default function DeckSimulationPanel({ onClose }: Props) {
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-            덱 ({cards.length}장)
+            {t('deckSim.deckHeader', { n: cards.length })}
           </span>
           <button onClick={addCard} className="btn-primary text-caption inline-flex items-center gap-1">
-            <Plus className="w-3 h-3" /> 카드 추가
+            <Plus className="w-3 h-3" /> {t('deckSim.addCard')}
           </button>
         </div>
         <div className="space-y-1 max-h-64 overflow-y-auto">
@@ -332,9 +335,9 @@ export default function DeckSimulationPanel({ onClose }: Props) {
                 className="input-compact"
                 style={{ width: 80 }}
               >
-                <option value="attack">공격</option>
-                <option value="skill">스킬</option>
-                <option value="power">파워</option>
+                <option value="attack">{t('deckSim.cardAttack')}</option>
+                <option value="skill">{t('deckSim.cardSkill')}</option>
+                <option value="power">{t('deckSim.cardPower')}</option>
               </select>
               <input
                 type="number"
@@ -344,7 +347,7 @@ export default function DeckSimulationPanel({ onClose }: Props) {
                 onChange={(e) => updateCard(idx, 'cost', parseInt(e.target.value) || 0)}
                 className="input-compact hide-spinner"
                 style={{ width: 50 }}
-                title="비용"
+                title={t('deckSim.costTitle')}
               />
               <input
                 type="number"
@@ -352,8 +355,8 @@ export default function DeckSimulationPanel({ onClose }: Props) {
                 onChange={(e) => updateCard(idx, 'damage', parseInt(e.target.value) || 0)}
                 className="input-compact hide-spinner"
                 style={{ width: 60 }}
-                title="피해"
-                placeholder="피해"
+                title={t('deckSim.damageTitle')}
+                placeholder={t('deckSim.damagePlaceholder')}
               />
               <input
                 type="number"
@@ -361,8 +364,8 @@ export default function DeckSimulationPanel({ onClose }: Props) {
                 onChange={(e) => updateCard(idx, 'block', parseInt(e.target.value) || 0)}
                 className="input-compact hide-spinner"
                 style={{ width: 60 }}
-                title="방어"
-                placeholder="방어"
+                title={t('deckSim.defenseTitle')}
+                placeholder={t('deckSim.defensePlaceholder')}
               />
               <button onClick={() => removeCard(idx)} className="p-1 rounded hover:bg-[var(--bg-tertiary)]">
                 <Trash2 className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
@@ -373,7 +376,7 @@ export default function DeckSimulationPanel({ onClose }: Props) {
       </div>
 
       <div className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        DPT = Damage Per Turn · 매 턴 가장 비싼 플레이 가능 카드부터 자동 플레이
+        {t('deckSim.dptNote')}
       </div>
     </PanelShell>
   );
@@ -413,19 +416,20 @@ function Stat({ label, value, sub, color }: { label: string; value: string; sub?
 }
 
 // Slay the Spire 아이콘 매핑: noggle(attack), shield(defend), up(buff), ban(debuff), moon(stun), ?(unknown)
-const INTENT_META: Record<IntentKind, { Icon: typeof Swords; color: string; bg: string; label: string }> = {
-  attack:  { Icon: Swords,     color: '#ef4444', bg: '#ef444420', label: '공격' },
-  defend:  { Icon: Shield,     color: '#3b82f6', bg: '#3b82f620', label: '방어' },
-  buff:    { Icon: ArrowUp,    color: '#f59e0b', bg: '#f59e0b20', label: '강화' },
-  debuff:  { Icon: Ban,        color: '#8b5cf6', bg: '#8b5cf620', label: '디버프' },
-  stun:    { Icon: Moon,       color: '#6b7280', bg: '#6b728020', label: '스턴' },
-  unknown: { Icon: HelpCircle, color: '#94a3b8', bg: '#94a3b820', label: '?' },
+const INTENT_META: Record<IntentKind, { Icon: typeof Swords; color: string; bg: string; labelKey: string }> = {
+  attack:  { Icon: Swords,     color: '#ef4444', bg: '#ef444420', labelKey: 'deckSim.intentAttack' },
+  defend:  { Icon: Shield,     color: '#3b82f6', bg: '#3b82f620', labelKey: 'deckSim.intentDefend' },
+  buff:    { Icon: ArrowUp,    color: '#f59e0b', bg: '#f59e0b20', labelKey: 'deckSim.intentBuff' },
+  debuff:  { Icon: Ban,        color: '#8b5cf6', bg: '#8b5cf620', labelKey: 'deckSim.intentDebuff' },
+  stun:    { Icon: Moon,       color: '#6b7280', bg: '#6b728020', labelKey: 'deckSim.intentStun' },
+  unknown: { Icon: HelpCircle, color: '#94a3b8', bg: '#94a3b820', labelKey: 'deckSim.intentAttack' },
 };
 
 function IntentBadge({ intent, label }: { intent: MobIntent; label?: string }) {
+  const t = useTranslations();
   const meta = INTENT_META[intent.kind];
   const val = intent.damage ?? intent.block ?? intent.strength;
-  const title = [label, intent.label ?? meta.label, val != null ? `${val}` : '']
+  const title = [label, intent.label ?? (intent.kind === 'unknown' ? '?' : t(meta.labelKey as 'deckSim.intentAttack')), val != null ? `${val}` : '']
     .filter(Boolean)
     .join(' · ');
   return (
@@ -451,10 +455,11 @@ function IntentEditor({
   onUpdate: (idx: number, patch: Partial<MobIntent>) => void;
   onRemove: (idx: number) => void;
 }) {
+  const t = useTranslations();
   return (
     <div className="px-2 pb-2 flex items-center gap-1 flex-wrap">
       <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-        Intent 사이클
+        {t('deckSim.intentCycle')}
       </span>
       {(pattern ?? []).map((intent, i) => {
         const meta = INTENT_META[intent.kind];
@@ -480,11 +485,11 @@ function IntentEditor({
               className="bg-transparent text-caption border-none outline-none font-semibold"
               style={{ color: meta.color }}
             >
-              <option value="attack">공격</option>
-              <option value="defend">방어</option>
-              <option value="buff">강화</option>
-              <option value="debuff">디버프</option>
-              <option value="stun">스턴</option>
+              <option value="attack">{t('deckSim.intentAttack')}</option>
+              <option value="defend">{t('deckSim.intentDefend')}</option>
+              <option value="buff">{t('deckSim.intentBuff')}</option>
+              <option value="debuff">{t('deckSim.intentDebuff')}</option>
+              <option value="stun">{t('deckSim.intentStun')}</option>
             </select>
             {(intent.kind === 'attack' || intent.kind === 'defend' || intent.kind === 'buff') && (
               <input
@@ -517,7 +522,7 @@ function IntentEditor({
         onClick={onAdd}
         className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-caption hover:bg-[var(--bg-tertiary)]"
         style={{ color: 'var(--text-secondary)' }}
-        title="턴 intent 추가"
+        title={t('deckSim.addTurnIntent')}
       >
         <Plus className="w-3 h-3" />
         turn

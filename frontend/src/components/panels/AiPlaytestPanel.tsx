@@ -14,6 +14,7 @@ import {
   type IssueSeverity,
   type PlaytestDomain,
 } from '@/lib/aiPlaytest';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
@@ -32,16 +33,17 @@ const SEVERITY_ICON: Record<IssueSeverity, typeof AlertTriangle> = {
 };
 
 const DOMAIN_LABEL: Record<PlaytestDomain, string> = {
-  unit: '유닛',
+  unit: 'aiPlaytest.unit',
   fps: 'FPS',
-  deck: '덱',
+  deck: 'aiPlaytest.deck',
   moba: 'MOBA',
-  'mmo-raid': 'MMO 레이드',
-  'auto-battler': '오토배틀러',
-  horde: '서바이벌',
+  'mmo-raid': 'aiPlaytest.mmoRaid',
+  'auto-battler': 'aiPlaytest.autoBattler',
+  horde: 'aiPlaytest.horde',
 };
 
 export default function AiPlaytestPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [report, setReport] = useState<PlaytestReport | null>(null);
   const [running, setRunning] = useState(false);
 
@@ -58,7 +60,7 @@ export default function AiPlaytestPanel({ onClose }: Props) {
   return (
     <PanelShell
       title="AI Playtest"
-      subtitle="배치 시뮬 + imbalance 자동 리포트"
+      subtitle={t('aiPlaytest.subtitleHeader')}
       icon={TestTube}
       iconColor="#10b981"
       onClose={onClose}
@@ -73,11 +75,11 @@ export default function AiPlaytestPanel({ onClose }: Props) {
           style={{ background: 'var(--accent)', color: 'white' }}
         >
           <Play className="w-4 h-4" />
-          {running ? '실행 중...' : '플레이테스트 실행'}
+          {running ? t('aiPlaytest.running') : t('aiPlaytest.runPlaytest')}
         </button>
         <div className="flex-1 text-caption" style={{ color: 'var(--text-secondary)' }}>
-          기본 4 시나리오 (유닛 대칭 / FPS SMG vs AR / 덱 클리어율 / MOBA Yasuo vs Thresh)
-          각 도메인 validator 로 imbalance 자동 탐지
+          {t('aiPlaytest.scenarioBaseline')}
+          {t('aiPlaytest.autoDetect')}
         </div>
       </div>
 
@@ -91,27 +93,27 @@ export default function AiPlaytestPanel({ onClose }: Props) {
               </div>
               <div className="flex-1">
                 <h3 className="text-label font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  AI Playtest 란?
+                  {t('aiPlaytest.aboutTitle')}
                 </h3>
                 <p className="text-caption mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  실제 사람 플레이테스트 전에, AI 가 다양한 시나리오를 자동 시뮬해서 imbalance·막히는 구간·이상 패턴을 찾아주는 1차 검증 도구. 진짜 테스터에게 보내기 전 자동 회귀 체크용.
+                  {t('aiPlaytest.aboutBody')}
                 </p>
               </div>
             </div>
             <ul className="space-y-1 text-caption pl-1" style={{ color: 'var(--text-secondary)' }}>
-              <li>· 도메인별 시나리오 (유닛 대칭 / FPS / 덱 / MOBA …) 를 한 번에 실행</li>
-              <li>· 각 도메인 validator 가 win-rate skew · TTK 편차 · 클리어율 자동 탐지</li>
-              <li>· critical / warn / ok 로 분류된 리포트로 우선순위 한눈에</li>
+              <li>{t('aiPlaytest.feat1')}</li>
+              <li>{t('aiPlaytest.feat2')}</li>
+              <li>{t('aiPlaytest.feat3')}</li>
             </ul>
           </div>
 
           <div className="p-6 rounded-lg text-center" style={{ background: 'var(--bg-tertiary)' }}>
             <Info className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--text-tertiary)' }} />
             <p className="text-label" style={{ color: 'var(--text-secondary)' }}>
-              실행 버튼을 눌러 배치 시뮬을 시작하세요.
+              {t('aiPlaytest.pressRun')}
             </p>
             <p className="text-caption mt-1" style={{ color: 'var(--text-tertiary)' }}>
-              10~30초 소요 · 결과: 종합 점수 + issue 리스트 + 도메인별 health
+              {t('aiPlaytest.durationNote')}
             </p>
           </div>
         </>
@@ -134,7 +136,7 @@ export default function AiPlaytestPanel({ onClose }: Props) {
             <div className="flex-1 grid grid-cols-3 gap-2">
               <Metric label="Critical" value={report.criticalCount} color="#ef4444" />
               <Metric label="Warn" value={report.warnCount} color="#f59e0b" />
-              <Metric label="Total 시나리오" value={report.scenarios.length} color="#3b82f6" />
+              <Metric label={t('aiPlaytest.totalScenarios')} value={report.scenarios.length} color="#3b82f6" />
             </div>
             <div className="text-caption tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
               {(report.durationMs / 1000).toFixed(1)}s
@@ -143,7 +145,7 @@ export default function AiPlaytestPanel({ onClose }: Props) {
 
           {/* 도메인 health */}
           <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
-            <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>도메인 상태</div>
+            <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>{t('aiPlaytest.domainHealth')}</div>
             <div className="grid grid-cols-7 gap-1">
               {(Object.entries(report.domainHealth) as [PlaytestDomain, IssueSeverity][]).map(([domain, severity]) => {
                 const Icon = SEVERITY_ICON[severity];
@@ -168,7 +170,7 @@ export default function AiPlaytestPanel({ onClose }: Props) {
           {(report.criticalCount + report.warnCount > 0) && (
             <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
               <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-                발견된 Issue ({report.criticalCount + report.warnCount})
+                {t('aiPlaytest.foundIssues', { n: report.criticalCount + report.warnCount })}
               </div>
               <div className="space-y-1">
                 {report.scenarios.flatMap((s) => s.issues).map((issue, idx) => {
@@ -187,7 +189,7 @@ export default function AiPlaytestPanel({ onClose }: Props) {
                           · {issue.scenarioName}
                         </span>
                         <span className="ml-auto text-caption tabular-nums font-mono" style={{ color: 'var(--text-primary)' }}>
-                          관측 <span style={{ color }}>{issue.observedValue.toFixed(3)}</span>
+                          {t('aiPlaytest.observed')} <span style={{ color }}>{issue.observedValue.toFixed(3)}</span>
                           {' '}
                           vs [{issue.expectedRange[0]}, {issue.expectedRange[1]}]
                         </span>
@@ -207,7 +209,7 @@ export default function AiPlaytestPanel({ onClose }: Props) {
           {/* 시나리오별 상세 */}
           <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
             <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-              시나리오별 결과
+              {t('aiPlaytest.scenarioResults')}
             </div>
             <div className="space-y-2">
               {report.scenarios.map((s) => {
@@ -264,7 +266,7 @@ export default function AiPlaytestPanel({ onClose }: Props) {
       )}
 
       <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        Validator 기반 자동 탐지 — warn: -5점, critical: -15점. 각 시나리오 N회 Monte Carlo 실행.
+        {t('aiPlaytest.validatorNote')}
       </p>
     </PanelShell>
   );

@@ -33,36 +33,28 @@ interface BalanceValidatorProps {
 
 const ROLE_EXPECTATIONS = {
   tank: {
-    name: '탱커',
     icon: Shield,
     color: '#5a9cf5',
     dpsRange: [50, 90],
     ehpRange: [180, 250],
-    description: '높은 생존력, 낮은 화력',
   },
   dps: {
-    name: '딜러',
     icon: Swords,
     color: '#e86161',
     dpsRange: [130, 200],
     ehpRange: [60, 90],
-    description: '높은 화력, 낮은 생존력',
   },
   support: {
-    name: '서포터',
     icon: Heart,
     color: '#3db88a',
     dpsRange: [40, 70],
     ehpRange: [90, 130],
-    description: '유틸리티 중심, 중간 생존력',
   },
   balanced: {
-    name: '밸런스',
     icon: Target,
     color: '#e5a440',
     dpsRange: [90, 110],
     ehpRange: [90, 110],
-    description: '균형잡힌 스탯',
   },
 };
 
@@ -108,19 +100,20 @@ function validateUnit(unit: UnitData) {
   const dpsInRange = dpsPercent >= role.dpsRange[0] && dpsPercent <= role.dpsRange[1];
   const ehpInRange = ehpPercent >= role.ehpRange[0] && ehpPercent <= role.ehpRange[1];
 
-  const issues: string[] = [];
+  type IssueDescriptor = { key: 'issueDpsLow' | 'issueDpsHigh' | 'issueEhpLow' | 'issueEhpHigh'; values: { percent: string; min?: number; max?: number } };
+  const issues: IssueDescriptor[] = [];
   if (!dpsInRange) {
     if (dpsPercent < role.dpsRange[0]) {
-      issues.push(`DPS 부족: ${dpsPercent.toFixed(0)}% (최소 ${role.dpsRange[0]}% 필요)`);
+      issues.push({ key: 'issueDpsLow', values: { percent: dpsPercent.toFixed(0), min: role.dpsRange[0] } });
     } else {
-      issues.push(`DPS 과다: ${dpsPercent.toFixed(0)}% (최대 ${role.dpsRange[1]}% 권장)`);
+      issues.push({ key: 'issueDpsHigh', values: { percent: dpsPercent.toFixed(0), max: role.dpsRange[1] } });
     }
   }
   if (!ehpInRange) {
     if (ehpPercent < role.ehpRange[0]) {
-      issues.push(`EHP 부족: ${ehpPercent.toFixed(0)}% (최소 ${role.ehpRange[0]}% 필요)`);
+      issues.push({ key: 'issueEhpLow', values: { percent: ehpPercent.toFixed(0), min: role.ehpRange[0] } });
     } else {
-      issues.push(`EHP 과다: ${ehpPercent.toFixed(0)}% (최대 ${role.ehpRange[1]}% 권장)`);
+      issues.push({ key: 'issueEhpHigh', values: { percent: ehpPercent.toFixed(0), max: role.ehpRange[1] } });
     }
   }
 
@@ -160,6 +153,7 @@ function StatInputField({
   value: number;
   onChange: (v: number) => void;
 }) {
+  const tCell = useTranslations('balanceValidator');
   const [inputValue, setInputValue] = useState(String(value));
   const [isHovered, setIsHovered] = useState(false);
   const { startCellSelection, cellSelectionMode } = useProjectStore();
@@ -205,7 +199,7 @@ function StatInputField({
           className="glass-input w-full !py-1.5 !pr-8 text-sm text-center"
         />
         {isHovered && !cellSelectionMode.active && (
-          <Tooltip content="셀에서 선택" position="top">
+          <Tooltip content={tCell('selectFromCell')} position="top">
             <button
               onClick={handleCellSelect}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
@@ -225,13 +219,13 @@ export default function BalanceValidator({ onClose, showHelp: externalShowHelp, 
   const showHelp = externalShowHelp ?? internalShowHelp;
   const setShowHelp = externalSetShowHelp ?? setInternalShowHelp;
   const [units, setUnits] = useState<UnitData[]>([
-    { name: '전사', role: 'balanced', hp: 1000, atk: 100, def: 50, attackSpeed: 1.0, critRate: 0.05, critDamage: 1.5 },
+    { name: t('sampleWarrior'), role: 'balanced', hp: 1000, atk: 100, def: 50, attackSpeed: 1.0, critRate: 0.05, critDamage: 1.5 },
   ]);
   const [selectedUnits, setSelectedUnits] = useState<[number, number]>([0, 0]);
   const [simResult, setSimResult] = useState<{ winner: string; rounds: number; hpRemaining: number } | null>(null);
 
   const addUnit = () => {
-    setUnits([...units, { name: `유닛 ${units.length + 1}`, role: 'balanced', hp: 1000, atk: 100, def: 50, attackSpeed: 1.0, critRate: 0.05, critDamage: 1.5 }]);
+    setUnits([...units, { name: t('newUnitName', { n: units.length + 1 }), role: 'balanced', hp: 1000, atk: 100, def: 50, attackSpeed: 1.0, critRate: 0.05, critDamage: 1.5 }]);
   };
 
   const updateUnit = (index: number, field: keyof UnitData, value: string | number) => {
@@ -266,8 +260,8 @@ export default function BalanceValidator({ onClose, showHelp: externalShowHelp, 
 
   return (
     <PanelShell
-      title="밸런스 검증"
-      subtitle="런칭 전 룰 기반 최종 검증"
+      title={t('titleHeader')}
+      subtitle={t('subtitleHeader')}
       icon={Shield}
       iconColor={PANEL_COLOR}
       onClose={onClose ?? (() => {})}
@@ -337,7 +331,7 @@ export default function BalanceValidator({ onClose, showHelp: externalShowHelp, 
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4" style={{ color: PANEL_COLOR }} />
-            <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>역할별 기대치</span>
+            <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{t('roleExpectations')}</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {Object.entries(ROLE_EXPECTATIONS).map(([key, role]) => {
@@ -499,7 +493,7 @@ export default function BalanceValidator({ onClose, showHelp: externalShowHelp, 
                     {validation.issues.map((issue, i) => (
                       <div key={i} className="flex items-center gap-1.5 text-sm" style={{ color: '#e5a440' }}>
                         <AlertTriangle className="w-3.5 h-3.5" />
-                        <span>{issue}</span>
+                        <span>{t(issue.key, issue.values)}</span>
                       </div>
                     ))}
                   </div>

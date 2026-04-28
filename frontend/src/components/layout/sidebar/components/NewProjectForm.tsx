@@ -79,10 +79,10 @@ export function NewProjectForm({
             background: 'var(--bg-tertiary)',
             color: 'var(--text-secondary)',
           }}
-          title="템플릿으로 빠르게 시작 · 우클릭: 빠른 샘플"
+          title={t('sidebar.templateGalleryTooltip')}
         >
           <LayoutTemplate className="w-3.5 h-3.5" />
-          템플릿 갤러리
+          {t('sidebar.templateGallery')}
         </button>
 
         {ctxMenu && (
@@ -106,7 +106,7 @@ export function NewProjectForm({
               style={{ color: 'var(--text-primary)' }}
             >
               <FolderPlus className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-              빈 프로젝트로 시작
+              {t('sidebar.startEmptyProject')}
             </button>
             <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />
             <button
@@ -119,7 +119,7 @@ export function NewProjectForm({
               style={{ color: 'var(--text-primary)' }}
             >
               <Sparkles className="w-4 h-4" style={{ color: '#3b82f6' }} />
-              밸런싱 — RPG 캐릭터 샘플
+              {t('sidebar.rpgCharacterSample')}
             </button>
             <button
               type="button"
@@ -131,7 +131,7 @@ export function NewProjectForm({
               style={{ color: 'var(--text-primary)' }}
             >
               <Sparkles className="w-4 h-4" style={{ color: '#f59e0b' }} />
-              팀 PM — 스프린트 보드 샘플
+              {t('sidebar.sprintBoardSample')}
             </button>
             <button
               type="button"
@@ -143,7 +143,7 @@ export function NewProjectForm({
               style={{ color: 'var(--text-primary)' }}
             >
               <LayoutTemplate className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-              전체 샘플 갤러리
+              {t('sidebar.allSamples')}
             </button>
           </div>
         )}

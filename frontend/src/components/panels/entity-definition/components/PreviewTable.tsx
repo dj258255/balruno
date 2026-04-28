@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { LevelTableRow } from '@/types';
 
 interface PreviewTableProps {
@@ -16,13 +17,14 @@ const STAT_COLORS: Record<string, string> = {
 };
 
 export default function PreviewTable({ previewData, statNames }: PreviewTableProps) {
+  const t = useTranslations('entityDefinition');
   if (previewData.length === 0) {
     return (
       <div
         className="p-4 rounded-lg text-center text-sm"
         style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}
       >
-        미리보기 데이터가 없습니다
+        {t('noPreview')}
       </div>
     );
   }
@@ -30,7 +32,7 @@ export default function PreviewTable({ previewData, statNames }: PreviewTablePro
   return (
     <div className="space-y-2">
       <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-        레벨별 스탯 미리보기
+        {t('previewTitle')}
       </div>
 
       <div
@@ -41,7 +43,7 @@ export default function PreviewTable({ previewData, statNames }: PreviewTablePro
           <thead>
             <tr style={{ background: 'var(--bg-secondary)' }}>
               <th className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                레벨
+                {t('levelHeader')}
               </th>
               {statNames.map((stat) => (
                 <th
@@ -95,7 +97,7 @@ export default function PreviewTable({ previewData, statNames }: PreviewTablePro
       {/* 범례 */}
       <div className="text-sm flex items-center gap-2" style={{ color: 'var(--text-tertiary)' }}>
         <span style={{ color: '#9179f2' }}>*</span>
-        <span>= 오버라이드된 값</span>
+        <span>{t('legendOverridden')}</span>
       </div>
     </div>
   );

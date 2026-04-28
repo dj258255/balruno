@@ -38,8 +38,8 @@ export function validateCellValue(
     }
   }
 
-  // 숫자인 경우 min/max 검사
-  const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+  // 숫자인 경우 min/max 검사 — `Number()` 로 문자열 전체가 숫자일 때만 변환
+  const numValue = typeof value === 'number' ? value : Number(String(value));
 
   if (!isNaN(numValue)) {
     if (min !== undefined && numValue < min) {
@@ -83,7 +83,7 @@ function validateDataType(value: CellValue, dataType: DataType): ValidationResul
 
   switch (dataType) {
     case 'number': {
-      const num = parseFloat(strValue);
+      const num = Number(strValue);
       if (isNaN(num)) {
         return { isValid: false, error: '숫자만 입력 가능합니다' };
       }
@@ -91,7 +91,7 @@ function validateDataType(value: CellValue, dataType: DataType): ValidationResul
     }
 
     case 'integer': {
-      const num = parseFloat(strValue);
+      const num = Number(strValue);
       if (isNaN(num)) {
         return { isValid: false, error: '정수만 입력 가능합니다' };
       }

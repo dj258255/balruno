@@ -5,6 +5,7 @@
 'use client';
 
 import { AlertTriangle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { UnitStats } from '@/lib/simulation/types';
 import { detectDeadZones } from '@/lib/balanceAnalysis';
 import type { Column } from '@/types';
@@ -25,20 +26,21 @@ export function DeadZoneAnalysis({
   columnMapping,
   onMappingChange,
 }: DeadZoneAnalysisProps) {
+  const t = useTranslations('balanceAnalysis');
   const statLabels: Record<string, string> = {
-    hp: 'HP (체력)',
-    atk: 'ATK (공격력)',
-    def: 'DEF (방어력)',
-    speed: 'SPEED (속도)'
+    hp: t('statHpLong'),
+    atk: t('statAtkLong'),
+    def: t('statDefLong'),
+    speed: t('statSpeedLong'),
   };
 
   return (
     <div className="space-y-4">
       {/* 탭 설명 */}
       <div className="glass-section p-3 rounded-lg" style={{ borderLeft: `3px solid ${PANEL_COLOR}` }}>
-        <div className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>데드존 탐지</div>
+        <div className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{t('deadZoneTitle')}</div>
         <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          활용되지 않는 스탯 구간(데드존)을 탐지합니다. 유닛들이 특정 구간에만 몰려있거나 빈 구간이 있으면 밸런스 문제일 수 있습니다.
+          {t('deadZoneDesc')}
         </div>
       </div>
 
@@ -48,12 +50,12 @@ export function DeadZoneAnalysis({
         onMappingChange={onMappingChange}
         columns={columns}
         fields={[
-          { key: 'hp', label: 'HP', description: '체력' },
-          { key: 'atk', label: 'ATK', description: '공격력' },
-          { key: 'def', label: 'DEF', description: '방어력' },
-          { key: 'speed', label: 'Speed', description: '속도' },
+          { key: 'hp', label: t('fieldHp'), description: t('fieldHpDesc') },
+          { key: 'atk', label: t('fieldAtk'), description: t('fieldAtkDesc') },
+          { key: 'def', label: t('fieldDef'), description: t('fieldDefDesc') },
+          { key: 'speed', label: t('fieldSpeed'), description: t('fieldSpeedDesc') },
         ]}
-        title="분석할 스탯 컬럼"
+        title={t('pickColumns')}
         accentColor={PANEL_COLOR}
       />
 
@@ -68,7 +70,7 @@ export function DeadZoneAnalysis({
             <div className="glass-card text-center py-8 rounded-xl">
               <AlertTriangle className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--text-secondary)' }} />
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                분석할 스탯 컬럼을 선택해주세요
+                {t('selectColumns')}
               </p>
             </div>
           );
@@ -98,11 +100,11 @@ export function DeadZoneAnalysis({
                     {hasIssue ? (
                       <span className="glass-badge flex items-center gap-1 text-sm px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(229, 164, 64, 0.15)', color: '#e5a440' }}>
                         <AlertTriangle className="w-3 h-3" />
-                        {deadZones.length}개 이슈
+                        {t('issuesCount', { count: deadZones.length })}
                       </span>
                     ) : (
                       <span className="glass-badge text-sm px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(61, 184, 138, 0.1)', color: '#3db88a' }}>
-                        정상
+                        {t('ok')}
                       </span>
                     )}
                   </div>
@@ -117,7 +119,7 @@ export function DeadZoneAnalysis({
                     </div>
                   ) : (
                     <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      스탯 분포가 적절합니다
+                      {t('distOk')}
                     </div>
                   )}
                 </div>

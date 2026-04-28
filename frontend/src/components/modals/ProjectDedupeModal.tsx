@@ -7,6 +7,7 @@
 
 import { useMemo, useState } from 'react';
 import { X, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { detectDuplicates, totalDuplicateCount, type DuplicateGroup } from '@/lib/projectDedupe';
 import { toast } from '@/components/ui/Toast';
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
+  const t = useTranslations('projectDedupe');
   const { projects, deleteProject } = useProjectStore();
   const [excludedGroups, setExcludedGroups] = useState<Set<string>>(new Set());
   const [running, setRunning] = useState(false);
@@ -52,7 +54,7 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
       const { saveAllProjects } = await import('@/lib/storage');
       const latest = useProjectStore.getState().projects;
       await saveAllProjects(latest);
-      toast.success(`${totalToDelete}개 프로젝트를 정리했습니다`);
+      toast.success(t('cleanedToast', { count: totalToDelete }));
       onClose();
     } finally {
       setRunning(false);
@@ -76,22 +78,22 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
             <div className="flex items-center gap-2">
               <AlertTriangle size={18} style={{ color: '#f59e0b' }} />
               <h2 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                중복 프로젝트 정리
+                {t('title')}
               </h2>
             </div>
-            <button onClick={onClose} className="p-1 rounded hover:bg-[var(--bg-tertiary)]" aria-label="닫기">
+            <button onClick={onClose} className="p-1 rounded hover:bg-[var(--bg-tertiary)]" aria-label={t('close')}>
               <X size={16} />
             </button>
           </div>
           {groups.length === 0 ? (
             <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
-              중복으로 감지된 프로젝트가 없습니다.
+              {t('empty')}
             </p>
           ) : (
             <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
-              이름 + 시트 구조가 동일한 프로젝트를 그룹화했습니다. 각 그룹에서{' '}
-              <strong style={{ color: 'var(--text-primary)' }}>가장 최근 수정본 1개만 유지</strong>
-              하고 나머지는 삭제됩니다.
+              {t('intro')}{' '}
+              <strong style={{ color: 'var(--text-primary)' }}>{t('introHighlight')}</strong>
+              {t('introTail')}
             </p>
           )}
         </div>
@@ -101,8 +103,8 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
           {groups.length === 0 ? (
             <div className="text-center py-10">
               <CheckCircle2 size={32} style={{ color: '#10b981' }} className="mx-auto mb-2" />
-              <p className="text-sm" style={{ color: 'var(--text-primary)' }}>프로젝트가 모두 고유합니다</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>정리할 항목이 없습니다</p>
+              <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{t('allUnique')}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('nothingToClean')}</p>
             </div>
           ) : (
             groups.map((g) => {
@@ -125,7 +127,7 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
                       className="text-caption font-mono px-1.5 py-0.5 rounded-full flex-shrink-0"
                       style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
                     >
-                      {g.projects.length}개
+                      {t('groupCount', { count: g.projects.length })}
                     </span>
                     <label className="flex items-center gap-1 text-xs cursor-pointer select-none flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>
                       <input
@@ -134,13 +136,13 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
                         onChange={() => toggleGroup(g.signature)}
                         className="w-3 h-3"
                       />
-                      정리
+                      {t('cleanCheckbox')}
                     </label>
                   </div>
                   <div className="p-2 space-y-1">
                     <div className="flex items-center gap-2 text-xs p-1.5 rounded" style={{ background: 'rgba(16,185,129,0.08)', color: 'var(--text-primary)' }}>
                       <CheckCircle2 size={11} style={{ color: '#10b981', flexShrink: 0 }} />
-                      <span className="flex-1 truncate">유지: <strong>{g.canonical.name}</strong></span>
+                      <span className="flex-1 truncate">{t('keep')}: <strong>{g.canonical.name}</strong></span>
                       <span className="font-mono text-caption" style={{ color: 'var(--text-tertiary)' }}>
                         {new Date(g.canonical.updatedAt).toLocaleDateString()}
                       </span>
@@ -156,7 +158,7 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
                         }}
                       >
                         <Trash2 size={11} style={{ color: '#ef4444', flexShrink: 0 }} />
-                        <span className="flex-1 truncate">삭제: {dup.name}</span>
+                        <span className="flex-1 truncate">{t('remove')}: {dup.name}</span>
                         <span className="font-mono text-caption" style={{ color: 'var(--text-tertiary)' }}>
                           {new Date(dup.updatedAt).toLocaleDateString()}
                         </span>
@@ -173,7 +175,7 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
         {groups.length > 0 && (
           <div className="px-5 py-3 border-t flex items-center justify-between gap-3" style={{ borderColor: 'var(--border-primary)' }}>
             <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              {totalToDelete}개 프로젝트 삭제 예정
+              {t('countToDelete', { count: totalToDelete })}
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -181,7 +183,7 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
                 className="px-3 py-1.5 text-xs rounded-md hover:bg-[var(--bg-tertiary)]"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                취소
+                {t('cancel')}
               </button>
               <button
                 onClick={handleCleanup}
@@ -193,7 +195,7 @@ export default function ProjectDedupeModal({ isOpen, onClose }: Props) {
                   opacity: running ? 0.6 : 1,
                 }}
               >
-                {running ? '정리 중...' : `${totalToDelete}개 정리`}
+                {running ? t('cleaning') : t('cleanCount', { count: totalToDelete })}
               </button>
             </div>
           </div>

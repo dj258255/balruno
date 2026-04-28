@@ -50,7 +50,7 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
 
   const handleGenerate = async () => {
     if (!description.trim()) {
-      setError('요구사항을 입력해주세요');
+      setError(t('aiSetup.errorRequirement'));
       return;
     }
     setLoading(true);
@@ -63,7 +63,7 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
         body: JSON.stringify({ description, genre, workType }),
       });
       if (!res.ok) {
-        setError(`요청 실패 (${res.status})`);
+        setError(t('aiSetup.errorRequest', { status: res.status }));
         return;
       }
       const data = await res.json();
@@ -79,7 +79,7 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
 
   const handleApply = () => {
     if (!preview) return;
-    const name = projectName.trim() || `AI 생성: ${description.slice(0, 20)}`;
+    const name = projectName.trim() || t('aiSetup.aiGenName', { desc: description.slice(0, 20) });
     const projectId = createProject(name, description);
     for (const s of preview) {
       const sheetId = createSheet(projectId, s.name);
@@ -114,10 +114,10 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
             </div>
             <div>
               <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-                AI 로 프로젝트 시작
+                {t('aiSetup.title')}
               </h2>
               <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                요구사항 입력 → 초기 밸런스 시트 자동 생성
+                {t('aiSetup.subtitle')}
               </p>
             </div>
           </div>
@@ -134,15 +134,15 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
           {/* 워크타입 */}
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-              유형
+              {t('aiSetup.typeLabel')}
             </label>
             <CustomSelect
               value={workType}
               onChange={(v) => setWorkType(v as typeof workType)}
               options={[
-                { value: 'balancing', label: '밸런싱 (수치 시트)' },
-                { value: 'pm', label: '팀 PM (스프린트 / 버그 / 로드맵)' },
-                { value: 'design-doc', label: '기획 문서 (베타)' },
+                { value: 'balancing', label: t('aiSetup.typeBalancing') },
+                { value: 'pm', label: t('aiSetup.typePm') },
+                { value: 'design-doc', label: t('aiSetup.typeDesignDoc') },
               ]}
               size="md"
             />
@@ -152,17 +152,17 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
           {workType === 'balancing' && (
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-                장르
+                {t('aiSetup.genreLabel')}
               </label>
               <CustomSelect
                 value={genre}
                 onChange={setGenre}
                 options={[
-                  { value: 'rpg', label: 'RPG (캐릭터 스탯, 레벨, 스킬)' },
-                  { value: 'fps', label: 'FPS (무기 DPS/TTK)' },
-                  { value: 'moba', label: 'MOBA (챔피언 밸런스)' },
-                  { value: 'idle', label: '방치형 (업그레이드 ROI)' },
-                  { value: 'roguelike', label: '로그라이크 (유물, 등급)' },
+                  { value: 'rpg', label: t('aiSetup.genreRpg') },
+                  { value: 'fps', label: t('aiSetup.genreFps') },
+                  { value: 'moba', label: t('aiSetup.genreMoba') },
+                  { value: 'idle', label: t('aiSetup.genreIdle') },
+                  { value: 'roguelike', label: t('aiSetup.genreRoguelike') },
                 ]}
                 size="md"
               />
@@ -172,13 +172,13 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
           {/* 요구사항 */}
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-              요구사항 (자연어)
+              {t('aiSetup.requirementLabel')}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={5}
-              placeholder="예: 메트로이드바니아 장르 + 난이도 중상 + 플레이 20시간 목표 + 스킬 트리 30개 노드 + F2P 가챠 없음"
+              placeholder={t('aiSetup.requirementPlaceholder')}
               className="w-full input-base resize-none"
               style={{
                 background: 'var(--bg-primary)',
@@ -191,13 +191,13 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
           {/* 프로젝트 이름 */}
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-              프로젝트 이름 <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>(선택)</span>
+              {t('aiSetup.projectNameLabel')} <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{t('aiSetup.projectNameOptional')}</span>
             </label>
             <input
               type="text"
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              placeholder="비우면 자동 생성"
+              placeholder={t('aiSetup.projectNamePlaceholder')}
               className="w-full input-base"
               style={{
                 background: 'var(--bg-primary)',
@@ -216,11 +216,11 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" /> 생성 중…
+                <Loader2 className="w-4 h-4 animate-spin" /> {t('aiSetup.generating')}
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" /> 추천 시트 생성
+                <Sparkles className="w-4 h-4" /> {t('aiSetup.recommendSheets')}
               </>
             )}
           </button>
@@ -243,7 +243,7 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4" style={{ color: '#10b981' }} />
                 <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {preview.length}개 시트 제안
+                  {t('aiSetup.sheetsProposed', { n: preview.length })}
                 </span>
                 <span
                   className="text-xs px-2 py-0.5 rounded"
@@ -300,7 +300,7 @@ export default function AISetupModal({ onClose }: AISetupModalProps) {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium"
                 style={{ background: '#10b981', color: 'white' }}
               >
-                <Check className="w-4 h-4" /> 프로젝트로 적용
+                <Check className="w-4 h-4" /> {t('aiSetup.applyAsProject')}
               </button>
             </div>
           )}

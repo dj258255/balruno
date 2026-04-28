@@ -12,6 +12,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Bot, Send, X, Loader2, Sparkles, FileText, Database, History } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { buildAIContext, AI_SYSTEM_PROMPT } from '@/lib/aiContext';
 
@@ -24,14 +25,9 @@ interface Message {
   content: string;
 }
 
-const SUGGESTED_PROMPTS = [
-  '전사 HP 가 왜 이렇게 설정됐어?',
-  '현재 밸런스에서 가장 큰 이상치는?',
-  '이번 주 변경 사항 요약해줘',
-  '다음 패치에서 뭘 조정하면 좋을까?',
-];
-
 export default function AICopilotPanel({ onClose }: Props) {
+  const t = useTranslations('aiCopilot');
+  const SUGGESTED_PROMPTS = [t('prompt1'), t('prompt2'), t('prompt3'), t('prompt4')];
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
   const project = useProjectStore((s) => s.projects.find((p) => p.id === currentProjectId));
 
@@ -71,7 +67,7 @@ export default function AICopilotPanel({ onClose }: Props) {
         const err = await resp.text();
         setMessages((msgs) => {
           const next = [...msgs];
-          next[next.length - 1] = { role: 'assistant', content: `오류: ${err}` };
+          next[next.length - 1] = { role: 'assistant', content: `${t('errorPrefix')}: ${err}` };
           return next;
         });
         return;
@@ -95,7 +91,7 @@ export default function AICopilotPanel({ onClose }: Props) {
         const next = [...msgs];
         next[next.length - 1] = {
           role: 'assistant',
-          content: `오류: ${err instanceof Error ? err.message : String(err)}`,
+          content: `${t('errorPrefix')}: ${err instanceof Error ? err.message : String(err)}`,
         };
         return next;
       });
@@ -124,16 +120,16 @@ export default function AICopilotPanel({ onClose }: Props) {
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            AI Copilot
+            {t('title')}
           </h2>
           <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-            프로젝트 컨텍스트 · 약 {context.tokensEstimate.toLocaleString()} 토큰
+            {t('contextLabel', { tokens: context.tokensEstimate.toLocaleString() })}
           </p>
         </div>
         <button
           onClick={onClose}
           className="p-1 rounded hover:bg-[var(--bg-tertiary)]"
-          aria-label="닫기"
+          aria-label={t('close')}
         >
           <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
         </button>
@@ -146,15 +142,15 @@ export default function AICopilotPanel({ onClose }: Props) {
       >
         <div className="flex items-center gap-1">
           <Database className="w-3 h-3" />
-          {context.sources.sheets} 시트
+          {t('sheetsLabel', { count: context.sources.sheets })}
         </div>
         <div className="flex items-center gap-1">
           <FileText className="w-3 h-3" />
-          {context.sources.docs} 문서
+          {t('docsLabel', { count: context.sources.docs })}
         </div>
         <div className="flex items-center gap-1">
           <History className="w-3 h-3" />
-          {context.sources.changelog} 변경
+          {t('changesLabel', { count: context.sources.changelog })}
         </div>
       </div>
 
@@ -169,15 +165,15 @@ export default function AICopilotPanel({ onClose }: Props) {
             <div className="text-center py-4 space-y-2">
               <Sparkles className="w-8 h-8 mx-auto opacity-50" style={{ color: '#8b5cf6' }} />
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                프로젝트 전체를 분석해 답변합니다
+                {t('emptyTitle')}
               </p>
               <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                수식 · changelog · 문서 · 태스크 교차 참조
+                {t('emptySubtitle')}
               </p>
             </div>
             <div className="space-y-1">
               <div className="text-overline px-1" style={{ color: 'var(--text-tertiary)' }}>
-                추천 질문
+                {t('suggestedPromptsHeading')}
               </div>
               {SUGGESTED_PROMPTS.map((p) => (
                 <button
@@ -233,7 +229,7 @@ export default function AICopilotPanel({ onClose }: Props) {
                 send(input);
               }
             }}
-            placeholder="프로젝트에 대해 무엇이든 물어보세요"
+            placeholder={t('inputPlaceholder')}
             rows={1}
             className="flex-1 bg-transparent outline-none resize-none text-sm py-1"
             style={{ color: 'var(--text-primary)', maxHeight: 120 }}

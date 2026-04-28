@@ -33,6 +33,7 @@ import {
 import { DIAGRAM_TEMPLATES } from '@/lib/diagramTemplates';
 import { formatSheetRef, parseSheetRef } from '@/lib/diagramSheetBridge';
 import type { EconomyDesignHandle } from '@/hooks/useEconomyDesign';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   projectId: string;
@@ -72,6 +73,7 @@ const NODE_LABELS: Record<EconomyNodeSubtype, string> = {
 };
 
 export default function DiagramView({ projectId, sheet, design }: Props) {
+  const t = useTranslations();
   // legacy 경로용 — design 이 없을 때만 사용
   const [legacyAutomations, setLegacyAutomations] = useState<Automation[]>([]);
   const [legacyFlowId, setLegacyFlowId] = useState<string | null>(null);
@@ -234,6 +236,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
   };
 
   const exportPng = async () => {
+    const t = useTranslations();
     const s = serializeSvg();
     if (!s) return;
     const scale = 2;
@@ -252,7 +255,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
       const img = new Image();
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
-        img.onerror = () => reject(new Error('SVG 로드 실패'));
+        img.onerror = () => reject(new Error(t('diagramView.svgLoadFail')));
         img.src = url;
       });
       ctx.drawImage(img, 0, 0, s.width, s.height);
@@ -396,12 +399,13 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
   };
 
   if (!currentFlow) {
+    const t = useTranslations();
     return (
       <div className="flex-1 flex items-center justify-center p-6" style={{ background: 'var(--bg-primary)' }}>
         <div className="text-center space-y-4 max-w-2xl">
           <RefreshCw className="w-12 h-12 mx-auto" style={{ color: 'var(--text-tertiary)' }} />
           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            이 시트의 Economy Diagram 이 없습니다
+            {t('diagramView.noEconomyDiagram')}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {DIAGRAM_TEMPLATES.map((tpl) => (
@@ -430,12 +434,12 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
               style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
             >
               <Plus className="w-3 h-3 inline mr-1" />
-              빈 Diagram 으로 시작
+              {t('diagramView.startBlankDiagram')}
             </button>
           </div>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            Machinations 스타일의 경제 다이어그램. Source → Gate → Pool → Converter → Sink 로
-            자원 흐름을 시각화하고 Monte Carlo 시뮬로 밸런스를 검증합니다.
+            {t('diagramView.diagramExplain1')}
+            {t('diagramView.diagramExplain2')}
           </p>
         </div>
       </div>
@@ -454,7 +458,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
           style={{ borderColor: 'var(--border-primary)' }}
         >
           <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-            노드 추가:
+            {t('diagramView.addNode')}
           </span>
           {(['source', 'pool', 'gate', 'converter', 'sink'] as const).map((t) => {
             const Icon = NODE_ICONS[t];
@@ -475,7 +479,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
               onClick={exportSvg}
               className="flex items-center gap-1 px-2 py-1 rounded text-caption"
               style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
-              title="SVG 로 내보내기"
+              title={t('diagramView.exportSvg')}
             >
               <Download className="w-3 h-3" />
               SVG
@@ -484,7 +488,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
               onClick={exportPng}
               className="flex items-center gap-1 px-2 py-1 rounded text-caption"
               style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
-              title="PNG 로 내보내기 (2x)"
+              title={t('diagramView.exportPng')}
             >
               <Download className="w-3 h-3" />
               PNG
@@ -493,7 +497,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
               onClick={resetView}
               className="px-2 py-1 rounded text-caption"
               style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
-              title="뷰 초기화"
+              title={t('diagramView.resetView')}
             >
               100%
             </button>
@@ -507,7 +511,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
               }}
             >
               {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
-              시뮬 (1000회)
+              {t('diagramView.runSim')}
             </button>
           </div>
         </div>
@@ -702,7 +706,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
                     {subtype === 'converter' && `${(node.config as { inputRate?: number }).inputRate ?? 1}:${(node.config as { outputRate?: number }).outputRate ?? 1}`}
                   </text>
                   <text x={8} y={54} fontSize="9" fill="var(--text-tertiary)">
-                    더블클릭: 연결 시작
+                    {t('diagramView.doubleClickToConnect')}
                   </text>
                 </g>
               );
@@ -713,7 +717,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
         {/* 요약 */}
         {result && (
           <div className="border-t p-3 text-xs" style={{ borderColor: 'var(--border-primary)' }}>
-            <b>시뮬 결과 ({result.iterations}회):</b>{' '}
+            <b>{t('diagramView.simResult', { n: result.iterations })}</b>{' '}
             {Object.entries(result.sinkAverages)
               .map(([nodeId, avg]) => {
                 const node = currentFlow.nodes.find((n) => n.id === nodeId);
@@ -739,7 +743,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
         >
           <CtxButton
             icon={Copy}
-            label="복제 (⌘D)"
+            label={t('diagramView.duplicateMenu')}
             onClick={() => {
               duplicateNode(ctxMenu.nodeId);
               setCtxMenu(null);
@@ -747,7 +751,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
           />
           <CtxButton
             icon={Scissors}
-            label="모든 연결 끊기"
+            label={t('diagramView.disconnectAll')}
             onClick={() => {
               disconnectAll(ctxMenu.nodeId);
               setCtxMenu(null);
@@ -755,7 +759,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
           />
           <CtxButton
             icon={ExternalLink}
-            label="연결된 시트로 점프"
+            label={t('diagramView.jumpToSheet')}
             onClick={() => {
               const node = currentFlow.nodes.find((n) => n.id === ctxMenu.nodeId);
               const cfg = node?.config as Record<string, unknown> | undefined;
@@ -771,7 +775,7 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
           <div className="h-px" style={{ background: 'var(--border-primary)' }} />
           <CtxButton
             icon={Trash2}
-            label="노드 삭제 (Delete)"
+            label={t('diagramView.deleteNode')}
             danger
             onClick={() => {
               deleteNode(ctxMenu.nodeId);
@@ -789,12 +793,12 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-              {NODE_LABELS[selectedNode.subtype as EconomyNodeSubtype]} 설정
+              {t('diagramView.nodeSettings', { label: t(NODE_LABELS[selectedNode.subtype as EconomyNodeSubtype] as 'automations.flowSource') })}
             </h3>
             <button
               onClick={() => deleteNode(selectedNode.id)}
               className="p-1 rounded hover:bg-[var(--bg-tertiary)]"
-              aria-label="삭제"
+              aria-label={t('diagramView.deleteAria')}
             >
               <Trash2 className="w-3.5 h-3.5" style={{ color: 'var(--error)' }} />
             </button>
@@ -804,11 +808,11 @@ export default function DiagramView({ projectId, sheet, design }: Props) {
             onChange={(cfg) => updateNode(selectedNode.id, { config: cfg })}
           />
           <div className="mt-4 text-caption space-y-1" style={{ color: 'var(--text-tertiary)' }}>
-            <div><b>팁 1:</b> 노드 더블클릭 → 다른 노드 클릭 = edge 생성.</div>
+            <div>{t.rich('diagramView.tip1', { b: (chunks) => <b>{chunks}</b> })}</div>
             <div>
-              <b>팁 2 :</b> rate/probability 자리에{' '}
+              {t.rich('diagramView.tip2', { b: (chunks) => <b>{chunks}</b> })}{' '}
               <code style={{ color: 'var(--primary-purple)' }}>=Sheet!colId!rowId</code>{' '}
-              입력하면 시트 cell 값 실시간 참조. 시트 편집 → 다음 시뮬에 반영됨.
+              {t('diagramView.tip2cont')}
             </div>
           </div>
         </aside>
@@ -932,6 +936,7 @@ function RefAwareNumberInput({
   value: unknown;
   onChange: (v: number | string) => void;
 }) {
+  const t = useTranslations();
   const startCellSelection = useProjectStore((s) => s.startCellSelection);
   const cellSelectionActive = useProjectStore((s) => s.cellSelectionMode.active);
   const ref = parseSheetRef(value);
@@ -949,6 +954,7 @@ function RefAwareNumberInput({
   const handleClear = () => onChange(0);
 
   if (isRef) {
+    const t = useTranslations();
     return (
       <div
         className="w-full flex items-center gap-1 px-2 py-1 text-xs rounded border font-mono"
@@ -957,7 +963,7 @@ function RefAwareNumberInput({
           background: 'var(--bg-tertiary)',
           color: 'var(--primary-purple)',
         }}
-        title={`참조: ${value}`}
+        title={t('diagramView.refTitle', { value: String(value) })}
       >
         <Grid3X3 className="w-3 h-3 shrink-0" />
         <span className="flex-1 truncate">cell ref</span>
@@ -965,8 +971,8 @@ function RefAwareNumberInput({
           type="button"
           onClick={handleClear}
           className="p-0.5 rounded hover:bg-[var(--bg-hover)]"
-          aria-label="참조 해제"
-          title="참조 해제 (숫자로 복귀)"
+          aria-label={t('diagramView.unrefAria')}
+          title={t('diagramView.unrefTitle')}
         >
           <X className="w-3 h-3" />
         </button>
@@ -992,8 +998,8 @@ function RefAwareNumberInput({
           type="button"
           onClick={handlePick}
           className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-[var(--bg-hover)]"
-          title="시트 셀 선택"
-          aria-label="시트 셀 선택"
+          title={t('diagramView.cellSelect')}
+          aria-label={t('diagramView.cellSelect')}
         >
           <Grid3X3 className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
         </button>

@@ -116,12 +116,12 @@ export function useSimulationState() {
   const [unit1Stats, setUnit1Stats] = useState<UnitStats>({
     ...DEFAULT_STATS,
     id: 'unit1',
-    name: '유닛 A',
+    name: 'Unit A',
   });
   const [unit2Stats, setUnit2Stats] = useState<UnitStats>({
     ...DEFAULT_STATS,
     id: 'unit2',
-    name: '유닛 B',
+    name: 'Unit B',
   });
   const [unit1Skills, setUnit1Skills] = useState<Skill[]>([]);
   const [unit2Skills, setUnit2Skills] = useState<Skill[]>([]);

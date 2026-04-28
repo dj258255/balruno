@@ -43,6 +43,7 @@ function teamAverageSkills(units: UnitStats[]): { aim: number; reaction: number;
 
 /** Team 헤더 옆에 평균 실력 3축 배지 */
 function TeamSkillBadges({ units, color }: { units: UnitStats[]; color: string }) {
+  const t = useTranslations();
   if (units.length === 0) return null;
   const avg = teamAverageSkills(units);
   return (
@@ -50,7 +51,7 @@ function TeamSkillBadges({ units, color }: { units: UnitStats[]; color: string }
       <span
         className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium"
         style={{ background: `${color}15`, color }}
-        title={`평균 에임 실력: ${avg.aim}/100`}
+        title={t('teamBattle.avgAimTooltip', { n: avg.aim })}
       >
         <Crosshair className="w-3 h-3" />
         {avg.aim}
@@ -58,7 +59,7 @@ function TeamSkillBadges({ units, color }: { units: UnitStats[]; color: string }
       <span
         className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium"
         style={{ background: `${color}15`, color }}
-        title={`평균 반응 실력: ${avg.reaction}/100`}
+        title={t('teamBattle.avgReactionTooltip', { n: avg.reaction })}
       >
         <Gauge className="w-3 h-3" />
         {avg.reaction}
@@ -66,7 +67,7 @@ function TeamSkillBadges({ units, color }: { units: UnitStats[]; color: string }
       <span
         className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium"
         style={{ background: `${color}15`, color }}
-        title={`평균 판단 실력: ${avg.decision}/100`}
+        title={t('teamBattle.avgDecisionTooltip', { n: avg.decision })}
       >
         <Brain className="w-3 h-3" />
         {avg.decision}
@@ -89,6 +90,7 @@ function UnitCard({
   onEdit: () => void;
   onRemove: () => void;
 }) {
+  const t = useTranslations();
   const hasAdvanced = unit.critRate || unit.critDamage || unit.evasion;
   const hasSkills = unit.skills && unit.skills.length > 0;
   const hasSkillProfile =
@@ -143,7 +145,7 @@ function UnitCard({
                   </span>
                 )}
                 {unit.evasion !== undefined && unit.evasion > 0 && (
-                  <span>회피:{(unit.evasion * 100).toFixed(0)}%</span>
+                  <span>{t('teamBattle.evasion', { pct: (unit.evasion * 100).toFixed(0) })}</span>
                 )}
               </div>
             )}
@@ -151,19 +153,19 @@ function UnitCard({
             {hasSkillProfile && (
               <div className="flex items-center gap-2 text-caption mt-0.5 flex-wrap" style={{ color: 'var(--text-secondary)' }}>
                 {unit.aimSkill !== undefined && (
-                  <span className="flex items-center gap-0.5" title="에임">
+                  <span className="flex items-center gap-0.5" title={t('teamBattle.aim')}>
                     <Crosshair className="w-3 h-3" style={{ color: '#e86161' }} />
                     {unit.aimSkill}
                   </span>
                 )}
                 {unit.reactionSkill !== undefined && (
-                  <span className="flex items-center gap-0.5" title="반응">
+                  <span className="flex items-center gap-0.5" title={t('teamBattle.reaction')}>
                     <Gauge className="w-3 h-3" style={{ color: '#5a9cf5' }} />
                     {unit.reactionSkill}
                   </span>
                 )}
                 {unit.decisionSkill !== undefined && (
-                  <span className="flex items-center gap-0.5" title="판단">
+                  <span className="flex items-center gap-0.5" title={t('teamBattle.decision')}>
                     <Brain className="w-3 h-3" style={{ color: '#9179f2' }} />
                     {unit.decisionSkill}
                   </span>
@@ -233,7 +235,7 @@ export function TeamBattlePanel({
   onOpenModal,
   onSwapTeams,
 }: TeamBattlePanelProps) {
-  const t = useTranslations('simulation');
+  const t = useTranslations();
 
   return (
     <>
@@ -347,10 +349,10 @@ export function TeamBattlePanel({
               color: 'var(--text-secondary)',
               border: '1px solid var(--border-primary)',
             }}
-            title="Team 1 ↔ Team 2 일괄 교환"
+            title={t('teamBattle.swapTitle')}
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
-            팀 swap
+            {t('teamBattle.swapLabel')}
           </button>
         </div>
       )}
@@ -431,7 +433,7 @@ interface TeamBattleResultsProps {
 }
 
 function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleResultsProps) {
-  const t = useTranslations('simulation');
+  const t = useTranslations();
   const [showDetailedStats, setShowDetailedStats] = useState(false);
   const [showUnitStats, setShowUnitStats] = useState(false);
   const [selectedSampleIndex, setSelectedSampleIndex] = useState(0);
@@ -441,10 +443,12 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
   const team2UnitStats = teamResult.unitStats?.filter(u => u.team === 'team2') || [];
 
   const handleSaveToSheet = () => {
+    const t = useTranslations();
     const store = useProjectStore.getState();
     const { currentProjectId, currentSheetId, projects, addRow, addColumn } = store;
     if (!currentProjectId || !currentSheetId) {
-      toast.error('저장할 시트를 먼저 선택하세요');
+      const t = useTranslations();
+      toast.error(t('teamBattle.errorSelectSheet'));
       return;
     }
     const sheet = projects
@@ -476,7 +480,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
       team2Name,
     );
     if (rowId) {
-      toast.success(`${sheet.name} 에 팀 시뮬 결과 저장됨`);
+      toast.success(t('teamBattle.savedToSheet', { sheet: sheet.name }));
     }
   };
 
@@ -492,13 +496,13 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
               onClick={handleSaveToSheet}
               className="text-sm px-2 py-1 rounded inline-flex items-center gap-1 transition-colors"
               style={{ background: 'var(--accent)', color: 'white' }}
-              title="현재 시트에 결과 row 추가 + 누락 컬럼 자동 생성"
+              title={t('teamBattle.saveBtnTitle')}
             >
               <FileSpreadsheet className="w-3 h-3" />
-              시트에 저장
+              {t('teamBattle.saveBtn')}
             </button>
             <div className="text-sm px-2 py-1 rounded-full" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
-              {teamResult.totalRuns.toLocaleString()}전
+              {t('teamBattle.totalRuns', { n: teamResult.totalRuns.toLocaleString() })}
             </div>
           </div>
         </div>
@@ -506,9 +510,9 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
         <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="font-medium" style={{ color: 'var(--primary-blue)' }}>Team 1 ({team1Units.length}명)</span>
+              <span className="font-medium" style={{ color: 'var(--primary-blue)' }}>{t('teamBattle.team1Header', { n: team1Units.length })}</span>
               <span className="px-2 py-0.5 rounded" style={{ background: 'var(--primary-blue)15', color: 'var(--primary-blue)' }}>
-                {teamResult.team1Wins.toLocaleString()}승
+                {t('teamBattle.wins', { n: teamResult.team1Wins.toLocaleString() })}
               </span>
             </div>
             <div className="relative h-8 rounded-lg overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
@@ -527,9 +531,9 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
 
           <div>
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="font-medium" style={{ color: 'var(--primary-red)' }}>Team 2 ({team2Units.length}명)</span>
+              <span className="font-medium" style={{ color: 'var(--primary-red)' }}>{t('teamBattle.team2Header', { n: team2Units.length })}</span>
               <span className="px-2 py-0.5 rounded" style={{ background: 'var(--primary-red)15', color: 'var(--primary-red)' }}>
-                {teamResult.team2Wins.toLocaleString()}승
+                {t('teamBattle.wins', { n: teamResult.team2Wins.toLocaleString() })}
               </span>
             </div>
             <div className="relative h-8 rounded-lg overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
@@ -969,7 +973,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                   {/* 시뮬 리플레이 — 다대다 timeline + scrubber */}
                   {teamResult.sampleBattles[selectedSampleIndex].log && (
                     <div className="pt-3 border-t" style={{ borderColor: 'var(--border-primary)' }}>
-                      <div className="text-sm mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>시뮬 리플레이</div>
+                      <div className="text-sm mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('teamBattle.simReplay')}</div>
                       <ReplayTimeline
                         units={[
                           ...team1Units.map((u): ReplayUnit => ({ id: u.id, name: u.name, maxHp: u.maxHp, team: 'team1' })),

@@ -90,7 +90,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
       .slice(0, 15);
 
     if (notableColumns.length > 0) {
-      lines.push('### 📊 수치 변화 (평균)');
+      lines.push(t('patchValueChanges'));
       for (const cs of notableColumns) {
         const arrow = cs.avgDiff > 0 ? '↑' : '↓';
         const pct = cs.avgDiffPercent.toFixed(1);
@@ -105,18 +105,18 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
     const removed = result.rowChanges.filter(r => r.type === 'removed');
     if (added.length > 0) {
       lines.push('');
-      lines.push(`### ➕ 추가 (${added.length})`);
+      lines.push(t('patchAdded', { n: added.length }));
       for (const r of added.slice(0, 10)) lines.push(`- ${r.rowName}`);
-      if (added.length > 10) lines.push(`- _…그 외 ${added.length - 10}개_`);
+      if (added.length > 10) lines.push(t('patchAndMore', { n: added.length - 10 }));
     }
     if (removed.length > 0) {
       lines.push('');
-      lines.push(`### ➖ 제거 (${removed.length})`);
+      lines.push(t('patchRemoved', { n: removed.length }));
       for (const r of removed.slice(0, 10)) lines.push(`- ${r.rowName}`);
-      if (removed.length > 10) lines.push(`- _…그 외 ${removed.length - 10}개_`);
+      if (removed.length > 10) lines.push(t('patchAndMore', { n: removed.length - 10 }));
     }
 
-    if (lines.length === 0) return '_변경 사항 없음_';
+    if (lines.length === 0) return t('patchNoChanges');
     return lines.join('\n');
   }, [result]);
 
@@ -241,10 +241,10 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                   A
                 </span>
                 <label className="text-sm font-semibold" style={{ color: '#3b82f6' }}>
-                  기준 (Baseline)
+                  {t('baseline')}
                 </label>
                 <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                  이전 버전
+                  {t('previousVersion')}
                 </span>
               </div>
               <div className="flex gap-2">
@@ -269,7 +269,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                       border: '1px solid var(--border-primary)',
                       color: 'var(--text-secondary)'
                     }}
-                    title="현재 시트를 스냅샷으로 저장 (시간 경과 비교용)"
+                    title={t('snapshotTitleSave')}
                   >
                     <Camera className="w-4 h-4" />
                   </button>
@@ -281,7 +281,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
               <ArrowRight className="w-6 h-6" style={{ color: 'var(--text-tertiary)' }} />
             </div>
             <div className="sm:hidden flex items-center justify-center text-caption" style={{ color: 'var(--text-tertiary)' }}>
-              ↓ 변경 후 ↓
+              {t('arrowAfter')}
             </div>
 
             {/* Candidate */}
@@ -300,10 +300,10 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                   B
                 </span>
                 <label className="text-sm font-semibold" style={{ color: '#8b5cf6' }}>
-                  변경 후 (Candidate)
+                  {t('candidate')}
                 </label>
                 <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                  비교 대상
+                  {t('compareTarget')}
                 </span>
               </div>
               <div className="flex gap-2">
@@ -328,7 +328,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                       border: '1px solid var(--border-primary)',
                       color: 'var(--text-secondary)'
                     }}
-                    title="현재 시트를 스냅샷으로 저장"
+                    title={t('snapshotTitleSaveSimple')}
                   >
                     <Camera className="w-4 h-4" />
                   </button>
@@ -338,8 +338,8 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
           </div>
 
           <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-            같은 프로젝트 안의 시트 <strong>A</strong> 와 시트 <strong>B</strong> 의 cell 단위 차이를 계산합니다.
-            같은 시트의 시간 경과 변화를 보려면 카메라 아이콘으로 <strong>스냅샷</strong>을 만들어 비교하세요.
+            {t.rich('sheetCellExplain', { strong: (chunks) => <strong>{chunks}</strong> })}
+            {t.rich('sheetSnapshotExplain', { strong: (chunks) => <strong>{chunks}</strong> })}
           </p>
 
           {/* 비교 버튼 */}
@@ -368,7 +368,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                   backdropFilter: 'blur(6px)',
                 }}
               >
-                <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>비교 범위:</span>
+                <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>{t('compareScope')}</span>
                 <span className="font-mono" style={{ color: '#3b82f6' }}>
                   A · {sources.find(s => s.id === oldSheetId)?.name ?? '—'}
                 </span>
@@ -391,7 +391,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                     color: viewMode === 'table' ? 'white' : 'var(--text-secondary)',
                   }}
                 >
-                  📊 표 + 차트
+                  {t('tableChart')}
                 </button>
                 <button
                   onClick={() => setViewMode('patch-notes')}
@@ -401,7 +401,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                     color: viewMode === 'patch-notes' ? 'white' : 'var(--text-secondary)',
                   }}
                 >
-                  📝 패치 노트 초안
+                  {t('patchNoteDraft')}
                 </button>
               </div>
 
@@ -410,14 +410,14 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                 <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}>
                   <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: 'var(--border-primary)' }}>
                     <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                      자동 생성된 패치 노트 초안
+                      {t('autoGeneratedPatchNote')}
                     </span>
                     <button
                       onClick={copyPatchNotes}
                       className="px-2 py-1 rounded text-caption inline-flex items-center gap-1"
                       style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
                     >
-                      복사
+                      {t('copyText')}
                     </button>
                   </div>
                   <pre
@@ -427,7 +427,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                     {patchNotes}
                   </pre>
                   <div className="px-4 py-2 border-t text-caption" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
-                    Markdown 형식 — 그대로 Notion / Discord / 깃허브 릴리스에 붙여넣을 수 있습니다.
+                    {t('markdownExplain')}
                   </div>
                 </div>
               )}
@@ -704,9 +704,9 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
         >
           <Camera className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: '#8b5cf6' }} />
           <div>
-            <b style={{ color: 'var(--text-primary)' }}>스냅샷</b> = 시트의 현재 상태를 고정해 복사본으로 보관.
-            원본이 바뀌어도 스냅샷은 그대로라 &ldquo;밸런스 패치 전 vs 후&rdquo; 비교 가능.
-            시트 옆 <Camera className="w-3 h-3 inline mb-0.5" /> 버튼으로 생성.
+            {t.rich('snapshotMeaning', { b: (chunks) => <b style={{ color: 'var(--text-primary)' }}>{chunks}</b> })}{' '}
+            {t('snapshotPurpose')}{' '}
+            {t.rich('snapshotCreate', { c: () => <Camera className="w-3 h-3 inline mb-0.5" /> })}
           </div>
         </div>
         {body}
@@ -742,7 +742,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
             <button
               onClick={() => setShowHelp(!showHelp)}
               className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-hover)]"
-              aria-label={showHelp ? '도움말 숨기기' : '도움말 보기'}
+              aria-label={showHelp ? t('helpHide') : t('helpShow')}
               style={{ color: showHelp ? 'var(--accent)' : 'var(--text-tertiary)' }}
             >
               <HelpCircle className="w-5 h-5" />

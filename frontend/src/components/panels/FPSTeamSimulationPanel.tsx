@@ -6,6 +6,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Users, Swords } from 'lucide-react';
 import PanelShell from '@/components/ui/PanelShell';
 import {
@@ -31,6 +32,7 @@ function makeDefaultTeam(prefix: string, size: number, aim: number): FpsTeamPlay
 }
 
 export default function FPSTeamSimulationPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [teamSize, setTeamSize] = useState<3 | 5>(3);
   const [aimA, setAimA] = useState(60);
   const [aimB, setAimB] = useState(60);
@@ -47,8 +49,8 @@ export default function FPSTeamSimulationPanel({ onClose }: Props) {
 
   return (
     <PanelShell
-      title="FPS 팀 전투 시뮬"
-      subtitle="3v3 / 5v5 · trade-kill · clutch 분석"
+      title={t('fpsTeamSim.titleHeader')}
+      subtitle={t('fpsTeamSim.subtitleHeader')}
       icon={Users}
       iconColor="#8b5cf6"
       onClose={onClose}
@@ -57,7 +59,7 @@ export default function FPSTeamSimulationPanel({ onClose }: Props) {
       {/* 설정 */}
       <div className="p-3 rounded-lg space-y-3" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center gap-2">
-          <span className="text-label" style={{ color: 'var(--text-secondary)' }}>팀 구성</span>
+          <span className="text-label" style={{ color: 'var(--text-secondary)' }}>{t('fpsTeamSim.teamComposition')}</span>
           <div className="flex gap-1">
             {[3, 5].map((s) => (
               <button
@@ -76,19 +78,19 @@ export default function FPSTeamSimulationPanel({ onClose }: Props) {
           </div>
         </div>
 
-        <RangeRow label="A 팀 에임 실력" value={aimA} min={0} max={100} step={5} onChange={setAimA} />
-        <RangeRow label="B 팀 에임 실력" value={aimB} min={0} max={100} step={5} onChange={setAimB} />
-        <RangeRow label="교전 거리" value={distance} unit="m" min={1} max={60} step={1} onChange={setDistance} />
-        <RangeRow label="반복 수" value={runs} min={500} max={10000} step={500} onChange={setRuns} />
+        <RangeRow label={t('fpsTeamSim.teamAimA')} value={aimA} min={0} max={100} step={5} onChange={setAimA} />
+        <RangeRow label={t('fpsTeamSim.teamAimB')} value={aimB} min={0} max={100} step={5} onChange={setAimB} />
+        <RangeRow label={t('fpsTeamSim.engagementDistance')} value={distance} unit="m" min={1} max={60} step={1} onChange={setDistance} />
+        <RangeRow label={t('fpsTeamSim.iterations')} value={runs} min={500} max={10000} step={500} onChange={setRuns} />
       </div>
 
       {/* 팀 승률 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center gap-2 mb-2">
           <Swords className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-          <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>팀 승률</span>
+          <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>{t('fpsTeamSim.teamWinrate')}</span>
           <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
-            평균 {Math.round(result.avgDurationMs)}ms
+            {t('fpsTeamSim.avgDuration', { ms: Math.round(result.avgDurationMs) })}
           </span>
         </div>
         <div className="flex h-7 rounded-md overflow-hidden">
@@ -106,7 +108,7 @@ export default function FPSTeamSimulationPanel({ onClose }: Props) {
                 width: `${Math.round((1 - result.teamAWinRate - result.teamBWinRate) * 100)}%`,
               }}
             >
-              {(1 - result.teamAWinRate - result.teamBWinRate) > 0.05 && `무`}
+              {(1 - result.teamAWinRate - result.teamBWinRate) > 0.05 && t('fpsTeamSim.tieMark')}
             </div>
           )}
           <div
@@ -122,20 +124,20 @@ export default function FPSTeamSimulationPanel({ onClose }: Props) {
       <div className="grid grid-cols-4 gap-2">
         <Stat label="First Blood A" value={`${Math.round(result.firstBloodA * 100)}%`} color="#3b82f6" />
         <Stat label="First Blood B" value={`${Math.round(result.firstBloodB * 100)}%`} color="#ef4444" />
-        <Stat label="Trade Kill" value={`${Math.round(result.tradeKillRate * 100)}%`} sub="3초 내 복수" color="#f59e0b" />
-        <Stat label="승리팀 평균 생존자" value={result.avgSurvivorsWinner.toFixed(1)} color="#10b981" />
+        <Stat label={t('fpsTeamSim.tradeKill')} value={`${Math.round(result.tradeKillRate * 100)}%`} sub={t('fpsTeamSim.tradeKillSub')} color="#f59e0b" />
+        <Stat label={t('fpsTeamSim.avgSurvivorWinner')} value={result.avgSurvivorsWinner.toFixed(1)} color="#10b981" />
       </div>
 
       {/* Clutch */}
       <div className="grid grid-cols-2 gap-2">
-        <Stat label="A 클러치 승리" value={result.clutchWinsA.toString()} sub={`${runs} run 중`} color="#3b82f6" />
-        <Stat label="B 클러치 승리" value={result.clutchWinsB.toString()} sub={`${runs} run 중`} color="#ef4444" />
+        <Stat label={t('fpsTeamSim.clutchA')} value={result.clutchWinsA.toString()} sub={t('fpsTeamSim.clutchSub', { runs })} color="#3b82f6" />
+        <Stat label={t('fpsTeamSim.clutchB')} value={result.clutchWinsB.toString()} sub={t('fpsTeamSim.clutchSub', { runs })} color="#ef4444" />
       </div>
 
       {/* 개별 K/D */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          개별 플레이어 평균 (라운드당)
+          {t('fpsTeamSim.individualAvg')}
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -150,7 +152,7 @@ export default function FPSTeamSimulationPanel({ onClose }: Props) {
       </div>
 
       <div className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        Trade kill = 첫 사망 발생 후 3초 내 같은 팀이 복수한 비율. Clutch = 1명 생존자가 역전한 경우.
+        {t('fpsTeamSim.tradeNote')}
       </div>
     </PanelShell>
   );
@@ -163,10 +165,11 @@ function PlayerKdTable({
   players: FpsTeamPlayer[];
   stats: Record<string, { kills: number; deaths: number; damage: number }>;
 }) {
+  const t = useTranslations();
   return (
     <div className="space-y-0.5">
       <div className="grid grid-cols-4 gap-1 text-caption px-1" style={{ color: 'var(--text-tertiary)' }}>
-        <span>이름</span>
+        <span>{t('fpsTeamSim.nameLabel')}</span>
         <span className="text-center">K</span>
         <span className="text-center">D</span>
         <span className="text-right">DMG</span>

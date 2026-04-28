@@ -35,6 +35,7 @@ import { toast } from '@/components/ui/Toast';
 import PanelShell from '@/components/ui/PanelShell';
 import Checkbox from '@/components/ui/Checkbox';
 import Select from '@/components/ui/Select';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
@@ -65,30 +66,31 @@ const SUBTYPE_ICON: Record<string, typeof Zap> = {
 };
 
 const SUBTYPE_LABELS: Record<string, string> = {
-  manual: '수동 실행',
-  'cell-changed': '셀 변경',
-  'row-added': '행 추가',
-  schedule: '스케줄 (매 N분)',
-  'playtest-started': '플레이테스트 시작',
-  'playtest-ended': '플레이테스트 종료',
-  compare: '값 비교',
-  threshold: '임계 초과',
-  branch: '분기 (Pass/Fail)',
-  notify: '알림',
-  'update-cell': '셀 업데이트',
-  log: '로그',
-  webhook: '웹훅 (POST)',
-  delay: '지연 (WAIT)',
-  'loop-rows': '행 반복 (FOR EACH)',
-  calc: '계산 (수식 평가)',
-  'snapshot-stats': 'Snapshot stats (캡처)',
-  'create-retro-task': '회고 태스크 생성',
-  source: '발생원 (Source)',
-  gate: '확률 게이트 (Gate)',
-  sink: '결과 (Sink)',
+  manual: 'automations.tManual',
+  'cell-changed': 'automations.tCellChanged',
+  'row-added': 'automations.tRowAdded',
+  schedule: 'automations.tSchedule',
+  'playtest-started': 'automations.tPlaytestStart',
+  'playtest-ended': 'automations.tPlaytestEnd',
+  compare: 'automations.cCompare',
+  threshold: 'automations.cThreshold',
+  branch: 'automations.cBranch',
+  notify: 'automations.aNotify',
+  'update-cell': 'automations.aUpdateCell',
+  log: 'automations.aLog',
+  webhook: 'automations.aWebhook',
+  delay: 'automations.aDelay',
+  'loop-rows': 'automations.aLoopRows',
+  calc: 'automations.aCalc',
+  'snapshot-stats': 'automations.aSnapshotStats',
+  'create-retro-task': 'automations.aCreateRetro',
+  source: 'automations.flowSource',
+  gate: 'automations.flowGate',
+  sink: 'automations.flowSink',
 };
 
 export default function AutomationsPanel({ onClose }: Props) {
+  const t = useTranslations();
 
   const { projects, currentProjectId, updateCell } = useProjectStore();
   const project = projects.find((p) => p.id === currentProjectId);
@@ -128,13 +130,15 @@ export default function AutomationsPanel({ onClose }: Props) {
   const selected = useMemo(() => automations.find((a) => a.id === selectedId), [automations, selectedId]);
 
   const addAutomation = () => {
-    const next = createBlankAutomation(`자동화 ${automations.length + 1}`);
+    const t = useTranslations();
+    const next = createBlankAutomation(t('automations.newAutomationName', { n: automations.length + 1 }));
     setAutomations((prev) => [...prev, next]);
     setSelectedId(next.id);
   };
 
   const addFlow = () => {
-    const next = createBlankFlow(`확률 흐름 ${automations.filter((a) => a.mode === 'flow').length + 1}`);
+    const t = useTranslations();
+    const next = createBlankFlow(t('automations.newFlowName', { n: automations.filter((a) => a.mode === 'flow').length + 1 }));
     setAutomations((prev) => [...prev, next]);
     setSelectedId(next.id);
   };
@@ -155,12 +159,14 @@ export default function AutomationsPanel({ onClose }: Props) {
   };
 
   const addNode = (type: NodeType, subtype: string) => {
+    const t = useTranslations();
     if (!selected) return;
     const lastNode = selected.nodes[selected.nodes.length - 1];
     const defaultConfig: Record<string, unknown> = (() => {
+      const t = useTranslations();
       if (subtype === 'source') return { rate: 100 };
       if (subtype === 'gate') return { probability: 0.5, multiplier: 1 };
-      if (subtype === 'sink') return { label: '결과' };
+      if (subtype === 'sink') return { label: t('automations.sinkResult') };
       return {};
     })();
     const newNode: AutomationNode = {
@@ -227,7 +233,7 @@ export default function AutomationsPanel({ onClose }: Props) {
   return (
     <PanelShell
       title="Automations"
-      subtitle="Trigger → Condition → Action 파이프라인"
+      subtitle={t('automations.subtitleHeader')}
       icon={Workflow}
       onClose={onClose}
       bodyClassName="p-0 overflow-hidden"
@@ -240,14 +246,14 @@ export default function AutomationsPanel({ onClose }: Props) {
             className="w-full p-2 text-xs flex items-center justify-center gap-1 border-b"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--accent)' }}
           >
-            <Plus size={12} /> 새 자동화
+            <Plus size={12} /> {t('automations.newAutomation')}
           </button>
           <button
             onClick={addFlow}
             className="w-full p-2 text-xs flex items-center justify-center gap-1 border-b"
             style={{ borderColor: 'var(--border-primary)', color: '#8b5cf6' }}
           >
-            <Droplet size={12} /> 새 확률 흐름
+            <Droplet size={12} /> {t('automations.newFlow')}
           </button>
           {automations.map((a) => (
             <div
@@ -280,7 +286,7 @@ export default function AutomationsPanel({ onClose }: Props) {
           ))}
           {automations.length === 0 && (
             <p className="text-caption p-2 text-center" style={{ color: 'var(--text-secondary)' }}>
-              자동화가 없습니다
+              {t('automations.noAutomation')}
             </p>
           )}
         </div>
@@ -289,7 +295,7 @@ export default function AutomationsPanel({ onClose }: Props) {
         <div className="flex-1 overflow-y-auto p-3">
           {!selected ? (
             <div className="text-xs text-center mt-8" style={{ color: 'var(--text-secondary)' }}>
-              자동화를 선택하거나 추가하세요.
+              {t('automations.pickOrAdd')}
             </div>
           ) : (
             <div className="space-y-3">
@@ -307,7 +313,7 @@ export default function AutomationsPanel({ onClose }: Props) {
                       checked={selected.enabled}
                       onChange={(e) => updateAutomation(selected.id, { enabled: e.target.checked })}
                     />
-                    활성화
+                    {t('automations.enable')}
                   </label>
                   {selected.mode === 'flow' ? (
                     <>
@@ -320,14 +326,14 @@ export default function AutomationsPanel({ onClose }: Props) {
                         onChange={(e) => setFlowIterations(Math.max(100, parseInt(e.target.value) || 1000))}
                         className="w-20 px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
                         style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
-                        title="시뮬 반복 횟수"
+                        title={t('automations.mcRunsTitle')}
                       />
                       <button
                         onClick={runFlow}
                         className="px-2 py-1 text-xs rounded flex items-center gap-1"
                         style={{ background: '#8b5cf6', color: 'white' }}
                       >
-                        <Droplet size={10} /> Monte Carlo 실행
+                        <Droplet size={10} /> {t('automations.monteCarloRun')}
                       </button>
                     </>
                   ) : (
@@ -336,14 +342,14 @@ export default function AutomationsPanel({ onClose }: Props) {
                       className="px-2 py-1 text-xs rounded flex items-center gap-1"
                       style={{ background: 'var(--accent)', color: 'white' }}
                     >
-                      <Play size={10} /> 테스트 실행
+                      <Play size={10} /> {t('automations.testRun')}
                     </button>
                   )}
                 </div>
                 <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
                   {selected.mode === 'flow'
-                    ? '※ Source → Gate → Sink 그래프를 Monte Carlo 로 시뮬. Machinations 스타일 확률 흐름 분석.'
-                    : '※ 활성화 + cell-changed/row-added 트리거는 Y.Doc observer 통합 후 자동 발동. 현재는 manual + 테스트 실행만 지원.'}
+                    ? t('automations.flowNote')
+                    : t('automations.automationNote')}
                 </p>
               </div>
 
@@ -368,7 +374,7 @@ export default function AutomationsPanel({ onClose }: Props) {
 
               {/* 노드 추가 */}
               <div className="border-t pt-3 space-y-2" style={{ borderColor: 'var(--border-primary)' }}>
-                <div className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>노드 추가</div>
+                <div className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>{t('automations.addNode')}</div>
                 {selected.mode === 'flow' ? (
                   <FlowNodeAdder onAdd={addNode} />
                 ) : (
@@ -380,12 +386,12 @@ export default function AutomationsPanel({ onClose }: Props) {
               {selected.mode === 'flow' && flowResult && (
                 <div className="border-t pt-3 space-y-2" style={{ borderColor: 'var(--border-primary)' }}>
                   <div className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    시뮬 결과 ({flowResult.iterations.toLocaleString()} 회)
+                    {t('automations.simResult', { n: flowResult.iterations.toLocaleString() })}
                   </div>
                   <div className="space-y-1">
                     {Object.entries(flowResult.sinkAverages).map(([id, avg]) => {
                       const node = selected.nodes.find((n) => n.id === id);
-                      const label = (node?.config as { label?: string })?.label ?? '결과';
+                      const label = (node?.config as { label?: string })?.label ?? t('automations.sinkResult');
                       return (
                         <div key={id} className="flex items-center justify-between text-xs">
                           <span className="flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
@@ -393,7 +399,7 @@ export default function AutomationsPanel({ onClose }: Props) {
                             {label}
                           </span>
                           <span className="font-mono" style={{ color: 'var(--text-secondary)' }}>
-                            평균 {avg.toFixed(2)} (총 {flowResult.sinkTotals[id].toLocaleString()})
+                            {t('automations.avgTotal', { avg: avg.toFixed(2), total: flowResult.sinkTotals[id].toLocaleString() })}
                           </span>
                         </div>
                       );
@@ -405,7 +411,7 @@ export default function AutomationsPanel({ onClose }: Props) {
               {/* 실행 로그 (최신) */}
               {logs.length > 0 && (
                 <div className="border-t pt-3 space-y-1" style={{ borderColor: 'var(--border-primary)' }}>
-                  <div className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>실행 로그 (최근)</div>
+                  <div className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>{t('automations.execLog')}</div>
                   <div className="space-y-0.5 font-mono text-caption max-h-40 overflow-y-auto p-2 rounded" style={{ background: 'var(--bg-secondary)' }}>
                     {logs.map((l, i) => (
                       <div key={i} className="flex gap-2" style={{
@@ -424,7 +430,7 @@ export default function AutomationsPanel({ onClose }: Props) {
                 <div className="border-t pt-3 space-y-1" style={{ borderColor: 'var(--border-primary)' }}>
                   <div className="flex items-center justify-between">
                     <div className="text-caption font-semibold" style={{ color: 'var(--text-primary)' }}>
-                      실행 히스토리 ({runHistory.length})
+                      {t('automations.runHistory', { n: runHistory.length })}
                     </div>
                     <button
                       onClick={() => {
@@ -436,7 +442,7 @@ export default function AutomationsPanel({ onClose }: Props) {
                       className="text-caption"
                       style={{ color: 'var(--text-tertiary)' }}
                     >
-                      지우기
+                      {t('automations.clear')}
                     </button>
                   </div>
                   <div className="space-y-1 max-h-48 overflow-y-auto">
@@ -456,7 +462,7 @@ export default function AutomationsPanel({ onClose }: Props) {
                               {new Date(r.timestamp).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </span>
                             <span style={{ color: 'var(--text-tertiary)' }}>
-                              {r.logs.length}개
+                              {t('automations.logsCount', { n: r.logs.length })}
                             </span>
                           </summary>
                           <div className="p-2 space-y-0.5 font-mono border-t" style={{ borderColor: 'var(--border-primary)' }}>
@@ -495,6 +501,7 @@ function FlowNodeAdder({ onAdd }: { onAdd: (type: NodeType, subtype: string) => 
 }
 
 function NodeAdder({ onAdd, hasTrigger }: { onAdd: (type: NodeType, subtype: string) => void; hasTrigger: boolean }) {
+  const t = useTranslations();
   const triggers: TriggerType[] = ['manual', 'cell-changed', 'row-added', 'schedule', 'playtest-started', 'playtest-ended'];
   const conditions: ConditionType[] = ['compare', 'threshold', 'branch'];
   const actions: ActionType[] = ['notify', 'update-cell', 'log', 'webhook', 'delay', 'loop-rows', 'calc', 'snapshot-stats', 'create-retro-task'];
@@ -502,14 +509,14 @@ function NodeAdder({ onAdd, hasTrigger }: { onAdd: (type: NodeType, subtype: str
   return (
     <div className="space-y-1.5">
       {!hasTrigger && (
-        <Section label="트리거">
+        <Section label={t('automations.sectionTrigger')}>
           {triggers.map((t) => <Btn key={t} sub={t} onClick={() => onAdd('trigger', t)} />)}
         </Section>
       )}
-      <Section label="조건">
+      <Section label={t('automations.sectionCondition')}>
         {conditions.map((t) => <Btn key={t} sub={t} onClick={() => onAdd('condition', t)} />)}
       </Section>
-      <Section label="액션">
+      <Section label={t('automations.sectionAction')}>
         {actions.map((t) => <Btn key={t} sub={t} onClick={() => onAdd('action', t)} />)}
       </Section>
     </div>
@@ -584,18 +591,21 @@ function NodeConfigEditor({
   project: import('@/types').Project | null | undefined;
   onChange: (config: Record<string, unknown>) => void;
 }) {
+  const t = useTranslations();
   const cfg = node.config;
   const sheets = project?.sheets ?? [];
   const setCfg = (patch: Record<string, unknown>) => onChange({ ...cfg, ...patch });
 
   if (node.subtype === 'manual') {
-    return <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>설정 없음 — 테스트 실행 버튼으로 수동 발동.</p>;
+    const t = useTranslations();
+    return <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>{t('automations.noConfig')}</p>;
   }
 
   // Flow nodes
   if (node.subtype === 'source') {
+    const t = useTranslations();
     return (
-      <Field label="발생량">
+      <Field label={t('automations.fOccurrence')}>
         <input
           type="number"
           value={(cfg.rate as number) ?? 100}
@@ -609,7 +619,7 @@ function NodeConfigEditor({
   if (node.subtype === 'gate') {
     return (
       <div className="space-y-1">
-        <Field label="확률 (0~1)">
+        <Field label={t('automations.fProbability')}>
           <input
             type="number"
             min={0}
@@ -621,7 +631,7 @@ function NodeConfigEditor({
             style={{ borderColor: 'var(--border-primary)' }}
           />
         </Field>
-        <Field label="배수">
+        <Field label={t('automations.fMultiplier')}>
           <input
             type="number"
             step={0.1}
@@ -636,7 +646,7 @@ function NodeConfigEditor({
   }
   if (node.subtype === 'sink') {
     return (
-      <Field label="라벨">
+      <Field label={t('automations.fLabel')}>
         <input
           value={(cfg.label as string) ?? ''}
           onChange={(e) => setCfg({ label: e.target.value })}
@@ -650,11 +660,11 @@ function NodeConfigEditor({
   if (node.subtype === 'cell-changed' || node.subtype === 'row-added') {
     return (
       <div className="space-y-1">
-        <Field label="시트">
+        <Field label={t('automations.fSheet')}>
           <SheetSelect value={cfg.sheetId as string} sheets={sheets} onChange={(v) => setCfg({ sheetId: v })} />
         </Field>
         {node.subtype === 'cell-changed' && (
-          <Field label="컬럼">
+          <Field label={t('automations.fColumn')}>
             <ColumnSelect sheets={sheets} sheetId={cfg.sheetId as string} value={cfg.column as string} onChange={(v) => setCfg({ column: v })} />
           </Field>
         )}
@@ -665,13 +675,13 @@ function NodeConfigEditor({
   if (node.subtype === 'compare') {
     return (
       <div className="space-y-1">
-        <Field label="시트">
+        <Field label={t('automations.fSheet')}>
           <SheetSelect value={cfg.sheetId as string} sheets={sheets} onChange={(v) => setCfg({ sheetId: v })} />
         </Field>
-        <Field label="컬럼">
+        <Field label={t('automations.fColumn')}>
           <ColumnSelect sheets={sheets} sheetId={cfg.sheetId as string} value={cfg.column as string} onChange={(v) => setCfg({ column: v })} />
         </Field>
-        <Field label="연산">
+        <Field label={t('automations.fOp')}>
           <Select value={(cfg.op as string) ?? 'gt'} onChange={(v) => setCfg({ op: v })} options={[
             { value: 'gt', label: '>' },
             { value: 'lt', label: '<' },
@@ -682,7 +692,7 @@ function NodeConfigEditor({
             { value: 'contains', label: 'contains' },
           ]} />
         </Field>
-        <Field label="값">
+        <Field label={t('automations.fValue')}>
           <input
             value={String(cfg.value ?? '')}
             onChange={(e) => setCfg({ value: e.target.value })}
@@ -697,20 +707,20 @@ function NodeConfigEditor({
   if (node.subtype === 'threshold') {
     return (
       <div className="space-y-1">
-        <Field label="시트">
+        <Field label={t('automations.fSheet')}>
           <SheetSelect value={cfg.sheetId as string} sheets={sheets} onChange={(v) => setCfg({ sheetId: v })} />
         </Field>
-        <Field label="컬럼">
+        <Field label={t('automations.fColumn')}>
           <ColumnSelect sheets={sheets} sheetId={cfg.sheetId as string} value={cfg.column as string} onChange={(v) => setCfg({ column: v })} />
         </Field>
-        <Field label="집계">
+        <Field label={t('automations.fAggregate')}>
           <Select value={(cfg.agg as string) ?? 'avg'} onChange={(v) => setCfg({ agg: v })} options={[
-            { value: 'sum', label: '합' }, { value: 'avg', label: '평균' },
-            { value: 'min', label: '최소' }, { value: 'max', label: '최대' },
-            { value: 'count', label: '개수' },
+            { value: 'sum', label: t('automations.aggS_sum') }, { value: 'avg', label: t('automations.aggS_avg') },
+            { value: 'min', label: t('automations.aggS_min') }, { value: 'max', label: t('automations.aggS_max') },
+            { value: 'count', label: t('automations.aggS_count') },
           ]} />
         </Field>
-        <Field label="임계">
+        <Field label={t('automations.fThreshold')}>
           <input
             type="number"
             value={(cfg.threshold as number) ?? 0}
@@ -725,7 +735,7 @@ function NodeConfigEditor({
 
   if (node.subtype === 'notify' || node.subtype === 'log') {
     return (
-      <Field label="메시지">
+      <Field label={t('automations.fMessage')}>
         <input
           value={(cfg.message as string) ?? ''}
           onChange={(e) => setCfg({ message: e.target.value })}
@@ -740,24 +750,24 @@ function NodeConfigEditor({
     const sheet = sheets.find((s) => s.id === (cfg.sheetId as string));
     return (
       <div className="space-y-1">
-        <Field label="시트">
+        <Field label={t('automations.fSheet')}>
           <SheetSelect value={cfg.sheetId as string} sheets={sheets} onChange={(v) => setCfg({ sheetId: v, rowId: '', columnId: '' })} />
         </Field>
-        <Field label="행">
+        <Field label={t('automations.fRow')}>
           <Select
             value={(cfg.rowId as string) ?? ''}
             onChange={(v) => setCfg({ rowId: v })}
             options={[{ value: '', label: '-' }, ...(sheet?.rows.map((r, i) => ({ value: r.id, label: `Row ${i + 1}` })) ?? [])]}
           />
         </Field>
-        <Field label="컬럼">
+        <Field label={t('automations.fColumn')}>
           <Select
             value={(cfg.columnId as string) ?? ''}
             onChange={(v) => setCfg({ columnId: v })}
             options={[{ value: '', label: '-' }, ...(sheet?.columns.map((c) => ({ value: c.id, label: c.name })) ?? [])]}
           />
         </Field>
-        <Field label="값">
+        <Field label={t('automations.fValue')}>
           <input
             value={String(cfg.value ?? '')}
             onChange={(e) => setCfg({ value: e.target.value })}
@@ -797,7 +807,7 @@ function NodeConfigEditor({
 
   if (node.subtype === 'delay') {
     return (
-      <Field label="지연 ms">
+      <Field label={t('automations.fDelayMs')}>
         <input
           type="number"
           value={Number(cfg.ms ?? 1000)}
@@ -812,14 +822,14 @@ function NodeConfigEditor({
   if (node.subtype === 'loop-rows') {
     return (
       <div className="space-y-1">
-        <Field label="시트">
+        <Field label={t('automations.fSheet')}>
           <SheetSelect
             value={(cfg.sheetId as string) ?? ''}
             sheets={sheets}
             onChange={(v) => setCfg({ sheetId: v })}
           />
         </Field>
-        <Field label="최대 행">
+        <Field label={t('automations.fMaxRows')}>
           <input
             type="number"
             value={Number(cfg.limit ?? 100)}
@@ -835,20 +845,20 @@ function NodeConfigEditor({
   if (node.subtype === 'calc') {
     return (
       <div className="space-y-1">
-        <Field label="수식">
+        <Field label={t('automations.fFormula')}>
           <input
             value={(cfg.expr as string) ?? ''}
             onChange={(e) => setCfg({ expr: e.target.value })}
-            placeholder="예: 100 * 1.15^10"
+            placeholder={t('automations.fFormulaPlaceholder')}
             className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent font-mono"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
-        <Field label="라벨">
+        <Field label={t('automations.fLabel')}>
           <input
             value={(cfg.label as string) ?? ''}
             onChange={(e) => setCfg({ label: e.target.value })}
-            placeholder="결과 레이블"
+            placeholder={t('automations.fResultLabelPlaceholder')}
             className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
@@ -859,7 +869,7 @@ function NodeConfigEditor({
 
   if (node.subtype === 'schedule') {
     return (
-      <Field label="N분마다">
+      <Field label={t('automations.fEveryNMin')}>
         <input
           type="number"
           value={Number(cfg.intervalMin ?? 60)}
@@ -874,8 +884,8 @@ function NodeConfigEditor({
   if (node.subtype === 'branch') {
     return (
       <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-        분기 노드 — 이후 연결된 edge 를 Pass/Fail 별도 라벨로 사용.
-        (compare 와 동일하게 평가 후 분기)
+        {t('automations.branchNote1')}
+        {t('automations.branchNote2')}
       </p>
     );
   }
@@ -887,29 +897,29 @@ function NodeConfigEditor({
     const targetSheet = sheets.find((s) => s.id === (cfg.targetSheetId as string));
     return (
       <div className="space-y-1">
-        <div className="text-caption font-semibold pt-0.5" style={{ color: 'var(--text-secondary)' }}>소스</div>
-        <Field label="시트">
+        <div className="text-caption font-semibold pt-0.5" style={{ color: 'var(--text-secondary)' }}>{t('automations.sourceLabel')}</div>
+        <Field label={t('automations.fSheet')}>
           <SheetSelect value={(cfg.sourceSheetId as string) ?? ''} sheets={sheets} onChange={(v) => setCfg({ sourceSheetId: v, sourceRowId: '' })} />
         </Field>
-        <Field label="행">
+        <Field label={t('automations.fRow')}>
           <Select
             value={(cfg.sourceRowId as string) ?? ''}
             onChange={(v) => setCfg({ sourceRowId: v })}
-            options={[{ value: '', label: '- 트리거 컨텍스트 사용 -' }, ...(sourceSheet?.rows.map((r, i) => ({ value: r.id, label: `Row ${i + 1}` })) ?? [])]}
+            options={[{ value: '', label: t('automations.useTriggerContext') }, ...(sourceSheet?.rows.map((r, i) => ({ value: r.id, label: t('automations.rowLabel', { n: i + 1 }) })) ?? [])]}
           />
         </Field>
-        <div className="text-caption font-semibold pt-1.5" style={{ color: 'var(--text-secondary)' }}>타겟 (선택)</div>
-        <Field label="시트">
+        <div className="text-caption font-semibold pt-1.5" style={{ color: 'var(--text-secondary)' }}>{t('automations.targetLabel')}</div>
+        <Field label={t('automations.fSheet')}>
           <SheetSelect value={(cfg.targetSheetId as string) ?? ''} sheets={sheets} onChange={(v) => setCfg({ targetSheetId: v, targetRowId: '', targetColumnId: '' })} />
         </Field>
-        <Field label="행">
+        <Field label={t('automations.fRow')}>
           <Select
             value={(cfg.targetRowId as string) ?? ''}
             onChange={(v) => setCfg({ targetRowId: v })}
             options={[{ value: '', label: '-' }, ...(targetSheet?.rows.map((r, i) => ({ value: r.id, label: `Row ${i + 1}` })) ?? [])]}
           />
         </Field>
-        <Field label="컬럼">
+        <Field label={t('automations.fColumn')}>
           <Select
             value={(cfg.targetColumnId as string) ?? ''}
             onChange={(v) => setCfg({ targetColumnId: v })}
@@ -923,7 +933,7 @@ function NodeConfigEditor({
           />
         </Field>
         <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-          타겟 미지정 시 로그로만 출력. stat-snapshot 컬럼 권장.
+          {t('automations.snapshotNote')}
         </p>
       </div>
     );
@@ -932,20 +942,20 @@ function NodeConfigEditor({
   if (node.subtype === 'create-retro-task') {
     return (
       <div className="space-y-1">
-        <Field label="제목">
+        <Field label={t('automations.fTitle')}>
           <input
             value={(cfg.title as string) ?? ''}
             onChange={(e) => setCfg({ title: e.target.value })}
-            placeholder="예: 플레이테스트 회고 — 보스전 난이도"
+            placeholder={t('automations.fTitlePlaceholder')}
             className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </Field>
-        <Field label="내용">
+        <Field label={t('automations.fContent')}>
           <textarea
             value={(cfg.description as string) ?? ''}
             onChange={(e) => setCfg({ description: e.target.value })}
-            placeholder="세부사항 (선택)"
+            placeholder={t('automations.fContentPlaceholder')}
             rows={2}
             className="w-full px-1.5 py-0.5 text-caption rounded border bg-transparent resize-none"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}

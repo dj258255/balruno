@@ -139,7 +139,7 @@ export function SheetContextMenu({
             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
           >
             <Tag className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-            <span className="flex-1">시트 용도</span>
+            <span className="flex-1">{t('sidebar.sheetPurpose')}</span>
             <ChevronRight className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
           </button>
           {kindSubmenuOpen && (
@@ -162,7 +162,7 @@ export function SheetContextMenu({
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'var(--text-tertiary)' }} />
-                <span className="flex-1">자동 감지</span>
+                <span className="flex-1">{t('sidebar.autoDetect')}</span>
                 {!currentKind && <Check className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />}
               </button>
               <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />

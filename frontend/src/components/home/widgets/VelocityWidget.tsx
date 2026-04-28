@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid, Cell } from 'recharts';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { analyzeVelocity } from '@/lib/velocityAnalysis';
 
@@ -12,6 +13,7 @@ import { analyzeVelocity } from '@/lib/velocityAnalysis';
  * Scrum / Linear Cycles 의 velocity 개념 그대로.
  */
 export default function VelocityWidget() {
+  const t = useTranslations('home');
   const projects = useProjectStore((s) => s.projects);
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
 
@@ -39,11 +41,11 @@ export default function VelocityWidget() {
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4" style={{ color: '#10b981' }} />
           <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Velocity
+            {t('velocityHeading')}
           </h3>
         </div>
         <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-          평균 {result.averageCompleted} {result.points[0].unit === 'points' ? 'pts' : '개'} / sprint
+          {t('velocityAvg', { avg: result.averageCompleted, unit: result.points[0].unit === 'points' ? t('velocityUnitPts') : t('velocityUnitItems') })}
         </div>
       </div>
 
@@ -70,10 +72,10 @@ export default function VelocityWidget() {
               }}
               formatter={(value, _name, ctx) => {
                 const payload = ctx?.payload as typeof chartData[number] | undefined;
-                if (!payload) return [String(value), '완료'];
+                if (!payload) return [String(value), t('velocityCompleted')];
                 return [
                   `${value} / ${payload.total} (${payload.rate}%)`,
-                  '완료',
+                  t('velocityCompleted'),
                 ];
               }}
               labelFormatter={(_, items) => {
@@ -85,7 +87,7 @@ export default function VelocityWidget() {
               y={result.averageCompleted}
               stroke="#10b981"
               strokeDasharray="3 3"
-              label={{ value: '평균', fontSize: 10, fill: '#10b981', position: 'right' }}
+              label={{ value: t('velocityAverageLabel'), fontSize: 10, fill: '#10b981', position: 'right' }}
             />
             <Bar dataKey="completed" radius={[4, 4, 0, 0]}>
               {chartData.map((entry, idx) => (
@@ -100,7 +102,7 @@ export default function VelocityWidget() {
       </div>
 
       <p className="text-caption mt-2" style={{ color: 'var(--text-tertiary)' }}>
-        막대 색상: 완료율 80%+ 녹색, 50~80% 주황, 50% 미만 빨강
+        {t('velocityLegend')}
       </p>
     </div>
   );

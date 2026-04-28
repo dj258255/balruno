@@ -14,6 +14,7 @@ import type { UnitStats } from '@/lib/simulation/types';
 import ProgressBar from '@/components/ui/ProgressBar';
 import PanelShell from '@/components/ui/PanelShell';
 import ToolPanelHint from '@/components/onboarding/ToolPanelHint';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
@@ -37,6 +38,7 @@ const PARAM_LABELS: Record<BalanceParam, string> = {
 };
 
 export default function AutoBalancerPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [unit1, setUnit1] = useState<UnitStats>(DEFAULT_UNIT1);
   const [unit2, setUnit2] = useState<UnitStats>(DEFAULT_UNIT2);
   const [target, setTarget] = useState<BalanceTarget>('unit1');
@@ -103,31 +105,31 @@ export default function AutoBalancerPanel({ onClose }: Props) {
   return (
     <PanelShell
       title="AI Auto-Balancer"
-      subtitle="목표 승률에 맞춰 스탯 자동 추천"
+      subtitle={t('autoBalancer.subtitleHeader')}
       icon={Wand2}
       onClose={onClose}
     >
       <div className="space-y-4">
-        <ToolPanelHint toolId="autoBalancer" title="AI Auto-Balancer — 목표 승률 자동 매칭" accentColor="#f43f5e">
-          <p>두 유닛 + 목표 승률 (예: <strong>55%</strong>) 입력 → 한 파라미터 (HP/공격력/방어력 중 선택) 의 추천값을 시뮬로 자동 찾음.</p>
-          <p>"이 캐릭터가 너무 셈, 공격력 얼마면 50:50 될까?" 같은 질문에 1-2초 안에 답.</p>
+        <ToolPanelHint toolId="autoBalancer" title={t('autoBalancer.hintTitle')} accentColor="#f43f5e">
+          <p>{t.rich('autoBalancer.hintP1', { strong: (chunks) => <strong>{chunks}</strong> })}</p>
+          <p>{t('autoBalancer.hintP2')}</p>
         </ToolPanelHint>
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-          두 유닛 스탯과 목표 승률을 입력하면, bisection 시뮬로 한 파라미터의 추천값을 찾습니다.
+          {t('autoBalancer.description')}
         </p>
 
         {/* 유닛 입력 */}
         <div className="grid grid-cols-2 gap-3">
-          <UnitForm label="Unit 1 (아군)" unit={unit1} onChange={(f, v) => updateStat('unit1', f, v)} />
-          <UnitForm label="Unit 2 (적)" unit={unit2} onChange={(f, v) => updateStat('unit2', f, v)} />
+          <UnitForm label={t('autoBalancer.unit1Label')} unit={unit1} onChange={(f, v) => updateStat('unit1', f, v)} />
+          <UnitForm label={t('autoBalancer.unit2Label')} unit={unit2} onChange={(f, v) => updateStat('unit2', f, v)} />
         </div>
 
         {/* 조정 설정 */}
         <div className="space-y-2 p-3 rounded border" style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}>
-          <div className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>조정 설정</div>
+          <div className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{t('autoBalancer.adjustSettings')}</div>
 
           <div className="flex items-center gap-2">
-            <label className="text-xs w-20" style={{ color: 'var(--text-secondary)' }}>대상 유닛</label>
+            <label className="text-xs w-20" style={{ color: 'var(--text-secondary)' }}>{t('autoBalancer.targetUnit')}</label>
             <select
               value={target}
               onChange={(e) => setTarget(e.target.value as BalanceTarget)}
@@ -140,7 +142,7 @@ export default function AutoBalancerPanel({ onClose }: Props) {
           </div>
 
           <div className="flex items-center gap-2">
-            <label className="text-xs w-20" style={{ color: 'var(--text-secondary)' }}>조정 스탯</label>
+            <label className="text-xs w-20" style={{ color: 'var(--text-secondary)' }}>{t('autoBalancer.adjustStat')}</label>
             <select
               value={param}
               onChange={(e) => setParam(e.target.value as BalanceParam)}
@@ -154,7 +156,7 @@ export default function AutoBalancerPanel({ onClose }: Props) {
           </div>
 
           <div className="flex items-center gap-2">
-            <label className="text-xs w-20" style={{ color: 'var(--text-secondary)' }}>목표 승률</label>
+            <label className="text-xs w-20" style={{ color: 'var(--text-secondary)' }}>{t('autoBalancer.targetWinrate')}</label>
             <input
               type="range"
               min="0.05" max="0.95" step="0.05"
@@ -167,7 +169,7 @@ export default function AutoBalancerPanel({ onClose }: Props) {
             </span>
           </div>
           <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-            ※ 승률은 Unit 1 기준입니다.
+            {t('autoBalancer.winrateBasedOnUnit1')}
           </p>
         </div>
 
@@ -183,12 +185,12 @@ export default function AutoBalancerPanel({ onClose }: Props) {
           {running ? (
             <>
               <Loader2 size={14} className="animate-spin" />
-              탐색 중...
+              {t('autoBalancer.searching')}
             </>
           ) : (
             <>
               <Wand2 size={14} />
-              밸런스 자동 추천 실행
+              {t('autoBalancer.runSearch')}
             </>
           )}
         </button>
@@ -196,14 +198,14 @@ export default function AutoBalancerPanel({ onClose }: Props) {
         {running && progress.total > 0 && (
           <ProgressBar
             value={progress.step / progress.total}
-            label={`단계 ${progress.step}/${progress.total}`}
+            label={t('autoBalancer.stepProgress', { step: progress.step, total: progress.total })}
             detail={`×${progress.factor.toFixed(2)} → ${(progress.winRate * 100).toFixed(1)}%`}
           />
         )}
 
         {error && (
           <div className="p-2 rounded text-xs" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
-            오류: {error}
+            {t('autoBalancer.errorPrefix', { error })}
           </div>
         )}
 
@@ -214,26 +216,26 @@ export default function AutoBalancerPanel({ onClose }: Props) {
           }}>
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold" style={{ color: result.success ? '#10b981' : '#f59e0b' }}>
-                {result.success ? '추천 완료' : '부분 성공'}
+                {result.success ? t('autoBalancer.recommendComplete') : t('autoBalancer.partialSuccess')}
               </span>
             </div>
 
             <div className="text-xs space-y-1" style={{ color: 'var(--text-primary)' }}>
               <div className="flex justify-between">
-                <span style={{ color: 'var(--text-secondary)' }}>현재 값</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{t('autoBalancer.currentValue')}</span>
                 <span className="font-mono">{result.originalValue}</span>
               </div>
               <div className="flex justify-between">
-                <span style={{ color: 'var(--text-secondary)' }}>추천 값</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{t('autoBalancer.recommendedValue')}</span>
                 <span className="font-mono font-semibold" style={{ color: 'var(--accent)' }}>{result.suggestedValue}</span>
               </div>
               <div className="flex justify-between">
-                <span style={{ color: 'var(--text-secondary)' }}>인자 (×)</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{t('autoBalancer.factorMul')}</span>
                 <span className="font-mono">×{result.factor.toFixed(3)}</span>
               </div>
               <div className="flex justify-between">
-                <span style={{ color: 'var(--text-secondary)' }}>달성 승률</span>
-                <span className="font-mono">{(result.finalWinRate * 100).toFixed(1)}% (목표 {(result.targetWinRate * 100).toFixed(0)}%)</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{t('autoBalancer.achievedWinrate')}</span>
+                <span className="font-mono">{t('autoBalancer.achievedFormat', { pct: (result.finalWinRate * 100).toFixed(1), target: (result.targetWinRate * 100).toFixed(0) })}</span>
               </div>
             </div>
 
@@ -257,13 +259,13 @@ export default function AutoBalancerPanel({ onClose }: Props) {
               className="w-full px-2 py-1.5 rounded text-xs font-semibold transition-colors"
               style={{ background: 'var(--accent)', color: 'white' }}
             >
-              추천값 적용 (입력 폼 업데이트)
+              {t('autoBalancer.applyRecommended')}
             </button>
 
             {/* trace */}
             <details className="text-caption">
               <summary className="cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
-                탐색 경로 ({result.trace.length} 단계)
+                {t('autoBalancer.searchTrace', { n: result.trace.length })}
               </summary>
               <div className="mt-1 space-y-0.5 font-mono">
                 {result.trace.map((t, i) => (

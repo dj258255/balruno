@@ -21,6 +21,7 @@ import {
   type DataPoint,
   type FormulaSpec,
 } from '@/lib/formulaVerifier';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
@@ -41,6 +42,7 @@ const SAMPLE_DATA: DataPoint[] = [
 ];
 
 export default function FormulaVerifierPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [data, setData] = useState<DataPoint[]>(SAMPLE_DATA);
   const [formulaId, setFormulaId] = useState(FORMULA_PRESETS[1].id); // power
   const [params, setParams] = useState<number[]>(FORMULA_PRESETS[1].params);
@@ -122,8 +124,8 @@ export default function FormulaVerifierPanel({ onClose }: Props) {
 
   return (
     <PanelShell
-      title="수식 검증기"
-      subtitle="실측 vs 수식 회귀 · 이상치 탐지"
+      title={t('formulaVerifier.titleHeader')}
+      subtitle={t('formulaVerifier.subtitleHeader')}
       icon={Sigma}
       iconColor="#3b82f6"
       onClose={onClose}
@@ -149,11 +151,11 @@ export default function FormulaVerifierPanel({ onClose }: Props) {
             className="inline-flex items-center gap-1 px-3 py-1 rounded text-label font-semibold ml-auto"
             style={{ background: 'var(--accent)', color: 'white' }}
           >
-            <Sparkles className="w-3.5 h-3.5" /> 자동 피팅
+            <Sparkles className="w-3.5 h-3.5" /> {t('formulaVerifier.autoFit')}
           </button>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>파라미터:</span>
+          <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('formulaVerifier.paramLabel')}</span>
           {params.map((p, idx) => (
             <div key={idx} className="flex items-center gap-1">
               <span className="text-caption font-mono" style={{ color: 'var(--text-secondary)' }}>
@@ -174,18 +176,18 @@ export default function FormulaVerifierPanel({ onClose }: Props) {
       {/* 핵심 지표 */}
       <div className="grid grid-cols-4 gap-2">
         <Stat
-          label="R² (결정계수)"
+          label={t('formulaVerifier.r2Label')}
           value={result.r2.toFixed(4)}
-          sub={result.r2 >= 0.95 ? '완벽 적합' : result.r2 >= 0.8 ? '양호' : '개선 필요'}
+          sub={result.r2 >= 0.95 ? t('formulaVerifier.r2Perfect') : result.r2 >= 0.8 ? t('formulaVerifier.r2Good') : t('formulaVerifier.r2Need')}
           color={r2Color}
           icon={result.r2 >= 0.8 ? CheckCircle : AlertCircle}
         />
-        <Stat label="RMSE" value={result.rmse.toFixed(2)} sub="평균 제곱근 오차" color="#3b82f6" icon={Sigma} />
-        <Stat label="MAE" value={result.mae.toFixed(2)} sub="평균 절대 오차" color="#8b5cf6" icon={Sigma} />
+        <Stat label="RMSE" value={result.rmse.toFixed(2)} sub={t('formulaVerifier.rmseSub')} color="#3b82f6" icon={Sigma} />
+        <Stat label="MAE" value={result.mae.toFixed(2)} sub={t('formulaVerifier.maeSub')} color="#8b5cf6" icon={Sigma} />
         <Stat
-          label="이상치"
+          label={t('formulaVerifier.outlierLabel')}
           value={`${result.outlierCount}/${data.length}`}
-          sub="잔차 > 2σ"
+          sub={t('formulaVerifier.outlierSub')}
           color={result.outlierCount > 0 ? '#ef4444' : '#10b981'}
           icon={AlertCircle}
         />
@@ -194,7 +196,7 @@ export default function FormulaVerifierPanel({ onClose }: Props) {
       {/* 차트 — 예측 곡선 + 실측 점 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          예측 곡선 vs 관측값
+          {t('formulaVerifier.predictedVsObserved')}
         </div>
         <div className="h-64">
           <ResponsiveContainer>
@@ -204,8 +206,8 @@ export default function FormulaVerifierPanel({ onClose }: Props) {
               <YAxis tick={{ fontSize: 10 }} />
               <Tooltip />
               <Legend wrapperStyle={{ fontSize: 10 }} />
-              <Line type="monotone" dataKey="predicted" stroke="#3b82f6" strokeWidth={2} name="예측" dot={false} />
-              <Line type="monotone" dataKey="observed" stroke="#ef4444" strokeWidth={0} name="관측" dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="predicted" stroke="#3b82f6" strokeWidth={2} name={t('formulaVerifier.predictedLine')} dot={false} />
+              <Line type="monotone" dataKey="observed" stroke="#ef4444" strokeWidth={0} name={t('formulaVerifier.observedLine')} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -214,23 +216,23 @@ export default function FormulaVerifierPanel({ onClose }: Props) {
       {/* 잔차 플롯 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          잔차 (관측 - 예측) — 0 근처에 무작위 분포면 좋은 피팅
+          {t('formulaVerifier.residualPlot')}
         </div>
         <div className="h-40">
           <ResponsiveContainer>
             <ScatterChart>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
               <XAxis dataKey="x" type="number" tick={{ fontSize: 10 }} name="x" />
-              <YAxis dataKey="residual" type="number" tick={{ fontSize: 10 }} name="잔차" />
+              <YAxis dataKey="residual" type="number" tick={{ fontSize: 10 }} name={t('formulaVerifier.residualAxis')} />
               <Tooltip cursor={{ strokeDasharray: '3 3' }} />
               <ReferenceLine y={0} stroke="#6b7280" strokeDasharray="3 3" />
               <Scatter
-                name="정상"
+                name={t('formulaVerifier.normalLabel')}
                 data={result.residuals.filter((r) => !r.isOutlier)}
                 fill="#3b82f6"
               />
               <Scatter
-                name="이상치"
+                name={t('formulaVerifier.outlierMark')}
                 data={result.residuals.filter((r) => r.isOutlier)}
                 fill="#ef4444"
               />
@@ -245,17 +247,17 @@ export default function FormulaVerifierPanel({ onClose }: Props) {
           <div className="flex items-center gap-2 mb-2">
             <AlertCircle className="w-4 h-4" style={{ color: '#ef4444' }} />
             <span className="text-label font-semibold" style={{ color: 'var(--text-primary)' }}>
-              이상치 {result.outlierCount}개 — 수식이 설명 못 하는 점
+              {t('formulaVerifier.outlierExplain', { n: result.outlierCount })}
             </span>
           </div>
           <table className="w-full text-caption">
             <thead>
               <tr style={{ color: 'var(--text-tertiary)' }}>
                 <th className="text-left px-2">x</th>
-                <th className="text-left px-2">라벨</th>
-                <th className="text-right px-2">관측</th>
-                <th className="text-right px-2">예측</th>
-                <th className="text-right px-2">잔차</th>
+                <th className="text-left px-2">{t('formulaVerifier.colLabel')}</th>
+                <th className="text-right px-2">{t('formulaVerifier.colObserved')}</th>
+                <th className="text-right px-2">{t('formulaVerifier.colPredicted')}</th>
+                <th className="text-right px-2">{t('formulaVerifier.colResidual')}</th>
                 <th className="text-right px-2">%</th>
               </tr>
             </thead>
@@ -281,11 +283,11 @@ export default function FormulaVerifierPanel({ onClose }: Props) {
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-            데이터 ({data.length} 점)
+            {t('formulaVerifier.dataCount', { n: data.length })}
           </span>
           <div className="flex gap-1">
             <label className="inline-flex items-center gap-1 px-2 py-1 rounded text-caption cursor-pointer" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
-              <Upload className="w-3 h-3" /> CSV 붙여넣기
+              <Upload className="w-3 h-3" /> {t('formulaVerifier.csvPaste')}
               <textarea
                 className="hidden"
                 onPaste={(e) => pasteCsv(e.clipboardData.getData('text'))}
@@ -293,7 +295,7 @@ export default function FormulaVerifierPanel({ onClose }: Props) {
               />
             </label>
             <button onClick={addPoint} className="inline-flex items-center gap-1 px-2 py-1 rounded text-caption" style={{ background: 'var(--accent)', color: 'white' }}>
-              <Plus className="w-3 h-3" /> 추가
+              <Plus className="w-3 h-3" /> {t('formulaVerifier.addRow')}
             </button>
           </div>
         </div>
@@ -323,7 +325,7 @@ export default function FormulaVerifierPanel({ onClose }: Props) {
                 <input
                   value={p.label ?? ''}
                   onChange={(e) => updatePoint(idx, 'label', e.target.value)}
-                  placeholder="라벨"
+                  placeholder={t('formulaVerifier.labelPlaceholder')}
                   className="input-compact flex-1 min-w-0"
                 />
                 {resp && (
@@ -341,7 +343,7 @@ export default function FormulaVerifierPanel({ onClose }: Props) {
       </div>
 
       <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        R² ≥ 0.95 = 거의 완벽 · 0.8~0.95 양호 · &lt; 0.8 수식 재검토. 이상치는 잔차 2σ 초과점.
+        {t('formulaVerifier.r2Note')}
       </p>
     </PanelShell>
   );

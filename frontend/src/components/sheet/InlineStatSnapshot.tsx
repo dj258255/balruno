@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 /**
  * stat-snapshot 셀 인라인.
  *
@@ -25,6 +26,7 @@ export default function InlineStatSnapshot({
   sourceSheet,
   onCapture,
 }: InlineStatSnapshotProps) {
+  const t = useTranslations();
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // 기존 snapshot 파싱
@@ -65,7 +67,7 @@ export default function InlineStatSnapshot({
   if (!sourceSheet) {
     return (
       <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-        (소스 시트 미지정)
+        {t('sheet.noSourceSheet')}
       </span>
     );
   }
@@ -147,17 +149,17 @@ export default function InlineStatSnapshot({
               style={{ borderColor: 'var(--border-primary)' }}
             >
               <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                Snapshot 대상 선택
+                {t('sheet.snapshotTargetSelect')}
               </h3>
               <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                {sourceSheet.name} 에서 {captureColumns.length}개 stats 캡처:{' '}
+                {t('sheet.snapshotCaptureSummary', { sheet: sourceSheet.name, n: captureColumns.length })}{' '}
                 {captureColumns.map((c) => c.name).join(', ')}
               </p>
             </div>
             <div className="flex-1 overflow-y-auto p-2">
               {sourceSheet.rows.length === 0 ? (
                 <div className="text-xs text-center py-8" style={{ color: 'var(--text-tertiary)' }}>
-                  소스 시트에 row 가 없습니다.
+                  {t('sheet.noRowsInSource')}
                 </div>
               ) : (
                 sourceSheet.rows.slice(0, 100).map((row, idx) => {

@@ -130,7 +130,7 @@ export default function WelcomeScreen() {
               style={{ borderColor: '#8b5cf6', color: '#8b5cf6' }}
             >
               <Wand2 className="w-4 h-4" />
-              <span className="text-sm font-medium">AI 로 시작</span>
+              <span className="text-sm font-medium">{t('sheet.startWithAi')}</span>
             </button>
           </div>
         </div>

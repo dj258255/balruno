@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 /**
  * @mention autocomplete — 코멘트/답글 textarea 옆 dropdown.
  *
@@ -38,6 +39,7 @@ export default function MentionAutocomplete({
   onInsert,
   onKeyDownRef,
 }: Props) {
+  const t = useTranslations();
   const context = getMentionContext(value, caret);
   const prefix = context?.prefix ?? null;
 
@@ -106,7 +108,7 @@ export default function MentionAutocomplete({
     >
       <div className="flex items-center gap-1 px-2 py-1 text-caption border-b" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
         <AtSign size={10} />
-        <span>멘션 {prefix ? `(${prefix})` : ''}</span>
+        <span>{prefix ? t('sheet.mentionLabelPrefix', { prefix }) : t('sheet.mentionLabel')}</span>
         <span className="ml-auto">↑↓ Enter</span>
       </div>
       {filtered.map((c, i) => (

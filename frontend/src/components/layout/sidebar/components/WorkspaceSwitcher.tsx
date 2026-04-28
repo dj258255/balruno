@@ -166,7 +166,7 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
               style={{ color: 'var(--text-primary)' }}
             >
               <Sparkles className="w-4 h-4 shrink-0" style={{ color: 'var(--accent)' }} />
-              <span>앱 소개 다시 보기</span>
+              <span>{t('sidebar.appIntroAgain')}</span>
             </button>
 
             {/* 워크스페이스 설정 */}
@@ -206,7 +206,7 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
                 setCtxMenu(null);
                 return;
               }
-              const next = window.prompt('워크스페이스 이름', active.name);
+              const next = window.prompt(t('sidebar.workspaceRenamePrompt'), active.name);
               if (next && next.trim()) {
                 renameWorkspace(active.id, next);
               }
@@ -216,7 +216,7 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
             style={{ color: 'var(--text-primary)' }}
           >
             <Edit2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-            이름 변경
+            {t('sidebar.workspaceRename')}
           </button>
           {onOpenSettings && (
             <button
@@ -229,7 +229,7 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
               style={{ color: 'var(--text-primary)' }}
             >
               <Settings className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-              워크스페이스 설정
+              {t('sidebar.workspaceSettings')}
             </button>
           )}
         </div>

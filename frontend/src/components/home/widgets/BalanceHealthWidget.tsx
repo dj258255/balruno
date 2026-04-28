@@ -1,6 +1,7 @@
 'use client';
 
 import { TrendingUp, FileSpreadsheet } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { TodaysWork } from '@/hooks/useTodaysWork';
 import { useProjectStore } from '@/stores/projectStore';
 import { detectPmSheet } from '@/lib/pmSheetDetection';
@@ -10,6 +11,7 @@ import { detectPmSheet } from '@/lib/pmSheetDetection';
  * "PM 이 아닌" 시트 = 밸런싱 데이터로 간주.
  */
 export default function BalanceHealthWidget({ work }: { work: TodaysWork }) {
+  const t = useTranslations('home');
   const projects = useProjectStore((s) => s.projects);
   const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
@@ -31,16 +33,16 @@ export default function BalanceHealthWidget({ work }: { work: TodaysWork }) {
       <div className="flex items-center gap-2 mb-3">
         <TrendingUp className="w-4 h-4" style={{ color: '#f59e0b' }} />
         <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-          밸런스 상태
+          {t('balanceState')}
         </h3>
         <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
-          {work.projectCount} 프로젝트
+          {t('projectsCount', { count: work.projectCount })}
         </span>
       </div>
 
       {stats.length === 0 ? (
         <p className="text-xs italic" style={{ color: 'var(--text-tertiary)' }}>
-          밸런싱 시트 없음
+          {t('noBalanceSheets')}
         </p>
       ) : (
         <div className="space-y-1 max-h-48 overflow-y-auto">
@@ -58,7 +60,7 @@ export default function BalanceHealthWidget({ work }: { work: TodaysWork }) {
                 {s.name}
               </span>
               <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                {s.sheetCount} 시트 · {s.rowCount} 행
+                {t('sheetRowSummary', { sheets: s.sheetCount, rows: s.rowCount })}
               </span>
             </button>
           ))}

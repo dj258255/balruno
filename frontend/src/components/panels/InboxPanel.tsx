@@ -20,6 +20,7 @@ import { useInbox } from '@/stores/inboxStore';
 import { getProjectDoc } from '@/lib/ydoc';
 import { getCommentsArray, getCommentsForSheet, type CellComment } from '@/lib/cellComments';
 import type { ChangeEntry, Project, Sheet } from '@/types';
+import { useTranslations } from 'next-intl';
 
 type FeedKind = 'change' | 'mention' | 'comment';
 
@@ -38,15 +39,16 @@ interface FeedItem {
 }
 
 function entryToFeedItem(project: Project, entry: ChangeEntry): FeedItem {
+  const t = useTranslations();
   const sheet = project.sheets.find((s) => s.id === entry.sheetId) ?? null;
   const col = sheet?.columns.find((c) => c.id === entry.columnId);
   const before =
     entry.before === null || entry.before === undefined || entry.before === ''
-      ? '(빈 값)'
+      ? t('inboxPanel.emptyValue')
       : String(entry.before);
   const after =
     entry.after === null || entry.after === undefined || entry.after === ''
-      ? '(빈 값)'
+      ? t('inboxPanel.emptyValue')
       : String(entry.after);
   return {
     id: `change-${entry.id}`,
@@ -84,15 +86,16 @@ function commentToFeedItem(
 }
 
 function relativeTime(ts: number): string {
+  const t = useTranslations();
   const diff = Date.now() - ts;
   const s = Math.floor(diff / 1000);
-  if (s < 60) return '방금';
+  if (s < 60) return t('inboxPanel.justNow');
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}분 전`;
+  if (m < 60) return t('inboxPanel.minutesAgo', { m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
+  if (h < 24) return t('inboxPanel.hoursAgo', { h });
   const d = Math.floor(h / 24);
-  if (d < 7) return `${d}일 전`;
+  if (d < 7) return t('inboxPanel.daysAgo', { d });
   return new Date(ts).toLocaleDateString('ko-KR');
 }
 
@@ -107,6 +110,7 @@ function KindIcon({ kind }: { kind: FeedKind }) {
 }
 
 export default function InboxPanel() {
+  const t = useTranslations();
   const open = useInbox((s) => s.open);
   const closeInbox = useInbox((s) => s.closeInbox);
   const readIds = useInbox((s) => s.readIds);
@@ -245,17 +249,17 @@ export default function InboxPanel() {
               onClick={() => markAllRead(feed.map((f) => f.id))}
               className="flex items-center gap-1 text-xs px-2 py-1 rounded hover:bg-[var(--bg-hover)] transition-colors"
               style={{ color: 'var(--text-secondary)' }}
-              title="모두 읽음 표시"
+              title={t('inboxPanel.markAllRead')}
             >
               <CheckCheck className="w-3.5 h-3.5" />
-              모두 읽음
+              {t('inboxPanel.markAllReadShort')}
             </button>
           )}
           <button
             type="button"
             onClick={closeInbox}
             className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors"
-            aria-label="닫기"
+            aria-label={t('inboxPanel.closeAria')}
           >
             <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
           </button>
@@ -265,9 +269,9 @@ export default function InboxPanel() {
       <div className="flex-1 overflow-y-auto">
         {feed.length === 0 ? (
           <div className="p-8 text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            아직 변경 이력이 없습니다.
+            {t('inboxPanel.noChanges1')}
             <br />
-            시트 편집이 쌓이면 여기에 모입니다.
+            {t('inboxPanel.noChanges2')}
           </div>
         ) : (
           <ul className="divide-y" style={{ borderColor: 'var(--border-primary)' }}>
@@ -300,7 +304,7 @@ export default function InboxPanel() {
                           {item.userName}
                         </span>
                         <span className="opacity-70">
-                          {item.kind === 'change' ? '편집' : item.kind === 'mention' ? '당신을 멘션' : '코멘트'}
+                          {item.kind === 'change' ? t('inboxPanel.kindEdit') : item.kind === 'mention' ? t('inboxPanel.kindMention') : t('inboxPanel.kindComment')}
                         </span>
                         <span className="opacity-70">·</span>
                         <span>{relativeTime(item.timestamp)}</span>

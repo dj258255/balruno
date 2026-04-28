@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 /**
  * AI 수식 생성 버튼 — FormulaBar 에 인라인.
  *
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export function AiFormulaButton({ columns, currentColumn, onFormula, disabled }: Props) {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,11 +74,11 @@ export function AiFormulaButton({ columns, currentColumn, onFormula, disabled }:
       });
       const data = await resp.json();
       if (!resp.ok) {
-        setError(typeof data.error === 'string' ? data.error : `요청 실패 (${resp.status})`);
+        setError(typeof data.error === 'string' ? data.error : t('sheet.aiRequestFail', { status: resp.status }));
         return;
       }
       if (typeof data.formula !== 'string') {
-        setError('응답 형식 오류 — formula 필드가 없습니다');
+        setError(t('sheet.aiResponseFormatError'));
         return;
       }
       setLastResult(data as AiFormulaResponse);
@@ -108,8 +110,8 @@ export function AiFormulaButton({ columns, currentColumn, onFormula, disabled }:
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,
         }}
-        title="자연어로 수식 만들기"
-        aria-label="AI 수식 생성"
+        title={t('sheet.aiFormulaTitle')}
+        aria-label={t('sheet.aiFormulaAria')}
       >
         <Sparkles className="w-3.5 h-3.5" />
         <span className="hidden sm:inline">AI</span>
@@ -129,13 +131,13 @@ export function AiFormulaButton({ columns, currentColumn, onFormula, disabled }:
           >
             <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
             <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-              AI 수식 생성
+              {t('sheet.aiFormulaHeading')}
             </span>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="ml-auto p-1 rounded hover:bg-[var(--bg-hover)]"
-              aria-label="닫기"
+              aria-label={t('sheet.closeAria')}
             >
               <X className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
             </button>
@@ -152,7 +154,7 @@ export function AiFormulaButton({ columns, currentColumn, onFormula, disabled }:
                   submit();
                 }
               }}
-              placeholder="예: 공격력에서 방어력의 50% 를 뺀 값"
+              placeholder={t('sheet.aiFormulaPlaceholder')}
               rows={3}
               className="w-full px-2 py-1.5 rounded text-xs resize-none outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
               style={{
@@ -166,7 +168,7 @@ export function AiFormulaButton({ columns, currentColumn, onFormula, disabled }:
             {!lastResult && (
               <div className="flex items-center justify-between">
                 <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                  ⌘+Enter 로 제출
+                  {t('sheet.cmdEnterSubmit')}
                 </span>
                 <button
                   type="button"
@@ -180,7 +182,7 @@ export function AiFormulaButton({ columns, currentColumn, onFormula, disabled }:
                   }}
                 >
                   {loading && <Loader2 className="w-3 h-3 animate-spin" />}
-                  {loading ? '생성 중' : '생성'}
+                  {loading ? t('sheet.aiGenerating') : t('sheet.aiGenerate')}
                 </button>
               </div>
             )}
@@ -227,7 +229,7 @@ export function AiFormulaButton({ columns, currentColumn, onFormula, disabled }:
                     className="ml-auto px-2.5 py-1 rounded text-xs flex items-center gap-1"
                     style={{ background: 'var(--accent)', color: 'white' }}
                   >
-                    적용
+                    {t('sheet.aiApply')}
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>

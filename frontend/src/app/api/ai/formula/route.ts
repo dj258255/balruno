@@ -13,6 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { getServerT } from '@/lib/serverI18n';
 
 export const runtime = 'nodejs';
 
@@ -48,31 +49,22 @@ const EXCEL_FUNCTIONS = [
   'MIN(...)', 'MAX(...)', 'SUM(...)', 'AVERAGE(...)',
 ];
 
-function buildSystemPrompt(columns: string[]): string {
+function buildSystemPrompt(columns: string[], t: (k: string, v?: Record<string, string | number>) => string): string {
   return [
-    '당신은 게임 밸런싱 스프레드시트의 수식 작성 전문가입니다.',
-    '사용자가 자연어로 설명한 계산 의도를 단일 수식으로 변환하세요.',
+    t('formulaSystemPrompt'),
     '',
-    '## 출력 규칙 (엄격)',
-    '1. JSON 만 반환. 다른 텍스트 절대 금지.',
-    '2. 스키마: { "formula": string, "explanation": string, "confidence": "high" | "medium" | "low" }',
-    '3. formula 는 등호(=) 없이 순수 표현식. 예: `ATK * 2 - DEF / 3` (O), `=ATK*2` (X)',
-    '4. 컬럼 참조는 아래 컬럼명 목록의 이름을 그대로 사용 (대소문자 · 한영 포함).',
-    '5. 존재하지 않는 컬럼을 지어내지 말 것. 모호하면 confidence="low".',
-    '6. explanation 은 1~2 문장, 한국어.',
+    t('formulaSystemColumns'),
+    columns.length > 0 ? columns.map((c) => `- ${c}`).join('\n') : t('formulaSystemNoColumns'),
     '',
-    '## 사용 가능 컬럼',
-    columns.length > 0 ? columns.map((c) => `- ${c}`).join('\n') : '(컬럼 정보 없음)',
-    '',
-    '## 사용 가능 게임 함수',
+    t('formulaSystemGameFns'),
     GAME_FUNCTIONS.map((f) => `- ${f}`).join('\n'),
     '',
-    '## 사용 가능 Excel 함수 (일부)',
+    t('formulaSystemExcelFns'),
     EXCEL_FUNCTIONS.map((f) => `- ${f}`).join('\n'),
     '',
-    '## 예시',
-    '질문: "공격력에서 방어력의 50% 를 뺀 값"',
-    '답: {"formula": "ATK - DEF * 0.5", "explanation": "공격력에서 방어력 절반을 차감합니다.", "confidence": "high"}',
+    t('formulaSystemExample'),
+    t('formulaSystemExampleQ'),
+    t('formulaSystemExampleA'),
   ].join('\n');
 }
 
@@ -92,11 +84,12 @@ function extractJson(text: string): unknown | null {
 }
 
 export async function POST(req: NextRequest) {
+  const t = await getServerT(req, 'aiApi');
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       {
-        error: 'AI 기능 비활성 상태. 서버에 ANTHROPIC_API_KEY 환경변수를 설정하세요.',
+        error: t('noApiKey'),
         stage: 'config',
       },
       { status: 503 }
@@ -107,13 +100,13 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: 'JSON 파싱 실패', stage: 'parse' }, { status: 400 });
+    return NextResponse.json({ error: t('parseFailed'), stage: 'parse' }, { status: 400 });
   }
 
   const description = body.description?.trim();
   if (!description) {
     return NextResponse.json(
-      { error: 'description 필수', stage: 'validate' },
+      { error: t('descRequired'), stage: 'validate' },
       { status: 400 }
     );
   }
@@ -122,7 +115,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const client = new Anthropic({ apiKey });
-    const system = buildSystemPrompt(columns);
+    const system = buildSystemPrompt(columns, t);
 
     const message = await client.messages.create({
       model: MODEL,
@@ -150,7 +143,7 @@ export async function POST(req: NextRequest) {
     if (!parsed || typeof parsed.formula !== 'string') {
       return NextResponse.json(
         {
-          error: 'LLM 응답 파싱 실패 — JSON 스키마 미준수',
+          error: t('llmParseFailed'),
           stage: 'parse-llm',
           raw: raw.slice(0, 500),
         },
@@ -171,7 +164,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { error: `LLM 호출 실패: ${msg}`, stage: 'llm' },
+      { error: t('llmCallFailed', { msg }), stage: 'llm' },
       { status: 502 }
     );
   }

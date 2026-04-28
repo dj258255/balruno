@@ -460,7 +460,7 @@ export default function TemplateSelector({ projectId, onClose, onSelect }: Templ
                                   background: isActive ? 'var(--accent)' : 'var(--accent-light)',
                                   color: isActive ? 'white' : 'var(--accent)',
                                 }}
-                                title={`${genre?.nameKey ? t(genre.nameKey) : genre?.name || g} 장르만 보기`}
+                                title={t('templateSelector.filterByGenre', { genre: genre?.nameKey ? t(genre.nameKey) : (genre?.name || g) })}
                               >
                                 {genre?.nameKey ? t(genre.nameKey) : genre?.name || g}
                               </button>

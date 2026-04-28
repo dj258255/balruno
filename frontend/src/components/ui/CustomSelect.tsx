@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 export interface SelectOption {
@@ -27,13 +28,15 @@ export default function CustomSelect({
   value,
   onChange,
   options,
-  placeholder = '선택하세요',
+  placeholder,
   className,
   disabled = false,
   color = '#3db88a',
   size = 'md',
   maxHeight = 240,
 }: CustomSelectProps) {
+  const t = useTranslations('ui');
+  const resolvedPlaceholder = placeholder ?? t('selectPlaceholder');
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const selectRef = useRef<HTMLDivElement>(null);
@@ -151,7 +154,7 @@ export default function CustomSelect({
         )}
         style={{ color: 'var(--text-primary)' }}
       >
-        <span className="truncate">{selectedOption?.label || placeholder}</span>
+        <span className="truncate">{selectedOption?.label || resolvedPlaceholder}</span>
         <ChevronDown
           className={cn(
             'w-4 h-4 shrink-0 transition-transform',
