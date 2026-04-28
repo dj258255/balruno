@@ -17,6 +17,7 @@ interface SettingsModalProps {
 }
 
 function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
+  const t = useTranslations();
   const [url, setUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -32,13 +33,13 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('복사 실패');
+      toast.error(t('settings.errorCopyFail'));
     }
   };
 
   const handleTest = async () => {
     if (!url.trim() || !url.startsWith('http')) {
-      toast.error('유효한 URL 을 입력하세요');
+      toast.error(t('settings.errorInvalidUrl'));
       return;
     }
     setTesting(true);
@@ -49,12 +50,12 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
         body: renderedBody,
       });
       if (res.ok) {
-        toast.success(`Test 성공 (${res.status})`);
+        toast.success(t('settings.testSuccess', { status: res.status }));
       } else {
-        toast.error(`Test 실패: ${res.status} ${res.statusText}`);
+        toast.error(t('settings.testFail', { status: res.status, statusText: res.statusText }));
       }
     } catch (e) {
-      toast.error(`Test 실패: ${e instanceof Error ? e.message : String(e)}`);
+      toast.error(t('settings.testFailGeneric', { message: e instanceof Error ? e.message : String(e) }));
     } finally {
       setTesting(false);
     }
@@ -84,9 +85,9 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
                 background: 'var(--warning, #f59e0b)',
                 color: 'white',
               }}
-              title="브라우저 CORS + 인증 헤더 필요 — 현재는 템플릿 복사용. 백엔드 연동 후 실발송 지원"
+              title={t('settings.serverNeededTitle')}
             >
-              서버 필요
+              {t('settings.serverNeeded')}
             </span>
           )}
         </div>
@@ -111,7 +112,7 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
           onClick={handleCopy}
           className="p-1.5 rounded"
           style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
-          title="body 복사"
+          title={t('settings.copyBody')}
         >
           {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
         </button>
@@ -127,8 +128,8 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
           }}
           title={
             needsServer
-              ? '브라우저에서 직접 호출 불가 — 서버 프록시 필요 (백엔드 연동 후 지원)'
-              : '샘플 payload 로 테스트 발송'
+              ? t('settings.directCallNotPossible')
+              : t('settings.sendSamplePayload')
           }
         >
           <Send className="w-3 h-3" />
@@ -139,7 +140,7 @@ function PresetCard({ preset }: { preset: typeof WEBHOOK_PRESETS[number] }) {
           className="text-caption cursor-pointer"
           style={{ color: 'var(--text-secondary)' }}
         >
-          Body 미리보기 (샘플 값 치환됨) — {preset.variables.length}개 변수
+          {t('settings.bodyPreview', { n: preset.variables.length })}
         </summary>
         <pre
           className="mt-1 p-1.5 rounded text-caption overflow-x-auto font-mono"
@@ -187,7 +188,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   };
 
   const languages: { code: Locale; name: string; nativeName: string }[] = [
-    { code: 'ko', name: 'Korean', nativeName: '한국어' },
+    { code: 'ko', name: 'Korean', nativeName: t('settings.localeKo') },
     { code: 'en', name: 'English', nativeName: 'English' },
   ];
 
@@ -407,8 +408,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           {activeTab === 'integrations' && (
             <div className="px-5 space-y-3">
               <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                외부 툴과 양방향 통합. 복사 버튼으로 body 템플릿을 클립보드에 담고,
-                Test 버튼으로 직접 웹훅 URL 에 샘플 payload 를 발송할 수 있습니다.
+                {t('settings.integrationDesc1')}
+                {t('settings.integrationDesc2')}
               </p>
               {(['discord', 'slack', 'github', 'notion', 'generic'] as const).map((service) => {
                 const presets = WEBHOOK_PRESETS.filter((p) => p.service === service);
@@ -436,7 +437,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   color: 'var(--accent)',
                 }}
               >
-                사용법: Automation 패널 → Webhook 액션 → URL 붙여넣기 + 위 프리셋의 body 템플릿 복사.
+                {t('settings.usageGuide')}
               </div>
             </div>
           )}

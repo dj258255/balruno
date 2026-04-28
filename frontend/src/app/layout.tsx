@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getMessages } from 'next-intl/server';
+import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
@@ -25,29 +25,26 @@ export const viewport: Viewport = {
   viewportFit: 'cover', // 노치 디바이스 지원
 };
 
-export const metadata: Metadata = {
-  title: "Balruno — Game Studio Workspace",
-  description: "게임 스튜디오를 위한 통합 워크스페이스. 밸런싱 데이터 + 스프린트 / 버그 / 에픽 로드맵을 한 곳에서. 70+ 게임 수식 (DPS/TTK/EHP/GACHA_PITY), AI Auto-Balancer, 실시간 협업, Unity/Unreal/Godot export.",
-  keywords: [
-    "게임 스튜디오", "game studio workspace", "게임 개발 PM", "게임 밸런스",
-    "스프린트 보드", "버그 트래커", "에픽 로드맵", "실시간 협업",
-    "AI Auto-Balancer", "몬테카를로 시뮬", "가챠 시뮬",
-    "Jira alternative games", "Codecks alternative", "Airtable for games",
-    "indie studio workspace", "발루노", "Balruno",
-  ],
-  icons: {
-    icon: [
-      {
-        url: '/icon.svg',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark.svg',
-        media: '(prefers-color-scheme: dark)',
-      },
-    ],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('app');
+  return {
+    title: "Balruno — Game Studio Workspace",
+    description: t('metaDescription'),
+    keywords: t('metaKeywords').split(','),
+    icons: {
+      icon: [
+        {
+          url: '/icon.svg',
+          media: '(prefers-color-scheme: light)',
+        },
+        {
+          url: '/icon-dark.svg',
+          media: '(prefers-color-scheme: dark)',
+        },
+      ],
+    },
+  };
+}
 
 export default async function RootLayout({
   children,

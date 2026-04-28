@@ -13,10 +13,12 @@ import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import { Zap, Bug, Gamepad2, User, Calendar, ExternalLink } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { detectPmSheet } from '@/lib/pmSheetDetection';
 
 function TaskCardView({ node }: NodeViewProps) {
+  const t = useTranslations('docs');
   const attrs = node.attrs as { projectId: string; rowId: string };
   const project = useProjectStore((s) => s.projects.find((p) => p.id === attrs.projectId));
   const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
@@ -35,7 +37,7 @@ function TaskCardView({ node }: NodeViewProps) {
       const statusCol = pm.statusColumnId ? sheet.columns.find((c) => c.id === pm.statusColumnId) : null;
       const assigneeCol = pm.assigneeColumnId ? sheet.columns.find((c) => c.id === pm.assigneeColumnId) : null;
       const priorityCol = sheet.columns.find(
-        (c) => c.name.toLowerCase() === 'priority' || c.name.toLowerCase() === '우선순위'
+        (c) => c.name.toLowerCase() === 'priority' || c.name === '우선순위'
       );
       const dueCol = sheet.columns.find((c) => c.type === 'date');
 
@@ -45,7 +47,7 @@ function TaskCardView({ node }: NodeViewProps) {
       return {
         sheet,
         row,
-        title: titleCol ? String(row.cells[titleCol.id] ?? '(제목 없음)') : '(제목 없음)',
+        title: titleCol ? String(row.cells[titleCol.id] ?? t('noTitlePlaceholder')) : t('noTitlePlaceholder'),
         status: statusOpt ? { label: statusOpt.label, color: statusOpt.color } : null,
         assignee: assigneeCol ? String(row.cells[assigneeCol.id] ?? '') : '',
         priority: priorityCol
@@ -77,7 +79,7 @@ function TaskCardView({ node }: NodeViewProps) {
           }}
           contentEditable={false}
         >
-          태스크 없음: {attrs.rowId}
+          {t('taskNotFound', { id: attrs.rowId })}
         </div>
       </NodeViewWrapper>
     );

@@ -18,15 +18,15 @@ interface ImportModalProps {
 // Import 타입
 type ImportType = 'json' | 'csv' | ImportFormat;
 
-// 형식 정보
-const FORMAT_INFO: { id: ImportType; name: string; category: string; description: string; accept: string }[] = [
-  { id: 'json', name: 'JSON', category: '기본', description: '프로젝트 백업 복원', accept: '.json' },
-  { id: 'csv', name: 'CSV', category: '기본', description: '스프레드시트 가져오기', accept: '.csv' },
-  { id: 'unity_json', name: 'Unity JSON', category: 'Unity', description: 'ScriptableObject JSON', accept: '.json' },
-  { id: 'unity_cs', name: 'Unity C#', category: 'Unity', description: 'C# 클래스 필드 파싱', accept: '.cs' },
-  { id: 'unreal_csv', name: 'DataTable CSV', category: 'Unreal', description: 'DataTable CSV 형식', accept: '.csv' },
-  { id: 'unreal_h', name: 'Unreal Header', category: 'Unreal', description: 'UPROPERTY 필드 파싱', accept: '.h' },
-  { id: 'godot_gd', name: 'GDScript', category: 'Godot', description: 'GDScript 변수 파싱', accept: '.gd' },
+// 형식 정보 — category/description은 i18n 키. 표시 시점에 t() 변환.
+const FORMAT_INFO: { id: ImportType; name: string; categoryKey: string; descriptionKey: string; accept: string }[] = [
+  { id: 'json', name: 'JSON', categoryKey: 'import.categoryDefault', descriptionKey: 'import.descJsonRestore', accept: '.json' },
+  { id: 'csv', name: 'CSV', categoryKey: 'import.categoryDefault', descriptionKey: 'import.descCsvImport', accept: '.csv' },
+  { id: 'unity_json', name: 'Unity JSON', categoryKey: 'Unity', descriptionKey: 'ScriptableObject JSON', accept: '.json' },
+  { id: 'unity_cs', name: 'Unity C#', categoryKey: 'Unity', descriptionKey: 'import.descUnityCs', accept: '.cs' },
+  { id: 'unreal_csv', name: 'DataTable CSV', categoryKey: 'Unreal', descriptionKey: 'import.descUnrealCsv', accept: '.csv' },
+  { id: 'unreal_h', name: 'Unreal Header', categoryKey: 'Unreal', descriptionKey: 'import.descUnrealH', accept: '.h' },
+  { id: 'godot_gd', name: 'GDScript', categoryKey: 'Godot', descriptionKey: 'import.descGodotGd', accept: '.gd' },
 ];
 
 export default function ImportModal({ onClose }: ImportModalProps) {
@@ -267,10 +267,11 @@ export default function ImportModal({ onClose }: ImportModalProps) {
     return previewResult?.success && !!selectedProjectId;
   };
 
-  // 카테고리별 그룹화
+  // 카테고리별 그룹화 — categoryKey 가 i18n 키면 t() 변환, 아니면 raw (예: "Unity")
   const formatsByCategory = FORMAT_INFO.reduce((acc, fmt) => {
-    if (!acc[fmt.category]) acc[fmt.category] = [];
-    acc[fmt.category].push(fmt);
+    const cat = fmt.categoryKey.startsWith('import.') ? t(fmt.categoryKey as 'import.categoryDefault') : fmt.categoryKey;
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(fmt);
     return acc;
   }, {} as Record<string, typeof FORMAT_INFO>);
 
@@ -396,7 +397,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                                 {fmt.name}
                               </div>
                               <div className="text-xs" style={{ color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--text-tertiary)' }}>
-                                {fmt.description}
+                                {fmt.descriptionKey.startsWith('import.') ? t(fmt.descriptionKey as 'import.descJsonRestore') : fmt.descriptionKey}
                               </div>
                             </button>
                           );
@@ -679,7 +680,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                     </div>
                     {csvPreview.rows.length > 10 && (
                       <div className="text-xs text-center mt-2" style={{ color: 'var(--text-tertiary)' }}>
-                        +{csvPreview.rows.length - 10}개 행 더 있음
+                        {t('import.moreRowsCount', { n: csvPreview.rows.length - 10 })}
                       </div>
                     )}
                   </div>
@@ -736,7 +737,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                         </div>
                         {previewResult.rows.length > 10 && (
                           <div className="text-xs text-center mt-2" style={{ color: 'var(--text-tertiary)' }}>
-                            +{previewResult.rows.length - 10}개 행 더 있음
+                            {t('import.moreRowsCount', { n: previewResult.rows.length - 10 })}
                           </div>
                         )}
                       </>

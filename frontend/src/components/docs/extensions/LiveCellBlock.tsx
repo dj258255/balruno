@@ -17,6 +17,7 @@ import { ArrowRight } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { computeSheetRows } from '@/lib/formulaEngine';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 
 export interface LiveCellAttrs {
   projectId: string;
@@ -27,6 +28,7 @@ export interface LiveCellAttrs {
 }
 
 function LiveCellView({ node }: NodeViewProps) {
+  const tCell = useTranslations('liveCell');
   const attrs = node.attrs as LiveCellAttrs;
   const project = useProjectStore((s) => s.projects.find((p) => p.id === attrs.projectId));
   const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
@@ -34,13 +36,13 @@ function LiveCellView({ node }: NodeViewProps) {
   const setCurrentDoc = useProjectStore((s) => s.setCurrentDoc);
 
   const { value, label, broken } = useMemo(() => {
-    if (!project) return { value: '—', label: '프로젝트 없음', broken: true };
+    if (!project) return { value: '—', label: tCell('noProject'), broken: true };
     const sheet = project.sheets.find((s) => s.id === attrs.sheetId);
-    if (!sheet) return { value: '—', label: 'sheet 없음', broken: true };
+    if (!sheet) return { value: '—', label: tCell('noSheet'), broken: true };
     const column = sheet.columns.find((c) => c.id === attrs.columnId);
-    if (!column) return { value: '—', label: 'column 없음', broken: true };
+    if (!column) return { value: '—', label: tCell('noColumn'), broken: true };
     const row = sheet.rows.find((r) => r.id === attrs.rowId);
-    if (!row) return { value: '—', label: 'row 없음', broken: true };
+    if (!row) return { value: '—', label: tCell('noRow'), broken: true };
 
     let v: unknown = row.cells[column.id];
     const isFormula = column.type === 'formula' || (typeof v === 'string' && String(v).startsWith('='));

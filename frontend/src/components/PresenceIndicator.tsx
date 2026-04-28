@@ -5,6 +5,7 @@
  * 활성 프로젝트의 WebRTC provider awareness 기반.
  */
 
+import { useTranslations } from 'next-intl';
 import { usePresence } from '@/hooks/usePresence';
 
 interface PresenceIndicatorProps {
@@ -12,6 +13,7 @@ interface PresenceIndicatorProps {
 }
 
 export default function PresenceIndicator({ projectId }: PresenceIndicatorProps) {
+  const tApp = useTranslations('app');
   const { peers, myName, myColor } = usePresence(projectId);
 
   // 협업 비활성 (peers 0) 이어도 본인 아바타는 표시 — UX 통일
@@ -60,7 +62,7 @@ export default function PresenceIndicator({ projectId }: PresenceIndicatorProps)
           background: myColor,
           borderColor: 'var(--bg-primary)',
         }}
-        title={`${myName} (나)`}
+        title={`${myName} (${tApp('meSuffix')})`}
       >
         {initials(myName)}
         <span

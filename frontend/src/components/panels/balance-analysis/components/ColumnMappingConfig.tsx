@@ -9,6 +9,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { Column } from '@/types';
 
 export interface ColumnMapping {
@@ -38,6 +39,7 @@ function ColumnMappingField({
   required,
   accentColor = 'var(--accent)',
 }: ColumnMappingFieldProps) {
+  const t = useTranslations('balanceAnalysis');
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
@@ -82,7 +84,7 @@ function ColumnMappingField({
           }}
         >
           <span className="truncate text-left">
-            {selectedColumn ? selectedColumn.name : '선택...'}
+            {selectedColumn ? selectedColumn.name : t('columnSelectPlaceholder')}
           </span>
           <ChevronDown
             className={`w-3.5 h-3.5 flex-shrink-0 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -121,7 +123,7 @@ function ColumnMappingField({
                   style={{ color: 'var(--text-tertiary)' }}
                 >
                   <X className="w-3.5 h-3.5" />
-                  <span>선택 안함</span>
+                  <span>{t('columnSelectNone')}</span>
                 </button>
 
                 <div className="h-px" style={{ background: 'var(--border-primary)' }} />
@@ -183,9 +185,11 @@ export function ColumnMappingConfig({
   onMappingChange,
   columns,
   fields,
-  title = '컬럼 매핑',
+  title,
   accentColor = 'var(--accent)',
 }: ColumnMappingConfigProps) {
+  const t = useTranslations('balanceAnalysis');
+  const resolvedTitle = title ?? t('columnMappingTitle');
   const handleFieldChange = (fieldKey: string, columnId: string | undefined) => {
     onMappingChange({
       ...mapping,
@@ -208,7 +212,7 @@ export function ColumnMappingConfig({
           style={{ background: accentColor }}
         />
         <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-          {title}
+          {resolvedTitle}
         </span>
       </div>
 

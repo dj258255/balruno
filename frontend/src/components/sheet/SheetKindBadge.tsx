@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { Sheet } from '@/types';
 import { resolveSheetKind } from '@/lib/sheetKind';
 
@@ -20,6 +21,7 @@ export function SheetKindBadge({
   size = 'xs',
   className = '',
 }: SheetKindBadgeProps) {
+  const t = useTranslations();
   const meta = resolveSheetKind(sheet);
   if (meta.kind === 'game-data' && !showDefault) return null;
 
@@ -35,7 +37,7 @@ export function SheetKindBadge({
         border: `1px solid ${meta.color}55`,
         opacity: dimAuto && isAuto ? 0.75 : 1,
       }}
-      title={`${meta.label} — ${meta.description}${isAuto ? ' (자동 감지)' : ''}`}
+      title={t('sheet.kindBadgeTitle', { label: meta.label, desc: meta.description, auto: isAuto ? t('sheet.kindAutoSuffix') : '' })}
     >
       {meta.label}
     </span>

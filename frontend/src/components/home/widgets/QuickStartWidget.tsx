@@ -5,6 +5,7 @@
  */
 
 import { Sparkles, Wand2, FolderPlus, FileSpreadsheet, Bot } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface ActionProps {
   icon: typeof Sparkles;
@@ -39,6 +40,7 @@ function Action({ icon: Icon, color, label, desc, onClick }: ActionProps) {
 }
 
 export default function QuickStartWidget() {
+  const t = useTranslations('home');
   return (
     <div
       className="glass-card p-4"
@@ -47,36 +49,36 @@ export default function QuickStartWidget() {
       <div className="flex items-center gap-2 mb-3">
         <Sparkles className="w-4 h-4" style={{ color: '#8b5cf6' }} />
         <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-          빠른 시작
+          {t('quickStart')}
         </h3>
       </div>
       <div className="space-y-1">
         <Action
           icon={Bot}
           color="#a855f7"
-          label="AI Copilot 열기"
-          desc="프로젝트 컨텍스트로 질문"
+          label={t('qsAiCopilot')}
+          desc={t('qsAiCopilotDesc')}
           onClick={() => window.dispatchEvent(new Event('balruno:open-ai-copilot'))}
         />
         <Action
           icon={Wand2}
           color="#8b5cf6"
-          label="AI 로 시작"
-          desc="요구사항 → 자동 생성"
+          label={t('qsAi')}
+          desc={t('qsAiDesc')}
           onClick={() => window.dispatchEvent(new Event('balruno:open-ai-setup'))}
         />
         <Action
           icon={FolderPlus}
           color="#3b82f6"
-          label="템플릿 갤러리"
-          desc="RPG · FPS · 팀 PM"
+          label={t('qsTemplates')}
+          desc={t('qsTemplatesDesc')}
           onClick={() => window.dispatchEvent(new Event('balruno:open-gallery'))}
         />
         <Action
           icon={FileSpreadsheet}
           color="#10b981"
-          label="Excel 가져오기"
-          desc="기존 시트에서 시작"
+          label={t('qsExcel')}
+          desc={t('qsExcelDesc')}
           onClick={() => window.dispatchEvent(new Event('balruno:open-import-modal'))}
         />
       </div>

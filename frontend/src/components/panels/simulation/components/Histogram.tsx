@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface HistogramProps {
   data: number[];
@@ -11,6 +12,7 @@ interface HistogramProps {
 }
 
 export function Histogram({ data, label, color, unit = '', rangeLabels }: HistogramProps) {
+  const t = useTranslations('simulation');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -20,7 +22,7 @@ export function Histogram({ data, label, color, unit = '', rangeLabels }: Histog
       <div className="space-y-2">
         <div className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</div>
         <div className="h-20 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
-          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>데이터 없음</span>
+          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('histNoData')}</span>
         </div>
       </div>
     );
@@ -42,7 +44,7 @@ export function Histogram({ data, label, color, unit = '', rangeLabels }: Histog
 
   // 범위 레이블 계산
   const getRangeLabel = (index: number) => {
-    if (!rangeLabels) return `구간 ${index + 1}`;
+    if (!rangeLabels) return t('histBin', { index: index + 1 });
     const step = (rangeLabels.max - rangeLabels.min) / data.length;
     const start = rangeLabels.min + step * index;
     const end = start + step;
@@ -62,7 +64,7 @@ export function Histogram({ data, label, color, unit = '', rangeLabels }: Histog
           }}
         >
           {hoveredIndex !== null
-            ? `${data[hoveredIndex].toLocaleString()}건 (${((data[hoveredIndex] / total) * 100).toFixed(1)}%)`
+            ? t('histCount', { count: data[hoveredIndex].toLocaleString(), pct: ((data[hoveredIndex] / total) * 100).toFixed(1) })
             : '\u00A0'
           }
         </div>
@@ -104,7 +106,7 @@ export function Histogram({ data, label, color, unit = '', rangeLabels }: Histog
           >
             <div className="font-medium" style={{ color }}>{getRangeLabel(hoveredIndex)}</div>
             <div style={{ color: 'var(--text-secondary)' }}>
-              {data[hoveredIndex].toLocaleString()}회 ({((data[hoveredIndex] / total) * 100).toFixed(1)}%)
+              {t('histTimes', { count: data[hoveredIndex].toLocaleString(), pct: ((data[hoveredIndex] / total) * 100).toFixed(1) })}
             </div>
           </div>
         )}

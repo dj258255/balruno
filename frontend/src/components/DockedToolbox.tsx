@@ -499,9 +499,9 @@ function ToolDropdown({
                   <ChevronDown
                     className={`w-3 h-3 transition-transform ${genreExpanded ? '' : '-rotate-90'}`}
                   />
-                  <span className="flex-1 text-left">장르 특화 ({genreTools.length})</span>
+                  <span className="flex-1 text-left">{t('dockedToolbox.genreSpecific', { n: genreTools.length })}</span>
                   <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                    FPS · MOBA · MMO 등
+                    {t('dockedToolbox.genreSpecificHint')}
                   </span>
                 </button>
                 {genreExpanded &&

@@ -75,6 +75,8 @@ export default function GrowthCurveChart({
   const showHelp = externalShowHelp ?? internalShowHelp;
   const setShowHelp = externalSetShowHelp ?? setInternalShowHelp;
 
+  const t = useTranslations('growthCurve');
+
   // 기본 상태
   const [base, setBase] = useState(initialBase);
   const [rate, setRate] = useState(initialRate);
@@ -112,8 +114,8 @@ export default function GrowthCurveChart({
 
   // 1. 다중 시나리오 비교 — useScenarios 훅 (Track D-2 2차 분해)
   const { scenarios, setScenarios, addScenario, removeScenario, updateScenario } = useScenarios([
-    { id: '1', name: '워리어 HP', color: SCENARIO_COLORS[0], base: 500, rate: 1.08, curveType: 'linear', enabled: false },
-    { id: '2', name: '메이지 HP', color: SCENARIO_COLORS[1], base: 300, rate: 1.05, curveType: 'linear', enabled: false },
+    { id: '1', name: t('scenarioWarriorHp'), color: SCENARIO_COLORS[0], base: 500, rate: 1.08, curveType: 'linear', enabled: false },
+    { id: '2', name: t('scenarioMageHp'), color: SCENARIO_COLORS[1], base: 300, rate: 1.05, curveType: 'linear', enabled: false },
   ]);
   const [showScenarios, setShowScenarios] = useState(false);
 
@@ -165,7 +167,6 @@ export default function GrowthCurveChart({
     analysis: true,
   });
 
-  const t = useTranslations('growthCurve');
 
   // (시나리오/세그먼트 관리는 useScenarios/useSegments 훅으로 분리됨 — 위 114, 103 라인)
 
@@ -334,8 +335,8 @@ export default function GrowthCurveChart({
 
   return (
     <PanelShell
-      title="성장 곡선"
-      subtitle="레벨별 스탯 라인 차트"
+      title={t('titleHeader')}
+      subtitle={t('subtitleHeader')}
       icon={TrendingUp}
       iconColor={PANEL_COLOR}
       onClose={onClose ?? (() => {})}
@@ -534,10 +535,10 @@ export default function GrowthCurveChart({
         <div className="glass-card p-2">
           <div className="flex gap-1">
             {[
-              { mode: 'curve' as ViewMode, icon: TrendingUp, label: '성장 곡선' },
-              { mode: 'growthRate' as ViewMode, icon: Percent, label: '성장률 분석' },
-              { mode: 'xpRequired' as ViewMode, icon: BarChart3, label: 'XP 요구량' },
-              { mode: 'timeProgress' as ViewMode, icon: Timer, label: '시간 예측' },
+              { mode: 'curve' as ViewMode, icon: TrendingUp, label: t('modeCurve') },
+              { mode: 'growthRate' as ViewMode, icon: Percent, label: t('modeGrowthRate') },
+              { mode: 'xpRequired' as ViewMode, icon: BarChart3, label: t('modeXpRequired') },
+              { mode: 'timeProgress' as ViewMode, icon: Timer, label: t('modeTimeProgress') },
             ].map(({ mode, icon: Icon, label }) => (
               <button
                 key={mode}
@@ -601,11 +602,11 @@ export default function GrowthCurveChart({
             <div className="glass-card p-4 space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <BarChart3 className="w-4 h-4" style={{ color: '#e5a440' }} />
-                <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>XP 요구량 설정</h4>
+                <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{t('xpConfigTitle')}</h4>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>기본 XP</label>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('baseXp')}</label>
                   <NumberInput
                     value={xpConfig.baseXP}
                     onChange={(v) => setXpConfig({ ...xpConfig, baseXP: v })}
@@ -613,7 +614,7 @@ export default function GrowthCurveChart({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>지수</label>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('exponent')}</label>
                   <NumberInput
                     value={xpConfig.exponent}
                     onChange={(v) => setXpConfig({ ...xpConfig, exponent: v })}
@@ -621,22 +622,22 @@ export default function GrowthCurveChart({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>공식 타입</label>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('formulaType')}</label>
                   <CustomSelect
                     value={xpConfig.curveType}
                     onChange={(v) => setXpConfig({ ...xpConfig, curveType: v as typeof xpConfig.curveType })}
                     options={[
-                      { value: 'polynomial', label: '다항식 (level^n)' },
-                      { value: 'exponential', label: '지수 (n^level)' },
-                      { value: 'runescape', label: 'RuneScape 스타일' },
+                      { value: 'polynomial', label: t('typePolynomial') },
+                      { value: 'exponential', label: t('typeExponential') },
+                      { value: 'runescape', label: t('typeRunescape') },
                     ]}
                   />
                 </div>
               </div>
               <div className="text-sm p-2 rounded-lg" style={{ background: 'rgba(0,0,0,0.03)', color: 'var(--text-secondary)' }}>
-                {xpConfig.curveType === 'polynomial' && `공식: ${xpConfig.baseXP} × level^${xpConfig.exponent}`}
-                {xpConfig.curveType === 'exponential' && `공식: ${xpConfig.baseXP} × ${xpConfig.exponent}^(level-1)`}
-                {xpConfig.curveType === 'runescape' && '공식: Σ(l + 300 × 2^(l/7)) / 4 (RuneScape 스타일)'}
+                {xpConfig.curveType === 'polynomial' && t('formulaPolyDesc', { base: xpConfig.baseXP, exp: xpConfig.exponent })}
+                {xpConfig.curveType === 'exponential' && t('formulaExpDesc', { base: xpConfig.baseXP, exp: xpConfig.exponent })}
+                {xpConfig.curveType === 'runescape' && t('formulaRunescapeDesc')}
               </div>
             </div>
           )}
@@ -645,11 +646,11 @@ export default function GrowthCurveChart({
             <div className="glass-card p-4 space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <Timer className="w-4 h-4" style={{ color: '#9179f2' }} />
-                <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>시간 예측 설정</h4>
+                <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{t('timeConfigTitle')}</h4>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>시간당 XP</label>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('xpPerHour')}</label>
                   <NumberInput
                     value={timeConfig.xpPerHour}
                     onChange={(v) => setTimeConfig({ ...timeConfig, xpPerHour: v })}
@@ -657,7 +658,7 @@ export default function GrowthCurveChart({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>일일 플레이 시간</label>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('dailyPlayHours')}</label>
                   <NumberInput
                     value={timeConfig.playHoursPerDay}
                     onChange={(v) => setTimeConfig({ ...timeConfig, playHoursPerDay: v })}
@@ -665,7 +666,7 @@ export default function GrowthCurveChart({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>목표 레벨</label>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('targetLevel')}</label>
                   <NumberInput
                     value={timeConfig.targetLevel}
                     onChange={(v) => setTimeConfig({ ...timeConfig, targetLevel: Math.min(v, maxLevel) })}
@@ -678,15 +679,15 @@ export default function GrowthCurveChart({
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   <div className="glass-section p-2 text-center">
                     <div className="text-lg font-bold" style={{ color: '#9179f2' }}>{timeStats.hoursToTarget.toFixed(1)}h</div>
-                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>총 플레이 시간</div>
+                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('totalPlayTime')}</div>
                   </div>
                   <div className="glass-section p-2 text-center">
-                    <div className="text-lg font-bold" style={{ color: '#e5a440' }}>{timeStats.daysToTarget.toFixed(1)}일</div>
-                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>예상 소요 일수</div>
+                    <div className="text-lg font-bold" style={{ color: '#e5a440' }}>{t('daysExpected', { days: timeStats.daysToTarget.toFixed(1) })}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('expectedDays')}</div>
                   </div>
                   <div className="glass-section p-2 text-center">
-                    <div className="text-lg font-bold" style={{ color: '#3db88a' }}>{timeStats.weeksToTarget.toFixed(1)}주</div>
-                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>예상 소요 주수</div>
+                    <div className="text-lg font-bold" style={{ color: '#3db88a' }}>{t('weeksExpected', { weeks: timeStats.weeksToTarget.toFixed(1) })}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('expectedWeeks')}</div>
                   </div>
                 </div>
               )}
@@ -697,20 +698,20 @@ export default function GrowthCurveChart({
             <div className="glass-card p-4 space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <Percent className="w-4 h-4" style={{ color: '#e86161' }} />
-                <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>성장률 분석</h4>
+                <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{t('growthAnalysisTitle')}</h4>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="glass-section p-2 text-center">
                   <div className="text-lg font-bold" style={{ color: '#3db88a' }}>{growthStats.avg.toFixed(1)}%</div>
-                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>평균 성장률</div>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('avgGrowthRate')}</div>
                 </div>
                 <div className="glass-section p-2 text-center">
                   <div className="text-lg font-bold" style={{ color: '#e86161' }}>{growthStats.max.toFixed(1)}%</div>
-                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>최대 성장률</div>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('maxGrowthRate')}</div>
                 </div>
                 <div className="glass-section p-2 text-center">
                   <div className="text-lg font-bold" style={{ color: '#5a9cf5' }}>{growthStats.min.toFixed(1)}%</div>
-                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>최소 성장률</div>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('minGrowthRate')}</div>
                 </div>
               </div>
               {(growthStats.tooFastLevels.length > 0 || growthStats.tooSlowLevels.length > 0) && (
@@ -719,8 +720,8 @@ export default function GrowthCurveChart({
                     <div className="flex items-center gap-2 p-2 rounded-lg" style={{ background: 'rgba(232,97,97,0.1)' }}>
                       <AlertTriangle className="w-4 h-4" style={{ color: '#e86161' }} />
                       <span className="text-sm" style={{ color: '#e86161' }}>
-                        성장률 급등 ({">"}{growthWarnings.tooFast}%): Lv {growthStats.tooFastLevels.slice(0, 5).join(', ')}
-                        {growthStats.tooFastLevels.length > 5 && ` 외 ${growthStats.tooFastLevels.length - 5}개`}
+                        {t('growthSurge', { threshold: growthWarnings.tooFast, levels: growthStats.tooFastLevels.slice(0, 5).join(', ') })}
+                        {growthStats.tooFastLevels.length > 5 && t('growthMore', { n: growthStats.tooFastLevels.length - 5 })}
                       </span>
                     </div>
                   )}
@@ -728,8 +729,8 @@ export default function GrowthCurveChart({
                     <div className="flex items-center gap-2 p-2 rounded-lg" style={{ background: 'rgba(90,156,245,0.1)' }}>
                       <AlertTriangle className="w-4 h-4" style={{ color: '#5a9cf5' }} />
                       <span className="text-sm" style={{ color: '#5a9cf5' }}>
-                        성장률 둔화 ({"<"}{growthWarnings.tooSlow}%): Lv {growthStats.tooSlowLevels.slice(0, 5).join(', ')}
-                        {growthStats.tooSlowLevels.length > 5 && ` 외 ${growthStats.tooSlowLevels.length - 5}개`}
+                        {t('growthSlow', { threshold: growthWarnings.tooSlow, levels: growthStats.tooSlowLevels.slice(0, 5).join(', ') })}
+                        {growthStats.tooSlowLevels.length > 5 && t('growthMore', { n: growthStats.tooSlowLevels.length - 5 })}
                       </span>
                     </div>
                   )}
@@ -835,7 +836,7 @@ export default function GrowthCurveChart({
               >
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full" style={{ backgroundColor: CURVE_COLORS.diminishing }} />
-                  <span className="font-medium" style={{ color: showDiminishing ? CURVE_COLORS.diminishing : 'var(--text-secondary)' }}>수확 체감 (Diminishing)</span>
+                  <span className="font-medium" style={{ color: showDiminishing ? CURVE_COLORS.diminishing : 'var(--text-secondary)' }}>{t('harvestDiminishing')}</span>
                 </div>
                 <ToggleSwitch checked={showDiminishing} color={CURVE_COLORS.diminishing} />
               </button>
@@ -844,7 +845,7 @@ export default function GrowthCurveChart({
                 <div className="glass-section p-3 space-y-3" style={{ borderLeft: `3px solid ${CURVE_COLORS.diminishing}` }}>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>기본값</label>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('baseValue')}</label>
                       <NumberInput
                         value={diminishingConfig.base}
                         onChange={(v) => setDiminishingConfig({ ...diminishingConfig, base: v })}
@@ -852,7 +853,7 @@ export default function GrowthCurveChart({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>레벨당 증가</label>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('perLevelGrowth')}</label>
                       <NumberInput
                         value={diminishingConfig.rate}
                         onChange={(v) => setDiminishingConfig({ ...diminishingConfig, rate: v })}
@@ -860,7 +861,7 @@ export default function GrowthCurveChart({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>소프트캡</label>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('softCap')}</label>
                       <NumberInput
                         value={diminishingConfig.softCap}
                         onChange={(v) => setDiminishingConfig({ ...diminishingConfig, softCap: v })}
@@ -868,7 +869,7 @@ export default function GrowthCurveChart({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>하드캡</label>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('hardCap')}</label>
                       <NumberInput
                         value={diminishingConfig.hardCap}
                         onChange={(v) => setDiminishingConfig({ ...diminishingConfig, hardCap: v })}
@@ -877,7 +878,7 @@ export default function GrowthCurveChart({
                     </div>
                   </div>
                   <div className="text-sm p-2 rounded-lg" style={{ background: 'rgba(0,0,0,0.03)', color: 'var(--text-secondary)' }}>
-                    소프트캡({diminishingConfig.softCap}) 이후 성장 감소, 하드캡({diminishingConfig.hardCap})에서 정지. 방어력/저항 스탯에 적합.
+                    {t('diminishingHelp', { soft: diminishingConfig.softCap, hard: diminishingConfig.hardCap })}
                   </div>
                 </div>
               )}
@@ -900,7 +901,7 @@ export default function GrowthCurveChart({
               >
                 <div className="flex items-center gap-2">
                   <Copy className="w-4 h-4" style={{ color: showScenarios ? PANEL_COLOR : 'var(--text-secondary)' }} />
-                  <span className="font-medium" style={{ color: showScenarios ? PANEL_COLOR : 'var(--text-secondary)' }}>다중 시나리오 비교</span>
+                  <span className="font-medium" style={{ color: showScenarios ? PANEL_COLOR : 'var(--text-secondary)' }}>{t('multiScenario')}</span>
                 </div>
                 <ToggleSwitch checked={showScenarios} color={PANEL_COLOR} />
               </button>
@@ -947,7 +948,7 @@ export default function GrowthCurveChart({
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>기본값</label>
+                          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>{t('baseValue')}</label>
                           <NumberInput
                             value={scenario.base}
                             onChange={(v) => updateScenario(scenario.id, { base: v })}
@@ -955,7 +956,7 @@ export default function GrowthCurveChart({
                           />
                         </div>
                         <div>
-                          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>성장률</label>
+                          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>{t('scRate')}</label>
                           <NumberInput
                             value={scenario.rate}
                             onChange={(v) => updateScenario(scenario.id, { rate: v })}
@@ -963,14 +964,14 @@ export default function GrowthCurveChart({
                           />
                         </div>
                         <div>
-                          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>타입</label>
+                          <label className="block text-label mb-1" style={{ color: 'var(--text-secondary)' }}>{t('scType')}</label>
                           <CustomSelect
                             value={scenario.curveType}
                             onChange={(v) => updateScenario(scenario.id, { curveType: v as CurveType })}
                             options={[
-                              { value: 'linear', label: '선형' },
-                              { value: 'exponential', label: '지수' },
-                              { value: 'logarithmic', label: '로그' },
+                              { value: 'linear', label: t('typeLinear') },
+                              { value: 'exponential', label: t('typeExp') },
+                              { value: 'logarithmic', label: t('typeLog') },
                             ]}
                           />
                         </div>
@@ -983,7 +984,7 @@ export default function GrowthCurveChart({
                     style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
                   >
                     <Plus className="w-4 h-4" />
-                    시나리오 추가
+                    {t('addScenario')}
                   </button>
                 </div>
               )}
@@ -1158,7 +1159,7 @@ export default function GrowthCurveChart({
             >
               <div className="flex items-center gap-2">
                 <Target className="w-4 h-4" style={{ color: showGoalSolver ? '#e5a440' : 'var(--text-secondary)' }} />
-                <span className="font-medium" style={{ color: showGoalSolver ? '#e5a440' : 'var(--text-secondary)' }}>목표 역계산</span>
+                <span className="font-medium" style={{ color: showGoalSolver ? '#e5a440' : 'var(--text-secondary)' }}>{t('goalReverse')}</span>
               </div>
               <ToggleSwitch checked={showGoalSolver} color="#e5a440" />
             </button>
@@ -1167,7 +1168,7 @@ export default function GrowthCurveChart({
               <div className="glass-section p-3 space-y-3" style={{ borderLeft: '3px solid #e5a440' }}>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>목표 레벨</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{t('targetLevel')}</label>
                     <NumberInput
                       value={goalSolverConfig.targetLevel}
                       onChange={(v) => setGoalSolverConfig({ ...goalSolverConfig, targetLevel: v })}
@@ -1175,7 +1176,7 @@ export default function GrowthCurveChart({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>목표값</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{t('goalTarget')}</label>
                     <NumberInput
                       value={goalSolverConfig.targetValue}
                       onChange={(v) => setGoalSolverConfig({ ...goalSolverConfig, targetValue: v })}
@@ -1183,32 +1184,32 @@ export default function GrowthCurveChart({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>구하기</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{t('goalSolveFor')}</label>
                     <CustomSelect
                       value={goalSolverConfig.solveFor}
                       onChange={(v) => setGoalSolverConfig({ ...goalSolverConfig, solveFor: v as typeof goalSolverConfig.solveFor })}
                       options={[
-                        { value: 'rate', label: '성장률 (Rate)' },
-                        { value: 'base', label: '기본값 (Base)' },
-                        { value: 'level', label: '레벨 (Level)' },
+                        { value: 'rate', label: t('goalRate') },
+                        { value: 'base', label: t('goalBase') },
+                        { value: 'level', label: t('goalLevelLabel') },
                       ]}
                     />
                   </div>
                 </div>
                 <div className="p-2 rounded-lg" style={{ background: 'rgba(229,164,64,0.1)' }}>
-                  <div className="text-sm font-medium mb-1" style={{ color: '#e5a440' }}>계산 결과:</div>
+                  <div className="text-sm font-medium mb-1" style={{ color: '#e5a440' }}>{t('calcResult')}</div>
                   <div className="text-sm" style={{ color: 'var(--text-primary)' }}>
                     {(() => {
                       const result = solveGoal();
                       if ('linear' in result) {
                         return (
                           <>
-                            <div>선형: Rate = <strong>{result.linear}</strong></div>
-                            <div>지수: Rate = <strong>{result.exponential}</strong></div>
+                            <div>{t('resultLinear')}<strong>{result.linear}</strong></div>
+                            <div>{t('resultExp')}<strong>{result.exponential}</strong></div>
                           </>
                         );
                       } else if ('level' in result) {
-                        return <div>도달 레벨: <strong>Lv.{result.level}</strong></div>;
+                        return <div>{t('reachedLevel')}<strong>Lv.{result.level}</strong></div>;
                       }
                       return null;
                     })()}
@@ -1237,33 +1238,33 @@ export default function GrowthCurveChart({
                   <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} tickFormatter={(v) => v.toLocaleString()} />
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} tickFormatter={(v) => v.toLocaleString()} />
                   <Tooltip
-                    formatter={(value: number, name: string) => [value.toLocaleString(), name === 'xpRequired' ? '레벨업 XP' : '누적 XP']}
+                    formatter={(value: number, name: string) => [value.toLocaleString(), name === 'xpRequired' ? t('axisLevelUpXp') : t('axisCumXp')]}
                     contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '12px' }}
                   />
                   <Legend />
-                  <Bar yAxisId="left" dataKey="xpRequired" name="레벨업 XP" fill="#e5a440" opacity={0.8} />
-                  <Line yAxisId="right" type="monotone" dataKey="cumulativeXP" name="누적 XP" stroke="#9179f2" strokeWidth={2} dot={false} />
+                  <Bar yAxisId="left" dataKey="xpRequired" name={t('axisLevelUpXp')} fill="#e5a440" opacity={0.8} />
+                  <Line yAxisId="right" type="monotone" dataKey="cumulativeXP" name={t('axisCumXp')} stroke="#9179f2" strokeWidth={2} dot={false} />
                 </ComposedChart>
               ) : viewMode === 'timeProgress' ? (
                 <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
                   <XAxis dataKey="level" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} />
-                  <YAxis tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} tickFormatter={(v) => `${v.toFixed(1)}일`} />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} tickFormatter={(v) => t('axisDays', { days: v.toFixed(1) })} />
                   <Tooltip
                     formatter={(value: number, name: string) => [
-                      name === 'daysToReach' ? `${value.toFixed(1)}일` : `${value.toFixed(1)}시간`,
-                      name === 'daysToReach' ? '소요 일수' : '소요 시간'
+                      name === 'daysToReach' ? t('axisDaysReachVal', { days: value.toFixed(1) }) : t('axisHoursReachVal', { hours: value.toFixed(1) }),
+                      name === 'daysToReach' ? t('axisDaysReach') : t('axisHoursReach')
                     ]}
                     contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '12px' }}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="daysToReach" name="소요 일수" stroke="#9179f2" strokeWidth={2} dot={false} />
-                  <ReferenceLine y={7} stroke="#e86161" strokeDasharray="3 3" label={{ value: '1주', fill: '#e86161', fontSize: 10 }} />
-                  <ReferenceLine y={30} stroke="#e5a440" strokeDasharray="3 3" label={{ value: '1개월', fill: '#e5a440', fontSize: 10 }} />
-                  <ReferenceLine y={90} stroke="#3db88a" strokeDasharray="3 3" label={{ value: '3개월', fill: '#3db88a', fontSize: 10 }} />
-                  <ReferenceLine y={180} stroke="#5a9cf5" strokeDasharray="3 3" label={{ value: '6개월', fill: '#5a9cf5', fontSize: 10 }} />
-                  <ReferenceLine y={365} stroke="#9179f2" strokeDasharray="3 3" label={{ value: '1년', fill: '#9179f2', fontSize: 10 }} />
-                  <ReferenceLine y={1095} stroke="#e87aa8" strokeDasharray="3 3" label={{ value: '3년', fill: '#e87aa8', fontSize: 10 }} />
+                  <Line type="monotone" dataKey="daysToReach" name={t('axisDaysReach')} stroke="#9179f2" strokeWidth={2} dot={false} />
+                  <ReferenceLine y={7} stroke="#e86161" strokeDasharray="3 3" label={{ value: t('ref1Week'), fill: '#e86161', fontSize: 10 }} />
+                  <ReferenceLine y={30} stroke="#e5a440" strokeDasharray="3 3" label={{ value: t('ref1Month'), fill: '#e5a440', fontSize: 10 }} />
+                  <ReferenceLine y={90} stroke="#3db88a" strokeDasharray="3 3" label={{ value: t('ref3Months'), fill: '#3db88a', fontSize: 10 }} />
+                  <ReferenceLine y={180} stroke="#5a9cf5" strokeDasharray="3 3" label={{ value: t('ref6Months'), fill: '#5a9cf5', fontSize: 10 }} />
+                  <ReferenceLine y={365} stroke="#9179f2" strokeDasharray="3 3" label={{ value: t('ref1Year'), fill: '#9179f2', fontSize: 10 }} />
+                  <ReferenceLine y={1095} stroke="#e87aa8" strokeDasharray="3 3" label={{ value: t('ref3Years'), fill: '#e87aa8', fontSize: 10 }} />
                 </LineChart>
               ) : (
                 <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -1275,7 +1276,7 @@ export default function GrowthCurveChart({
                   />
                   <YAxis
                     domain={['dataMin', 'dataMax']}
-                    label={{ value: viewMode === 'growthRate' ? '%' : '값', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)' }}
+                    label={{ value: viewMode === 'growthRate' ? t('yLabelPercent') : t('yLabelValue'), angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)' }}
                     tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
                     tickFormatter={(value) => viewMode === 'growthRate' ? `${value.toFixed(0)}%` : value.toLocaleString()}
                   />
@@ -1307,7 +1308,7 @@ export default function GrowthCurveChart({
                     <Line type="monotone" dataKey="segmented" name={t('segmentedCurve')} stroke={CURVE_COLORS.segmented} dot={false} strokeWidth={2.5} />
                   )}
                   {viewMode === 'curve' && showDiminishing && (
-                    <Line type="monotone" dataKey="diminishing" name="수확 체감" stroke={CURVE_COLORS.diminishing} dot={false} strokeWidth={2} />
+                    <Line type="monotone" dataKey="diminishing" name={t('harvestDiminishing')} stroke={CURVE_COLORS.diminishing} dot={false} strokeWidth={2} />
                   )}
                   {viewMode === 'curve' && showScenarios && scenarios.filter(s => s.enabled).map(scenario => (
                     <Line
@@ -1339,22 +1340,22 @@ export default function GrowthCurveChart({
                     <ReferenceLine y={diminishingConfig.hardCap} stroke={CURVE_COLORS.diminishing} strokeDasharray="6 3" strokeOpacity={0.7} />
                   )}
                   {viewMode === 'growthRate' && (
-                    <Line type="monotone" dataKey="linear" name="선형 성장률" stroke={CURVE_COLORS.linear} dot={false} strokeWidth={2} />
+                    <Line type="monotone" dataKey="linear" name={t('growthLinear')} stroke={CURVE_COLORS.linear} dot={false} strokeWidth={2} />
                   )}
                   {viewMode === 'growthRate' && (
-                    <Line type="monotone" dataKey="exponential" name="지수 성장률" stroke={CURVE_COLORS.exponential} dot={false} strokeWidth={2} />
+                    <Line type="monotone" dataKey="exponential" name={t('growthExp')} stroke={CURVE_COLORS.exponential} dot={false} strokeWidth={2} />
                   )}
                   {viewMode === 'growthRate' && (
-                    <Line type="monotone" dataKey="logarithmic" name="로그 성장률" stroke={CURVE_COLORS.logarithmic} dot={false} strokeWidth={2} />
+                    <Line type="monotone" dataKey="logarithmic" name={t('growthLog')} stroke={CURVE_COLORS.logarithmic} dot={false} strokeWidth={2} />
                   )}
                   {viewMode === 'growthRate' && (
-                    <Line type="monotone" dataKey="quadratic" name="2차 성장률" stroke={CURVE_COLORS.quadratic} dot={false} strokeWidth={2} />
+                    <Line type="monotone" dataKey="quadratic" name={t('growthQuad')} stroke={CURVE_COLORS.quadratic} dot={false} strokeWidth={2} />
                   )}
                   {viewMode === 'growthRate' && (
-                    <ReferenceLine y={growthWarnings.tooFast} stroke="#e86161" strokeDasharray="3 3" label={{ value: '급성장', fill: '#e86161', fontSize: 10 }} />
+                    <ReferenceLine y={growthWarnings.tooFast} stroke="#e86161" strokeDasharray="3 3" label={{ value: t('refSurge'), fill: '#e86161', fontSize: 10 }} />
                   )}
                   {viewMode === 'growthRate' && (
-                    <ReferenceLine y={growthWarnings.tooSlow} stroke="#5a9cf5" strokeDasharray="3 3" label={{ value: '둔화', fill: '#5a9cf5', fontSize: 10 }} />
+                    <ReferenceLine y={growthWarnings.tooSlow} stroke="#5a9cf5" strokeDasharray="3 3" label={{ value: t('refSlow'), fill: '#5a9cf5', fontSize: 10 }} />
                   )}
                 </LineChart>
               )}
@@ -1386,15 +1387,15 @@ export default function GrowthCurveChart({
                   <div>
                     <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>
                       {viewMode === 'curve' && t('graphTitle')}
-                      {viewMode === 'growthRate' && '성장률 분석'}
-                      {viewMode === 'xpRequired' && 'XP 요구량 차트'}
-                      {viewMode === 'timeProgress' && '시간 기반 진행 예측'}
+                      {viewMode === 'growthRate' && t('growthAnalysisTitle')}
+                      {viewMode === 'xpRequired' && t('headerXpChart')}
+                      {viewMode === 'timeProgress' && t('headerTimeProgress')}
                     </h3>
                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      {viewMode === 'curve' && '레벨별 스탯 성장 추이'}
-                      {viewMode === 'growthRate' && '레벨별 성장률(%) 변화'}
-                      {viewMode === 'xpRequired' && '레벨업에 필요한 경험치량'}
-                      {viewMode === 'timeProgress' && '목표 레벨까지 예상 소요 시간'}
+                      {viewMode === 'curve' && t('subCurve')}
+                      {viewMode === 'growthRate' && t('subGrowthRate')}
+                      {viewMode === 'xpRequired' && t('subXpRequired')}
+                      {viewMode === 'timeProgress' && t('subTimeProgress')}
                     </p>
                   </div>
                 </div>
@@ -1408,56 +1409,56 @@ export default function GrowthCurveChart({
                     <ComposedChart data={chartData} margin={{ top: 20, right: 60, left: 40, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
                       <XAxis dataKey="level" tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} label={{ value: t('levelUnit'), position: 'insideBottomRight', offset: -10, fill: 'var(--text-secondary)', fontSize: 14 }} />
-                      <YAxis yAxisId="left" tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} tickFormatter={(v) => v.toLocaleString()} label={{ value: '레벨업 XP', angle: -90, position: 'insideLeft', fill: '#e5a440', fontSize: 14 }} />
-                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} tickFormatter={(v) => v.toLocaleString()} label={{ value: '누적 XP', angle: 90, position: 'insideRight', fill: '#9179f2', fontSize: 14 }} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} tickFormatter={(v) => v.toLocaleString()} label={{ value: t('axisLevelUpXp'), angle: -90, position: 'insideLeft', fill: '#e5a440', fontSize: 14 }} />
+                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} tickFormatter={(v) => v.toLocaleString()} label={{ value: t('cumXpFull'), angle: 90, position: 'insideRight', fill: '#9179f2', fontSize: 14 }} />
                       <Tooltip
-                        formatter={(value: number, name: string) => [value.toLocaleString(), name === 'xpRequired' ? '레벨업 XP' : '누적 XP']}
+                        formatter={(value: number, name: string) => [value.toLocaleString(), name === 'xpRequired' ? t('axisLevelUpXp') : t('axisCumXp')]}
                         contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '12px', fontSize: 14 }}
                       />
                       <Legend wrapperStyle={{ fontSize: 14 }} />
-                      <Bar yAxisId="left" dataKey="xpRequired" name="레벨업 XP" fill="#e5a440" opacity={0.8} />
-                      <Line yAxisId="right" type="monotone" dataKey="cumulativeXP" name="누적 XP" stroke="#9179f2" strokeWidth={3} dot={false} />
+                      <Bar yAxisId="left" dataKey="xpRequired" name={t('axisLevelUpXp')} fill="#e5a440" opacity={0.8} />
+                      <Line yAxisId="right" type="monotone" dataKey="cumulativeXP" name={t('axisCumXp')} stroke="#9179f2" strokeWidth={3} dot={false} />
                     </ComposedChart>
                   ) : viewMode === 'timeProgress' ? (
                     <LineChart data={chartData} margin={{ top: 20, right: 40, left: 40, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
                       <XAxis dataKey="level" tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} label={{ value: t('levelUnit'), position: 'insideBottomRight', offset: -10, fill: 'var(--text-secondary)', fontSize: 14 }} />
-                      <YAxis tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} tickFormatter={(v) => `${v.toFixed(1)}일`} label={{ value: '소요 일수', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)', fontSize: 14 }} />
+                      <YAxis tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} tickFormatter={(v) => t('axisDays', { days: v.toFixed(1) })} label={{ value: t('axisDaysReach'), angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)', fontSize: 14 }} />
                       <Tooltip
                         formatter={(value: number, name: string) => [
-                          name === 'daysToReach' ? `${value.toFixed(1)}일` : `${value.toFixed(1)}시간`,
-                          name === 'daysToReach' ? '소요 일수' : '소요 시간'
+                          name === 'daysToReach' ? t('axisDaysReachVal', { days: value.toFixed(1) }) : t('axisHoursReachVal', { hours: value.toFixed(1) }),
+                          name === 'daysToReach' ? t('axisDaysReach') : t('axisHoursReach')
                         ]}
                         contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '12px', fontSize: 14 }}
                       />
                       <Legend wrapperStyle={{ fontSize: 14 }} />
-                      <Line type="monotone" dataKey="daysToReach" name="소요 일수" stroke="#9179f2" strokeWidth={3} dot={false} />
-                      <ReferenceLine y={7} stroke="#e86161" strokeDasharray="3 3" label={{ value: '1주', fill: '#e86161', fontSize: 11 }} />
-                      <ReferenceLine y={30} stroke="#e5a440" strokeDasharray="3 3" label={{ value: '1개월', fill: '#e5a440', fontSize: 11 }} />
-                      <ReferenceLine y={90} stroke="#3db88a" strokeDasharray="3 3" label={{ value: '3개월', fill: '#3db88a', fontSize: 11 }} />
-                      <ReferenceLine y={180} stroke="#5a9cf5" strokeDasharray="3 3" label={{ value: '6개월', fill: '#5a9cf5', fontSize: 11 }} />
-                      <ReferenceLine y={365} stroke="#9179f2" strokeDasharray="3 3" label={{ value: '1년', fill: '#9179f2', fontSize: 11 }} />
-                      <ReferenceLine y={1095} stroke="#e87aa8" strokeDasharray="3 3" label={{ value: '3년', fill: '#e87aa8', fontSize: 11 }} />
-                      <ReferenceLine y={90} stroke="#3db88a" strokeDasharray="3 3" label={{ value: '3개월', fill: '#3db88a', fontSize: 12 }} />
+                      <Line type="monotone" dataKey="daysToReach" name={t('axisDaysReach')} stroke="#9179f2" strokeWidth={3} dot={false} />
+                      <ReferenceLine y={7} stroke="#e86161" strokeDasharray="3 3" label={{ value: t('ref1Week'), fill: '#e86161', fontSize: 11 }} />
+                      <ReferenceLine y={30} stroke="#e5a440" strokeDasharray="3 3" label={{ value: t('ref1Month'), fill: '#e5a440', fontSize: 11 }} />
+                      <ReferenceLine y={90} stroke="#3db88a" strokeDasharray="3 3" label={{ value: t('ref3Months'), fill: '#3db88a', fontSize: 11 }} />
+                      <ReferenceLine y={180} stroke="#5a9cf5" strokeDasharray="3 3" label={{ value: t('ref6Months'), fill: '#5a9cf5', fontSize: 11 }} />
+                      <ReferenceLine y={365} stroke="#9179f2" strokeDasharray="3 3" label={{ value: t('ref1Year'), fill: '#9179f2', fontSize: 11 }} />
+                      <ReferenceLine y={1095} stroke="#e87aa8" strokeDasharray="3 3" label={{ value: t('ref3Years'), fill: '#e87aa8', fontSize: 11 }} />
+                      <ReferenceLine y={90} stroke="#3db88a" strokeDasharray="3 3" label={{ value: t('ref3Months'), fill: '#3db88a', fontSize: 12 }} />
                     </LineChart>
                   ) : viewMode === 'growthRate' ? (
                     <LineChart data={chartData} margin={{ top: 20, right: 40, left: 40, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
                       <XAxis dataKey="level" tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} label={{ value: t('levelUnit'), position: 'insideBottomRight', offset: -10, fill: 'var(--text-secondary)', fontSize: 14 }} />
-                      <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} tickFormatter={(v) => `${v.toFixed(0)}%`} label={{ value: '성장률 (%)', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)', fontSize: 14 }} />
+                      <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} tickFormatter={(v) => `${v.toFixed(0)}%`} label={{ value: t('growthRatePercent'), angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)', fontSize: 14 }} />
                       <Tooltip
                         formatter={(value: number, name: string) => [`${value.toFixed(2)}%`, name]}
                         labelFormatter={(label) => `${t('levelUnit')} ${label}`}
                         contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '12px', fontSize: 14 }}
                       />
                       <Legend wrapperStyle={{ fontSize: 14 }} />
-                      <Line type="monotone" dataKey="linear" name="선형 성장률" stroke={CURVE_COLORS.linear} dot={false} strokeWidth={3} />
-                      <Line type="monotone" dataKey="exponential" name="지수 성장률" stroke={CURVE_COLORS.exponential} dot={false} strokeWidth={3} />
-                      <Line type="monotone" dataKey="logarithmic" name="로그 성장률" stroke={CURVE_COLORS.logarithmic} dot={false} strokeWidth={3} />
-                      <Line type="monotone" dataKey="quadratic" name="2차 성장률" stroke={CURVE_COLORS.quadratic} dot={false} strokeWidth={3} />
-                      <ReferenceLine y={growthWarnings.tooFast} stroke="#e86161" strokeDasharray="3 3" label={{ value: '급성장 경고', fill: '#e86161', fontSize: 12 }} />
-                      <ReferenceLine y={growthWarnings.tooSlow} stroke="#5a9cf5" strokeDasharray="3 3" label={{ value: '둔화 경고', fill: '#5a9cf5', fontSize: 12 }} />
-                      <ReferenceLine y={10} stroke="#3db88a" strokeDasharray="6 3" strokeOpacity={0.5} label={{ value: '적정 (10%)', fill: '#3db88a', fontSize: 11 }} />
+                      <Line type="monotone" dataKey="linear" name={t('growthLinear')} stroke={CURVE_COLORS.linear} dot={false} strokeWidth={3} />
+                      <Line type="monotone" dataKey="exponential" name={t('growthExp')} stroke={CURVE_COLORS.exponential} dot={false} strokeWidth={3} />
+                      <Line type="monotone" dataKey="logarithmic" name={t('growthLog')} stroke={CURVE_COLORS.logarithmic} dot={false} strokeWidth={3} />
+                      <Line type="monotone" dataKey="quadratic" name={t('growthQuad')} stroke={CURVE_COLORS.quadratic} dot={false} strokeWidth={3} />
+                      <ReferenceLine y={growthWarnings.tooFast} stroke="#e86161" strokeDasharray="3 3" label={{ value: t('refSurgeWarn'), fill: '#e86161', fontSize: 12 }} />
+                      <ReferenceLine y={growthWarnings.tooSlow} stroke="#5a9cf5" strokeDasharray="3 3" label={{ value: t('refSlowWarn'), fill: '#5a9cf5', fontSize: 12 }} />
+                      <ReferenceLine y={10} stroke="#3db88a" strokeDasharray="6 3" strokeOpacity={0.5} label={{ value: t('refOptimal'), fill: '#3db88a', fontSize: 11 }} />
                     </LineChart>
                   ) : (
                     <LineChart data={chartData} margin={{ top: 20, right: 40, left: 40, bottom: 20 }}>
@@ -1469,7 +1470,7 @@ export default function GrowthCurveChart({
                       />
                       <YAxis
                         domain={['dataMin', 'dataMax']}
-                        label={{ value: '값', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)', fontSize: 14 }}
+                        label={{ value: t('yLabelValue'), angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)', fontSize: 14 }}
                         tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
                         tickFormatter={(value) => value.toLocaleString()}
                       />
@@ -1490,13 +1491,13 @@ export default function GrowthCurveChart({
                         <Line type="monotone" dataKey="segmented" name={t('segmentedCurve')} stroke={CURVE_COLORS.segmented} dot={false} strokeWidth={3} />
                       )}
                       {showDiminishing && (
-                        <Line type="monotone" dataKey="diminishing" name="수확 체감" stroke={CURVE_COLORS.diminishing} dot={false} strokeWidth={3} />
+                        <Line type="monotone" dataKey="diminishing" name={t('harvestDiminishing')} stroke={CURVE_COLORS.diminishing} dot={false} strokeWidth={3} />
                       )}
                       {showDiminishing && (
-                        <ReferenceLine y={diminishingConfig.softCap} stroke={CURVE_COLORS.diminishing} strokeDasharray="3 3" strokeOpacity={0.7} label={{ value: '소프트캡', fill: CURVE_COLORS.diminishing, fontSize: 12 }} />
+                        <ReferenceLine y={diminishingConfig.softCap} stroke={CURVE_COLORS.diminishing} strokeDasharray="3 3" strokeOpacity={0.7} label={{ value: t('softCapLabel'), fill: CURVE_COLORS.diminishing, fontSize: 12 }} />
                       )}
                       {showDiminishing && (
-                        <ReferenceLine y={diminishingConfig.hardCap} stroke={CURVE_COLORS.diminishing} strokeDasharray="6 3" strokeOpacity={0.7} label={{ value: '하드캡', fill: CURVE_COLORS.diminishing, fontSize: 12 }} />
+                        <ReferenceLine y={diminishingConfig.hardCap} stroke={CURVE_COLORS.diminishing} strokeDasharray="6 3" strokeOpacity={0.7} label={{ value: t('hardCapLabel'), fill: CURVE_COLORS.diminishing, fontSize: 12 }} />
                       )}
                       {showScenarios && scenarios.filter(s => s.enabled).map(scenario => (
                         <Line
@@ -1518,7 +1519,7 @@ export default function GrowthCurveChart({
                             stroke={CURVE_COLORS.segmented}
                             strokeDasharray="3 3"
                             strokeOpacity={0.5}
-                            label={{ value: `구간${idx + 1}`, fill: CURVE_COLORS.segmented, fontSize: 11 }}
+                            label={{ value: t('segmentLabel', { n: idx + 1 }), fill: CURVE_COLORS.segmented, fontSize: 11 }}
                           />
                         ) : null
                       ))}
@@ -1531,29 +1532,29 @@ export default function GrowthCurveChart({
                 <div className="glass-section p-3 flex flex-wrap gap-4 justify-center text-sm">
                   {viewMode === 'curve' && (
                     <>
-                      <span style={{ color: 'var(--text-secondary)' }}>최대 레벨: <strong style={{ color: 'var(--text-primary)' }}>{maxLevel}</strong></span>
-                      <span style={{ color: 'var(--text-secondary)' }}>기본값: <strong style={{ color: 'var(--text-primary)' }}>{base.toLocaleString()}</strong></span>
-                      <span style={{ color: 'var(--text-secondary)' }}>성장률: <strong style={{ color: 'var(--text-primary)' }}>{rate}</strong></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('footMaxLevel')}<strong style={{ color: 'var(--text-primary)' }}>{maxLevel}</strong></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('footBase')}<strong style={{ color: 'var(--text-primary)' }}>{base.toLocaleString()}</strong></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('footRate')}<strong style={{ color: 'var(--text-primary)' }}>{rate}</strong></span>
                     </>
                   )}
                   {viewMode === 'growthRate' && growthStats && (
                     <>
-                      <span style={{ color: 'var(--text-secondary)' }}>평균 성장률: <strong style={{ color: '#3db88a' }}>{growthStats.avg.toFixed(1)}%</strong></span>
-                      <span style={{ color: 'var(--text-secondary)' }}>최대: <strong style={{ color: '#e86161' }}>{growthStats.max.toFixed(1)}%</strong></span>
-                      <span style={{ color: 'var(--text-secondary)' }}>최소: <strong style={{ color: '#5a9cf5' }}>{growthStats.min.toFixed(1)}%</strong></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('footAvg')}<strong style={{ color: '#3db88a' }}>{growthStats.avg.toFixed(1)}%</strong></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('footMax')}<strong style={{ color: '#e86161' }}>{growthStats.max.toFixed(1)}%</strong></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('footMin')}<strong style={{ color: '#5a9cf5' }}>{growthStats.min.toFixed(1)}%</strong></span>
                     </>
                   )}
                   {viewMode === 'xpRequired' && (
                     <>
-                      <span style={{ color: 'var(--text-secondary)' }}>공식: <strong style={{ color: '#e5a440' }}>{xpConfig.curveType === 'polynomial' ? `${xpConfig.baseXP} × level^${xpConfig.exponent}` : xpConfig.curveType === 'exponential' ? `${xpConfig.baseXP} × ${xpConfig.exponent}^level` : 'RuneScape'}</strong></span>
-                      <span style={{ color: 'var(--text-secondary)' }}>Lv{maxLevel} 누적 XP: <strong style={{ color: '#9179f2' }}>{chartData[chartData.length - 1]?.cumulativeXP?.toLocaleString() || 0}</strong></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('footFormula')}<strong style={{ color: '#e5a440' }}>{xpConfig.curveType === 'polynomial' ? `${xpConfig.baseXP} × level^${xpConfig.exponent}` : xpConfig.curveType === 'exponential' ? `${xpConfig.baseXP} × ${xpConfig.exponent}^level` : 'RuneScape'}</strong></span>
+                      <span style={{ color: 'var(--text-secondary)' }}><strong style={{ color: '#9179f2' }}>{chartData[chartData.length - 1]?.cumulativeXP?.toLocaleString() || 0}</strong></span>
                     </>
                   )}
                   {viewMode === 'timeProgress' && timeStats && (
                     <>
-                      <span style={{ color: 'var(--text-secondary)' }}>목표 Lv{timeConfig.targetLevel}: <strong style={{ color: '#9179f2' }}>{timeStats.daysToTarget.toFixed(1)}일</strong></span>
-                      <span style={{ color: 'var(--text-secondary)' }}>시간당 XP: <strong style={{ color: '#e5a440' }}>{timeConfig.xpPerHour.toLocaleString()}</strong></span>
-                      <span style={{ color: 'var(--text-secondary)' }}>일일 플레이: <strong style={{ color: '#3db88a' }}>{timeConfig.playHoursPerDay}시간</strong></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('footTargetLvCustom', { level: timeConfig.targetLevel })}<strong style={{ color: '#9179f2' }}>{t('daysExpected', { days: timeStats.daysToTarget.toFixed(1) })}</strong></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('footXpPerHour')}<strong style={{ color: '#e5a440' }}>{timeConfig.xpPerHour.toLocaleString()}</strong></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('footDailyPlay')}<strong style={{ color: '#3db88a' }}>{t('footHoursUnit', { hours: timeConfig.playHoursPerDay })}</strong></span>
                     </>
                   )}
                 </div>
@@ -1595,7 +1596,7 @@ export default function GrowthCurveChart({
                 <PreviewCard color={CURVE_COLORS.segmented} label={t('segmentedCurve')} value={previewValues.segmented} />
               )}
               {showDiminishing && previewValues.diminishing !== null && (
-                <PreviewCard color={CURVE_COLORS.diminishing} label="수확 체감" value={previewValues.diminishing} />
+                <PreviewCard color={CURVE_COLORS.diminishing} label={t('harvestDiminishing')} value={previewValues.diminishing} />
               )}
             </div>
           </div>

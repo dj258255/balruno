@@ -15,6 +15,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { CheckCircle2, Circle, X, ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 
 const DISMISS_KEY = 'balruno:getting-started-dismissed';
@@ -43,6 +44,7 @@ function writeManual(value: ManualChecks) {
 }
 
 export function GettingStartedChecklist() {
+  const t = useTranslations('gettingStarted');
   const projects = useProjectStore((s) => s.projects);
 
   const [dismissed, setDismissed] = useState(false);
@@ -88,11 +90,11 @@ export function GettingStartedChecklist() {
   );
 
   const steps = [
-    { id: 'project', label: '첫 프로젝트 만들기', done: hasProject, hint: '샘플 카드에서 바로 시작 가능' },
-    { id: 'formula', label: '수식 컬럼 추가', done: hasFormulaColumn, hint: '컬럼 헤더 → + 아이콘 → formula 타입' },
-    { id: 'view', label: 'Kanban / Gantt 뷰 전환', done: hasViewSwitch, hint: '시트 상단 View 스위처' },
-    { id: 'sim', label: '시뮬 한 번 돌려보기', done: manual.sim, hint: '우측 도구 → Monte Carlo / Goal Solver', manual: true as const },
-    { id: 'export', label: 'Unity / JSON Export', done: manual.export, hint: '시트 상단 메뉴 → Export', manual: true as const },
+    { id: 'project', label: t('step1Label'), done: hasProject, hint: t('step1Hint') },
+    { id: 'formula', label: t('step2Label'), done: hasFormulaColumn, hint: t('step2Hint') },
+    { id: 'view', label: t('step3Label'), done: hasViewSwitch, hint: t('step3Hint') },
+    { id: 'sim', label: t('step4Label'), done: manual.sim, hint: t('step4Hint'), manual: true as const },
+    { id: 'export', label: t('step5Label'), done: manual.export, hint: t('step5Hint'), manual: true as const },
   ];
 
   const doneCount = steps.filter((s) => s.done).length;
@@ -113,8 +115,8 @@ export function GettingStartedChecklist() {
         type="button"
         onClick={dismiss}
         className="absolute top-2 right-2 p-1 rounded hover:bg-[var(--bg-hover)]"
-        aria-label="닫기"
-        title="영구 숨김"
+        aria-label={t('dismiss')}
+        title={t('dismissTooltip')}
       >
         <X className="w-3.5 h-3.5" style={{ color: 'var(--text-tertiary)' }} />
       </button>
@@ -122,14 +124,14 @@ export function GettingStartedChecklist() {
       <div className="flex items-baseline justify-between gap-4 mb-3 pr-8">
         <div>
           <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            시작 가이드
+            {t('title')}
           </h3>
           <p className="text-caption mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-            5 단계로 기본 기능 체험
+            {t('subtitle')}
           </p>
         </div>
         <div className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>
-          {doneCount}/{steps.length} · {pct}%
+          {t('progress', { done: doneCount, total: steps.length, pct })}
         </div>
       </div>
 
@@ -165,7 +167,7 @@ export function GettingStartedChecklist() {
                 style={{
                   cursor: clickable ? 'pointer' : 'default',
                 }}
-                title={clickable ? '수동 체크' : '자동 감지'}
+                title={clickable ? t('manual') : t('auto')}
               >
                 <Icon
                   className="w-4 h-4"

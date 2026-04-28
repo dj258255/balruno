@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 interface LevelRangeSelectorProps {
   levelRange: { min: number; max: number };
   onRangeChange: (range: { min: number; max: number }) => void;
@@ -66,6 +68,7 @@ export default function LevelRangeSelector({
   onRangeChange,
   maxLimit = 200,
 }: LevelRangeSelectorProps) {
+  const t = useTranslations('entityDefinition');
   // 슬라이더 진행률 계산
   const progress = ((levelRange.max - 10) / (maxLimit - 10)) * 100;
 
@@ -74,13 +77,13 @@ export default function LevelRangeSelector({
       <style>{sliderStyles}</style>
 
       <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-        레벨 범위
+        {t('levelRange')}
       </div>
 
       <div className="flex items-center gap-3">
         <div className="flex-1">
           <label className="text-xs mb-1 block" style={{ color: 'var(--text-tertiary)' }}>
-            시작 레벨
+            {t('startLevel')}
           </label>
           <input
             type="number"
@@ -106,7 +109,7 @@ export default function LevelRangeSelector({
 
         <div className="flex-1">
           <label className="text-xs mb-1 block" style={{ color: 'var(--text-tertiary)' }}>
-            최대 레벨
+            {t('maxLevel')}
           </label>
           <input
             type="number"
@@ -148,7 +151,7 @@ export default function LevelRangeSelector({
         <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
           <span>10</span>
           <span style={{ color: 'var(--primary-purple)', fontWeight: 500 }}>
-            총 {levelRange.max - levelRange.min + 1}개 행 생성
+            {t('totalRows', { count: levelRange.max - levelRange.min + 1 })}
           </span>
           <span>{maxLimit}</span>
         </div>
@@ -169,7 +172,7 @@ export default function LevelRangeSelector({
                 color: isActive ? 'white' : 'var(--text-primary)',
               }}
             >
-              1~{preset}
+              {t('rangeBtn', { max: preset })}
             </button>
           );
         })}

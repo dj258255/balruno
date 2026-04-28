@@ -2,6 +2,7 @@
 
 import { Plus, X } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { CurveType } from '@/types';
 import CustomSelect, { type SelectOption } from '@/components/ui/CustomSelect';
 
@@ -19,14 +20,6 @@ interface StatDefinitionEditorProps {
   onChange: (stats: StatDefinition[]) => void;
 }
 
-const CURVE_OPTIONS: SelectOption[] = [
-  { value: 'linear', label: '선형', description: '일정한 증가' },
-  { value: 'exponential', label: '지수', description: '점점 빠르게' },
-  { value: 'logarithmic', label: '로그', description: '점점 느리게' },
-  { value: 'quadratic', label: '2차', description: '가속 증가' },
-  { value: 'scurve', label: 'S-커브', description: '초반↓ 중반↑ 후반↓' },
-];
-
 const DEFAULT_GROWTH_RATES: Record<CurveType, number> = {
   linear: 10,
   exponential: 1.08,
@@ -40,6 +33,14 @@ export default function StatDefinitionEditor({
   availableColumns,
   onChange,
 }: StatDefinitionEditorProps) {
+  const t = useTranslations('entityDefinition');
+  const CURVE_OPTIONS: SelectOption[] = [
+    { value: 'linear', label: t('curveLinear'), description: t('curveLinearDesc') },
+    { value: 'exponential', label: t('curveExp'), description: t('curveExpDesc') },
+    { value: 'logarithmic', label: t('curveLog'), description: t('curveLogDesc') },
+    { value: 'quadratic', label: t('curveQuad'), description: t('curveQuadDesc') },
+    { value: 'scurve', label: t('curveS'), description: t('curveSDesc') },
+  ];
   const [isAdding, setIsAdding] = useState(false);
   const [newStatName, setNewStatName] = useState('');
 
@@ -84,7 +85,7 @@ export default function StatDefinitionEditor({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-          스탯 정의
+          {t('statDefHeading')}
         </div>
         <button
           onClick={() => setIsAdding(true)}
@@ -95,7 +96,7 @@ export default function StatDefinitionEditor({
           }}
         >
           <Plus className="w-3 h-3" />
-          스탯 추가
+          {t('addStat')}
         </button>
       </div>
 
@@ -109,7 +110,7 @@ export default function StatDefinitionEditor({
             type="text"
             value={newStatName}
             onChange={(e) => setNewStatName(e.target.value.toUpperCase())}
-            placeholder="스탯명 (예: SPD, CRIT)"
+            placeholder={t('newStatPlaceholder')}
             className="flex-1 input-base"
             style={{
               background: 'var(--bg-primary)',
@@ -127,7 +128,7 @@ export default function StatDefinitionEditor({
             className="px-3 py-1.5 rounded text-xs font-medium"
             style={{ background: 'var(--primary-purple)', color: 'white' }}
           >
-            추가
+            {t('add')}
           </button>
           <button
             onClick={() => setIsAdding(false)}
@@ -145,7 +146,7 @@ export default function StatDefinitionEditor({
           className="p-4 rounded-lg text-center text-sm"
           style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}
         >
-          정의된 스탯이 없습니다. 스탯을 추가해주세요.
+          {t('emptyStat')}
         </div>
       ) : (
         <div className="space-y-2">
@@ -172,16 +173,16 @@ export default function StatDefinitionEditor({
                 {/* 소스 컬럼 */}
                 <div>
                   <label className="text-xs block mb-1" style={{ color: 'var(--text-tertiary)' }}>
-                    소스 컬럼
+                    {t('sourceColumn')}
                   </label>
                   <CustomSelect
                     value={stat.sourceColumn}
                     onChange={(value) => updateStat(index, { sourceColumn: value })}
                     options={[
-                      { value: '', label: '선택...' },
+                      { value: '', label: t('selectPlaceholder') },
                       ...availableColumns.map((col) => ({ value: col, label: col })),
                     ]}
-                    placeholder="선택..."
+                    placeholder={t('selectPlaceholder')}
                     size="sm"
                     color="#5a9cf5"
                   />
@@ -190,7 +191,7 @@ export default function StatDefinitionEditor({
                 {/* 곡선 타입 */}
                 <div>
                   <label className="text-xs block mb-1" style={{ color: 'var(--text-tertiary)' }}>
-                    성장 곡선
+                    {t('growthCurve')}
                   </label>
                   <CustomSelect
                     value={stat.curveType}
@@ -204,7 +205,7 @@ export default function StatDefinitionEditor({
                 {/* 성장률 */}
                 <div>
                   <label className="text-xs block mb-1" style={{ color: 'var(--text-tertiary)' }}>
-                    성장률
+                    {t('growthRate')}
                   </label>
                   <input
                     type="number"
@@ -223,7 +224,7 @@ export default function StatDefinitionEditor({
                 {/* Export 필드명 */}
                 <div>
                   <label className="text-xs block mb-1" style={{ color: 'var(--text-tertiary)' }}>
-                    Export명
+                    {t('exportName')}
                   </label>
                   <input
                     type="text"
@@ -246,7 +247,7 @@ export default function StatDefinitionEditor({
 
       {/* 안내 */}
       <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-        소스 컬럼은 시트에서 기본값(레벨 1)을 가져올 컬럼입니다. Export명이 비어있으면 스탯명이 사용됩니다.
+        {t('statDefHelp')}
       </p>
     </div>
   );

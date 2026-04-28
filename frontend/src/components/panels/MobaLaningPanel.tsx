@@ -20,12 +20,14 @@ import {
   type LaneChampion,
   type LaneSimConfig,
 } from '@/lib/mobaLaning';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
 }
 
 export default function MobaLaningPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [blue, setBlue] = useState<LaneChampion>(CHAMPION_PRESETS[0]);
   const [red, setRed] = useState<LaneChampion>(CHAMPION_PRESETS[1]);
   const [duration, setDuration] = useState(840); // 14 min
@@ -51,16 +53,16 @@ export default function MobaLaningPanel({ onClose }: Props) {
 
   const domScore = Math.round(result.laneDominanceScore);
   const domColor = domScore > 20 ? '#3b82f6' : domScore < -20 ? '#ef4444' : '#6b7280';
-  const domLabel = domScore > 40 ? '블루 압승'
-    : domScore > 15 ? '블루 우세'
-    : domScore < -40 ? '레드 압승'
-    : domScore < -15 ? '레드 우세'
-    : '호각';
+  const domLabel = domScore > 40 ? t('mobaLaning.blueDominant')
+    : domScore > 15 ? t('mobaLaning.blueAdvantage')
+    : domScore < -40 ? t('mobaLaning.redDominant')
+    : domScore < -15 ? t('mobaLaning.redAdvantage')
+    : t('mobaLaning.evenLabel');
 
   return (
     <PanelShell
-      title="MOBA 라인전 시뮬"
-      subtitle="LoL/Dota · CS/gold/XP 곡선 · 올인 승률"
+      title={t('mobaLaning.titleHeader')}
+      subtitle={t('mobaLaning.subtitleHeader')}
       icon={Swords}
       iconColor="#3b82f6"
       onClose={onClose}
@@ -68,8 +70,8 @@ export default function MobaLaningPanel({ onClose }: Props) {
     >
       {/* 챔피언 선택 */}
       <div className="grid grid-cols-2 gap-2">
-        <ChampCard champ={blue} setChamp={setBlue} label="블루" color="#3b82f6" />
-        <ChampCard champ={red}  setChamp={setRed}  label="레드" color="#ef4444" />
+        <ChampCard champ={blue} setChamp={setBlue} label={t('mobaLaning.blueLabel')} color="#3b82f6" />
+        <ChampCard champ={red}  setChamp={setRed}  label={t('mobaLaning.redLabel')} color="#ef4444" />
       </div>
 
       {/* 라인 설정 */}
@@ -91,7 +93,7 @@ export default function MobaLaningPanel({ onClose }: Props) {
         </div>
         <div className="flex items-center gap-2 flex-1">
           <span className="text-label" style={{ color: 'var(--text-secondary)' }}>
-            시뮬 시간
+            {t('mobaLaning.simTime')}
           </span>
           <input
             type="range"
@@ -139,22 +141,22 @@ export default function MobaLaningPanel({ onClose }: Props) {
 
       {/* 주요 지표 */}
       <div className="grid grid-cols-4 gap-2">
-        <Stat label="골드 리드" value={`${result.finalGoldDiff > 0 ? '+' : ''}${Math.round(result.finalGoldDiff)}`} sub="blue 기준" color="#f59e0b" icon={Coins} />
-        <Stat label="경험치 리드" value={`${result.finalXpDiff > 0 ? '+' : ''}${Math.round(result.finalXpDiff)}`} sub={`Lv ${result.finalLevelDiff > 0 ? '+' : ''}${result.finalLevelDiff}`} color="#8b5cf6" icon={Trophy} />
-        <Stat label="올인 승률" value={`${Math.round(result.blueAllInWinRate * 100)}%`} sub="blue 올인" color="#ef4444" icon={Swords} />
-        <Stat label="1코어 타이밍" value={`${Math.round(result.blueTimeToFirstItem / 60 * 10) / 10}분`} sub={`Red ${Math.round(result.redTimeToFirstItem / 60 * 10) / 10}분`} color="#10b981" icon={Clock} />
+        <Stat label={t('mobaLaning.goldLead')} value={`${result.finalGoldDiff > 0 ? '+' : ''}${Math.round(result.finalGoldDiff)}`} sub={t('mobaLaning.goldLeadSub')} color="#f59e0b" icon={Coins} />
+        <Stat label={t('mobaLaning.xpLead')} value={`${result.finalXpDiff > 0 ? '+' : ''}${Math.round(result.finalXpDiff)}`} sub={`Lv ${result.finalLevelDiff > 0 ? '+' : ''}${result.finalLevelDiff}`} color="#8b5cf6" icon={Trophy} />
+        <Stat label={t('mobaLaning.allInWinrate')} value={`${Math.round(result.blueAllInWinRate * 100)}%`} sub={t('mobaLaning.allInWinrateSub')} color="#ef4444" icon={Swords} />
+        <Stat label={t('mobaLaning.firstItemTiming')} value={t('mobaLaning.minutesShort', { n: Math.round(result.blueTimeToFirstItem / 60 * 10) / 10 })} sub={`Red ${t('mobaLaning.minutesShort', { n: Math.round(result.redTimeToFirstItem / 60 * 10) / 10 })}`} color="#10b981" icon={Clock} />
       </div>
 
       {/* Gold 곡선 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          골드 곡선 (분)
+          {t('mobaLaning.goldCurve')}
         </div>
         <div className="h-56">
           <ResponsiveContainer>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
-              <XAxis dataKey="minute" tick={{ fontSize: 10 }} label={{ value: '분', position: 'insideBottomRight', offset: -5, fontSize: 10 }} />
+              <XAxis dataKey="minute" tick={{ fontSize: 10 }} label={{ value: t('mobaLaning.minuteAxis'), position: 'insideBottomRight', offset: -5, fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} />
               <Tooltip />
               <Legend wrapperStyle={{ fontSize: 10 }} />
@@ -168,7 +170,7 @@ export default function MobaLaningPanel({ onClose }: Props) {
       {/* CS 곡선 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          CS 곡선 — 라인 farm 효율
+          {t('mobaLaning.csCurve')}
         </div>
         <div className="h-40">
           <ResponsiveContainer>
@@ -186,7 +188,7 @@ export default function MobaLaningPanel({ onClose }: Props) {
       </div>
 
       <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        LoL 2024 미니언 값 (melee 21g, caster 14g, cannon 58g · time growth 2%/min) 기준. 올인 승률은 현재 레벨 + DPS race.
+        {t('mobaLaning.lolMinionNote')}
       </p>
     </PanelShell>
   );
@@ -200,6 +202,7 @@ function ChampCard({
   label: string;
   color: string;
 }) {
+  const t = useTranslations();
   const update = <K extends keyof LaneChampion>(key: K, value: LaneChampion[K]) =>
     setChamp({ ...champ, [key]: value });
   const loadPreset = (id: string) => {
@@ -227,13 +230,13 @@ function ChampCard({
         <NumField label="HP+/Lv" value={champ.hpPerLevel} step={1} onChange={(v) => update('hpPerLevel', v)} />
         <NumField label="AD" value={champ.baseAd} onChange={(v) => update('baseAd', v)} />
         <NumField label="AD+/Lv" value={champ.adPerLevel} step={0.1} onChange={(v) => update('adPerLevel', v)} />
-        <NumField label="스킬 dmg" value={champ.abilityDamage} onChange={(v) => update('abilityDamage', v)} />
-        <NumField label="스킬 CD" value={champ.abilityCooldown} onChange={(v) => update('abilityCooldown', v)} />
+        <NumField label={t('mobaLaning.abilityDmg')} value={champ.abilityDamage} onChange={(v) => update('abilityDamage', v)} />
+        <NumField label={t('mobaLaning.abilityCd')} value={champ.abilityCooldown} onChange={(v) => update('abilityCooldown', v)} />
       </div>
 
-      <SliderRow label="CS 실력" value={champ.csSkill}        onChange={(v) => update('csSkill', v)} />
-      <SliderRow label="공격성"   value={champ.aggression}     onChange={(v) => update('aggression', v)} />
-      <SliderRow label="올인 성향" value={champ.allInTendency} onChange={(v) => update('allInTendency', v)} />
+      <SliderRow label={t('mobaLaning.csSkill')} value={champ.csSkill} onChange={(v) => update('csSkill', v)} />
+      <SliderRow label={t('mobaLaning.aggression')} value={champ.aggression} onChange={(v) => update('aggression', v)} />
+      <SliderRow label={t('mobaLaning.allInTendency')} value={champ.allInTendency} onChange={(v) => update('allInTendency', v)} />
     </div>
   );
 }

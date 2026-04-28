@@ -12,6 +12,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { FileText, type LucideIcon } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 
 // emoji-mart 는 꽤 큰 번들이므로 dynamic — 피커 열 때만 로드
 const Picker = dynamic(
@@ -51,6 +52,7 @@ export default function DocIconPicker({
   fallbackIcon: FallbackIcon = FileText,
   fallbackColor = 'var(--text-secondary)',
 }: Props) {
+  const t = useTranslations('docs');
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -122,8 +124,8 @@ export default function DocIconPicker({
         }}
         className={`inline-flex items-center justify-center rounded hover:bg-[var(--bg-hover)] transition-colors ${sizeCls}`}
         style={{ lineHeight: 1, verticalAlign: 'middle', ...buttonStyle }}
-        title="아이콘 변경"
-        aria-label="문서 아이콘 변경"
+        title={t('iconChange')}
+        aria-label={t('iconChangeAria')}
       >
         {icon ? (
           <span
@@ -179,6 +181,8 @@ function EmojiPickerInner({
   onSelect: (emoji: string) => void;
   onRemove?: () => void;
 }) {
+  const t = useTranslations('docs');
+  const locale = useLocale();
   const [data, setData] = useState<unknown | null>(null);
 
   useEffect(() => {
@@ -195,7 +199,7 @@ function EmojiPickerInner({
           color: 'var(--text-tertiary)',
         }}
       >
-        이모지 로딩...
+        {t('emojiLoading')}
       </div>
     );
   }
@@ -208,7 +212,7 @@ function EmojiPickerInner({
       <Picker
         data={data}
         onEmojiSelect={(e: { native: string }) => onSelect(e.native)}
-        locale="ko"
+        locale={locale === 'ko' ? 'ko' : 'en'}
         previewPosition="none"
         skinTonePosition="none"
         theme="auto"
@@ -224,7 +228,7 @@ function EmojiPickerInner({
             background: 'var(--bg-primary)',
           }}
         >
-          아이콘 제거 (기본값으로 복원)
+          {t('removeIcon')}
         </button>
       )}
     </div>

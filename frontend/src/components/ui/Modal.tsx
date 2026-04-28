@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 interface ModalProps {
@@ -35,6 +36,7 @@ export default function Modal({
   closeOnEscape = true,
   className = '',
 }: ModalProps) {
+  const t = useTranslations('ui');
   useEscapeKey(onClose, closeOnEscape && isOpen);
 
   useEffect(() => {
@@ -83,7 +85,7 @@ export default function Modal({
                 onClick={onClose}
                 className="p-1.5 sm:p-1 rounded-lg hover:bg-gray-500/20 transition-colors"
                 style={{ color: 'var(--text-secondary)' }}
-                aria-label="모달 닫기"
+                aria-label={t('closeModal')}
               >
                 <X className="w-5 h-5" />
               </button>

@@ -14,12 +14,15 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronRight, X, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
-import { STARTER_CATALOG, COMMON_STEPS, type CoachmarkStep } from '@/lib/starterPack';
+import { STARTER_CATALOG, COMMON_STEPS_KEY, COMMON_STEPS_COUNT, getStepKeys } from '@/lib/starterPack';
 
 const stepKey = (starterId: string) => `balruno:coachmark-step:${starterId}`;
 
 export default function StarterCoachmark() {
+  const t = useTranslations('onboarding');
+  const tStarter = useTranslations('starterPack');
   const currentProject = useProjectStore((s) =>
     s.projects.find((p) => p.id === s.currentProjectId),
   );
@@ -29,12 +32,12 @@ export default function StarterCoachmark() {
     () => (starterId ? STARTER_CATALOG.find((e) => e.id === starterId) : null),
     [starterId],
   );
-  const steps: CoachmarkStep[] = entry?.coachmarkSteps ?? COMMON_STEPS;
+  const stepCount = entry?.stepCount ?? COMMON_STEPS_COUNT;
+  const stepsRoot = entry?.stepsI18nKey ?? entry?.i18nKey ?? COMMON_STEPS_KEY;
 
   const [step, setStep] = useState(0);
   const [show, setShow] = useState(false);
 
-  // starterId 변경 시 그 starter 의 진행 상태 복원
   useEffect(() => {
     if (typeof window === 'undefined' || !starterId) {
       setShow(false);
@@ -45,10 +48,10 @@ export default function StarterCoachmark() {
       setShow(false);
       return;
     }
-    const startAt = stored ? Math.max(0, Math.min(steps.length - 1, parseInt(stored, 10) || 0)) : 0;
+    const startAt = stored ? Math.max(0, Math.min(stepCount - 1, parseInt(stored, 10) || 0)) : 0;
     setStep(startAt);
     setShow(true);
-  }, [starterId, steps.length]);
+  }, [starterId, stepCount]);
 
   // step 변경 시 persist
   useEffect(() => {
@@ -66,14 +69,15 @@ export default function StarterCoachmark() {
   };
 
   const next = () => {
-    if (step < steps.length - 1) setStep(step + 1);
+    if (step < stepCount - 1) setStep(step + 1);
     else close();
   };
 
   if (!show || !entry) return null;
-  const cur = steps[step];
-  const isLast = step === steps.length - 1;
+  const { titleKey, bodyKey, actionKey } = getStepKeys(stepsRoot, step);
+  const isLast = step === stepCount - 1;
   const Icon = entry.icon;
+  const entryLabel = tStarter(`${entry.i18nKey}.label`);
 
   return (
     <div
@@ -83,14 +87,13 @@ export default function StarterCoachmark() {
         borderColor: entry.color,
       }}
       role="dialog"
-      aria-label={`${entry.label} 가이드`}
+      aria-label={t('coachmarkAriaLabel', { name: entryLabel })}
     >
-      {/* Progress bar */}
       <div className="h-1" style={{ background: 'var(--bg-tertiary)' }}>
         <div
           className="h-full transition-all duration-300"
           style={{
-            width: `${((step + 1) / steps.length) * 100}%`,
+            width: `${((step + 1) / stepCount) * 100}%`,
             background: entry.color,
           }}
         />
@@ -106,26 +109,25 @@ export default function StarterCoachmark() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            {cur.title}
+            {tStarter(titleKey)}
           </div>
           <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-            {entry.label} · 단계 {step + 1} / {steps.length}
+            {t('coachmarkStepInfo', { label: entryLabel, current: step + 1, total: stepCount })}
           </div>
         </div>
         <button
           type="button"
           onClick={close}
           className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors"
-          aria-label="가이드 닫기"
+          aria-label={t('coachmarkClose')}
         >
           <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
         </button>
       </div>
 
-      {/* Body */}
       <div className="p-3 space-y-2">
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {cur.body}
+          {tStarter(bodyKey)}
         </p>
         <div
           className="text-caption px-2 py-1.5 rounded-md font-mono"
@@ -135,7 +137,7 @@ export default function StarterCoachmark() {
             borderLeft: `3px solid ${entry.color}`,
           }}
         >
-          → {cur.action}
+          → {tStarter(actionKey)}
         </div>
       </div>
 
@@ -151,7 +153,7 @@ export default function StarterCoachmark() {
           className="text-caption px-2 py-1 rounded transition-colors disabled:opacity-30 hover:bg-[var(--bg-hover)]"
           style={{ color: 'var(--text-secondary)' }}
         >
-          이전
+          {t('prev')}
         </button>
         <button
           type="button"
@@ -161,11 +163,11 @@ export default function StarterCoachmark() {
         >
           {isLast ? (
             <>
-              <Check className="w-3 h-3" /> 완료
+              <Check className="w-3 h-3" /> {t('done')}
             </>
           ) : (
             <>
-              다음 <ChevronRight className="w-3 h-3" />
+              {t('next')} <ChevronRight className="w-3 h-3" />
             </>
           )}
         </button>

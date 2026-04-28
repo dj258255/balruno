@@ -9,6 +9,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Plus, ChevronDown, ChevronRight, Trash2, Sparkles, Edit2, Copy } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { DOC_TEMPLATES } from '@/lib/docTemplates';
 import DocIconPicker from '@/components/docs/DocIconPicker';
@@ -19,6 +20,7 @@ interface SidebarDocsSectionProps {
 }
 
 export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSectionProps) {
+  const t = useTranslations('docs');
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
   const project = useProjectStore((s) =>
     s.projects.find((p) => p.id === currentProjectId)
@@ -69,7 +71,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
 
   const handleCreate = () => {
     if (!currentProjectId) return;
-    const id = createDoc(currentProjectId, '새 문서', '');
+    const id = createDoc(currentProjectId, t('newDocDefault'), '');
     setCurrentSheet(null);
     setCurrentDoc(id);
   };
@@ -94,7 +96,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
 
   const handleDelete = (e: React.MouseEvent, docId: string, name: string) => {
     e.stopPropagation();
-    if (window.confirm(`"${name}" 문서를 삭제할까요?`)) {
+    if (window.confirm(t('deleteShortConfirm', { name }))) {
       deleteDoc(project.id, docId);
     }
   };
@@ -115,7 +117,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
         style={{ color: 'var(--text-tertiary)' }}
       >
         {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        문서
+        {t('docsHeading')}
         <span className="ml-auto text-caption opacity-60">{docs.length}</span>
       </button>
 
@@ -129,12 +131,12 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                 style={{ color: 'var(--accent)' }}
               >
                 <Plus className="w-3.5 h-3.5" />
-                새 문서
+                {t('newDoc')}
               </button>
               <button
                 onClick={() => setShowTemplates((v) => !v)}
                 className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs hover:bg-[var(--bg-hover)] transition-colors"
-                title="템플릿으로 시작"
+                title={t('templateStartTooltip')}
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <Sparkles className="w-3 h-3" />
@@ -146,7 +148,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                 style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-primary)' }}
               >
                 <div className="px-2 py-1.5 text-overline border-b" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
-                  GDD 장르
+                  {t('templateGalleryGenre')}
                 </div>
                 {DOC_TEMPLATES.filter((t) => t.category === 'genre').map((t) => (
                   <button
@@ -160,7 +162,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                   </button>
                 ))}
                 <div className="px-2 py-1.5 text-overline border-b border-t" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }}>
-                  시스템
+                  {t('templateGallerySystem')}
                 </div>
                 {DOC_TEMPLATES.filter((t) => t.category !== 'genre').map((t) => (
                   <button
@@ -179,7 +181,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
 
           {docs.length === 0 ? (
             <p className="text-caption italic px-2 py-1.5" style={{ color: 'var(--text-tertiary)' }}>
-              GDD · 설계안 · 릴리스 노트를 여기에.
+              {t('emptyDescription')}
             </p>
           ) : (
             <div className="space-y-0.5">
@@ -221,13 +223,13 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                       size="sm"
                       className="flex-shrink-0"
                     />
-                    <span className="flex-1 truncate">{d.name || '(제목 없음)'}</span>
+                    <span className="flex-1 truncate">{d.name || t('noTitlePlaceholder')}</span>
                     <span
                       role="button"
                       tabIndex={0}
                       onClick={(e) => handleDelete(e, d.id, d.name)}
                       className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[var(--bg-primary)]"
-                      aria-label="문서 삭제"
+                      aria-label={t('delete')}
                     >
                       <Trash2 className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
                     </span>
@@ -254,7 +256,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
           <button
             type="button"
             onClick={() => {
-              const next = window.prompt('문서 이름', docCtxMenu.docName);
+              const next = window.prompt(t('renamePromptLabel'), docCtxMenu.docName);
               if (next && next.trim() && currentProjectId) {
                 updateDoc(currentProjectId, docCtxMenu.docId, { name: next.trim() });
               }
@@ -264,7 +266,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
             style={{ color: 'var(--text-primary)' }}
           >
             <Edit2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-            이름 변경
+            {t('rename')}
           </button>
           <button
             type="button"
@@ -274,7 +276,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                 return;
               }
               const source = project?.docs?.find((x) => x.id === docCtxMenu.docId);
-              const copyName = `${docCtxMenu.docName || '문서'} (사본)`;
+              const copyName = t('copyOf', { name: docCtxMenu.docName || t('docsHeading') });
               const newId = createDoc(currentProjectId, copyName, source?.content ?? '');
               setCurrentSheet(null);
               setCurrentDoc(newId);
@@ -284,7 +286,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
             style={{ color: 'var(--text-primary)' }}
           >
             <Copy className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-            복제
+            {t('duplicate')}
           </button>
           <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />
           <button
@@ -299,7 +301,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
             style={{ color: 'var(--danger)' }}
           >
             <Trash2 className="w-4 h-4" />
-            삭제
+            {t('ctxDelete')}
           </button>
         </div>
       )}

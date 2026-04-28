@@ -26,6 +26,7 @@ function StatField({
   color: string;
   step?: string;
 }) {
+  const t = useTranslations();
   const [inputValue, setInputValue] = useState(String(value));
   const [isHovered, setIsHovered] = useState(false);
   const { startCellSelection, cellSelectionMode } = useProjectStore();
@@ -72,7 +73,7 @@ function StatField({
           style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
         />
         {isHovered && !cellSelectionMode.active && (
-          <Tooltip content="셀에서 선택" position="top">
+          <Tooltip content={t('teamUnitModal.cellSelect')} position="top">
             <button
               onClick={handleCellSelect}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
@@ -100,7 +101,8 @@ function SkillRow({
   onChange: (v: number) => void;
   color: string;
 }) {
-  const tier = value < 30 ? '초보' : value < 50 ? '평균↓' : value < 70 ? '평균' : value < 85 ? '숙련' : '전문가';
+  const t = useTranslations();
+  const tier = value < 30 ? t('teamUnitModal.tierBeginner') : value < 50 ? t('teamUnitModal.tierBelowAvg') : value < 70 ? t('teamUnitModal.tierAvg') : value < 85 ? t('teamUnitModal.tierSkilled') : t('teamUnitModal.tierExpert');
   return (
     <div className="p-2 rounded-md" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}>
       <div className="flex items-center justify-between gap-2 mb-1">
@@ -200,7 +202,7 @@ export function TeamUnitModal({
   units,
   onLoadFromSheet
 }: TeamUnitModalProps) {
-  const t = useTranslations('simulation');
+  const t = useTranslations();
   const tCommon = useTranslations('common');
 
   const defaultUnit: UnitWithSkills = {
@@ -247,7 +249,7 @@ export function TeamUnitModal({
         {/* 헤더 */}
         <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ background: `${color}15`, borderBottom: `2px solid ${color}` }}>
           <h3 className="font-semibold" style={{ color }}>
-            {unit ? t('edit') || '유닛 편집' : t('newUnit') || '새 유닛 추가'} (Team {teamNumber})
+            {unit ? t('teamUnitModal.editUnit') : t('teamUnitModal.newUnit')} (Team {teamNumber})
           </h3>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--bg-tertiary)]">
             <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
@@ -285,14 +287,14 @@ export function TeamUnitModal({
 
           {/* 이름 */}
           <div>
-            <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{t('colName') || '이름'}</label>
+            <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{t('teamUnitModal.colName')}</label>
             <input
               type="text"
               value={editUnit.name}
               onChange={(e) => setEditUnit(prev => ({ ...prev, name: e.target.value }))}
               className="w-full input-base"
               style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
-              placeholder="유닛 이름"
+              placeholder={t('teamUnitModal.unitNamePlaceholder')}
             />
           </div>
 
@@ -332,31 +334,31 @@ export function TeamUnitModal({
           {/* 선택적 스탯 */}
           <details className="group">
             <summary className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
-              고급 옵션 (크리티컬, 명중, 회피)
+              {t('teamUnitModal.advancedOptions')}
             </summary>
             <div className="grid grid-cols-2 gap-2 mt-2">
               <OptionalStatInput
-                label={`${t('colCritRate') || '크리율'} %`}
+                label={`${t('teamUnitModal.colCritRate' as 'teamUnitModal.tierBeginner') || 'Crit'} %`}
                 value={editUnit.critRate}
                 onChange={(v) => setEditUnit(prev => ({ ...prev, critRate: v }))}
                 multiplier={100}
                 placeholder="0"
               />
               <OptionalStatInput
-                label={`${t('colCritDmg') || '크리뎀'} x`}
+                label={`${t('teamUnitModal.colCritDmg' as 'teamUnitModal.tierBeginner') || 'Crit dmg'} x`}
                 value={editUnit.critDamage}
                 onChange={(v) => setEditUnit(prev => ({ ...prev, critDamage: v }))}
                 placeholder="1.5"
               />
               <OptionalStatInput
-                label="명중 %"
+                label={t('teamUnitModal.hitRate')}
                 value={editUnit.accuracy}
                 onChange={(v) => setEditUnit(prev => ({ ...prev, accuracy: v }))}
                 multiplier={100}
                 placeholder="100"
               />
               <OptionalStatInput
-                label="회피 %"
+                label={t('teamUnitModal.evasion')}
                 value={editUnit.evasion}
                 onChange={(v) => setEditUnit(prev => ({ ...prev, evasion: v }))}
                 multiplier={100}
@@ -368,26 +370,26 @@ export function TeamUnitModal({
           {/* 조종자 실력 (Composite Skill) */}
           <details className="group">
             <summary className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
-              조종자 실력 (에임 · 반응 · 판단)
+              {t('teamUnitModal.pilotSkill')}
             </summary>
             <div className="space-y-2 mt-2">
               <SkillRow
-                label="에임"
-                description="명중/크리 보정"
+                label={t('teamUnitModal.aim')}
+                description={t('teamUnitModal.aimDesc')}
                 value={editUnit.aimSkill ?? 50}
                 onChange={(v) => setEditUnit(prev => ({ ...prev, aimSkill: v }))}
                 color="#e86161"
               />
               <SkillRow
-                label="반응"
-                description="회피/선공 보정"
+                label={t('teamUnitModal.reaction')}
+                description={t('teamUnitModal.reactionDesc')}
                 value={editUnit.reactionSkill ?? 50}
                 onChange={(v) => setEditUnit(prev => ({ ...prev, reactionSkill: v }))}
                 color="#5a9cf5"
               />
               <SkillRow
-                label="판단"
-                description="포커스 fire · 스킬 선택"
+                label={t('teamUnitModal.decision')}
+                description={t('teamUnitModal.decisionDesc')}
                 value={editUnit.decisionSkill ?? 50}
                 onChange={(v) => setEditUnit(prev => ({ ...prev, decisionSkill: v }))}
                 color="#9179f2"

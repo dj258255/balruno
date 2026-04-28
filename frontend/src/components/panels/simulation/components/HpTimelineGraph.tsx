@@ -2,6 +2,7 @@
 
 import { useState, useRef, useMemo } from 'react';
 import { Maximize2, X, ZoomIn, ZoomOut, Skull, Sword, Heart, Shield, RotateCcw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface BattleLogEntry {
   time: number;
@@ -52,6 +53,7 @@ function HpGraph({
   showTooltip?: boolean;
   zoomLevel?: number;
 }) {
+  const t = useTranslations('simulation');
   // 여백 (%) - 끝부분이 잘리지 않도록
   const paddingX = 2;
   const paddingTop = 4;
@@ -231,7 +233,7 @@ function HpGraph({
               left: `${unit1Death.x}%`,
               top: `${unit1Death.y}%`,
             }}
-            title={`${unit1Name} 사망 (${unit1Death.time.toFixed(1)}s)`}
+            title={t('unit1Death', { name: unit1Name, time: unit1Death.time.toFixed(1) })}
           >
             <Skull className="w-3 h-3" style={{ color: 'var(--primary-blue)', filter: 'drop-shadow(0 0 2px var(--primary-blue))' }} />
           </div>
@@ -243,7 +245,7 @@ function HpGraph({
               left: `${unit2Death.x}%`,
               top: `${unit2Death.y}%`,
             }}
-            title={`${unit2Name} 사망 (${unit2Death.time.toFixed(1)}s)`}
+            title={t('unit1Death', { name: unit2Name, time: unit2Death.time.toFixed(1) })}
           >
             <Skull className="w-3 h-3" style={{ color: 'var(--primary-red)', filter: 'drop-shadow(0 0 2px var(--primary-red))' }} />
           </div>
@@ -325,6 +327,7 @@ export function HpTimelineGraph({
   unit1MaxHp,
   unit2MaxHp
 }: HpTimelineGraphProps) {
+  const t = useTranslations('simulation');
   const [hoveredPoint, setHoveredPoint] = useState<{ time: number; unit1Hp: number; unit2Hp: number } | null>(null);
   const [modalHoveredPoint, setModalHoveredPoint] = useState<{ time: number; unit1Hp: number; unit2Hp: number } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -429,7 +432,7 @@ export function HpTimelineGraph({
             }}
             className="absolute top-2 right-2 p-1.5 rounded-md transition-colors hover:bg-[var(--bg-hover)]"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}
-            title="전체화면"
+            title={t('fullscreen')}
           >
             <Maximize2 className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
           </button>
@@ -451,11 +454,11 @@ export function HpTimelineGraph({
               <>
                 <span className="flex items-center gap-0.5">
                   <Sword className="w-3 h-3" style={{ color: '#e5a440' }} />
-                  <span className="text-xs">스킬</span>
+                  <span className="text-xs">{t('skill')}</span>
                 </span>
                 <span className="flex items-center gap-0.5">
                   <Heart className="w-3 h-3" style={{ color: '#3db88a' }} />
-                  <span className="text-xs">힐</span>
+                  <span className="text-xs">{t('heal')}</span>
                 </span>
               </>
             )}
@@ -480,7 +483,7 @@ export function HpTimelineGraph({
             {/* 모달 헤더 */}
             <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border-primary)' }}>
               <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-                HP 변화 그래프
+                {t('hpTimeline')}
               </h3>
               <div className="flex items-center gap-2">
                 {/* 줌 컨트롤 */}
@@ -490,7 +493,7 @@ export function HpTimelineGraph({
                     disabled={zoomLevel <= 1}
                     className="p-1.5 rounded-md transition-colors hover:bg-[var(--bg-hover)] disabled:opacity-40"
                     style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}
-                    title="축소"
+                    title={t('zoomOut')}
                   >
                     <ZoomOut className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
                   </button>
@@ -502,7 +505,7 @@ export function HpTimelineGraph({
                     disabled={zoomLevel >= 5}
                     className="p-1.5 rounded-md transition-colors hover:bg-[var(--bg-hover)] disabled:opacity-40"
                     style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}
-                    title="확대"
+                    title={t('zoomIn')}
                   >
                     <ZoomIn className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
                   </button>
@@ -559,19 +562,19 @@ export function HpTimelineGraph({
                   <>
                     <span className="flex items-center gap-1">
                       <Sword className="w-3 h-3" style={{ color: '#e5a440' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>스킬</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('skill')}</span>
                     </span>
                     <span className="flex items-center gap-1">
                       <Heart className="w-3 h-3" style={{ color: '#3db88a' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>힐</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('heal')}</span>
                     </span>
                     <span className="flex items-center gap-1">
                       <Shield className="w-3 h-3" style={{ color: '#5a9cf5' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>무적</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('invincibleLegend')}</span>
                     </span>
                     <span className="flex items-center gap-1">
                       <RotateCcw className="w-3 h-3" style={{ color: '#a896f5' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>부활</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('reviveLegend')}</span>
                     </span>
                   </>
                 )}
@@ -580,7 +583,7 @@ export function HpTimelineGraph({
               {/* 줌 안내 */}
               {zoomLevel > 1 && (
                 <div className="text-center text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
-                  가로로 스크롤하여 타임라인을 탐색하세요
+                  {t('scrollHint')}
                 </div>
               )}
             </div>

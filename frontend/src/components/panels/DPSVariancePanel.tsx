@@ -332,8 +332,8 @@ export default function DPSVariancePanel({ onClose, isPanel, showHelp: externalS
 
   return (
     <PanelShell
-      title="DPS 분산"
-      subtitle="DPS 분포·백분위·히스토그램"
+      title={t('dpsVariance.titleHeader')}
+      subtitle={t('dpsVariance.subtitleHeader')}
       icon={BarChart2}
       iconColor="#5a9cf5"
       onClose={onClose}

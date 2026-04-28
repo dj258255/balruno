@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { InterpolationType } from '@/types';
 
 interface InterpolationTypeSelectorProps {
@@ -7,19 +8,19 @@ interface InterpolationTypeSelectorProps {
   onChange: (value: InterpolationType) => void;
 }
 
-const INTERPOLATION_TYPES: { value: InterpolationType; label: string; description: string }[] = [
-  { value: 'linear', label: '선형', description: '일정한 비율로 보간' },
-  { value: 'step', label: '스텝', description: '50% 지점에서 급격히 전환' },
-  { value: 'ease-in-out', label: '이지', description: '부드러운 S-커브 보간' },
-];
-
 export default function InterpolationTypeSelector({ value, onChange }: InterpolationTypeSelectorProps) {
+  const t = useTranslations('entityDefinition');
+  const INTERPOLATION_TYPES: { value: InterpolationType; label: string; description: string }[] = [
+    { value: 'linear', label: t('interpLinear'), description: t('interpLinearDesc') },
+    { value: 'step', label: t('interpStep'), description: t('interpStepDesc') },
+    { value: 'ease-in-out', label: t('interpEase'), description: t('interpEaseDesc') },
+  ];
   const isSelected = (type: InterpolationType) => value === type;
 
   return (
     <div className="space-y-2">
       <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-        오버라이드 보간 방식
+        {t('interpolationTitle')}
       </div>
       <div className="flex gap-2">
         {INTERPOLATION_TYPES.map((type) => {

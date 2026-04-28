@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from 'react';
 import { User } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 function useCurrentUser() {
   const [name, setName] = useState<string>('local');
@@ -33,6 +34,7 @@ function useCurrentUser() {
 }
 
 export default function CurrentUserBadge() {
+  const t = useTranslations('home');
   const { name, color } = useCurrentUser();
 
   return (
@@ -40,7 +42,7 @@ export default function CurrentUserBadge() {
       onClick={() => window.dispatchEvent(new Event('balruno:open-settings'))}
       className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-caption hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
       style={{ background: 'var(--bg-secondary)' }}
-      title="이름/색 변경 (설정)"
+      title={t('userBadgeTooltip')}
     >
       <div
         className="w-4 h-4 rounded-full flex items-center justify-center"

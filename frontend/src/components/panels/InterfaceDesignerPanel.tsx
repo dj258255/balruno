@@ -39,6 +39,7 @@ import { toast } from '@/components/ui/Toast';
 import { loadAutomations, runAutomation } from '@/lib/automations';
 import { useProjectStore as useStoreForButton } from '@/stores/projectStore';
 import PanelShell from '@/components/ui/PanelShell';
+import { useTranslations } from 'next-intl';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -47,26 +48,27 @@ interface Props {
 }
 
 const WIDGET_LABELS: Record<WidgetType, string> = {
-  metric: '메트릭',
-  'chart-line': '라인',
-  'chart-bar': '바',
-  'chart-pie': '파이',
-  'chart-scatter': '스캐터',
-  text: '텍스트',
-  'sheet-table': '시트',
-  distribution: '분포',
-  button: '버튼',
-  image: '이미지',
-  'filter-control': '필터',
-  'retention-curve': '잔존 곡선',
-  funnel: '퍼널',
-  'whale-curve': '고래 곡선',
+  metric: 'interfaceDesigner.wMetric',
+  'chart-line': 'interfaceDesigner.wChartLine',
+  'chart-bar': 'interfaceDesigner.wChartBar',
+  'chart-pie': 'interfaceDesigner.wChartPie',
+  'chart-scatter': 'interfaceDesigner.wChartScatter',
+  text: 'interfaceDesigner.wText',
+  'sheet-table': 'interfaceDesigner.wSheetTable',
+  distribution: 'interfaceDesigner.wDistribution',
+  button: 'interfaceDesigner.wButton',
+  image: 'interfaceDesigner.wImage',
+  'filter-control': 'interfaceDesigner.wFilterControl',
+  'retention-curve': 'interfaceDesigner.wRetentionCurve',
+  funnel: 'interfaceDesigner.wFunnel',
+  'whale-curve': 'interfaceDesigner.wWhaleCurve',
   'liveops-kpi': 'LiveOps KPI',
-  'sim-metric': '시뮬 메트릭',
-  'sim-trend': '시뮬 추이',
+  'sim-metric': 'interfaceDesigner.wSimMetric',
+  'sim-trend': 'interfaceDesigner.wSimTrend',
 };
 
 export default function InterfaceDesignerPanel({ onClose }: Props) {
+  const t = useTranslations();
   const { projects, currentProjectId } = useProjectStore();
   const project = projects.find((p) => p.id === currentProjectId);
 
@@ -98,6 +100,7 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
   }, []);
 
   const addWidget = (type: WidgetType) => {
+    const t = useTranslations();
     if (!project || project.sheets.length === 0) return;
     const sheet = project.sheets[0];
     const id = generateWidgetId();
@@ -105,13 +108,13 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
     switch (type) {
       case 'metric':
         widget = {
-          id, type: 'metric', title: '새 메트릭',
+          id, type: 'metric', title: t('interfaceDesigner.newMetric'),
           config: { sheetId: sheet.id, column: sheet.columns[0]?.name ?? '', aggregate: 'avg' },
         };
         break;
       case 'chart-line':
         widget = {
-          id, type: 'chart-line', title: '새 차트',
+          id, type: 'chart-line', title: t('interfaceDesigner.newChart'),
           config: {
             sheetId: sheet.id,
             xColumn: sheet.columns[0]?.name ?? '',
@@ -121,7 +124,7 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
         };
         break;
       case 'text':
-        widget = { id, type: 'text', title: '메모', config: { body: '내용을 입력하세요...' } };
+        widget = { id, type: 'text', title: t('interfaceDesigner.noteLabel'), config: { body: t('interfaceDesigner.notePlaceholder') } };
         break;
       case 'sheet-table':
         widget = {
@@ -131,13 +134,13 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
         break;
       case 'distribution':
         widget = {
-          id, type: 'distribution', title: '분포',
+          id, type: 'distribution', title: t('interfaceDesigner.distributionLabel'),
           config: { sheetId: sheet.id, column: sheet.columns[0]?.name ?? '', bins: 10 },
         };
         break;
       case 'chart-bar':
         widget = {
-          id, type: 'chart-bar', title: '바 차트',
+          id, type: 'chart-bar', title: t('interfaceDesigner.barChartLabel'),
           config: {
             sheetId: sheet.id,
             categoryColumn: sheet.columns[0]?.name ?? '',
@@ -149,7 +152,7 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
         break;
       case 'chart-pie':
         widget = {
-          id, type: 'chart-pie', title: '파이 차트',
+          id, type: 'chart-pie', title: t('interfaceDesigner.pieChartLabel'),
           config: {
             sheetId: sheet.id,
             categoryColumn: sheet.columns[0]?.name ?? '',
@@ -159,7 +162,7 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
         break;
       case 'chart-scatter':
         widget = {
-          id, type: 'chart-scatter', title: '스캐터',
+          id, type: 'chart-scatter', title: t('interfaceDesigner.scatterLabel'),
           config: {
             sheetId: sheet.id,
             xColumn: sheet.columns[0]?.name ?? '',
@@ -170,31 +173,31 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
         break;
       case 'button':
         widget = {
-          id, type: 'button', title: '액션 버튼',
-          config: { label: '실행', color: '#3b82f6' },
+          id, type: 'button', title: t('interfaceDesigner.actionButton'),
+          config: { label: t('interfaceDesigner.runLabel'), color: '#3b82f6' },
         };
         break;
       case 'image':
         widget = {
-          id, type: 'image', title: '이미지',
+          id, type: 'image', title: t('interfaceDesigner.imageLabel'),
           config: { staticUrl: '', fit: 'cover' },
         };
         break;
       case 'filter-control':
         widget = {
-          id, type: 'filter-control', title: '필터',
+          id, type: 'filter-control', title: t('interfaceDesigner.filterLabel'),
           config: { filterKey: 'filter1', options: ['A', 'B', 'C'] },
         };
         break;
       case 'retention-curve':
         widget = {
-          id, type: 'retention-curve', title: '코호트 잔존율',
+          id, type: 'retention-curve', title: t('interfaceDesigner.cohortRetention'),
           config: { day1: 0.4, p: 0.6, days: 30, color: '#3b82f6' },
         };
         break;
       case 'funnel':
         widget = {
-          id, type: 'funnel', title: '전환 퍼널',
+          id, type: 'funnel', title: t('interfaceDesigner.conversionFunnel'),
           config: {
             steps: [
               { label: 'Install', rate: 1 },
@@ -208,13 +211,13 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
         break;
       case 'whale-curve':
         widget = {
-          id, type: 'whale-curve', title: '고래 곡선 (파레토)',
+          id, type: 'whale-curve', title: t('interfaceDesigner.whaleParetoTitle'),
           config: { topPercent: 0.1, shareOfRevenue: 0.5, color: '#8b5cf6' },
         };
         break;
       case 'liveops-kpi':
         widget = {
-          id, type: 'liveops-kpi', title: 'LiveOps KPI 대시보드',
+          id, type: 'liveops-kpi', title: t('interfaceDesigner.liveopsKpi'),
           config: {
             dau: 10000, mau: 50000, revenue: 2000,
             payingUsers: 300, newUsers: 500, adSpend: 800,
@@ -223,13 +226,13 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
         break;
       case 'sim-metric':
         widget = {
-          id, type: 'sim-metric', title: '최신 시뮬 메트릭',
+          id, type: 'sim-metric', title: t('interfaceDesigner.latestSimMetric'),
           config: { snapshotId: 'latest', metricKey: 'winRate', threshold: { ok: 0.6, warn: 0.4 } },
         };
         break;
       case 'sim-trend':
         widget = {
-          id, type: 'sim-trend', title: '시뮬 튜닝 추이',
+          id, type: 'sim-trend', title: t('interfaceDesigner.simTrendTitle'),
           config: { metricKey: 'winRate', limit: 20, color: '#8b5cf6' },
         };
         break;
@@ -259,13 +262,13 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
   return (
     <PanelShell
       title="Interface Designer"
-      subtitle="대시보드 위젯 배치"
+      subtitle={t('interfaceDesigner.subtitleHeader')}
       icon={LayoutGrid}
       onClose={onClose}
       bodyClassName="flex flex-col p-0 overflow-hidden"
     >
       <div className="flex items-center gap-1 p-2 border-b overflow-x-auto flex-shrink-0" style={{ borderColor: 'var(--border-primary)' }}>
-        <span className="text-caption mr-2 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>위젯 추가:</span>
+        <span className="text-caption mr-2 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{t('interfaceDesigner.addWidget')}</span>
         {(Object.keys(WIDGET_LABELS) as WidgetType[]).map((type) => (
           <button
             key={type}
@@ -274,7 +277,7 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
             style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
           >
             <Plus size={10} />
-            {WIDGET_LABELS[type]}
+            {t(WIDGET_LABELS[type] as 'interfaceDesigner.wMetric')}
           </button>
         ))}
       </div>
@@ -283,8 +286,8 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
         {layout.widgets.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <LayoutGrid size={32} style={{ color: 'var(--text-secondary)' }} />
-            <p className="text-sm mt-2" style={{ color: 'var(--text-primary)' }}>대시보드가 비어있습니다</p>
-            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>위 툴바에서 위젯을 추가하세요</p>
+            <p className="text-sm mt-2" style={{ color: 'var(--text-primary)' }}>{t('interfaceDesigner.emptyDashboard')}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>{t('interfaceDesigner.emptyDashboardHint')}</p>
           </div>
         ) : (
           <GridLayout
@@ -333,6 +336,7 @@ export default function InterfaceDesignerPanel({ onClose }: Props) {
 }
 
 function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: Sheet[] }) {
+  const t = useTranslations();
   if (widget.type === 'metric') {
     const { value, valid } = computeMetric(widget, sheets);
     const display = typeof value === 'number'
@@ -360,7 +364,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
 
   if (widget.type === 'sheet-table') {
     const sheet = sheets.find((s) => s.id === widget.config.sheetId);
-    if (!sheet) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>시트 없음</div>;
+    if (!sheet) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('interfaceDesigner.noSheet')}</div>;
     const cols = widget.config.columnIds && widget.config.columnIds.length > 0
       ? sheet.columns.filter((c) => widget.config.columnIds!.includes(c.id))
       : sheet.columns.slice(0, 4);
@@ -387,7 +391,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
 
   if (widget.type === 'chart-line') {
     const points = computeChartLine(widget, sheets);
-    if (points.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>데이터 없음</div>;
+    if (points.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('interfaceDesigner.noData')}</div>;
     const xMin = Math.min(...points.map((p) => p.x));
     const xMax = Math.max(...points.map((p) => p.x));
     const yMin = Math.min(...points.map((p) => p.y));
@@ -408,9 +412,10 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
   }
 
   if (widget.type === 'chart-bar') {
+    const t = useTranslations();
     const data = computeCategoryValues(sheets, widget.config.sheetId, widget.config.categoryColumn, widget.config.valueColumn);
     const top = data.slice(0, widget.config.limit ?? 10);
-    if (top.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>데이터 없음</div>;
+    if (top.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('interfaceDesigner.noData')}</div>;
     const maxVal = Math.max(...top.map((d) => d.value));
     return (
       <div className="flex items-end gap-1 h-full">
@@ -436,7 +441,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
 
   if (widget.type === 'chart-pie') {
     const data = computeCategoryValues(sheets, widget.config.sheetId, widget.config.categoryColumn, widget.config.valueColumn);
-    if (data.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>데이터 없음</div>;
+    if (data.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('interfaceDesigner.noData')}</div>;
     const total = data.reduce((s, d) => s + d.value, 0);
     const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#06b6d4'];
     let angle = 0;
@@ -482,7 +487,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
 
   if (widget.type === 'chart-scatter') {
     const points = computeScatter(widget, sheets);
-    if (points.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>데이터 없음</div>;
+    if (points.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('interfaceDesigner.noData')}</div>;
     const xMin = Math.min(...points.map((p) => p.x));
     const xMax = Math.max(...points.map((p) => p.x));
     const yMin = Math.min(...points.map((p) => p.y));
@@ -504,9 +509,10 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
   }
 
   if (widget.type === 'image') {
+    const t = useTranslations();
     const src = widget.config.staticUrl
       || (widget.config.sheetId && widget.config.urlColumn && sheets.find((s) => s.id === widget.config.sheetId)?.rows?.[widget.config.rowIndex ?? 0]?.cells?.[sheets.find((s) => s.id === widget.config.sheetId)?.columns.find((c) => c.name === widget.config.urlColumn)?.id ?? ''] as string);
-    if (!src) return <div className="text-xs text-center py-4" style={{ color: 'var(--text-secondary)' }}>URL 을 설정하세요</div>;
+    if (!src) return <div className="text-xs text-center py-4" style={{ color: 'var(--text-secondary)' }}>{t('interfaceDesigner.urlNotSet')}</div>;
     return (
       <div
         className="w-full h-full"
@@ -526,7 +532,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
 
   if (widget.type === 'distribution') {
     const { bins, min, max } = computeDistribution(widget, sheets);
-    if (bins.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>데이터 없음</div>;
+    if (bins.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('interfaceDesigner.noData')}</div>;
     const maxBin = Math.max(...bins);
     return (
       <div className="flex flex-col h-full">
@@ -573,8 +579,9 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
   }
 
   if (widget.type === 'funnel') {
+    const t = useTranslations();
     const steps = computeFunnel(widget);
-    if (steps.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>데이터 없음</div>;
+    if (steps.length === 0) return <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('interfaceDesigner.noData')}</div>;
     return (
       <div className="flex flex-col gap-1 h-full justify-center">
         {steps.map((s, i) => (
@@ -612,7 +619,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
           <polyline fill="none" stroke={widget.config.color ?? '#8b5cf6'} strokeWidth="1.5" points={polyline} />
         </svg>
         <div className="text-caption text-center" style={{ color: 'var(--text-secondary)' }}>
-          상위 {(widget.config.topPercent * 100).toFixed(0)}% 가 {(widget.config.shareOfRevenue * 100).toFixed(0)}% 매출
+          {t('interfaceDesigner.whaleSummary', { topPct: (widget.config.topPercent * 100).toFixed(0), sharePct: (widget.config.shareOfRevenue * 100).toFixed(0) })}
         </div>
       </div>
     );
@@ -656,7 +663,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
           {display}{widget.config.suffix ?? ''}
         </div>
         <div className="text-caption mt-1 truncate" style={{ color: 'var(--text-secondary)' }}>
-          {widget.config.metricKey} · {r.snapshot?.name ?? '스냅샷 없음'}
+          {widget.config.metricKey} · {r.snapshot?.name ?? t('interfaceDesigner.noSnapshot')}
         </div>
       </div>
     );
@@ -665,7 +672,7 @@ function WidgetRender({ widget, sheets }: { widget: DashboardWidget; sheets: She
   if (widget.type === 'sim-trend') {
     const pts = computeSimTrend(widget);
     if (pts.length === 0) {
-      return <div className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>스냅샷이 없습니다</div>;
+      return <div className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>{t('interfaceDesigner.noSnapshotsAvail')}</div>;
     }
     const chartData = pts.map((p, i) => ({
       idx: i,
@@ -703,7 +710,8 @@ function WidgetEditor({
   project: Project | null | undefined;
   onUpdate: (patch: Partial<DashboardWidget>) => void;
 }) {
-  if (!project) return <div className="text-xs">프로젝트 없음</div>;
+  const t = useTranslations();
+  if (!project) return <div className="text-xs">{t('interfaceDesigner.noProject')}</div>;
 
   const sheets = project.sheets;
   const config = widget.config as Record<string, unknown>;
@@ -714,7 +722,7 @@ function WidgetEditor({
       <input
         value={widget.title}
         onChange={(e) => onUpdate({ title: e.target.value })}
-        placeholder="제목"
+        placeholder={t('interfaceDesigner.titlePlaceholder')}
         className="w-full px-1.5 py-0.5 rounded border bg-transparent"
         style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
       />
@@ -744,17 +752,17 @@ function WidgetEditor({
             className="w-full px-1.5 py-0.5 rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           >
-            <option value="sum">합계</option>
-            <option value="avg">평균</option>
-            <option value="min">최소</option>
-            <option value="max">최대</option>
-            <option value="count">개수</option>
-            <option value="cell">단일 셀</option>
+            <option value="sum">{t('interfaceDesigner.aggSum')}</option>
+            <option value="avg">{t('interfaceDesigner.aggAvg')}</option>
+            <option value="min">{t('interfaceDesigner.aggMin')}</option>
+            <option value="max">{t('interfaceDesigner.aggMax')}</option>
+            <option value="count">{t('interfaceDesigner.aggCount')}</option>
+            <option value="cell">{t('interfaceDesigner.aggCell')}</option>
           </select>
           <input
             value={(config.suffix as string) ?? ''}
             onChange={(e) => onUpdate({ config: { ...config, suffix: e.target.value } } as Partial<DashboardWidget>)}
-            placeholder="단위 (예: G, %)"
+            placeholder={t('interfaceDesigner.unitPlaceholder')}
             className="w-full px-1.5 py-0.5 rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
@@ -768,7 +776,7 @@ function WidgetEditor({
             className="w-full px-1.5 py-0.5 rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)' }}
           >
-            <option value="">X 컬럼</option>
+            <option value="">{t('interfaceDesigner.xColumn')}</option>
             {currentSheet?.columns.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
           </select>
           <select
@@ -777,7 +785,7 @@ function WidgetEditor({
             className="w-full px-1.5 py-0.5 rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)' }}
           >
-            <option value="">Y 컬럼</option>
+            <option value="">{t('interfaceDesigner.yColumn')}</option>
             {currentSheet?.columns.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
           </select>
           <input
@@ -802,7 +810,7 @@ function WidgetEditor({
             type="number"
             value={(config.bins as number) ?? 10}
             onChange={(e) => onUpdate({ config: { ...config, bins: parseInt(e.target.value) || 10 } } as Partial<DashboardWidget>)}
-            placeholder="bin 개수"
+            placeholder={t('interfaceDesigner.binCountPlaceholder')}
             className="w-full px-1.5 py-0.5 rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)' }}
           />
@@ -813,7 +821,7 @@ function WidgetEditor({
           type="number"
           value={config.rowLimit as number}
           onChange={(e) => onUpdate({ config: { ...config, rowLimit: parseInt(e.target.value) || 5 } } as Partial<DashboardWidget>)}
-          placeholder="행 개수"
+          placeholder={t('interfaceDesigner.rowCountPlaceholder')}
           className="w-full px-1.5 py-0.5 rounded border bg-transparent"
           style={{ borderColor: 'var(--border-primary)' }}
         />
@@ -832,7 +840,7 @@ function WidgetEditor({
           <input
             value={(config.metricKey as string) ?? ''}
             onChange={(e) => onUpdate({ config: { ...config, metricKey: e.target.value } } as Partial<DashboardWidget>)}
-            placeholder="metric key (예: winRate, avgDpt)"
+            placeholder={t('interfaceDesigner.metricKeyPlaceholder')}
             className="w-full px-1.5 py-0.5 rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           />
@@ -842,7 +850,7 @@ function WidgetEditor({
             className="w-full px-1.5 py-0.5 rounded border bg-transparent"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           >
-            <option value="">모든 도메인</option>
+            <option value="">{t('interfaceDesigner.allDomains')}</option>
             <option value="unit">unit</option>
             <option value="fps-duel">fps-duel</option>
             <option value="fps-team">fps-team</option>
@@ -856,20 +864,24 @@ function WidgetEditor({
 }
 
 function ButtonWidgetRender({ widget }: { widget: import('@/lib/dashboardWidgets').ButtonWidget }) {
+  const t = useTranslations();
   const projects = useStoreForButton((s) => s.projects);
   const currentProjectId = useStoreForButton((s) => s.currentProjectId);
   const updateCell = useStoreForButton((s) => s.updateCell);
 
   const handleClick = async () => {
+    const t = useTranslations();
     const project = projects.find((p) => p.id === currentProjectId);
     if (!widget.config.automationId || !project) {
-      toast.info(`${widget.config.label} 클릭됨 (자동화 미연결)`);
+      const t = useTranslations();
+      toast.info(t('interfaceDesigner.btnClicked', { label: widget.config.label }));
       return;
     }
     const autos = loadAutomations(project.id);
     const target = autos.find((a) => a.id === widget.config.automationId);
     if (!target) {
-      toast.error('연결된 자동화를 찾을 수 없음');
+      const t = useTranslations();
+      toast.error(t('interfaceDesigner.noLinkedAutomation'));
       return;
     }
     await runAutomation(target, project, {
@@ -889,7 +901,7 @@ function ButtonWidgetRender({ widget }: { widget: import('@/lib/dashboardWidgets
         color: 'white',
       }}
     >
-      {widget.config.label || '버튼'}
+      {widget.config.label || t('interfaceDesigner.btnDefault')}
     </button>
   );
 }

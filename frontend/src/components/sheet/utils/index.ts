@@ -34,12 +34,17 @@ export function rafThrottle<T extends (...args: any[]) => void>(fn: T): T {
 }
 
 // 값 파싱 (숫자 변환 시도)
+// `Number()` 사용으로 lenient 파싱 회피 — 문자열 전체가 유효한 숫자일 때만 변환.
+// `parseFloat('2026-04-20')`은 2026을 뱉어 ISO 날짜·버전 문자열을 잘라먹음.
 export function parseValue(value: string): CellValue {
   if (value.startsWith('=')) {
     return value; // 수식은 그대로 반환
   }
-  const num = parseFloat(value);
-  if (!isNaN(num) && value.trim() !== '') {
+  if (value.trim() === '') {
+    return value;
+  }
+  const num = Number(value);
+  if (!isNaN(num)) {
     return num;
   }
   return value;
@@ -71,7 +76,7 @@ export function formatDisplayValue(
     case 'url':
       return String(value);
     case 'currency': {
-      const num = typeof value === 'number' ? value : parseFloat(String(value));
+      const num = typeof value === 'number' ? value : Number(String(value));
       if (isNaN(num)) return String(value);
       const fmt = column.currencyFormat ?? { symbol: '₩', decimals: 0 };
       return `${fmt.symbol}${num.toLocaleString(undefined, {
@@ -80,7 +85,7 @@ export function formatDisplayValue(
       })}`;
     }
     case 'rating': {
-      const n = typeof value === 'number' ? value : parseFloat(String(value));
+      const n = typeof value === 'number' ? value : Number(String(value));
       if (isNaN(n)) return '';
       const max = column.ratingMax ?? 5;
       const filled = Math.min(max, Math.max(0, Math.round(n)));

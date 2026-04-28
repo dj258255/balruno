@@ -107,7 +107,7 @@ export function PinnedSection({ onSheetContextMenu }: PinnedSectionProps = {}) {
             style={{ color: 'var(--text-primary)' }}
           >
             <PinOff className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-            모두 핀 해제
+            {t('sidebar.unpinAll')}
           </button>
         </div>
       )}

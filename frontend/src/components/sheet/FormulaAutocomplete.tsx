@@ -76,7 +76,7 @@ const FormulaAutocomplete = forwardRef<FormulaAutocompleteRef, FormulaAutocomple
               items.push({
                 type: 'sheetVar',
                 name: varName,
-                description: `= ${varValue ?? '(없음)'}`,
+                description: `= ${varValue ?? t('formula.valueEmpty')}`,
                 value: value.slice(0, value.length - (sheetRefMatch[2]?.length || 0)) + varName,
               });
             }
@@ -90,7 +90,7 @@ const FormulaAutocomplete = forwardRef<FormulaAutocompleteRef, FormulaAutocomple
             items.push({
               type: 'sheetVar',
               name: col.name,
-              description: `= ${firstRowValue ?? '(없음)'}`,
+              description: `= ${firstRowValue ?? t('formula.valueEmpty')}`,
               value: value.slice(0, value.length - (sheetRefMatch[2]?.length || 0)) + col.name,
             });
           }
@@ -322,7 +322,7 @@ const FormulaAutocomplete = forwardRef<FormulaAutocompleteRef, FormulaAutocomple
       {sheetVarItems.length > 0 && (
         <div>
           <div className="px-3 py-1.5 text-xs font-medium" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }}>
-            {sheetName ? `${sheetName} 변수` : t('formula.sheetVars')}
+            {sheetName ? t('formula.sheetVarsLabel', { sheet: sheetName }) : t('formula.sheetVars')}
           </div>
           {sheetVarItems.map((item, localIndex) => {
             const globalIndex = getGlobalIndex('sheetVar', localIndex);

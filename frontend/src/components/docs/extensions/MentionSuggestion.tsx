@@ -14,6 +14,7 @@ import tippy, { type Instance as TippyInstance } from 'tippy.js';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { FileSpreadsheet, FileText, Zap, Bug, Gamepad2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { Project } from '@/types';
 import { detectPmSheet } from '@/lib/pmSheetDetection';
 
@@ -30,7 +31,13 @@ export interface MentionCandidate {
   color?: string;
 }
 
-function buildCandidates(project: Project | null | undefined): MentionCandidate[] {
+interface BuildCandidatesLabels {
+  noTitle: string;
+  docHint: string;
+  sheetHint: (cols: number, rows: number) => string;
+}
+
+function buildCandidates(project: Project | null | undefined, labels: BuildCandidatesLabels): MentionCandidate[] {
   if (!project) return [];
   const out: MentionCandidate[] = [];
   const seen = new Set<string>();
@@ -40,19 +47,17 @@ function buildCandidates(project: Project | null | undefined): MentionCandidate[
     out.push(c);
   };
 
-  // 각 문서
   for (const d of project.docs ?? []) {
     push({
       id: `doc:${d.id}`,
-      label: d.name || '(제목 없음)',
-      hint: '문서',
+      label: d.name || labels.noTitle,
+      hint: labels.docHint,
       kind: 'doc',
       icon: FileText,
       color: '#10b981',
     });
   }
 
-  // 시트 (+ PM 타입 감지). id 는 sheet.id 로 유니크화 (이름 중복 허용).
   for (const sheet of project.sheets) {
     const pm = detectPmSheet(sheet);
     let icon: LucideIcon = FileSpreadsheet;
@@ -70,19 +75,18 @@ function buildCandidates(project: Project | null | undefined): MentionCandidate[
     push({
       id: `sheet:${sheet.id}`,
       label: sheet.name,
-      hint: `${sheet.columns.length} 컬럼 · ${sheet.rows.length} 행`,
+      hint: labels.sheetHint(sheet.columns.length, sheet.rows.length),
       kind: 'sheet',
       icon,
       color,
     });
 
-    // PM 시트 row 들도 task 후보로. row.id 가 시트 간 중복될 수 있어 sheet 스코프 prefix.
     if (pm.type) {
       const titleCol = sheet.columns.find(
         (c) => c.name.toLowerCase() === 'title' || c.name.toLowerCase() === 'name' || c.type === 'general'
       );
       for (const row of sheet.rows.slice(0, 100)) {
-        const label = titleCol ? String(row.cells[titleCol.id] ?? '(제목 없음)') : row.id.slice(0, 8);
+        const label = titleCol ? String(row.cells[titleCol.id] ?? labels.noTitle) : row.id.slice(0, 8);
         push({
           id: `task:${sheet.id}:${row.id}`,
           label,
@@ -107,6 +111,7 @@ const MentionList = forwardRef<
   { onKeyDown: (p: { event: KeyboardEvent }) => boolean },
   ListProps
 >((props, ref) => {
+  const t = useTranslations('docs');
   const [selected, setSelected] = useState(0);
   useEffect(() => setSelected(0), [props.items]);
 
@@ -140,7 +145,7 @@ const MentionList = forwardRef<
     >
       {props.items.length === 0 ? (
         <div className="px-3 py-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          결과 없음
+          {t('mentionNoResult')}
         </div>
       ) : (
         props.items.map((item, i) => {
@@ -185,7 +190,7 @@ const MentionList = forwardRef<
 
 MentionList.displayName = 'MentionList';
 
-export function createMentionExtension(getProject: () => Project | null | undefined) {
+export function createMentionExtension(getProject: () => Project | null | undefined, getLabels: () => BuildCandidatesLabels) {
   return Mention.configure({
     HTMLAttributes: {
       class: 'mention-node',
@@ -197,7 +202,7 @@ export function createMentionExtension(getProject: () => Project | null | undefi
       char: '@',
       allowSpaces: false,
       items: ({ query }: { query: string }) => {
-        const all = buildCandidates(getProject());
+        const all = buildCandidates(getProject(), getLabels());
         const q = query.toLowerCase().trim();
         if (!q) return all.slice(0, 10);
         return all

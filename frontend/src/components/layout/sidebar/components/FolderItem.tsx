@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { Folder, ChevronRight, ChevronDown, FileSpreadsheet } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { Folder as FolderType, Sheet } from '@/types';
 import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
@@ -88,6 +89,7 @@ export function FolderItem({
   onSheetDelete,
   onFolderDelete,
 }: FolderItemProps) {
+  const t = useTranslations();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isFolderDragOver, setIsFolderDragOver] = useState(false);
 
@@ -392,7 +394,7 @@ export function FolderItem({
                 color: 'var(--text-tertiary)'
               }}
             >
-              빈 폴더
+              {t('sidebar.emptyFolder')}
             </div>
           )}
         </div>

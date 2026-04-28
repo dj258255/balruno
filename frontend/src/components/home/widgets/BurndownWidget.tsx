@@ -3,11 +3,13 @@
 import { useMemo, useState } from 'react';
 import { Flame } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from 'recharts';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { detectPmSheet } from '@/lib/pmSheetDetection';
 import { analyzeBurndown, type BurndownResult } from '@/lib/burndownAnalysis';
 
 export default function BurndownWidget() {
+  const t = useTranslations('home');
   const projects = useProjectStore((s) => s.projects);
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
@@ -42,7 +44,7 @@ export default function BurndownWidget() {
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Flame className="w-4 h-4 shrink-0" style={{ color: '#ef4444' }} />
           <h3 className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-            번다운
+            {t('burndown')}
           </h3>
           {sprintSheets.length > 1 && (
             <select
@@ -69,18 +71,18 @@ export default function BurndownWidget() {
             className="text-xs hover:underline shrink-0"
             style={{ color: 'var(--accent)' }}
           >
-            시트 열기
+            {t('openSheet')}
           </button>
         )}
       </div>
 
       {!result?.eligible ? (
         <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          {result?.reason ?? '스프린트 시트가 없습니다'}
+          {result?.reason ?? t('noSprintSheet')}
         </p>
       ) : result.totalStart === 0 ? (
         <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          태스크가 없습니다
+          {t('noTasks')}
         </p>
       ) : (
         <>
@@ -90,11 +92,11 @@ export default function BurndownWidget() {
                 {result.totalStart - result.completed}
               </div>
               <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                남은 {result.unit === 'points' ? 'SP' : '태스크'}
+                {t('remaining', { unit: result.unit === 'points' ? t('unitSp') : t('unitTasks') })}
               </div>
             </div>
             <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              / 총 {result.totalStart} · {result.completed} 완료
+              {t('totalDoneSummary', { total: result.totalStart, done: result.completed })}
             </div>
           </div>
           <div className="h-32 -mx-1">
@@ -135,7 +137,7 @@ export default function BurndownWidget() {
                   strokeDasharray="4 4"
                   strokeWidth={1.5}
                   dot={false}
-                  name="이상"
+                  name={t('ideal')}
                   isAnimationActive={false}
                 />
                 <Line
@@ -144,7 +146,7 @@ export default function BurndownWidget() {
                   stroke="#ef4444"
                   strokeWidth={2}
                   dot={{ r: 2, fill: '#ef4444' }}
-                  name="실제"
+                  name={t('actual')}
                   connectNulls={false}
                   isAnimationActive={false}
                 />
@@ -154,7 +156,7 @@ export default function BurndownWidget() {
           <div className="mt-2 flex items-center justify-between text-caption" style={{ color: 'var(--text-tertiary)' }}>
             <span>{result.startDate} → {result.endDate}</span>
             <span>
-              진척 {Math.round((result.completed / result.totalStart) * 100)}%
+              {t('progressPct', { pct: Math.round((result.completed / result.totalStart) * 100) })}
             </span>
           </div>
         </>

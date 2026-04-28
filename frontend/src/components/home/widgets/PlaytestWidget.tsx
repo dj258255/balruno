@@ -1,10 +1,12 @@
 'use client';
 
 import { Gamepad2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { TodaysWork } from '@/hooks/useTodaysWork';
 import { useProjectStore } from '@/stores/projectStore';
 
 export default function PlaytestWidget({ work }: { work: TodaysWork }) {
+  const t = useTranslations('home');
   const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
 
@@ -17,7 +19,7 @@ export default function PlaytestWidget({ work }: { work: TodaysWork }) {
         <div className="flex items-center gap-2">
           <Gamepad2 className="w-4 h-4" style={{ color: '#10b981' }} />
           <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Playtest 세션
+            {t('playtestSession')}
           </h3>
         </div>
         <div className="text-2xl font-bold" style={{ color: '#10b981' }}>
@@ -26,7 +28,7 @@ export default function PlaytestWidget({ work }: { work: TodaysWork }) {
       </div>
       {playtests.length === 0 ? (
         <p className="text-xs italic" style={{ color: 'var(--text-tertiary)' }}>
-          Playtest 시트 없음
+          {t('playtestNoSheet')}
         </p>
       ) : (
         <div className="space-y-0.5 max-h-48 overflow-y-auto">

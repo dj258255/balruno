@@ -1,6 +1,7 @@
 'use client';
 
 import { FileSpreadsheet, FilePlus, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface GenerationOptionsProps {
   outputMode: 'new-sheet' | 'current-sheet';
@@ -29,12 +30,13 @@ export default function GenerationOptions({
   selectedEntityName,
   rowCount,
 }: GenerationOptionsProps) {
+  const t = useTranslations('entityDefinition');
   return (
     <div className="space-y-4">
       {/* 출력 모드 선택 */}
       <div className="space-y-2">
         <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-          생성 옵션
+          {t('generateOptions')}
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -49,11 +51,11 @@ export default function GenerationOptions({
             <div className="flex items-center gap-2">
               <FilePlus className="w-4 h-4" style={{ color: outputMode === 'new-sheet' ? '#9179f2' : 'var(--text-tertiary)' }} />
               <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                새 시트 생성
+                {t('newSheet')}
               </span>
             </div>
             <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-              별도 시트에 레벨 테이블 생성
+              {t('newSheetDesc')}
             </p>
           </button>
 
@@ -69,11 +71,11 @@ export default function GenerationOptions({
             <div className="flex items-center gap-2">
               <FileSpreadsheet className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
               <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                현재 시트에 추가
+                {t('appendCurrent')}
               </span>
             </div>
             <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-              (준비 중)
+              {t('comingSoon')}
             </p>
           </button>
         </div>
@@ -83,13 +85,13 @@ export default function GenerationOptions({
       {outputMode === 'new-sheet' && (
         <div className="space-y-2">
           <label className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-            시트 이름 패턴
+            {t('sheetNamePattern')}
           </label>
           <input
             type="text"
             value={sheetNamePattern}
             onChange={(e) => onSheetNamePatternChange(e.target.value)}
-            placeholder="{entity}_레벨테이블"
+            placeholder={t('patternPlaceholder')}
             className="w-full input-base"
             style={{
               background: 'var(--bg-secondary)',
@@ -98,7 +100,7 @@ export default function GenerationOptions({
             }}
           />
           <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-            {'{entity}'} = 엔티티 이름으로 대체됨
+            {t('patternHelp', { entityToken: '{entity}' })}
           </p>
         </div>
       )}
@@ -109,7 +111,7 @@ export default function GenerationOptions({
           <div className="flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#9179f2' }} />
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              레벨 테이블 생성 중... {generationProgress}%
+              {t('generating', { pct: generationProgress })}
             </span>
           </div>
           <div
@@ -140,11 +142,11 @@ export default function GenerationOptions({
         >
           {selectedEntityName ? (
             <>
-              {selectedEntityName} 레벨 테이블 생성
-              <span className="text-xs opacity-75 ml-1">({rowCount}행)</span>
+              {t('generateLevelTable', { name: selectedEntityName })}
+              <span className="text-xs opacity-75 ml-1">{t('rowsCount', { count: rowCount })}</span>
             </>
           ) : (
-            '엔티티를 선택하세요'
+            t('selectEntityBtn')
           )}
         </button>
       </div>
@@ -160,7 +162,7 @@ export default function GenerationOptions({
             color: 'var(--text-primary)',
           }}
         >
-          전체 엔티티 레벨 테이블 생성 ({entityCount}개)
+          {t('generateAll', { count: entityCount })}
         </button>
       )}
     </div>

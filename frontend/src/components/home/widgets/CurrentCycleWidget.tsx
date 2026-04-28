@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react';
 import { CalendarDays, ArrowRightLeft } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { toast } from '@/components/ui/Toast';
 import {
@@ -27,6 +28,7 @@ function daysBetween(from: Date, to: Date): number {
 }
 
 export default function CurrentCycleWidget() {
+  const t = useTranslations('home');
   const projects = useProjectStore((s) => s.projects);
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
@@ -100,9 +102,9 @@ export default function CurrentCycleWidget() {
       (pid, sid, rid, cid, val) => updateCell(pid, sid, rid, cid, val),
     );
     if (moved > 0) {
-      toast.success(`${previousName} → ${currentName}: ${moved}개 이관됨`);
+      toast.success(t('cycleCarriedToast', { from: previousName, to: currentName, count: moved }));
     } else {
-      toast.info('이관할 미완료 이슈가 없습니다');
+      toast.info(t('cycleNoCarryOver'));
     }
   };
 
@@ -112,7 +114,7 @@ export default function CurrentCycleWidget() {
         <div className="flex items-center gap-2">
           <CalendarDays className="w-4 h-4" style={{ color: '#3b82f6' }} />
           <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            현재 Cycle
+            {t('currentCycle')}
           </h3>
         </div>
         <button
@@ -133,7 +135,7 @@ export default function CurrentCycleWidget() {
             </span>
             {daysLeft !== null && (
               <span className="text-xs shrink-0" style={{ color: daysLeft <= 3 ? '#ef4444' : 'var(--text-secondary)' }}>
-                {daysLeft === 0 ? '오늘 마감' : `${daysLeft}일 남음`}
+                {daysLeft === 0 ? t('cycleDueToday') : t('cycleDaysLeft', { days: daysLeft })}
               </span>
             )}
           </div>
@@ -146,7 +148,7 @@ export default function CurrentCycleWidget() {
             <>
               <div className="flex items-center justify-between text-xs">
                 <span style={{ color: 'var(--text-secondary)' }}>
-                  완료 {currentSummary.done} / {currentSummary.total}
+                  {t('cycleCompleted', { done: currentSummary.done, total: currentSummary.total })}
                 </span>
                 <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
                   {Math.round(currentSummary.rate * 100)}%
@@ -176,10 +178,10 @@ export default function CurrentCycleWidget() {
                 color: 'var(--text-primary)',
                 border: '1px solid var(--border-primary)',
               }}
-              title={`${previousName} 의 미완료 ${previousSummary.unfinished}개 를 ${currentName} 로 이관`}
+              title={t('cycleCarryOverTooltip', { from: previousName, count: previousSummary.unfinished, to: currentName })}
             >
               <ArrowRightLeft className="w-3 h-3" />
-              {previousSummary.unfinished}개 미완료 이관
+              {t('cycleCarryOver', { count: previousSummary.unfinished })}
             </button>
           )}
         </div>
@@ -188,11 +190,11 @@ export default function CurrentCycleWidget() {
           <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
             {data.nextName}
           </span>
-          <span className="ml-2 opacity-70">시작 예정</span>
+          <span className="ml-2 opacity-70">{t('cycleStartingSoon')}</span>
         </div>
       ) : (
         <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          활성 cycle 없음 · 예정된 cycle 없음
+          {t('cycleNoActive')}
         </div>
       )}
     </div>

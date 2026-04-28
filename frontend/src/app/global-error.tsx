@@ -43,7 +43,7 @@ export default function GlobalError({
           }}
         >
           <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 8px' }}>
-            심각한 오류가 발생했어요
+            A critical error occurred
           </h1>
           <p
             style={{
@@ -53,12 +53,12 @@ export default function GlobalError({
               lineHeight: 1.6,
             }}
           >
-            앱을 다시 불러와야 합니다. 브라우저에 저장된 프로젝트 데이터는 안전해요.
+            The app needs to reload. Project data saved in the browser is safe.
           </p>
           <button
             type="button"
             onClick={reset}
-            aria-label="앱 다시 시작"
+            aria-label="Restart app"
             style={{
               padding: '10px 16px',
               borderRadius: 8,
@@ -70,7 +70,7 @@ export default function GlobalError({
               cursor: 'pointer',
             }}
           >
-            앱 다시 시작
+            Restart app
           </button>
         </div>
       </body>

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { reportError } from '@/lib/errorReporting';
 
 export default function Error({
@@ -11,6 +12,7 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations('errorPage');
   useEffect(() => {
     reportError(error, { source: 'app-error', extra: { digest: error.digest } });
   }, [error]);
@@ -42,15 +44,14 @@ export default function Error({
           className="text-xl font-semibold mb-2"
           style={{ color: 'var(--text-primary)' }}
         >
-          문제가 발생했어요
+          {t('title')}
         </h1>
 
         <p
           className="text-sm mb-6 leading-relaxed"
           style={{ color: 'var(--text-secondary)' }}
         >
-          예기치 못한 오류로 작업이 중단됐습니다. 로컬에 저장된 데이터는 안전해요.
-          아래 버튼으로 다시 시도해 주세요.
+          {t('body')} {t('retryHint')}
         </p>
 
         {isDev && (
@@ -62,7 +63,7 @@ export default function Error({
             }}
           >
             <summary className="cursor-pointer font-medium mb-2">
-              오류 상세 (개발 모드)
+              {t('detailsLabel')}
             </summary>
             <code className="block whitespace-pre-wrap break-all font-mono">
               {error.message}
@@ -76,7 +77,7 @@ export default function Error({
           <button
             type="button"
             onClick={reset}
-            aria-label="다시 시도"
+            aria-label={t('retryAria')}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
             style={{
               backgroundColor: 'var(--primary-blue)',
@@ -84,12 +85,12 @@ export default function Error({
             }}
           >
             <RotateCw size={16} aria-hidden="true" />
-            다시 시도
+            {t('retry')}
           </button>
           <button
             type="button"
             onClick={() => (window.location.href = '/')}
-            aria-label="홈으로 이동"
+            aria-label={t('homeAria')}
             className="px-4 py-2.5 rounded-lg text-sm font-medium transition-opacity hover:opacity-80"
             style={{
               backgroundColor: 'var(--bg-tertiary)',
@@ -97,7 +98,7 @@ export default function Error({
               border: '1px solid var(--border-primary)',
             }}
           >
-            홈으로
+            {t('home')}
           </button>
         </div>
       </div>

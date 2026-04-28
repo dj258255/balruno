@@ -5,6 +5,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Skull, Flame, Snowflake, Zap, Sparkles, Droplet, Shield, Plus, Trash2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import PanelShell from '@/components/ui/PanelShell';
@@ -40,6 +41,7 @@ const ELEMENT_COLOR: Record<string, string> = {
 };
 
 export default function HordeSurvivorPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [cfg, setCfg] = useState<HordeSurvivorConfig>(defaultHordeConfig());
 
   const result = useMemo(() => simulateHordeSurvivor(cfg), [cfg]);
@@ -67,7 +69,7 @@ export default function HordeSurvivorPanel({ onClose }: Props) {
 
   const survivedMin = Math.floor(result.survivedSec / 60);
   const outcomeColor = result.survived ? '#10b981' : '#ef4444';
-  const outcomeLabel = result.survived ? '30분 생존 성공' : `${survivedMin}:${(result.survivedSec % 60).toString().padStart(2, '0')} 에 사망`;
+  const outcomeLabel = result.survived ? t('hordeSurvivor.survived30') : t('hordeSurvivor.diedAt', { m: survivedMin, s: (result.survivedSec % 60).toString().padStart(2, '0') });
 
   // 무기 속성 카운트
   const elementSummary = cfg.weapons.reduce<Record<string, number>>((acc, { weapon }) => {
@@ -77,8 +79,8 @@ export default function HordeSurvivorPanel({ onClose }: Props) {
 
   return (
     <PanelShell
-      title="Horde Survivor 시뮬"
-      subtitle="Vampire Survivors · 빌드 최적화"
+      title={t('hordeSurvivor.titleHeader')}
+      subtitle={t('hordeSurvivor.subtitleHeader')}
       icon={Skull}
       iconColor="#8b5cf6"
       onClose={onClose}
@@ -90,11 +92,11 @@ export default function HordeSurvivorPanel({ onClose }: Props) {
         <div className="flex-1">
           <div className="text-heading font-bold" style={{ color: outcomeColor }}>{outcomeLabel}</div>
           <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-            최대 레벨 {result.maxLevel} · 총 킬 {result.totalKills.toLocaleString()} · 평균 Kill/s {result.avgKillsPerSec.toFixed(1)}
+            {t('hordeSurvivor.maxLevelKills', { lvl: result.maxLevel, kills: result.totalKills.toLocaleString(), avg: result.avgKillsPerSec.toFixed(1) })}
           </div>
         </div>
         <div>
-          <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>빌드 점수</div>
+          <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('hordeSurvivor.buildScore')}</div>
           <div className="text-2xl font-bold tabular-nums" style={{ color: evaluation.score > 70 ? '#10b981' : evaluation.score > 40 ? '#f59e0b' : '#ef4444' }}>
             {evaluation.score}/100
           </div>
@@ -103,17 +105,17 @@ export default function HordeSurvivorPanel({ onClose }: Props) {
 
       {/* 지표 */}
       <div className="grid grid-cols-4 gap-2">
-        <Stat label="10분 DPS" value={Math.round(evaluation.dpsAt10min).toLocaleString()} color="#3b82f6" />
-        <Stat label="20분 DPS" value={Math.round(evaluation.dpsAt20min).toLocaleString()} color="#8b5cf6" />
-        <Stat label="30분 DPS" value={Math.round(evaluation.dpsAt30min).toLocaleString()} color="#ef4444" />
-        <Stat label="시너지" value={`×${evaluation.synergyBonus.toFixed(2)}`} sub="속성 매칭 배율" color="#f59e0b" />
+        <Stat label={t('hordeSurvivor.dps10m')} value={Math.round(evaluation.dpsAt10min).toLocaleString()} color="#3b82f6" />
+        <Stat label={t('hordeSurvivor.dps20m')} value={Math.round(evaluation.dpsAt20min).toLocaleString()} color="#8b5cf6" />
+        <Stat label={t('hordeSurvivor.dps30m')} value={Math.round(evaluation.dpsAt30min).toLocaleString()} color="#ef4444" />
+        <Stat label={t('hordeSurvivor.synergy')} value={`×${evaluation.synergyBonus.toFixed(2)}`} sub={t('hordeSurvivor.synergySubtitle')} color="#f59e0b" />
       </div>
 
       {/* 빌드 — 6 슬롯 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-            무기 빌드 ({cfg.weapons.length}/6)
+            {t('hordeSurvivor.weaponBuild', { n: cfg.weapons.length })}
           </span>
           <div className="flex items-center gap-1 flex-wrap">
             {Object.entries(elementSummary).map(([el, count]) => {
@@ -183,7 +185,7 @@ export default function HordeSurvivorPanel({ onClose }: Props) {
       {/* 시뮬 차트 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          생존 타임라인 (분)
+          {t('hordeSurvivor.survivalTimeline')}
         </div>
         <div className="h-56">
           <ResponsiveContainer>
@@ -202,13 +204,13 @@ export default function HordeSurvivorPanel({ onClose }: Props) {
         </div>
         {result.crisisPeakSec > 0 && (
           <p className="text-caption mt-1" style={{ color: '#f59e0b' }}>
-            피크 위기: {Math.floor(result.crisisPeakSec / 60)}:{(result.crisisPeakSec % 60).toString().padStart(2, '0')} — 적 overflow 최대
+            {t('hordeSurvivor.crisisPeak', { m: Math.floor(result.crisisPeakSec / 60), s: (result.crisisPeakSec % 60).toString().padStart(2, '0') })}
           </p>
         )}
       </div>
 
       <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        Vampire Survivors 기준: 30분 session · 분당 +30% 적 밀도 · 같은 속성 2+ 무기 시 시너지 (1.3~1.5×).
+        {t('hordeSurvivor.standardNote')}
       </p>
     </PanelShell>
   );

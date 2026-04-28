@@ -63,7 +63,7 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
       addRow(projectId, sheet.id, draft);
       setDraft({});
       setSessionCount((c) => c + 1);
-      toast.success('레코드가 추가되었습니다');
+      toast.success(t('views.formSubmitToast'));
     } finally {
       setSubmitting(false);
     }
@@ -75,7 +75,7 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
 
   const handleCopyShareHint = () => {
     // 백엔드 없이는 진짜 공유 링크 불가 — 우선 안내만
-    toast.info('공유 가능한 외부 폼 링크는 백엔드 연동 후 제공됩니다');
+    toast.info(t('views.formShareHint'));
   };
 
   const renderInput = (col: Column) => {
@@ -112,7 +112,7 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
             >
               {checked && <Check size={11} color="white" strokeWidth={3} />}
             </span>
-            <span className="text-sm">{checked ? '예' : '아니오'}</span>
+            <span className="text-sm">{checked ? t('views.formYes') : t('views.formNo')}</span>
           </button>
         );
       }
@@ -175,7 +175,7 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
           <Select
             value={typeof value === 'string' ? value : ''}
             onChange={setValue}
-            placeholder="선택하세요"
+            placeholder={t('views.formSelectPlaceholder')}
             options={(col.selectOptions ?? []).map((opt) => ({
               value: opt.id, label: opt.label, color: opt.color,
             }))}
@@ -207,7 +207,7 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
               );
             })}
             {(col.selectOptions?.length ?? 0) === 0 && (
-              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>옵션이 없습니다</span>
+              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{t('views.formNoOptions')}</span>
             )}
           </div>
         );
@@ -267,17 +267,20 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
               onClick={handleCopyShareHint}
               className="flex items-center gap-1 text-xs px-2 py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors"
               style={{ color: 'var(--text-secondary)' }}
-              title="외부 공유 링크 (백엔드 연동 필요)"
+              title={t('views.formShareLinkTooltip')}
             >
               <LinkIcon size={12} />
-              공유 링크
+              {t('views.formShareLink')}
             </button>
           </div>
           <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            제출된 레코드는 <strong>{sheet.name}</strong> 시트에 자동으로 추가됩니다.
+            {t.rich('views.formAutoAddToSheet', {
+              sheetName: sheet.name,
+              sheet: (chunks) => <strong>{chunks}</strong>,
+            })}
             {sessionCount > 0 && (
               <span className="ml-1" style={{ color: 'var(--accent)' }}>
-                · 이번 세션 {sessionCount}건 제출
+                {t('views.formSessionCount', { count: sessionCount })}
               </span>
             )}
           </p>
@@ -322,10 +325,10 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
                   disabled={Object.keys(draft).length === 0 || submitting}
                   className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm transition-colors hover:bg-[var(--bg-tertiary)] disabled:opacity-40"
                   style={{ color: 'var(--text-secondary)' }}
-                  title="필드 초기화"
+                  title={t('views.formResetTooltip')}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  초기화
+                  {t('views.formReset')}
                 </button>
               </div>
             </>
@@ -337,7 +340,7 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
               <CheckCircle2 size={12} />
-              최근 제출 ({Math.min(recentRows.length, 3)}건)
+              {t('views.formRecentSubmits', { count: Math.min(recentRows.length, 3) })}
             </div>
             <div className="space-y-1.5">
               {recentRows.map((row) => {
@@ -358,10 +361,10 @@ export default function FormView({ projectId, sheet }: FormViewProps) {
                       background: 'var(--bg-secondary)',
                       color: 'var(--text-primary)',
                     }}
-                    title="클릭: 편집  ·  우클릭: 메뉴"
+                    title={t('views.formRowTooltip')}
                   >
                     <Check size={12} style={{ color: '#10b981', flexShrink: 0 }} />
-                    <span className="flex-1 truncate">{label || '(빈 값)'}</span>
+                    <span className="flex-1 truncate">{label || t('views.formEmptyValue')}</span>
                   </button>
                 );
               })}

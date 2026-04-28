@@ -10,6 +10,7 @@
  */
 
 import React, { forwardRef, useEffect, useRef, useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import type { CellStyle, ColumnType, SelectOption, Sheet } from '@/types';
 import { availableFunctions } from '@/lib/formulaEngine';
 
@@ -44,6 +45,7 @@ interface CellEditorProps {
 
 export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
   ({ value, onChange, onKeyDown, onBlur, isFormula = false, position, cellStyle, columnType, selectOptions, linkedSheet, linkedDisplayColumnId, linkedMultiple, rowIndex, onConvertColumn }, ref) => {
+    const t = useTranslations();
     const internalInputRef = useRef<HTMLInputElement>(null);
 
     // 값이 변경될 때마다 커서가 보이도록 스크롤
@@ -129,7 +131,7 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
           tabIndex={-1}
         >
           {selectOptions.length === 0 ? (
-            <div className="p-2 text-xs" style={{ color: 'var(--text-secondary)' }}>옵션 없음 — 컬럼 설정에서 추가</div>
+            <div className="p-2 text-xs" style={{ color: 'var(--text-secondary)' }}>{t('sheet.noOptionsHint')}</div>
           ) : (
             selectOptions.map((opt) => (
               <button
@@ -159,7 +161,7 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
               className="text-caption px-2 py-0.5 rounded"
               style={{ background: 'var(--accent)', color: 'white' }}
             >
-              완료 (Esc)
+              {t('sheet.completeEsc')}
             </button>
           </div>
         </div>
@@ -248,44 +250,48 @@ interface SlashCommand {
   resolve: () => string;
 }
 
-const SLASH_COMMANDS: SlashCommand[] = [
-  {
-    name: 'today',
-    label: '오늘 날짜',
-    hint: 'YYYY-MM-DD',
-    resolve: () => new Date().toISOString().slice(0, 10),
-  },
-  {
-    name: 'now',
-    label: '현재 시간',
-    hint: 'ISO timestamp',
-    resolve: () => new Date().toISOString(),
-  },
-  {
-    name: 'uuid',
-    label: 'UUID 8자리',
-    hint: '랜덤 식별자',
-    resolve: () => {
-      try {
-        return crypto.randomUUID().slice(0, 8);
-      } catch {
-        return Math.random().toString(36).slice(2, 10);
-      }
+type SlashT = (key: string, values?: Record<string, string | number | Date>) => string;
+
+function buildBaseSlashCommands(t: SlashT): SlashCommand[] {
+  return [
+    {
+      name: 'today',
+      label: t('sheet.cmdToday'),
+      hint: 'YYYY-MM-DD',
+      resolve: () => new Date().toISOString().slice(0, 10),
     },
-  },
-  {
-    name: 'random',
-    label: '랜덤 정수 0-99',
-    hint: 'Math.floor(random×100)',
-    resolve: () => String(Math.floor(Math.random() * 100)),
-  },
-  {
-    name: 'clear',
-    label: '셀 비우기',
-    hint: '빈 값',
-    resolve: () => '',
-  },
-];
+    {
+      name: 'now',
+      label: t('sheet.cmdNow'),
+      hint: 'ISO timestamp',
+      resolve: () => new Date().toISOString(),
+    },
+    {
+      name: 'uuid',
+      label: t('sheet.cmdUuid8'),
+      hint: t('sheet.cmdUuid8Hint'),
+      resolve: () => {
+        try {
+          return crypto.randomUUID().slice(0, 8);
+        } catch {
+          return Math.random().toString(36).slice(2, 10);
+        }
+      },
+    },
+    {
+      name: 'random',
+      label: t('sheet.cmdRandInt'),
+      hint: 'Math.floor(random×100)',
+      resolve: () => String(Math.floor(Math.random() * 100)),
+    },
+    {
+      name: 'clear',
+      label: t('sheet.cmdClearCell'),
+      hint: t('sheet.cmdClearHint'),
+      resolve: () => '',
+    },
+  ];
+}
 
 function SmartInput({
   innerRef,
@@ -312,13 +318,14 @@ function SmartInput({
   rowIndex?: number;
   onConvertColumn?: (newType: ColumnType) => void;
 }) {
+  const t = useTranslations();
   // 동적 SLASH 명령 — context 에 따라 추가 항목 (/seq, /checkbox 등)
   const slashCommands = useMemo<SlashCommand[]>(() => {
-    const list: SlashCommand[] = [...SLASH_COMMANDS];
+    const list: SlashCommand[] = [...buildBaseSlashCommands(t)];
     if (typeof rowIndex === 'number') {
       list.push({
         name: 'seq',
-        label: '행 번호',
+        label: t('sheet.cmdRowNumber'),
         hint: `${rowIndex + 1}`,
         resolve: () => String(rowIndex + 1),
       });
@@ -326,28 +333,28 @@ function SmartInput({
     if (onConvertColumn) {
       const convert = (target: ColumnType, label: string): SlashCommand => ({
         name: target,
-        label: `컬럼 → ${label}`,
-        hint: '컬럼 type 변경',
+        label: t('sheet.cmdConvertColumn', { label }),
+        hint: t('sheet.cmdConvertHint'),
         resolve: () => {
           // 다른 셀에 영향 — confirm 후 실행. resolve 가 셀 값을 반환하는 구조라
           // 여기서 부수 효과(컬럼 변환) 처리 후 빈 값 반환해 슬래시 명령 자체는 셀 값을 비움.
           if (typeof window !== 'undefined') {
-            const ok = window.confirm(`이 컬럼의 type 을 "${label}" 로 바꿉니다. 다른 행에도 영향을 줄 수 있어요. 계속할까요?`);
+            const ok = window.confirm(t('sheet.cmdConvertConfirm', { label }));
             if (!ok) return value;
           }
           onConvertColumn(target);
           return '';
         },
       });
-      list.push(convert('checkbox', '체크박스'));
-      list.push(convert('select', '선택지'));
-      list.push(convert('date', '날짜'));
+      list.push(convert('checkbox', t('sheet.typeCheckbox')));
+      list.push(convert('select', t('sheet.typeSelect')));
+      list.push(convert('date', t('sheet.typeDate')));
       list.push(convert('url', 'URL'));
-      list.push(convert('rating', '별점'));
-      list.push(convert('formula', '수식'));
+      list.push(convert('rating', t('sheet.typeRating')));
+      list.push(convert('formula', t('sheet.typeFormula')));
     }
     return list;
-  }, [rowIndex, onConvertColumn, value]);
+  }, [rowIndex, onConvertColumn, value, t]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [caretPos, setCaretPos] = useState<number | null>(null);
@@ -538,7 +545,7 @@ function SmartInput({
               color: 'var(--text-tertiary)',
             }}
           >
-            ↑↓ 선택 · Tab/Enter 삽입 · Esc 닫기
+            {t('sheet.autocompleteHint')}
           </div>
         </div>
       )}
@@ -588,7 +595,7 @@ function SmartInput({
               color: 'var(--text-tertiary)',
             }}
           >
-            ↑↓ 선택 · Tab/Enter 삽입
+            {t('sheet.autocompleteHintShort')}
           </div>
         </div>
       )}
@@ -616,6 +623,7 @@ function LinkRecordPicker({
   onChange: (next: string) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations();
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -687,14 +695,14 @@ function LinkRecordPicker({
           ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={`${linkedSheet.name} 검색...`}
+          placeholder={t('sheet.searchInSheet', { sheet: linkedSheet.name })}
           className="w-full px-2 py-1 text-xs rounded bg-transparent border"
           style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
         />
       </div>
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
-          <div className="p-2 text-xs text-center" style={{ color: 'var(--text-secondary)' }}>일치하는 레코드 없음</div>
+          <div className="p-2 text-xs text-center" style={{ color: 'var(--text-secondary)' }}>{t('sheet.noMatchingRecord')}</div>
         ) : (
           filtered.slice(0, 100).map((row) => {
             const isSel = selected.has(row.id);
@@ -718,7 +726,7 @@ function LinkRecordPicker({
                   </span>
                 )}
                 {!multiple && isSel && <span style={{ color: 'var(--accent)' }}>●</span>}
-                <span className="truncate">{labelOf(row) || '(빈 값)'}</span>
+                <span className="truncate">{labelOf(row) || t('sheet.emptyValue')}</span>
               </button>
             );
           })
@@ -731,7 +739,7 @@ function LinkRecordPicker({
           className="text-caption px-1.5 py-0.5 rounded hover:bg-[var(--bg-tertiary)]"
           style={{ color: 'var(--text-secondary)' }}
         >
-          선택 해제
+          {t('sheet.deselect')}
         </button>
         <button
           type="button"
@@ -739,7 +747,7 @@ function LinkRecordPicker({
           className="text-caption px-2 py-0.5 rounded"
           style={{ background: 'var(--accent)', color: 'white' }}
         >
-          {multiple ? '완료' : '닫기'}
+          {multiple ? t('sheet.complete') : t('sheet.close')}
         </button>
       </div>
     </div>

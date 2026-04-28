@@ -14,15 +14,16 @@ import {
   defaultAutoBattlerConfig,
   type AutoBattlerStrategy,
 } from '@/lib/autoBattler';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
 }
 
 const STRATEGY_LABEL: Record<AutoBattlerStrategy, string> = {
-  'greedy-econ': '이자 극대화',
-  'fast-level': '빠른 레벨업',
-  'balanced': '균형',
+  'greedy-econ': 'autoBattler.stratGreedy',
+  'fast-level': 'autoBattler.stratFastLevel',
+  'balanced': 'autoBattler.stratBalanced',
 };
 
 const STRATEGY_COLOR: Record<AutoBattlerStrategy, string> = {
@@ -32,6 +33,7 @@ const STRATEGY_COLOR: Record<AutoBattlerStrategy, string> = {
 };
 
 export default function AutoBattlerPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [strategy, setStrategy] = useState<AutoBattlerStrategy>('balanced');
   const [runs, setRuns] = useState(200);
   const [seed, setSeed] = useState(0);
@@ -57,8 +59,8 @@ export default function AutoBattlerPanel({ onClose }: Props) {
 
   return (
     <PanelShell
-      title="Auto Battler 시뮬"
-      subtitle="TFT/HSBG · 이자 vs 템포"
+      title={t('autoBattler.titleHeader')}
+      subtitle={t('autoBattler.subtitleHeader')}
       icon={Dices}
       iconColor="#f59e0b"
       onClose={onClose}
@@ -76,7 +78,7 @@ export default function AutoBattlerPanel({ onClose }: Props) {
               color: strategy === s ? 'white' : 'var(--text-secondary)',
             }}
           >
-            {STRATEGY_LABEL[s]}
+            {t(STRATEGY_LABEL[s] as 'autoBattler.stratGreedy')}
           </button>
         ))}
       </div>
@@ -84,30 +86,30 @@ export default function AutoBattlerPanel({ onClose }: Props) {
       {/* 단일 run 요약 */}
       <div className="grid grid-cols-4 gap-2">
         <Stat
-          label="최종 순위"
-          value={`${singleRun.placement}위`}
-          sub={singleRun.survived ? '생존' : 'HP 0'}
+          label={t('autoBattler.finalRank')}
+          value={t('autoBattler.rankSuffix', { n: singleRun.placement })}
+          sub={singleRun.survived ? t('autoBattler.survivedLabel') : t('autoBattler.hp0Label')}
           color={singleRun.placement === 1 ? '#fbbf24' : singleRun.placement <= 4 ? '#10b981' : '#ef4444'}
           icon={Trophy}
         />
         <Stat
-          label="파워 스파이크"
+          label={t('autoBattler.powerSpike')}
           value={`R${singleRun.peakPowerRound}`}
-          sub={`평균 ${Math.round(singleRun.avgPower)}`}
+          sub={t('autoBattler.powerSpikeAvg', { avg: Math.round(singleRun.avgPower) })}
           color="#8b5cf6"
           icon={TrendingUp}
         />
         <Stat
-          label="총 이자 수입"
+          label={t('autoBattler.totalInterest')}
           value={`+${singleRun.totalInterestEarned}g`}
-          sub="장기적 경제"
+          sub={t('autoBattler.totalInterestSub')}
           color="#f59e0b"
           icon={Coins}
         />
         <Stat
-          label="리롤 비용"
+          label={t('autoBattler.rerollCost')}
           value={`-${singleRun.totalRerollSpent}g`}
-          sub="템포 투자"
+          sub={t('autoBattler.rerollCostSub')}
           color="#ef4444"
           icon={Dices}
         />
@@ -116,7 +118,7 @@ export default function AutoBattlerPanel({ onClose }: Props) {
       {/* 라운드 차트 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          라운드별 gold / level / power / HP
+          {t('autoBattler.roundChartTitle')}
         </div>
         <div className="h-56">
           <ResponsiveContainer>
@@ -135,20 +137,20 @@ export default function AutoBattlerPanel({ onClose }: Props) {
           </ResponsiveContainer>
         </div>
         <div className="flex items-center gap-1 mt-2 flex-wrap">
-          <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>라운드 W/L:</span>
+          <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('autoBattler.roundWlLabel')}</span>
           {singleRun.rounds.map((r) => (
             <span
               key={r.round}
               className="w-4 h-4 rounded text-caption text-center leading-4 font-bold text-white"
               style={{ background: r.won ? '#10b981' : '#ef4444' }}
-              title={`R${r.round}: ${r.won ? '승' : '패'} · lvl ${r.level} · power ${r.teamPower}`}
+              title={t('autoBattler.roundTooltip', { r: r.round, wl: r.won ? t('autoBattler.winShort') : t('autoBattler.lossShort'), lvl: r.level, pw: r.teamPower })}
             >
               {r.won ? 'W' : 'L'}
             </span>
           ))}
         </div>
         <button onClick={() => setSeed((s) => s + 1)} className="mt-2 text-caption px-2 py-1 rounded" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
-          재시뮬 (seed 변경)
+          {t('autoBattler.rerunSeed')}
         </button>
       </div>
 
@@ -156,7 +158,7 @@ export default function AutoBattlerPanel({ onClose }: Props) {
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-            전략 비교 ({runs} run Monte Carlo)
+            {t('autoBattler.stratCompare', { n: runs })}
           </span>
           <div className="flex items-center gap-2">
             <input
@@ -172,9 +174,9 @@ export default function AutoBattlerPanel({ onClose }: Props) {
         <div className="h-48 mb-2">
           <ResponsiveContainer>
             <BarChart data={comparison.map((r) => ({
-              strategy: STRATEGY_LABEL[r.strategy],
-              '평균 순위': Math.round(r.avgPlacement * 10) / 10,
-              '1위 비율 (%)': Math.round(r.winRate * 100),
+              strategy: t(STRATEGY_LABEL[r.strategy] as 'autoBattler.stratGreedy'),
+              [t('autoBattler.avgRank')]: Math.round(r.avgPlacement * 10) / 10,
+              [t('autoBattler.winRatePct')]: Math.round(r.winRate * 100),
               'Top 4 (%)': Math.round(r.top4Rate * 100),
             }))}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
@@ -182,8 +184,8 @@ export default function AutoBattlerPanel({ onClose }: Props) {
               <YAxis tick={{ fontSize: 10 }} />
               <Tooltip />
               <Legend wrapperStyle={{ fontSize: 10 }} />
-              <Bar dataKey="평균 순위" fill="#ef4444" />
-              <Bar dataKey="1위 비율 (%)" fill="#fbbf24" />
+              <Bar dataKey={t('autoBattler.avgRank')} fill="#ef4444" />
+              <Bar dataKey={t('autoBattler.winRatePct')} fill="#fbbf24" />
               <Bar dataKey="Top 4 (%)" fill="#10b981" />
             </BarChart>
           </ResponsiveContainer>
@@ -192,19 +194,19 @@ export default function AutoBattlerPanel({ onClose }: Props) {
         <table className="w-full text-caption">
           <thead>
             <tr style={{ color: 'var(--text-tertiary)' }}>
-              <th className="text-left px-2 py-1">전략</th>
-              <th className="text-right px-2 py-1">평균 순위</th>
-              <th className="text-right px-2 py-1">1위</th>
+              <th className="text-left px-2 py-1">{t('autoBattler.tableStrategy')}</th>
+              <th className="text-right px-2 py-1">{t('autoBattler.avgRank')}</th>
+              <th className="text-right px-2 py-1">{t('autoBattler.tableTopOne')}</th>
               <th className="text-right px-2 py-1">Top 4</th>
-              <th className="text-right px-2 py-1">평균 HP</th>
-              <th className="text-right px-2 py-1">평균 피크 파워</th>
+              <th className="text-right px-2 py-1">{t('autoBattler.tableAvgHp')}</th>
+              <th className="text-right px-2 py-1">{t('autoBattler.tableAvgPeak')}</th>
             </tr>
           </thead>
           <tbody>
             {comparison.map((r) => (
               <tr key={r.strategy} style={{ borderTop: '1px solid var(--border-primary)' }}>
                 <td className="px-2 py-1 font-semibold" style={{ color: STRATEGY_COLOR[r.strategy] }}>
-                  {STRATEGY_LABEL[r.strategy]}
+                  {t(STRATEGY_LABEL[r.strategy] as 'autoBattler.stratGreedy')}
                 </td>
                 <td className="px-2 py-1 text-right tabular-nums">{r.avgPlacement.toFixed(2)}</td>
                 <td className="px-2 py-1 text-right tabular-nums">{Math.round(r.winRate * 100)}%</td>
@@ -218,7 +220,7 @@ export default function AutoBattlerPanel({ onClose }: Props) {
       </div>
 
       <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        TFT 기준: 10/20/30/40/50g 마다 +1~5 이자 cap · 레벨업 4g/4xp · 라운드당 +2xp · 연승/연패 streak bonus.
+        {t('autoBattler.tftReference')}
       </p>
     </PanelShell>
   );

@@ -117,12 +117,12 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
       let v = solverResult.value;
       let adjusted = false;
       const notes: string[] = [];
-      if (c.integer) { const r = Math.round(v); if (r !== v) { v = r; adjusted = true; notes.push('정수로 반올림'); } }
-      if (minN !== null && v < minN) { v = minN; adjusted = true; notes.push(`최소 ${minN} 로 클램프`); }
-      if (maxN !== null && v > maxN) { v = maxN; adjusted = true; notes.push(`최대 ${maxN} 로 클램프`); }
+      if (c.integer) { const r = Math.round(v); if (r !== v) { v = r; adjusted = true; notes.push(t('noteIntegerRound')); } }
+      if (minN !== null && v < minN) { v = minN; adjusted = true; notes.push(t('noteClampMin', { min: minN })); }
+      if (maxN !== null && v > maxN) { v = maxN; adjusted = true; notes.push(t('noteClampMax', { max: maxN })); }
       if (adjusted) {
         solverResult.value = v;
-        solverResult.warnings = [...(solverResult.warnings ?? []), `제약조건 적용: ${notes.join(' · ')}`];
+        solverResult.warnings = [...(solverResult.warnings ?? []), t('warningConstraintApplied', { notes: notes.join(' · ') })];
       }
     }
 
@@ -159,8 +159,8 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
 
   return (
     <PanelShell
-      title="목표 역산"
-      subtitle="목표값 → 필요 입력 역산"
+      title={t('titleHeader')}
+      subtitle={t('subtitleHeader')}
       icon={Target}
       iconColor="#14b8a6"
       onClose={onClose}
@@ -170,9 +170,9 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
       <style>{hideSpinnerStyle}</style>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-2">
-        <ToolPanelHint toolId="goal" title="목표 역산 — 결과에서 입력 찾기" accentColor="#06b6d4">
-          <p>"<strong>DPS 100 만들려면 공격력 얼마?</strong>" 같은 역방향 계산. bisection (이분법) 알고리즘으로 자동.</p>
-          <p>수식 + 목표값 + 변경할 변수 선택 → 답이 나옴. 시트의 셀 값을 그대로 가져오는 옵션도.</p>
+        <ToolPanelHint toolId="goal" title={t('hintTitle')} accentColor="#06b6d4">
+          <p>{t.rich('hintP1', { strong: (chunks) => <strong>{chunks}</strong> })}</p>
+          <p>{t('hintP2')}</p>
         </ToolPanelHint>
         {/* 도움말 패널 */}
         {showHelp && (
@@ -203,7 +203,7 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="역산 공식 검색 (예: DPS, EXP, ROI)"
+            placeholder={t('searchPlaceholder')}
             className="glass-input w-full !pl-9 text-sm"
           />
         </div>
@@ -288,7 +288,7 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                   {/* Constraints — Excel Solver 스타일 제약조건 */}
                   <details className="glass-section p-2 rounded-lg">
                     <summary className="cursor-pointer text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
-                      제약조건 (선택)
+                      {t('constraintLabel')}
                     </summary>
                     <div className="mt-2 grid grid-cols-3 gap-2">
                       <label className="flex items-center gap-1.5 text-caption" style={{ color: 'var(--text-secondary)' }}>
@@ -297,10 +297,10 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                           checked={getConstraint(formula.id).integer}
                           onChange={(e) => setConstraint(formula.id, { integer: e.target.checked })}
                         />
-                        정수 해
+                        {t('integerSolution')}
                       </label>
                       <div>
-                        <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>최소</label>
+                        <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{t('minLabel')}</label>
                         <input
                           type="number"
                           value={getConstraint(formula.id).min}
@@ -310,7 +310,7 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                         />
                       </div>
                       <div>
-                        <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>최대</label>
+                        <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{t('maxLabel')}</label>
                         <input
                           type="number"
                           value={getConstraint(formula.id).max}
@@ -381,7 +381,7 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                                 onClick={() => useCalculatorStore.getState().setAns(result.value!, formula.targetLabel)}
                                 className="absolute top-2 right-2 text-caption px-2 py-0.5 rounded"
                                 style={{ background: `${PANEL_COLOR}20`, color: PANEL_COLOR }}
-                                title="계산기 ans 변수로 저장 — Calculator 입력란에 적용 가능"
+                                title={t('tooltipSaveAns')}
                               >
                                 → ans
                               </button>
@@ -398,9 +398,9 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                               <div className="px-4 py-2 space-y-1" style={{ background: `${PANEL_COLOR}08`, borderTop: '1px solid var(--border-primary)' }}>
                                 <div className="flex items-center gap-2 text-sm">
                                   <Check className="w-4 h-4" style={{ color: PANEL_COLOR }} />
-                                  <span style={{ color: 'var(--text-secondary)' }}>해 검증: bisection 수렴</span>
+                                  <span style={{ color: 'var(--text-secondary)' }}>{t('verifyConverged')}</span>
                                   <span className="ml-auto font-mono tabular-nums text-caption" style={{ color: PANEL_COLOR }}>
-                                    오차 &lt; 0.01 · tolerance 이내
+                                    {t('errorWithin')}
                                   </span>
                                 </div>
                                 {sens && (
@@ -411,7 +411,7 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                                 )}
                                 {alts.length > 0 && (
                                   <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                                    <span>대체 해 ({alts.length}): </span>
+                                    <span>{t('altSolutions', { n: alts.length })}</span>
                                     {alts.map((a, i) => (
                                       <span key={i} className="font-mono ml-1 px-1 rounded" style={{ background: 'var(--bg-primary)' }}>
                                         {a.value}
@@ -447,11 +447,11 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                             </div>
                           </div>
                           <div className="rounded-lg p-2.5 text-caption" style={{ background: 'var(--bg-primary)' }}>
-                            <div className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>제안</div>
+                            <div className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>{t('suggestionTitle')}</div>
                             <ul className="list-disc list-inside space-y-0.5" style={{ color: 'var(--text-secondary)' }}>
-                              <li>목표값을 조금 완화해보세요 (예: ±20%)</li>
-                              <li>다른 파라미터 (예: baseline) 를 먼저 조정</li>
-                              <li>이 공식으로는 유한 해가 없을 수 있음 — 다른 역산 공식 시도</li>
+                              <li>{t('suggestionRelaxTarget')}</li>
+                              <li>{t('suggestionAdjustOther')}</li>
+                              <li>{t('suggestionTryOther')}</li>
                             </ul>
                             <div className="mt-2 flex gap-1">
                               <button
@@ -462,7 +462,7 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                                 className="px-2 py-0.5 rounded text-caption"
                                 style={{ background: `${PANEL_COLOR}20`, color: PANEL_COLOR }}
                               >
-                                목표 +20%
+                                {t('targetPlus20')}
                               </button>
                               <button
                                 onClick={() => {
@@ -472,7 +472,7 @@ export default function GoalSolverPanel({ onClose, showHelp: externalShowHelp, s
                                 className="px-2 py-0.5 rounded text-caption"
                                 style={{ background: `${PANEL_COLOR}20`, color: PANEL_COLOR }}
                               >
-                                목표 -20%
+                                {t('targetMinus20')}
                               </button>
                             </div>
                           </div>
@@ -583,6 +583,7 @@ function SolverBoxShell({
 }
 
 function GenericSolverBox() {
+  const t = useTranslations('goalSolver');
   const [expression, setExpression] = useState('atk * (100 / (100 + def))');
   const [varsText, setVarsText] = useState('def=50');
   const [solveFor, setSolveFor] = useState('atk');
@@ -609,9 +610,9 @@ function GenericSolverBox() {
   };
 
   return (
-    <SolverBoxShell icon={Calculator} title="범용 수식 역산" subtitle="mathjs 문법 · bisection">
+    <SolverBoxShell icon={Calculator} title={t('genericSolverTitle')} subtitle={t('genericSolverSubtitle')}>
         <div>
-          <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>수식</label>
+          <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>{t('formulaLabel')}</label>
           <input
             type="text"
             value={expression}
@@ -622,7 +623,7 @@ function GenericSolverBox() {
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>고정 변수 (key=val;)</label>
+            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>{t('fixedVarsLabel')}</label>
             <input
               type="text"
               value={varsText}
@@ -632,7 +633,7 @@ function GenericSolverBox() {
             />
           </div>
           <div>
-            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>역산할 변수</label>
+            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>{t('varToSolveLabel')}</label>
             <input
               type="text"
               value={solveFor}
@@ -642,11 +643,11 @@ function GenericSolverBox() {
             />
           </div>
           <div>
-            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>목표값</label>
+            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>{t('targetValueLabel')}</label>
             <ScrubbableNumberInput value={target} onChange={setTarget} />
           </div>
           <div>
-            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>범위 min / max</label>
+            <label className="block text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>{t('rangeMinMax')}</label>
             <div className="flex gap-1">
               <input type="number" value={lo} onChange={(e) => setLo(e.target.value)} className="glass-input hide-spinner w-full px-2 py-1 text-caption" />
               <input type="number" value={hi} onChange={(e) => setHi(e.target.value)} className="glass-input hide-spinner w-full px-2 py-1 text-caption" />
@@ -658,7 +659,7 @@ function GenericSolverBox() {
           className="w-full py-2 rounded-lg font-medium text-sm"
           style={{ background: PANEL_COLOR, color: 'white' }}
         >
-          역산 실행
+          {t('runSolverBtn')}
         </button>
         {result && (
           <div
@@ -692,6 +693,7 @@ function GenericSolverBox() {
 }
 
 function MonteCarloBox() {
+  const t = useTranslations('goalSolver');
   // 기본 시나리오: crit 확률 0.2, crit 배율 2.5, attackSpeed 1.2 고정.
   // 역산할 변수: damage. 목표 평균 DPS 500.
   const [targetMean, setTargetMean] = useState(500);
@@ -723,25 +725,25 @@ function MonteCarloBox() {
   };
 
   return (
-    <SolverBoxShell icon={Target} title="Monte Carlo 역산 — 확률 포함 수식" subtitle="bisection × random sampling">
+    <SolverBoxShell icon={Target} title={t('monteCarloTitle')} subtitle={t('monteCarloSubtitle')}>
         <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-          시나리오: crit 확률 포함 DPS 에서 <strong>damage 역산</strong>. 각 x 후보마다 N 회 랜덤 시뮬 → 평균이 목표에 수렴하는 damage.
+          {t.rich('monteCarloScenario', { strong: (chunks) => <strong>{chunks}</strong> })}
         </p>
         <div className="grid grid-cols-4 gap-2">
           <div>
-            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>목표 평균 DPS</label>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{t('mcTargetMeanDps')}</label>
             <input type="number" value={targetMean} onChange={(e) => setTargetMean(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
           </div>
           <div>
-            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>crit 확률</label>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{t('mcCritRate')}</label>
             <input type="number" step="0.05" value={critRate} onChange={(e) => setCritRate(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
           </div>
           <div>
-            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>crit 배율</label>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{t('mcCritMul')}</label>
             <input type="number" step="0.1" value={critDmg} onChange={(e) => setCritDmg(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
           </div>
           <div>
-            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>공격 속도</label>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{t('mcAttackSpeed')}</label>
             <input type="number" step="0.1" value={aSpd} onChange={(e) => setASpd(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
           </div>
         </div>
@@ -754,7 +756,7 @@ function MonteCarloBox() {
             className="flex-1 py-1.5 rounded-lg font-medium text-sm"
             style={{ background: PANEL_COLOR, color: 'white', opacity: running ? 0.6 : 1 }}
           >
-            {running ? 'MC 실행 중...' : 'Monte Carlo 실행'}
+            {running ? t('mcRunning') : t('mcRun')}
           </button>
         </div>
         {result && (
@@ -769,7 +771,7 @@ function MonteCarloBox() {
               <>
                 <div className="flex items-center gap-2">
                   <Check className="w-4 h-4" style={{ color: PANEL_COLOR }} />
-                  <span style={{ color: 'var(--text-secondary)' }}>필요 damage =</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{t('mcRequiredDamage')}</span>
                   <span className="font-bold tabular-nums" style={{ color: PANEL_COLOR }}>
                     {result.value!.toFixed(2)}
                   </span>
@@ -778,8 +780,8 @@ function MonteCarloBox() {
                   </span>
                 </div>
                 <div className="text-caption grid grid-cols-3 gap-2" style={{ color: 'var(--text-tertiary)' }}>
-                  <span>관측 평균: <span className="font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>{result.observedMean!.toFixed(2)}</span></span>
-                  <span>표준편차: <span className="font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>{result.stdev!.toFixed(2)}</span></span>
+                  <span>{t('mcObservedMean')}<span className="font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>{result.observedMean!.toFixed(2)}</span></span>
+                  <span>{t('mcStdev')}<span className="font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>{result.stdev!.toFixed(2)}</span></span>
                   <span>99% CI: <span className="font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>±{result.ci99!.toFixed(2)}</span></span>
                 </div>
               </>
@@ -796,6 +798,7 @@ function MonteCarloBox() {
 }
 
 function ParetoBox() {
+  const t = useTranslations('goalSolver');
   // 기본 프리셋: HP + DEF 조합으로 EHP 5000 목표 · cost = HP + DEF × 3
   const [ehpTarget, setEhpTarget] = useState(5000);
   const [hpCost, setHpCost] = useState(1);
@@ -815,31 +818,31 @@ function ParetoBox() {
   }));
 
   return (
-    <SolverBoxShell icon={Target} title="Pareto 최적화 — HP × DEF 조합" subtitle="2 변수 · cost 최소">
+    <SolverBoxShell icon={Target} title={t('paretoTitle')} subtitle={t('paretoSubtitle')}>
         <div className="grid grid-cols-3 gap-2">
           <div>
-            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>목표 EHP</label>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{t('paretoTargetEhp')}</label>
             <input type="number" value={ehpTarget} onChange={(e) => setEhpTarget(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
           </div>
           <div>
-            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>HP 단가</label>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{t('paretoHpCost')}</label>
             <input type="number" step="0.1" value={hpCost} onChange={(e) => setHpCost(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
           </div>
           <div>
-            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>DEF 단가</label>
+            <label className="block text-caption mb-0.5" style={{ color: 'var(--text-tertiary)' }}>{t('paretoDefCost')}</label>
             <input type="number" step="0.1" value={defCost} onChange={(e) => setDefCost(parseFloat(e.target.value) || 0)} className="glass-input hide-spinner w-full px-2 py-1 text-sm" />
           </div>
         </div>
         {best ? (
           <div className="p-2 rounded-lg" style={{ background: `${PANEL_COLOR}15`, borderLeft: `3px solid ${PANEL_COLOR}` }}>
-            <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>최소 cost 조합 (Pareto 1위)</div>
+            <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('paretoMinCost')}</div>
             <div className="font-mono text-sm font-bold" style={{ color: PANEL_COLOR }}>
               HP {best.x} + DEF {best.y} → EHP {Math.round(best.metricValue)} · cost {Math.round(best.costValue)}
             </div>
           </div>
         ) : (
           <div className="p-2 rounded-lg text-caption" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
-            목표 EHP {ehpTarget} 을 만족하는 조합이 범위 내 없음 — 범위 넓히거나 목표 완화
+            {t('paretoNoFeasible', { target: ehpTarget })}
           </div>
         )}
         {chartData.length > 0 && (
@@ -866,13 +869,14 @@ function ParetoBox() {
           </div>
         )}
         <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-          점 크기 = cost · HP 축 × DEF 축 · feasible set 에서 cost 낮은 순 40개
+          {t('paretoChartHelp')}
         </p>
     </SolverBoxShell>
   );
 }
 
 function StatWeightsBox() {
+  const t = useTranslations('goalSolver');
   // 기본 DPS 공식 + 4 스탯 (damage / attackSpeed / critRate / critDamage)
   const [metric, setMetric] = useState<'dps' | 'ehp' | 'damage'>('dps');
   const [stats, setStats] = useState<Record<string, number>>({
@@ -900,7 +904,7 @@ function StatWeightsBox() {
   const weights = calculateStatWeights({ evaluate, currentStats: stats, deltas });
 
   return (
-    <SolverBoxShell icon={Activity} title="Stat Weights — 스탯 1 단위 기여도" subtitle="SimulationCraft 방식">
+    <SolverBoxShell icon={Activity} title={t('statWeightsTitle')} subtitle={t('statWeightsSubtitle')}>
         <div className="flex gap-1">
           {(['dps', 'ehp', 'damage'] as const).map((m) => (
             <button
@@ -950,13 +954,14 @@ function StatWeightsBox() {
           ))}
         </div>
         <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-          bar 길이 = 정규화된 영향도 · 숫자 = 단위 증가당 {metric.toUpperCase()} 증분 (crit/damageReduction 은 %1 기준)
+          {t('statWeightsHelp', { metric: metric.toUpperCase() })}
         </p>
     </SolverBoxShell>
   );
 }
 
 function GoalSolverHistoryPanel({ onReload }: { onReload: (e: { formula: SolverFormula; targetValue: number; params: Record<string, number> }) => void }) {
+  const t = useTranslations('goalSolver');
   const entries = useGoalSolverHistory((s) => s.entries);
   const clear = useGoalSolverHistory((s) => s.clear);
   const remove = useGoalSolverHistory((s) => s.remove);
@@ -970,7 +975,7 @@ function GoalSolverHistoryPanel({ onReload }: { onReload: (e: { formula: SolverF
       >
         <Clock className="w-4 h-4" style={{ color: PANEL_COLOR }} />
         <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-          최근 역산 ({entries.length})
+          {t('recentHistory', { n: entries.length })}
         </span>
         <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${open ? '' : '-rotate-90'}`} style={{ color: 'var(--text-tertiary)' }} />
       </button>
@@ -991,7 +996,7 @@ function GoalSolverHistoryPanel({ onReload }: { onReload: (e: { formula: SolverF
                   {e.formulaName}
                 </span>
                 <span className="tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-                  목표 {e.targetValue}
+                  {t('historyTarget', { value: e.targetValue })}
                 </span>
                 {e.success && typeof e.resultValue === 'number' && (
                   <>
@@ -1002,7 +1007,7 @@ function GoalSolverHistoryPanel({ onReload }: { onReload: (e: { formula: SolverF
                   </>
                 )}
                 {!e.success && (
-                  <span style={{ color: '#ef4444' }}>실패</span>
+                  <span style={{ color: '#ef4444' }}>{t('historyFailed')}</span>
                 )}
                 <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
                   {d.getMonth() + 1}/{d.getDate()} {d.getHours()}:{d.getMinutes().toString().padStart(2, '0')}
@@ -1011,9 +1016,9 @@ function GoalSolverHistoryPanel({ onReload }: { onReload: (e: { formula: SolverF
                   onClick={() => onReload({ formula: e.formula, targetValue: e.targetValue, params: e.params })}
                   className="px-1.5 py-0.5 rounded text-caption"
                   style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
-                  title="이 입력으로 복원"
+                  title={t('historyRestoreTooltip')}
                 >
-                  복원
+                  {t('historyRestore')}
                 </button>
                 <button
                   onClick={() => remove(e.id)}
@@ -1029,7 +1034,7 @@ function GoalSolverHistoryPanel({ onReload }: { onReload: (e: { formula: SolverF
             className="w-full text-caption py-1 rounded mt-1"
             style={{ color: 'var(--text-tertiary)' }}
           >
-            전체 기록 지우기
+            {t('historyClearAll')}
           </button>
         </div>
       )}
@@ -1056,6 +1061,7 @@ function ScrubbableNumberInput({
   placeholder?: string;
   className?: string;
 }) {
+  const t = useTranslations('goalSolver');
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
     e.preventDefault();
@@ -1075,7 +1081,7 @@ function ScrubbableNumberInput({
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={handleKeyDown}
       placeholder={placeholder}
-      title="↑↓ 로 값 조정 · Shift 10배 · Alt 0.1배"
+      title={t('tooltipKeyAdjust')}
       className={className ?? 'glass-input hide-spinner w-full px-3 py-2.5 rounded-lg text-sm'}
     />
   );

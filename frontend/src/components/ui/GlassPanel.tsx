@@ -2,6 +2,7 @@
 
 import { ReactNode, useState, useEffect } from 'react';
 import { X, LucideIcon, GripVertical } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 interface GlassPanelProps {
@@ -34,6 +35,7 @@ export function GlassPanel({
   noPadding = false,
   compact = false,
 }: GlassPanelProps) {
+  const t = useTranslations('ui');
   const [showDragHint, setShowDragHint] = useState(false);
 
   useEffect(() => {
@@ -137,7 +139,7 @@ export function GlassPanel({
             >
               <GripVertical className="w-4 h-4" style={{ color: iconColor }} />
               <span className="text-xs font-medium whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
-                헤더를 드래그하여 이동
+                {t('glassDragHeader')}
               </span>
             </div>
           )}
@@ -177,6 +179,7 @@ export function GlassSection({
   collapsible = false,
   defaultCollapsed = false,
 }: GlassSectionProps) {
+  const t = useTranslations('ui');
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   return (
@@ -203,7 +206,7 @@ export function GlassSection({
               className="ml-auto text-xs"
               style={{ color: 'var(--text-tertiary)' }}
             >
-              {collapsed ? '펼치기' : '접기'}
+              {collapsed ? t('glassExpand') : t('glassCollapse')}
             </span>
           )}
         </div>

@@ -175,7 +175,7 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
     <div className="flex-1 flex overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="px-4 py-2 border-b flex items-center gap-3 flex-wrap" style={{ borderColor: 'var(--border-primary)' }}>
-          <Field label="시작">
+          <Field label={t('views.ganttStart')}>
             <CustomSelect
               value={startColId ?? ''}
               onChange={(v) => updateSheet(projectId, sheet.id, { viewGroupColumnId: v })}
@@ -183,27 +183,27 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
               size="sm"
             />
           </Field>
-          <Field label="종료">
+          <Field label={t('views.ganttEnd')}>
             <select
               value={endColId ?? ''}
               onChange={(e) => updateSheet(projectId, sheet.id, { viewGanttEndColumnId: e.target.value || undefined })}
               className="px-2 py-1 text-xs rounded border bg-transparent"
               style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
             >
-              <option value="">없음 (단일 일)</option>
+              <option value="">{t('views.ganttSingleDay')}</option>
               {dateColumns.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </Field>
-          <Field label="의존성">
+          <Field label={t('views.ganttDepends')}>
             <select
               value={sheet.viewGanttDependsColumnId ?? ''}
               onChange={(e) => updateSheet(projectId, sheet.id, { viewGanttDependsColumnId: e.target.value || undefined })}
               className="px-2 py-1 text-xs rounded border bg-transparent"
               style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
             >
-              <option value="">없음</option>
+              <option value="">{t('views.ganttNone')}</option>
               {linkColumns.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -213,7 +213,7 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
 
         <div className="flex-1 overflow-auto">
           {items.length === 0 ? (
-            <div className="text-center py-16" style={{ color: 'var(--text-tertiary)' }}>유효한 날짜 데이터가 없습니다.</div>
+            <div className="text-center py-16" style={{ color: 'var(--text-tertiary)' }}>{t('views.ganttNoData')}</div>
           ) : (
             <div
               className="flex relative"
@@ -301,7 +301,7 @@ export default function GanttView({ projectId, sheet }: GanttViewProps) {
                               }}
                             >
                               <div className="font-medium">{d.getDate()}</div>
-                              <div className="text-caption opacity-70">{'일월화수목금토'[d.getDay()]}</div>
+                              <div className="text-caption opacity-70">{t('views.ganttWeekdays')[d.getDay()]}</div>
                             </div>
                           );
                         })}

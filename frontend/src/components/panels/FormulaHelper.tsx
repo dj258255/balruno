@@ -250,8 +250,8 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
 
   return (
     <PanelShell
-      title="수식 도우미"
-      subtitle="90+ 함수 레퍼런스 검색"
+      title={t('formulaHelper.titleHeader')}
+      subtitle={t('formulaHelper.subtitleHeader')}
       icon={BookOpen}
       iconColor="#8b5cf6"
       onClose={onClose ?? (() => {})}
@@ -259,9 +259,9 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
       actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color="#8b5cf6" />}
     >
       <div className="p-4 space-y-5 overflow-y-auto overflow-x-hidden flex-1 scrollbar-slim">
-        <ToolPanelHint toolId="formulaHelper" title="수식 헬퍼 — 함수 카탈로그" accentColor="#06b6d4">
-          <p>Excel 320+ 함수 + <strong>게임 특화 70+</strong> (DAMAGE, DPS, SCALE, TTK 등). 검색창에 fuzzy 매칭 — "<code>dam</code>" 만 쳐도 DAMAGE 가 나옴.</p>
-          <p>각 함수 카드의 "예제 복사" 로 바로 시트 셀에 붙여넣기. 시트 셀에 <code>=</code> 입력 시 자동완성 popover 도 활성.</p>
+        <ToolPanelHint toolId="formulaHelper" title={t('formulaHelper.hintTitle')} accentColor="#06b6d4">
+          <p>{t.rich('formulaHelper.hintP1', { strong: (chunks) => <strong>{chunks}</strong>, code: (chunks) => <code>{chunks}</code> })}</p>
+          <p>{t.rich('formulaHelper.hintP2', { code: (chunks) => <code>{chunks}</code> })}</p>
         </ToolPanelHint>
         {/* 도움말 섹션 */}
         {showHelp && (
@@ -341,12 +341,12 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
                     const r = convertExcelToBalruno(pasted);
                     setTestFormula(r.converted);
                     if (r.warnings.length > 0) {
-                      setTestResult('변환 경고: ' + r.warnings.join(' / '));
+                      setTestResult(t('formulaHelper.convertWarning', { warnings: r.warnings.join(' / ') }));
                     }
                   }
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && handleTest()}
-                placeholder={t('formulaHelper.testPlaceholder') + ' · Excel 수식 붙여넣기 자동 변환'}
+                placeholder={t('formulaHelper.testPlaceholder') + t('formulaHelper.placeholderTestExtra')}
                 className="glass-input flex-1 text-sm"
               />
               <button
@@ -357,7 +357,7 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
               </button>
             </div>
             <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-              Excel 에서 <code>=SUM(A1:A10)</code> 같은 수식 복사 후 붙여넣으면 자동으로 <code>SUM(...)</code> 형식으로 변환됩니다 (세미콜론 → 쉼표 · 함수명 대문자 · = 제거). A1/$A$1 참조는 컬럼명으로 수동 매핑 필요.
+              {t.rich('formulaHelper.convertHelp', { code: (chunks) => <code>{chunks}</code> })}
             </p>
             {testResult && (
               <div
@@ -394,14 +394,14 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="함수 검색..."
+              placeholder={t('formulaHelper.placeholderSearch')}
               className="glass-input w-full !pl-9 text-sm"
             />
           </div>
 
           {/* 검색 tip */}
           <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-            <strong>fuzzy 검색</strong> (순서 불연속 매칭 OK) · <code>&gt;카테고리 키워드</code> 로 카테고리 강제 (예: <code>&gt;combat hp</code>)
+            {t.rich('formulaHelper.searchHelp', { strong: (chunks) => <strong>{chunks}</strong>, code: (chunks) => <code>{chunks}</code> })}
           </p>
 
           {/* 카테고리 탭 + 즐겨찾기/최근 */}
@@ -428,7 +428,7 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
                   }}
                 >
                   <Icon className="w-3 h-3" />
-                  <span>{special === 'favorites' ? '즐겨찾기' : '최근'}</span>
+                  <span>{special === 'favorites' ? t('formulaHelper.favorites') : t('formulaHelper.recent')}</span>
                   <span
                     className="px-1.5 py-0.5 rounded-full text-caption font-bold"
                     style={{
@@ -529,7 +529,7 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
                       <button
                         onClick={() => toggleFavorite(func.name)}
                         className="glass-button !p-2"
-                        title={favorites.includes(func.name) ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+                        title={favorites.includes(func.name) ? t('formulaHelper.removeFavorite') : t('formulaHelper.addFavorite')}
                       >
                         <Star
                           className="w-4 h-4"
@@ -552,7 +552,7 @@ export default function FormulaHelper({ onClose, showHelp: externalShowHelp, set
                   </div>
 
                   <div className="mt-2.5 flex items-center gap-2">
-                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>예시:</span>
+                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{t('formulaHelper.exampleLabel')}</span>
                     <code
                       className="text-sm px-2 py-1 rounded-lg font-medium"
                       style={{ background: `${categoryColor}10`, color: categoryColor }}

@@ -15,6 +15,7 @@ import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import { BarChart3, Settings } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { computeSheetRows } from '@/lib/formulaEngine';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -29,6 +30,7 @@ export interface ChartBlockAttrs {
 }
 
 function ChartView({ node, updateAttributes }: NodeViewProps) {
+  const t = useTranslations('docs');
   const attrs = node.attrs as ChartBlockAttrs;
   const project = useProjectStore((s) => s.projects.find((p) => p.id === attrs.projectId));
   const [showSettings, setShowSettings] = useState(false);
@@ -77,7 +79,7 @@ function ChartView({ node, updateAttributes }: NodeViewProps) {
             type="button"
             onClick={() => setShowSettings((v) => !v)}
             className="p-1 rounded hover:bg-[var(--bg-tertiary)]"
-            title="차트 설정"
+            title={t('chartSettings')}
           >
             <Settings className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
           </button>
@@ -90,7 +92,7 @@ function ChartView({ node, updateAttributes }: NodeViewProps) {
           >
             <div className="grid grid-cols-3 gap-2">
               <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                차트 타입
+                {t('chartType')}
                 <select
                   value={attrs.chartType}
                   onChange={(e) => updateAttributes({ chartType: e.target.value as 'line' | 'bar' })}
@@ -102,7 +104,7 @@ function ChartView({ node, updateAttributes }: NodeViewProps) {
                 </select>
               </label>
               <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                X 컬럼
+                {t('chartXCol')}
                 <select
                   value={attrs.xColumnName}
                   onChange={(e) => updateAttributes({ xColumnName: e.target.value })}
@@ -115,7 +117,7 @@ function ChartView({ node, updateAttributes }: NodeViewProps) {
                 </select>
               </label>
               <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                Y 컬럼
+                {t('chartYCol')}
                 <select
                   value={attrs.yColumnName}
                   onChange={(e) => updateAttributes({ yColumnName: e.target.value })}
@@ -134,7 +136,7 @@ function ChartView({ node, updateAttributes }: NodeViewProps) {
         <div className="p-3">
           {!valid || data.length === 0 ? (
             <div className="h-48 flex items-center justify-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              데이터 없음 · 설정 확인 필요
+              {t('chartNoData')}
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={240}>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 /**
  * 셀 display 모드에서 직접 조작하는 인라인 컨트롤.
  *
@@ -23,12 +24,13 @@ export function InlinePerson({
 }: {
   value: CellValue;
 }) {
+  const t = useTranslations();
   const raw = typeof value === 'string' ? value.trim() : value == null ? '' : String(value);
   if (!raw) {
     return (
       <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
         <User className="w-3 h-3" />
-        <span className="opacity-60">미지정</span>
+        <span className="opacity-60">{t('sheet.unassigned')}</span>
       </span>
     );
   }
@@ -80,6 +82,7 @@ export function InlineCheckbox({
   onChange: (next: boolean) => void;
   disabled?: boolean;
 }) {
+  const t = useTranslations();
   // CellValue 는 string|number|null. boolean 직접 비교는 타입상 불가하므로 unknown 캐스트.
   const v = value as unknown;
   const checked = v === true || v === 'true' || v === 1 || v === '1';
@@ -99,7 +102,7 @@ export function InlineCheckbox({
         opacity: disabled ? 0.4 : 1,
       }}
       aria-pressed={checked}
-      aria-label={checked ? '체크 해제' : '체크'}
+      aria-label={checked ? t('sheet.uncheck') : t('sheet.check')}
     >
       {checked && <Check size={11} color="white" strokeWidth={3} />}
     </button>
@@ -121,10 +124,11 @@ export function InlineTaskLink({
   taskSheet?: Sheet;
   onOpen?: (rowId: string) => void;
 }) {
+  const t = useTranslations();
   if (!taskSheet || !value) {
     return (
       <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-        (연결 안 됨)
+        {t('sheet.notLinked')}
       </span>
     );
   }
@@ -227,10 +231,11 @@ export function InlineLink({
   linkedSheet?: Sheet;
   onOpen?: (rowId: string) => void;
 }) {
+  const t = useTranslations();
   if (!linkedSheet) {
     return (
       <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-        (대상 시트 없음)
+        {t('sheet.noTargetSheet')}
       </span>
     );
   }
@@ -277,7 +282,7 @@ export function InlineLink({
               color: isOrphan ? 'var(--text-tertiary)' : 'var(--text-primary)',
               maxWidth: 200,
             }}
-            title={isOrphan ? `삭제된 row: ${rid}` : `${linkedSheet.name} → ${label}`}
+            title={isOrphan ? t('sheet.orphanRow', { rid }) : t('sheet.linkedTitle', { sheet: linkedSheet.name, label })}
           >
             <span className="truncate">{label}</span>
           </button>
@@ -298,12 +303,13 @@ export function InlineRating({
   onChange: (next: number) => void;
   disabled?: boolean;
 }) {
+  const t = useTranslations();
   const current = typeof value === 'number'
     ? Math.max(0, Math.min(max, value))
     : Math.max(0, Math.min(max, parseInt(String(value || 0), 10) || 0));
 
   return (
-    <div className="flex items-center gap-0.5" role="radiogroup" aria-label="별점">
+    <div className="flex items-center gap-0.5" role="radiogroup" aria-label={t('sheet.ratingAria')}>
       {Array.from({ length: max }).map((_, i) => {
         const idx = i + 1;
         const active = idx <= current;
@@ -322,7 +328,7 @@ export function InlineRating({
             className="p-0 transition-transform hover:scale-110"
             style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
             aria-checked={active}
-            aria-label={`${idx}점`}
+            aria-label={t('sheet.ratingPointAria', { n: idx })}
             role="radio"
           >
             <Star

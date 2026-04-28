@@ -9,6 +9,7 @@ import type { PerfectImbalanceResult } from '@/lib/balanceAnalysis';
 import type { Column } from '@/types';
 import { ColumnMappingConfig, type ColumnMapping } from './ColumnMappingConfig';
 import CustomSelect from '@/components/ui/CustomSelect';
+import { useTranslations } from 'next-intl';
 
 const PANEL_COLOR = '#7c7ff2';
 
@@ -50,12 +51,13 @@ export function MatchupAnalysis({
   columnMapping,
   onMappingChange,
 }: MatchupAnalysisProps) {
+  const t = useTranslations();
   return (
     <div className="space-y-4">
       {/* 탭 설명 */}
       <div className="glass-section p-3 rounded-lg" style={{ borderLeft: `3px solid ${PANEL_COLOR}` }}>
-        <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>상성 분석 (Perfect Imbalance)</div>
-        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>모든 유닛 조합의 전투를 시뮬레이션하여 상성 관계와 밸런스를 분석합니다. 지배적/약한 유닛과 가위바위보 순환 관계를 탐지합니다.</div>
+        <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{t('matchupAnalysis.header')}</div>
+        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('matchupAnalysis.description')}</div>
       </div>
 
       {/* 컬럼 매핑 설정 */}
@@ -64,28 +66,28 @@ export function MatchupAnalysis({
         onMappingChange={onMappingChange}
         columns={columns}
         fields={[
-          { key: 'name', label: '이름', description: '유닛 식별용 이름' },
-          { key: 'hp', label: 'HP', required: true, description: '체력' },
-          { key: 'atk', label: 'ATK', required: true, description: '공격력' },
-          { key: 'def', label: 'DEF', description: '방어력' },
-          { key: 'speed', label: 'Speed', description: '공격 속도' },
+          { key: 'name', label: t('matchupAnalysis.colName'), description: t('matchupAnalysis.colNameDesc') },
+          { key: 'hp', label: 'HP', required: true, description: t('matchupAnalysis.colHpDesc') },
+          { key: 'atk', label: 'ATK', required: true, description: t('matchupAnalysis.colAtkDesc') },
+          { key: 'def', label: 'DEF', description: t('matchupAnalysis.colDefDesc') },
+          { key: 'speed', label: 'Speed', description: t('matchupAnalysis.colSpeedDesc') },
         ]}
-        title="컬럼 설정"
+        title={t('matchupAnalysis.columnSettings')}
         accentColor={PANEL_COLOR}
       />
 
       <div className="flex items-end gap-3">
         <div className="flex-1">
           <label className="text-sm mb-1 block" style={{ color: 'var(--text-secondary)' }}>
-            매치당 시뮬레이션 횟수
+            {t('matchupAnalysis.matchupRunCount')}
           </label>
           <CustomSelect
             value={String(runsPerMatch)}
             onChange={(v) => setRunsPerMatch(Number(v))}
             options={[
-              { value: '20', label: '20회 (빠름)' },
-              { value: '50', label: '50회 (균형)' },
-              { value: '100', label: '100회 (정확)' },
+              { value: '20', label: t('matchupAnalysis.opt20') },
+              { value: '50', label: t('matchupAnalysis.opt50') },
+              { value: '100', label: t('matchupAnalysis.opt100') },
             ]}
             color={PANEL_COLOR}
             size="sm"
@@ -97,7 +99,7 @@ export function MatchupAnalysis({
           className="glass-button-primary px-4 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50"
           style={{ background: PANEL_COLOR }}
         >
-          {isAnalyzing ? '분석 중...' : '분석 실행'}
+          {isAnalyzing ? t('matchupAnalysis.analyzing') : t('matchupAnalysis.runAnalysis')}
         </button>
       </div>
 
@@ -107,7 +109,7 @@ export function MatchupAnalysis({
 
       {units.length < 2 && (
         <div className="text-center py-8" style={{ color: 'var(--text-secondary)' }}>
-          최소 2개 이상의 유닛이 필요합니다.
+          {t('matchupAnalysis.minTwoUnits')}
         </div>
       )}
     </div>
@@ -120,6 +122,7 @@ interface MatchupResultsProps {
 }
 
 function MatchupResults({ matchupResult, onShowMatrix }: MatchupResultsProps) {
+  const t = useTranslations();
   return (
     <div className="space-y-4">
       {/* 밸런스 점수 */}
@@ -127,7 +130,7 @@ function MatchupResults({ matchupResult, onShowMatrix }: MatchupResultsProps) {
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-              밸런스 점수
+              {t('matchupAnalysis.balanceScore')}
             </span>
             <span className="glass-badge text-sm px-2 py-0.5 rounded-full font-medium" style={{
               background: matchupResult.balanceScore >= 70
@@ -141,7 +144,7 @@ function MatchupResults({ matchupResult, onShowMatrix }: MatchupResultsProps) {
                   ? '#d97706'
                   : '#dc2626'
             }}>
-              {matchupResult.balanceScore >= 70 ? '양호' : matchupResult.balanceScore >= 40 ? '주의' : '위험'}
+              {matchupResult.balanceScore >= 70 ? t('matchupAnalysis.good') : matchupResult.balanceScore >= 40 ? t('matchupAnalysis.caution') : t('matchupAnalysis.danger')}
             </span>
           </div>
           <div className="flex items-end gap-3">
@@ -185,7 +188,7 @@ function MatchupResults({ matchupResult, onShowMatrix }: MatchupResultsProps) {
                   <AlertTriangle className="w-3 h-3" style={{ color: '#e86161' }} />
                 </div>
                 <span className="text-sm font-semibold" style={{ color: '#e86161' }}>
-                  지배적 유닛 (OP) - 너프 고려
+                  {t('matchupAnalysis.dominantUnit')}
                 </span>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -204,7 +207,7 @@ function MatchupResults({ matchupResult, onShowMatrix }: MatchupResultsProps) {
                   <TrendingUp className="w-3 h-3 rotate-180" style={{ color: '#5a9cf5' }} />
                 </div>
                 <span className="text-sm font-semibold" style={{ color: '#5a9cf5' }}>
-                  약한 유닛 - 버프 고려
+                  {t('matchupAnalysis.weakUnit')}
                 </span>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -229,10 +232,10 @@ function MatchupResults({ matchupResult, onShowMatrix }: MatchupResultsProps) {
               </div>
               <div>
                 <div className="text-sm font-semibold" style={{ color: '#9179f2' }}>
-                  Perfect Imbalance 감지
+                  {t('matchupAnalysis.piDetected')}
                 </div>
                 <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  가위바위보처럼 순환하는 상성 관계
+                  {t('matchupAnalysis.piExplain')}
                 </div>
               </div>
             </div>
@@ -260,25 +263,25 @@ function MatchupResults({ matchupResult, onShowMatrix }: MatchupResultsProps) {
       <div className="glass-card p-4 rounded-xl">
         <div className="flex items-center justify-between mb-3">
           <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            승률 매트릭스
+            {t('matchupAnalysis.winrateMatrix')}
           </div>
           <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded" style={{ background: '#e8a9a9' }} />
-              <span>열세</span>
+              <span>{t('matchupAnalysis.weak')}</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded" style={{ background: '#d1d5db' }} />
-              <span>균형</span>
+              <span>{t('matchupAnalysis.balanced')}</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded" style={{ background: '#a8d8c8' }} />
-              <span>우세</span>
+              <span>{t('matchupAnalysis.strong')}</span>
             </div>
             <button
               onClick={onShowMatrix}
               className="glass-button p-1 rounded"
-              title="전체화면으로 보기"
+              title={t('matchupAnalysis.fullscreenView')}
             >
               <Maximize2 className="w-4 h-4" />
             </button>
@@ -323,7 +326,7 @@ function MatchupResults({ matchupResult, onShowMatrix }: MatchupResultsProps) {
                         color: colors.text,
                         borderColor: 'var(--border-primary)',
                       }}
-                      title={i === j ? '자기 자신' : `${u} vs ${matchupResult.matrix.units[j]}: ${(rate * 100).toFixed(1)}%`}
+                      title={i === j ? t('matchupAnalysis.self') : `${u} vs ${matchupResult.matrix.units[j]}: ${(rate * 100).toFixed(1)}%`}
                     >
                       <span className="text-sm font-medium">
                         {i === j ? '-' : `${(rate * 100).toFixed(0)}%`}
@@ -336,7 +339,7 @@ function MatchupResults({ matchupResult, onShowMatrix }: MatchupResultsProps) {
           </div>
         </div>
         <div className="mt-3 pt-3 border-t text-sm" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}>
-          행 유닛이 열 유닛을 상대로 한 승률입니다. 70% 이상은 강한 카운터 관계를 의미합니다.
+          {t('matchupAnalysis.matrixHelp')}
         </div>
       </div>
     </div>
@@ -350,6 +353,7 @@ interface MatrixModalProps {
 }
 
 export function MatrixModal({ matchupResult, onClose }: MatrixModalProps) {
+  const t = useTranslations();
   const unitCount = matchupResult.matrix.units.length;
 
   return (
@@ -365,22 +369,22 @@ export function MatrixModal({ matchupResult, onClose }: MatrixModalProps) {
         {/* 모달 헤더 */}
         <div className="glass-panel-header flex items-center justify-between px-6 py-4 shrink-0">
           <div>
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>승률 매트릭스</h2>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>행 유닛이 열 유닛을 상대로 한 승률</p>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('matchupAnalysis.winrateMatrix')}</h2>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('matchupAnalysis.fullMatrixSubtitle')}</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded" style={{ background: '#e8a9a9' }} />
-                <span>열세</span>
+                <span>{t('matchupAnalysis.weak')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded" style={{ background: '#d1d5db' }} />
-                <span>균형</span>
+                <span>{t('matchupAnalysis.balanced')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded" style={{ background: '#a8d8c8' }} />
-                <span>우세</span>
+                <span>{t('matchupAnalysis.strong')}</span>
               </div>
             </div>
             <button
@@ -460,7 +464,7 @@ export function MatrixModal({ matchupResult, onClose }: MatrixModalProps) {
                         background: colors.bg,
                         color: colors.text,
                       }}
-                      title={i === j ? '자기 자신' : `${u} vs ${matchupResult.matrix.units[j]}: ${(rate * 100).toFixed(1)}%`}
+                      title={i === j ? t('matchupAnalysis.self') : `${u} vs ${matchupResult.matrix.units[j]}: ${(rate * 100).toFixed(1)}%`}
                     >
                       <span className="text-base font-semibold">
                         {i === j ? '-' : `${(rate * 100).toFixed(0)}%`}

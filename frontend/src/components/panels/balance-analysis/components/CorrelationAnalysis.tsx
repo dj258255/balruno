@@ -5,6 +5,7 @@
 'use client';
 
 import { BarChart2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { CorrelationResult } from '@/lib/balanceAnalysis';
 import type { Column } from '@/types';
 import { ColumnMappingConfig, type ColumnMapping } from './ColumnMappingConfig';
@@ -28,13 +29,14 @@ export function CorrelationAnalysis({
   columnMapping,
   onMappingChange,
 }: CorrelationAnalysisProps) {
+  const t = useTranslations('balanceAnalysis');
   return (
     <div className="space-y-4">
       {/* 탭 설명 */}
       <div className="glass-section p-3 rounded-lg" style={{ borderLeft: `3px solid ${PANEL_COLOR}` }}>
-        <div className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>스탯 상관관계 분석</div>
+        <div className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{t('correlationTitle')}</div>
         <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          스탯 간의 통계적 연관성을 분석합니다. <strong style={{ color: '#3db88a' }}>+1에 가까우면 양의 상관</strong>(함께 증가), <strong style={{ color: '#e86161' }}>-1에 가까우면 음의 상관</strong>(반대로 변화)입니다.
+          {t('correlationDesc1')} <strong style={{ color: '#3db88a' }}>{t('positiveStrong')}</strong>{t('positiveStrongDetail')}, <strong style={{ color: '#e86161' }}>{t('negativeStrong')}</strong>{t('negativeStrongDetail')}.
         </div>
       </div>
 
@@ -44,12 +46,12 @@ export function CorrelationAnalysis({
         onMappingChange={onMappingChange}
         columns={columns}
         fields={[
-          { key: 'hp', label: 'HP', description: '체력' },
-          { key: 'atk', label: 'ATK', description: '공격력' },
-          { key: 'def', label: 'DEF', description: '방어력' },
-          { key: 'speed', label: 'Speed', description: '속도' },
+          { key: 'hp', label: t('fieldHp'), description: t('fieldHpDesc') },
+          { key: 'atk', label: t('fieldAtk'), description: t('fieldAtkDesc') },
+          { key: 'def', label: t('fieldDef'), description: t('fieldDefDesc') },
+          { key: 'speed', label: t('fieldSpeed'), description: t('fieldSpeedDesc') },
         ]}
-        title="분석할 스탯 컬럼"
+        title={t('pickColumns')}
         accentColor={PANEL_COLOR}
       />
 
@@ -61,24 +63,24 @@ export function CorrelationAnalysis({
       >
         <div className="flex items-center justify-center gap-2">
           <BarChart2 className="w-4 h-4" />
-          상관관계 분석
+          {t('runCorrelation')}
         </div>
       </button>
 
       {correlationResult && (
         <div className="glass-card rounded-xl overflow-hidden">
           <div className="glass-panel-header px-4 py-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>스탯 상관관계</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('correlationHeader')}</span>
           </div>
           <div>
             {correlationResult.map((r, i) => {
               const absCorr = Math.abs(r.correlation);
               const isPositive = r.correlation > 0;
               const strengthConfig = {
-                strong: { label: '강함', bg: 'rgba(239, 68, 68, 0.12)', color: '#dc2626' },
-                moderate: { label: '중간', bg: 'rgba(251, 191, 36, 0.12)', color: '#d97706' },
-                weak: { label: '약함', bg: 'rgba(156, 163, 175, 0.15)', color: 'var(--text-secondary)' },
-                none: { label: '없음', bg: 'rgba(156, 163, 175, 0.1)', color: 'var(--text-secondary)' },
+                strong: { label: t('strengthStrong'), bg: 'rgba(239, 68, 68, 0.12)', color: '#dc2626' },
+                moderate: { label: t('strengthModerate'), bg: 'rgba(251, 191, 36, 0.12)', color: '#d97706' },
+                weak: { label: t('strengthWeak'), bg: 'rgba(156, 163, 175, 0.15)', color: 'var(--text-secondary)' },
+                none: { label: t('strengthNone'), bg: 'rgba(156, 163, 175, 0.1)', color: 'var(--text-secondary)' },
               };
               const config = strengthConfig[r.strength];
 
@@ -146,7 +148,7 @@ export function CorrelationAnalysis({
         <div className="glass-card text-center py-8 rounded-xl">
           <BarChart2 className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--text-secondary)' }} />
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            최소 3개 이상의 유닛이 필요합니다
+            {t('needMoreUnits')}
           </p>
         </div>
       )}

@@ -15,6 +15,7 @@
 
 import { useEffect, useState } from 'react';
 import { CheckCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 type ToastLevel = 'success' | 'error' | 'info' | 'warning';
 
@@ -70,6 +71,7 @@ const LEVEL_COLORS: Record<ToastLevel, { bg: string; border: string; text: strin
 };
 
 export default function ToastContainer() {
+  const t = useTranslations('app');
   const [items, setItems] = useState<ToastItem[]>([]);
 
   useEffect(() => {
@@ -106,7 +108,7 @@ export default function ToastContainer() {
             <button
               onClick={() => store.remove(item.id)}
               className="p-0.5 rounded hover:bg-[var(--bg-tertiary)]"
-              aria-label="알림 닫기"
+              aria-label={t('toastClose')}
             >
               <X size={11} style={{ color: 'var(--text-secondary)' }} />
             </button>

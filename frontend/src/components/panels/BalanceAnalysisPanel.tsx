@@ -7,6 +7,7 @@ import PanelShell, { HelpToggle } from '@/components/ui/PanelShell';
 import ToolPanelHint from '@/components/onboarding/ToolPanelHint';
 import SheetSelector from './SheetSelector';
 
+import { useTranslations } from 'next-intl';
 // 커스텀 스크롤바 스타일
 const customScrollStyle = `
   .custom-tab-scroll::-webkit-scrollbar {
@@ -51,6 +52,7 @@ export default function BalanceAnalysisPanel({
   showHelp: externalShowHelp,
   setShowHelp: externalSetShowHelp
 }: BalanceAnalysisPanelProps) {
+  const t = useTranslations();
   // PanelShell 이 useEscapeKey 담당
   const [internalShowHelp, setInternalShowHelp] = useState(false);
   const showHelpVal = externalShowHelp ?? internalShowHelp;
@@ -88,17 +90,17 @@ export default function BalanceAnalysisPanel({
   const columns = currentSheet?.columns || [];
 
   const tabs: { id: AnalysisTab; label: string; icon: React.ReactNode; tooltip: string; color: string }[] = [
-    { id: 'matchup', label: '상성 분석', icon: <GitBranch className="w-4 h-4" />, tooltip: '가위바위보 상성 관계 분석', color: '#7c7ff2' },
-    { id: 'power', label: '파워 커브', icon: <TrendingUp className="w-4 h-4" />, tooltip: '레벨별 스탯 성장 패턴 분석', color: '#3db88a' },
-    { id: 'correlation', label: '상관관계', icon: <BarChart2 className="w-4 h-4" />, tooltip: '스탯 간 상관계수 분석', color: '#5a9cf5' },
-    { id: 'deadzone', label: '데드존', icon: <AlertTriangle className="w-4 h-4" />, tooltip: '활용되지 않는 스탯 구간 탐지', color: '#e5a440' },
-    { id: 'curve', label: '커브 생성', icon: <Target className="w-4 h-4" />, tooltip: '밸런스 곡선 자동 생성', color: '#9179f2' },
+    { id: 'matchup', label: t('balanceAnalysis.tabMatchup'), icon: <GitBranch className="w-4 h-4" />, tooltip: t('balanceAnalysis.tabMatchupTooltip'), color: '#7c7ff2' },
+    { id: 'power', label: t('balanceAnalysis.tabPower'), icon: <TrendingUp className="w-4 h-4" />, tooltip: t('balanceAnalysis.tabPowerTooltip'), color: '#3db88a' },
+    { id: 'correlation', label: t('balanceAnalysis.tabCorrelation'), icon: <BarChart2 className="w-4 h-4" />, tooltip: t('balanceAnalysis.tabCorrelationTooltip'), color: '#5a9cf5' },
+    { id: 'deadzone', label: t('balanceAnalysis.tabDeadzone'), icon: <AlertTriangle className="w-4 h-4" />, tooltip: t('balanceAnalysis.tabDeadzoneTooltip'), color: '#e5a440' },
+    { id: 'curve', label: t('balanceAnalysis.tabCurve'), icon: <Target className="w-4 h-4" />, tooltip: t('balanceAnalysis.tabCurveTooltip'), color: '#9179f2' },
   ];
 
   return (
     <PanelShell
-      title="밸런스 분석"
-      subtitle="매치업·파워커브·상관·데드존"
+      title={t('balanceAnalysis.titleHeader')}
+      subtitle={t('balanceAnalysis.subtitleHeader')}
       icon={GitBranch}
       iconColor="#7c7ff2"
       onClose={onClose}
@@ -108,9 +110,9 @@ export default function BalanceAnalysisPanel({
       <style>{customScrollStyle}</style>
 
       <div className="px-4 pt-3">
-        <ToolPanelHint toolId="balanceAnalysis" title="밸런스 분석 — 한눈에 점검" accentColor="#ec4899">
-          <p>현재 시트의 캐릭터/유닛/무기를 모아 <strong>매치업 매트릭스 · 파워 커브 · 상관관계 · 데드존</strong> 한 번에.</p>
-          <p>매트릭스 셀 클릭 → 그 매치업 1v1 시뮬 결과. 데드존은 "아무도 안 쓰는" 옵션을 자동 탐지.</p>
+        <ToolPanelHint toolId="balanceAnalysis" title={t('balanceAnalysis.hintTitle')} accentColor="#ec4899">
+          <p>{t.rich('balanceAnalysis.hintP1', { strong: (chunks) => <strong>{chunks}</strong> })}</p>
+          <p>{t('balanceAnalysis.hintP2')}</p>
         </ToolPanelHint>
       </div>
 
@@ -129,7 +131,7 @@ export default function BalanceAnalysisPanel({
         showProjectSelector={true}
         selectedSheetId={selectedSheetId}
         onSheetChange={setSelectedSheetId}
-        label="분석할 시트"
+        label={t('balanceAnalysis.analysisSheetLabel')}
         color="#7c7ff2"
         className="mx-3 mt-3"
       />

@@ -15,6 +15,7 @@ import {
   type BuildStep,
   type ActionType,
 } from '@/lib/rtsBuildOrder';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
@@ -30,17 +31,18 @@ const ACTION_COLOR: Record<ActionType, string> = {
   'train-worker-alt': '#22c55e',
 };
 
-const ACTION_LABEL: Record<ActionType, string> = {
-  'build-worker':     '일꾼',
-  'build-supply':     '서플라이',
-  'build-production': '생산 건물',
-  'build-tech':       '테크',
-  'build-expansion':  '확장',
-  'train-unit':       '유닛',
-  'train-worker-alt': '확장 일꾼',
+const ACTION_LABEL_KEY: Record<ActionType, string> = {
+  'build-worker':     'rtsBuildOrder.stepWorker',
+  'build-supply':     'rtsBuildOrder.stepSupply',
+  'build-production': 'rtsBuildOrder.stepProduction',
+  'build-tech':       'rtsBuildOrder.stepTech',
+  'build-expansion':  'rtsBuildOrder.stepExpansion',
+  'train-unit':       'rtsBuildOrder.stepUnit',
+  'train-worker-alt': 'rtsBuildOrder.stepWorkerAlt',
 };
 
 export default function RtsBuildOrderPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [steps, setSteps] = useState<BuildStep[]>(SC2_TERRAN_MARINE_RUSH);
   const [duration, setDuration] = useState(300);
 
@@ -57,12 +59,13 @@ export default function RtsBuildOrderPanel({ onClose }: Props) {
   }));
 
   const addStep = () => {
+    const t = useTranslations();
     const lastT = steps[steps.length - 1]?.timeSec ?? 0;
     setSteps((prev) => [...prev, {
       id: `s-${Date.now()}`,
       timeSec: lastT + 20,
       action: 'train-unit',
-      label: '새 유닛',
+      label: t('rtsBuildOrder.newUnitLabel'),
       mineralCost: 50,
       supplyUsed: 1,
       buildDurationSec: 18,
@@ -77,7 +80,7 @@ export default function RtsBuildOrderPanel({ onClose }: Props) {
   return (
     <PanelShell
       title="RTS Build Order"
-      subtitle="SC2/AoE4 경제·병력 타이밍"
+      subtitle={t('rtsBuildOrder.subtitleHeader')}
       icon={Factory}
       iconColor="#f59e0b"
       onClose={onClose}
@@ -93,7 +96,7 @@ export default function RtsBuildOrderPanel({ onClose }: Props) {
         </button>
         <div className="flex items-center gap-2 ml-auto">
           <span className="text-label" style={{ color: 'var(--text-secondary)' }}>
-            <Clock className="w-3 h-3 inline" /> 시뮬 시간
+            <Clock className="w-3 h-3 inline" />{t('rtsBuildOrder.simTime')}
           </span>
           <input
             type="range" min={60} max={900} step={30}
@@ -108,13 +111,13 @@ export default function RtsBuildOrderPanel({ onClose }: Props) {
 
       {/* 주요 지표 */}
       <div className="grid grid-cols-4 gap-2">
-        <Stat label="최종 일꾼" value={result.finalWorkers.toString()} color="#10b981" />
-        <Stat label="분당 수입" value={`${Math.round(result.finalIncomePerMin)}/m`} color="#3b82f6" />
-        <Stat label="병력 가치" value={result.finalArmyValue.toLocaleString()} color="#ef4444" />
+        <Stat label={t('rtsBuildOrder.finalWorkers')} value={result.finalWorkers.toString()} color="#10b981" />
+        <Stat label={t('rtsBuildOrder.incomePerMin')} value={`${Math.round(result.finalIncomePerMin)}/m`} color="#3b82f6" />
+        <Stat label={t('rtsBuildOrder.armyValue')} value={result.finalArmyValue.toLocaleString()} color="#ef4444" />
         <Stat
-          label="유휴 자원"
+          label={t('rtsBuildOrder.idleResource')}
           value={`${Math.round(result.idleResourceRatio * 100)}%`}
-          sub={result.idleResourceRatio < 0.2 ? '효율적' : result.idleResourceRatio < 0.4 ? '보통' : '낭비 많음'}
+          sub={result.idleResourceRatio < 0.2 ? t('rtsBuildOrder.efficient') : result.idleResourceRatio < 0.4 ? t('rtsBuildOrder.normal') : t('rtsBuildOrder.wasteful')}
           color={result.idleResourceRatio < 0.2 ? '#10b981' : result.idleResourceRatio < 0.4 ? '#f59e0b' : '#ef4444'}
         />
       </div>
@@ -124,10 +127,10 @@ export default function RtsBuildOrderPanel({ onClose }: Props) {
         <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#ef444420', borderLeft: '3px solid #ef4444' }}>
           <AlertTriangle className="w-4 h-4" style={{ color: '#ef4444' }} />
           <div className="flex-1 text-caption" style={{ color: 'var(--text-primary)' }}>
-            <span className="font-semibold" style={{ color: '#ef4444' }}>{result.failures.length}개 스텝 실패</span>
+            <span className="font-semibold" style={{ color: '#ef4444' }}>{t('rtsBuildOrder.failuresCount', { n: result.failures.length })}</span>
             {' — '}
             {result.failures.slice(0, 3).map((f) => `${steps.find((s) => s.id === f.stepId)?.label ?? f.stepId} (${f.reason})`).join(', ')}
-            {result.failures.length > 3 && ` 외 ${result.failures.length - 3}개`}
+            {result.failures.length > 3 && t('rtsBuildOrder.failuresMore', { n: result.failures.length - 3 })}
           </div>
         </div>
       )}
@@ -135,7 +138,7 @@ export default function RtsBuildOrderPanel({ onClose }: Props) {
       {/* 자원 곡선 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          자원 + 일꾼 + 병력 가치
+          {t('rtsBuildOrder.resourceLabel')}
         </div>
         <div className="h-56">
           <ResponsiveContainer>
@@ -162,7 +165,7 @@ export default function RtsBuildOrderPanel({ onClose }: Props) {
             Build Order ({steps.length} step)
           </span>
           <button onClick={addStep} className="btn-primary text-caption inline-flex items-center gap-1">
-            <Plus className="w-3 h-3" /> 추가
+            <Plus className="w-3 h-3" /> {t('rtsBuildOrder.addRowBtn')}
           </button>
         </div>
         <div className="space-y-1 max-h-80 overflow-y-auto">
@@ -186,7 +189,7 @@ export default function RtsBuildOrderPanel({ onClose }: Props) {
                   value={s.timeSec}
                   onChange={(e) => updateStep(idx, 'timeSec', parseInt(e.target.value) || 0)}
                   className="input-compact hide-spinner w-14"
-                  title="초"
+                  title={t('rtsBuildOrder.secondsTitle')}
                 />
                 <select
                   value={s.action}
@@ -194,15 +197,15 @@ export default function RtsBuildOrderPanel({ onClose }: Props) {
                   className="input-compact"
                   style={{ width: 100, color }}
                 >
-                  {Object.entries(ACTION_LABEL).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
+                  {Object.entries(ACTION_LABEL_KEY).map(([k, v]) => (
+                    <option key={k} value={k}>{t(v as 'rtsBuildOrder.stepWorker')}</option>
                   ))}
                 </select>
                 <input
                   value={s.label}
                   onChange={(e) => updateStep(idx, 'label', e.target.value)}
                   className="input-compact flex-1 min-w-0"
-                  placeholder="이름"
+                  placeholder={t('rtsBuildOrder.namePlaceholder')}
                 />
                 <label className="text-caption" style={{ color: 'var(--text-tertiary)' }}>min</label>
                 <input
@@ -228,7 +231,7 @@ export default function RtsBuildOrderPanel({ onClose }: Props) {
       </div>
 
       <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        SC2 기준 (SCV 50m/12s · mineral rate 45/min · supply 15 기본). 일꾼 saturation 32명까지.
+        {t('rtsBuildOrder.sc2Note')}
       </p>
     </PanelShell>
   );

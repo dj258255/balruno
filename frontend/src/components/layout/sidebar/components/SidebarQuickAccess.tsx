@@ -137,14 +137,14 @@ export default function SidebarQuickAccess() {
               count={work.recentChanges.length}
               onClick={openInbox}
               onContextMenu={openCtx('inbox')}
-              hint="최근 변경 · 피드백"
+              hint={t('sidebar.qaRecentHint')}
             />
           )}
 
           {hasSprintSheet && (
             <QuickLink
               icon={Zap}
-              label="내 Sprint"
+              label={t('sidebar.qaMySprint')}
               count={work.mySprint.length}
               totalCount={work.activeSprint.length}
               onClick={() => {
@@ -158,7 +158,7 @@ export default function SidebarQuickAccess() {
           {hasBugSheet && (
             <QuickLink
               icon={Bug}
-              label="내 버그"
+              label={t('sidebar.qaMyBugs')}
               count={work.myBugs.length}
               totalCount={work.openBugs.length}
               onClick={() => {
@@ -184,7 +184,7 @@ export default function SidebarQuickAccess() {
               <div className="h-px my-1 mx-2" style={{ background: 'var(--border-primary)' }} />
               <QuickLink
                 icon={Clock}
-                label="최근 편집"
+                label={t('sidebar.qaRecentEdits')}
                 onClick={jumpToRecentEdit}
                 onContextMenu={openCtx('recent')}
                 hint={work.recentSheets[0]?.sheet.name}
@@ -209,12 +209,12 @@ export default function SidebarQuickAccess() {
             <>
               <CtxItem
                 icon={Plus}
-                label="새 프로젝트"
+                label={t('sidebar.qaNewProject')}
                 onClick={() => { window.dispatchEvent(new Event('balruno:open-new-project')); setCtxMenu(null); }}
               />
               <CtxItem
                 icon={LayoutTemplate}
-                label="템플릿 갤러리"
+                label={t('sidebar.qaTemplateGallery')}
                 onClick={() => { window.dispatchEvent(new Event('balruno:open-gallery')); setCtxMenu(null); }}
               />
             </>
@@ -223,12 +223,12 @@ export default function SidebarQuickAccess() {
             <>
               <CtxItem
                 icon={Inbox}
-                label="Inbox 열기"
+                label={t('sidebar.qaOpenInbox')}
                 onClick={() => { openInbox(); setCtxMenu(null); }}
               />
               <CtxItem
                 icon={CheckCheck}
-                label="모두 읽음 표시"
+                label={t('sidebar.qaMarkAllRead')}
                 onClick={() => {
                   markAllInboxRead(work.recentChanges.map((c) => c.entry.id));
                   setCtxMenu(null);
@@ -239,7 +239,7 @@ export default function SidebarQuickAccess() {
           {(ctxMenu.kind === 'sprint' || ctxMenu.kind === 'bug' || ctxMenu.kind === 'playtest') && (
             <CtxItem
               icon={Plus}
-              label="새 항목 추가"
+              label={t('sidebar.qaAddItem')}
               onClick={() => {
                 const kind = ctxMenu.kind as 'sprint' | 'bug' | 'playtest';
                 const match = work.pmSheets.find((p) => p.type === kind || (kind === 'sprint' && p.type === 'generic-pm'));
@@ -255,7 +255,7 @@ export default function SidebarQuickAccess() {
           {ctxMenu.kind === 'recent' && (
             <CtxItem
               icon={Trash2}
-              label="최근 편집 지우기"
+              label={t('sidebar.qaClearRecent')}
               danger
               onClick={() => {
                 // recentSheets 는 localStorage 기반 — 관련 키 clear (recentSheets.ts 참조)
@@ -272,17 +272,17 @@ export default function SidebarQuickAccess() {
             <>
               <CtxItem
                 icon={expanded ? ChevronRight : ChevronDown}
-                label={expanded ? '섹션 접기' : '섹션 펼치기'}
+                label={expanded ? t('sidebar.qaCollapse') : t('sidebar.qaExpand')}
                 onClick={() => { setExpanded((v) => !v); setCtxMenu(null); }}
               />
               <CtxItem
                 icon={Home}
-                label="Home 으로 이동"
+                label={t('sidebar.qaGoHome')}
                 onClick={() => { goHome(); setCtxMenu(null); }}
               />
               <CtxItem
                 icon={Inbox}
-                label="Inbox 열기"
+                label={t('sidebar.qaOpenInbox')}
                 onClick={() => { openInbox(); setCtxMenu(null); }}
               />
             </>

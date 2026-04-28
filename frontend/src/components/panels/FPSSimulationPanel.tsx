@@ -24,6 +24,7 @@ import {
   type ActiveUtility,
   type UtilityKind,
 } from '@/lib/fpsSimulation';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
@@ -32,8 +33,9 @@ interface Props {
 const DEFAULT_TARGET = { hp: 100, shield: 50, armor: 0.1 };
 
 export default function FPSSimulationPanel({ onClose }: Props) {
-  const [weaponA, setWeaponA] = useState<WeaponStats>({ ...WEAPON_PRESETS[0], name: '무기 A' });
-  const [weaponB, setWeaponB] = useState<WeaponStats>({ ...WEAPON_PRESETS[1], name: '무기 B' });
+  const t = useTranslations();
+  const [weaponA, setWeaponA] = useState<WeaponStats>({ ...WEAPON_PRESETS[0], name: t('fpsSim.weaponAName') });
+  const [weaponB, setWeaponB] = useState<WeaponStats>({ ...WEAPON_PRESETS[1], name: t('fpsSim.weaponBName') });
   const [aimSkillA, setAimSkillA] = useState(65);
   const [aimSkillB, setAimSkillB] = useState(65);
   const [distance, setDistance] = useState(20);
@@ -93,8 +95,8 @@ export default function FPSSimulationPanel({ onClose }: Props) {
 
   return (
     <PanelShell
-      title="FPS TTK 시뮬"
-      subtitle="두 무기 비교 · Monte Carlo"
+      title={t('fpsSim.titleHeader')}
+      subtitle={t('fpsSim.subtitleHeader')}
       icon={Crosshair}
       iconColor="#ef4444"
       onClose={onClose}
@@ -109,15 +111,15 @@ export default function FPSSimulationPanel({ onClose }: Props) {
       {/* 교전 상황 */}
       <div className="p-3 rounded-lg space-y-3" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-          교전 상황
+          {t('fpsSim.engagementSituation')}
         </div>
 
-        <RangeRow label="거리" value={distance} unit="m" min={1} max={100} step={1} onChange={setDistance} />
-        <RangeRow label="타겟 장갑" value={targetArmor} unit="" min={0} max={0.9} step={0.05} onChange={setTargetArmor} format={(v) => `${Math.round(v * 100)}%`} />
+        <RangeRow label={t('fpsSim.distance')} value={distance} unit="m" min={1} max={100} step={1} onChange={setDistance} />
+        <RangeRow label={t('fpsSim.targetArmor')} value={targetArmor} unit="" min={0} max={0.9} step={0.05} onChange={setTargetArmor} format={(v) => `${Math.round(v * 100)}%`} />
 
         <div>
           <div className="text-label mb-1" style={{ color: 'var(--text-secondary)' }}>
-            첫발 우위
+            {t('fpsSim.firstShotAdvantage')}
           </div>
           <div className="flex gap-1">
             {(['A', 'both-aware', 'B'] as const).map((opt) => (
@@ -133,23 +135,23 @@ export default function FPSSimulationPanel({ onClose }: Props) {
                   border: '1px solid var(--border-primary)',
                 }}
               >
-                {opt === 'A' ? 'A 선공' : opt === 'B' ? 'B 선공' : '동시 인지'}
+                {opt === 'A' ? t('fpsSim.aFirst') : opt === 'B' ? t('fpsSim.bFirst') : t('fpsSim.simultaneous')}
               </button>
             ))}
           </div>
         </div>
 
-        <RangeRow label="A 에임 실력" value={aimSkillA} unit="" min={0} max={100} step={5} onChange={setAimSkillA} format={(v) => `${v} (${skillTier(v)})`} />
-        <RangeRow label="B 에임 실력" value={aimSkillB} unit="" min={0} max={100} step={5} onChange={setAimSkillB} format={(v) => `${v} (${skillTier(v)})`} />
+        <RangeRow label={t('fpsSim.aimSkillA')} value={aimSkillA} unit="" min={0} max={100} step={5} onChange={setAimSkillA} format={(v) => `${v} (${skillTier(v)})`} />
+        <RangeRow label={t('fpsSim.aimSkillB')} value={aimSkillB} unit="" min={0} max={100} step={5} onChange={setAimSkillB} format={(v) => `${v} (${skillTier(v)})`} />
 
         <div className="flex gap-2">
           <label className="flex-1 flex items-center gap-2 p-2 rounded-md cursor-pointer" style={{ background: 'var(--bg-primary)' }}>
             <input type="checkbox" checked={aMoving} onChange={(e) => setAMoving(e.target.checked)} />
-            <span className="text-label" style={{ color: 'var(--text-primary)' }}>A 이동 중</span>
+            <span className="text-label" style={{ color: 'var(--text-primary)' }}>{t('fpsSim.aMoving')}</span>
           </label>
           <label className="flex-1 flex items-center gap-2 p-2 rounded-md cursor-pointer" style={{ background: 'var(--bg-primary)' }}>
             <input type="checkbox" checked={bMoving} onChange={(e) => setBMoving(e.target.checked)} />
-            <span className="text-label" style={{ color: 'var(--text-primary)' }}>B 이동 중</span>
+            <span className="text-label" style={{ color: 'var(--text-primary)' }}>{t('fpsSim.bMoving')}</span>
           </label>
         </div>
 
@@ -157,7 +159,7 @@ export default function FPSSimulationPanel({ onClose }: Props) {
         <div>
           <div className="flex items-center justify-between mb-1">
             <span className="text-label" style={{ color: 'var(--text-secondary)' }}>
-              유틸리티 ({utilities.length})
+              {t('fpsSim.utilitiesHeader', { n: utilities.length })}
             </span>
             <div className="flex gap-1">
               {(['smoke', 'flash', 'molotov', 'decoy'] as const).map((kind) => (
@@ -166,7 +168,7 @@ export default function FPSSimulationPanel({ onClose }: Props) {
                   onClick={() => addUtility(kind, 'B')}
                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-caption hover:bg-[var(--bg-hover)]"
                   style={{ background: 'var(--bg-primary)', color: UTILITY_COLOR[kind] }}
-                  title={`${UTILITY_LABEL[kind]} 추가 (B 에게 영향)`}
+                  title={t('fpsSim.addUtilityTooltip', { kind: t(UTILITY_LABEL[kind] as 'fpsSim.utilSmoke') })}
                 >
                   <Plus className="w-2.5 h-2.5" />
                   {UTILITY_LABEL[kind]}
@@ -188,9 +190,9 @@ export default function FPSSimulationPanel({ onClose }: Props) {
                     className="input-compact"
                     style={{ width: 70 }}
                   >
-                    <option value="A">A 방해</option>
-                    <option value="B">B 방해</option>
-                    <option value="both">둘 다</option>
+                    <option value="A">{t('fpsSim.targetA')}</option>
+                    <option value="B">{t('fpsSim.targetB')}</option>
+                    <option value="both">{t('fpsSim.targetBoth')}</option>
                   </select>
                   <label className="text-caption ml-1" style={{ color: 'var(--text-tertiary)' }}>
                     {u.kind === 'molotov' ? 'dps' : 'hit×'}
@@ -227,7 +229,7 @@ export default function FPSSimulationPanel({ onClose }: Props) {
                     onChange={(e) => updateUtility(i, { deployedAtMs: parseFloat(e.target.value) || 0 })}
                     className="input-compact hide-spinner"
                     style={{ width: 60 }}
-                    title="교전 시작 후 N ms 시점에 발동"
+                    title={t('fpsSim.utilTimingTitle')}
                   />
                   <button onClick={() => removeUtility(i)} className="p-1 rounded hover:bg-[var(--bg-tertiary)] ml-auto">
                     <Trash2 className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
@@ -237,26 +239,26 @@ export default function FPSSimulationPanel({ onClose }: Props) {
             </div>
           )}
           <p className="text-caption italic mt-1" style={{ color: 'var(--text-tertiary)' }}>
-            Smoke=시야 차단 · Flash=섬광 (시간 지나며 회복) · Molotov=지속 피해 · Decoy=반응 지연
+            {t('fpsSim.utilExplain')}
           </p>
         </div>
 
-        <RangeRow label="반복 수" value={runs} unit="회" min={500} max={20000} step={500} onChange={setRuns} />
+        <RangeRow label={t('fpsSim.iterations')} value={runs} unit={t('fpsSim.iterationsUnit')} min={500} max={20000} step={500} onChange={setRuns} />
       </div>
 
       {/* 결과 요약 */}
       <div className="grid grid-cols-2 gap-2">
-        <ResultCard label="무기 A" result={resultA} color="#3b82f6" />
-        <ResultCard label="무기 B" result={resultB} color="#ef4444" />
+        <ResultCard label={t('fpsSim.weaponAResult')} result={resultA} color="#3b82f6" />
+        <ResultCard label={t('fpsSim.weaponBResult')} result={resultB} color="#ef4444" />
       </div>
 
       {/* 1v1 승률 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center gap-2 mb-2">
           <Swords className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-          <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>1v1 교전 승률</span>
+          <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>{t('fpsSim.duelWinrate')}</span>
           <span className="ml-auto text-caption" style={{ color: 'var(--text-tertiary)' }}>
-            평균 {Math.round(duel.avgDurationMs)}ms
+            {t('fpsSim.duelAvg', { ms: Math.round(duel.avgDurationMs) })}
           </span>
         </div>
         <div className="flex h-6 rounded-md overflow-hidden">
@@ -271,7 +273,7 @@ export default function FPSSimulationPanel({ onClose }: Props) {
               className="flex items-center justify-center text-caption text-white"
               style={{ background: 'var(--text-tertiary)', width: `${Math.round(duel.drawRate * 100)}%` }}
             >
-              {duel.drawRate > 0.05 && `무 ${Math.round(duel.drawRate * 100)}%`}
+              {duel.drawRate > 0.05 && t('fpsSim.drawMark', { pct: Math.round(duel.drawRate * 100) })}
             </div>
           )}
           <div
@@ -288,7 +290,7 @@ export default function FPSSimulationPanel({ onClose }: Props) {
         <div className="flex items-center gap-2 mb-2">
           <Flame className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
           <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-            거리별 Effective DPS (hit% × 부위 × 감쇠 반영)
+            {t('fpsSim.effectiveDps')}
           </span>
         </div>
         <div className="h-40">
@@ -321,7 +323,7 @@ export default function FPSSimulationPanel({ onClose }: Props) {
       {/* Apex 스타일 쉴드 brackets */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          쉴드 티어별 BTK / TTK (Apex 방식) · 현재 거리 {distance}m
+          {t('fpsSim.shieldByTier', { d: distance })}
         </div>
         <div className="grid grid-cols-2 gap-2">
           <ShieldBreakdownTable weapon={weaponA} distance={distance} name={weaponA.name} />
@@ -330,13 +332,14 @@ export default function FPSSimulationPanel({ onClose }: Props) {
       </div>
 
       <div className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        TTK = Time to Kill (첫 명중부터 처치까지 밀리초) · BTK = Bullets to Kill · 타겟 기본 HP 100 + 쉴드 50
+        {t('fpsSim.ttkBtkNote')}
       </div>
     </PanelShell>
   );
 }
 
 function ShieldBreakdownTable({ weapon, distance, name }: { weapon: WeaponStats; distance: number; name: string }) {
+  const t = useTranslations();
   const rows = calculateShieldBreakdown(weapon, distance);
   return (
     <div>
@@ -345,10 +348,10 @@ function ShieldBreakdownTable({ weapon, distance, name }: { weapon: WeaponStats;
       </div>
       <div className="space-y-0.5">
         <div className="grid grid-cols-5 gap-1 text-caption px-1" style={{ color: 'var(--text-tertiary)' }}>
-          <span>티어</span>
-          <span className="text-center">HP+쉴드</span>
-          <span className="text-center">몸 BTK</span>
-          <span className="text-center">헤드 BTK</span>
+          <span>{t('fpsSim.tierLabel')}</span>
+          <span className="text-center">{t('fpsSim.hpShieldLabel')}</span>
+          <span className="text-center">{t('fpsSim.bodyBtk')}</span>
+          <span className="text-center">{t('fpsSim.headBtk')}</span>
           <span className="text-center">TTK(ms)</span>
         </div>
         {rows.map((r) => {
@@ -380,18 +383,19 @@ function ShieldBreakdownTable({ weapon, distance, name }: { weapon: WeaponStats;
 }
 
 function skillTier(v: number): string {
-  if (v < 30) return '초보';
-  if (v < 50) return '평균↓';
-  if (v < 70) return '평균';
-  if (v < 85) return '숙련';
-  return '전문가';
+  const t = useTranslations();
+  if (v < 30) return t('fpsSim.tierBeginner');
+  if (v < 50) return t('fpsSim.tierBelowAvg');
+  if (v < 70) return t('fpsSim.tierAvg');
+  if (v < 85) return t('fpsSim.tierSkilled');
+  return t('fpsSim.tierExpert');
 }
 
 const UTILITY_LABEL: Record<UtilityKind, string> = {
-  smoke: '스모크',
-  flash: '플래시',
-  molotov: '몰로토프',
-  decoy: '디코이',
+  smoke: 'fpsSim.utilSmoke',
+  flash: 'fpsSim.utilFlash',
+  molotov: 'fpsSim.utilMolotov',
+  decoy: 'fpsSim.utilDecoy',
 };
 const UTILITY_COLOR: Record<UtilityKind, string> = {
   smoke: '#6b7280',
@@ -421,6 +425,7 @@ function WeaponCard({
   setWeapon: (fn: (prev: WeaponStats) => WeaponStats) => void;
   color: string;
 }) {
+  const t = useTranslations();
   const update = <K extends keyof WeaponStats>(key: K, value: WeaponStats[K]) =>
     setWeapon((prev) => ({ ...prev, [key]: value }));
 
@@ -444,9 +449,9 @@ function WeaponCard({
           onChange={(e) => loadPreset(e.target.value)}
           className="input-compact"
           style={{ width: '70px' }}
-          title="프리셋"
+          title={t('fpsSim.presetTitle')}
         >
-          <option value="">프리셋</option>
+          <option value="">{t('fpsSim.presetPlaceholder')}</option>
           {WEAPON_PRESETS.map((p) => (
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
@@ -454,27 +459,27 @@ function WeaponCard({
       </div>
 
       <div className="grid grid-cols-3 gap-1.5">
-        <NumField label="머리" value={weapon.damageHead} onChange={(v) => update('damageHead', v)} />
-        <NumField label="몸통" value={weapon.damageBody} onChange={(v) => update('damageBody', v)} />
-        <NumField label="팔다리" value={weapon.damageLimb} onChange={(v) => update('damageLimb', v)} />
+        <NumField label={t('fpsSim.damageHead')} value={weapon.damageHead} onChange={(v) => update('damageHead', v)} />
+        <NumField label={t('fpsSim.damageBody')} value={weapon.damageBody} onChange={(v) => update('damageBody', v)} />
+        <NumField label={t('fpsSim.damageLimb')} value={weapon.damageLimb} onChange={(v) => update('damageLimb', v)} />
       </div>
       <div className="grid grid-cols-3 gap-1.5">
         <NumField label="RPM" value={weapon.rpm} onChange={(v) => update('rpm', v)} />
-        <NumField label="탄창" value={weapon.magazineSize} onChange={(v) => update('magazineSize', v)} />
-        <NumField label="관통%" value={weapon.armorPenPercent} step={0.05} onChange={(v) => update('armorPenPercent', v)} />
+        <NumField label={t('fpsSim.magazine')} value={weapon.magazineSize} onChange={(v) => update('magazineSize', v)} />
+        <NumField label={t('fpsSim.armorPen')} value={weapon.armorPenPercent} step={0.05} onChange={(v) => update('armorPenPercent', v)} />
       </div>
       <div className="grid grid-cols-3 gap-1.5">
-        <NumField label="감쇠 시작m" value={weapon.rangeFalloffStart} onChange={(v) => update('rangeFalloffStart', v)} />
-        <NumField label="감쇠 끝m" value={weapon.rangeFalloffEnd} onChange={(v) => update('rangeFalloffEnd', v)} />
-        <NumField label="최소배율" value={weapon.falloffDamageMultiplier} step={0.05} onChange={(v) => update('falloffDamageMultiplier', v)} />
+        <NumField label={t('fpsSim.falloffStart')} value={weapon.rangeFalloffStart} onChange={(v) => update('rangeFalloffStart', v)} />
+        <NumField label={t('fpsSim.falloffEnd')} value={weapon.rangeFalloffEnd} onChange={(v) => update('rangeFalloffEnd', v)} />
+        <NumField label={t('fpsSim.falloffMul')} value={weapon.falloffDamageMultiplier} step={0.05} onChange={(v) => update('falloffDamageMultiplier', v)} />
       </div>
       {/* 첫 발 보너스 / 반동 / 이동 패널티 — 실제 FPS 공식 밸런싱 지표 */}
       <div className="grid grid-cols-3 gap-1.5">
-        <NumField label="첫발+" value={weapon.firstShotAccuracyBonus ?? 0} step={0.05} onChange={(v) => update('firstShotAccuracyBonus', v)} />
-        <NumField label="반동" value={weapon.recoilIntensity ?? 0} step={0.05} onChange={(v) => update('recoilIntensity', v)} />
-        <NumField label="이동패널" value={weapon.movingAccuracyPenalty ?? 0} step={0.05} onChange={(v) => update('movingAccuracyPenalty', v)} />
+        <NumField label={t('fpsSim.firstShotBonus')} value={weapon.firstShotAccuracyBonus ?? 0} step={0.05} onChange={(v) => update('firstShotAccuracyBonus', v)} />
+        <NumField label={t('fpsSim.recoil')} value={weapon.recoilIntensity ?? 0} step={0.05} onChange={(v) => update('recoilIntensity', v)} />
+        <NumField label={t('fpsSim.movingPenalty')} value={weapon.movingAccuracyPenalty ?? 0} step={0.05} onChange={(v) => update('movingAccuracyPenalty', v)} />
       </div>
-      <NumField label="재장전(초)" value={weapon.reloadTimeSeconds} step={0.1} onChange={(v) => update('reloadTimeSeconds', v)} />
+      <NumField label={t('fpsSim.reloadSec')} value={weapon.reloadTimeSeconds} step={0.1} onChange={(v) => update('reloadTimeSeconds', v)} />
     </div>
   );
 }
@@ -538,6 +543,7 @@ function RangeRow({
 }
 
 function ResultCard({ label, result, color }: { label: string; result: ReturnType<typeof simulateWeaponTtk>; color: string }) {
+  const t = useTranslations();
   return (
     <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)', border: `1px solid ${color}` }}>
       <div className="text-label font-medium mb-2" style={{ color }}>
@@ -545,9 +551,9 @@ function ResultCard({ label, result, color }: { label: string; result: ReturnTyp
       </div>
       <div className="grid grid-cols-2 gap-1 text-label">
         <Metric name="TTK" value={`${Math.round(result.avgTtkMs)}ms`} sub={`中 ${Math.round(result.medianTtkMs)}ms`} />
-        <Metric name="BTK" value={`${result.avgBtk.toFixed(1)}발`} sub={`min ${result.minBtk} / max ${result.maxBtk}`} />
-        <Metric name="kill%" value={`${Math.round(result.killProbability * 100)}%`} sub="탄창 내" />
-        <Metric name="eff DPS" value={Math.round(result.effectiveDps).toString()} sub={`이론 ${Math.round(result.theoreticalMaxDps)}`} />
+        <Metric name="BTK" value={t('fpsSim.btkUnit', { n: result.avgBtk.toFixed(1) })} sub={t('fpsSim.btkSub', { min: result.minBtk, max: result.maxBtk })} />
+        <Metric name="kill%" value={`${Math.round(result.killProbability * 100)}%`} sub={t('fpsSim.killSub')} />
+        <Metric name="eff DPS" value={Math.round(result.effectiveDps).toString()} sub={t('fpsSim.effDpsSub', { n: Math.round(result.theoreticalMaxDps) })} />
       </div>
     </div>
   );

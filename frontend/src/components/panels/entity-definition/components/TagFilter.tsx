@@ -1,6 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface TagFilterProps {
   tags: string[];
@@ -9,6 +10,7 @@ interface TagFilterProps {
 }
 
 export default function TagFilter({ tags, selectedTag, onSelect }: TagFilterProps) {
+  const t = useTranslations('entityDefinition');
   if (tags.length === 0) {
     return null;
   }
@@ -16,7 +18,7 @@ export default function TagFilter({ tags, selectedTag, onSelect }: TagFilterProp
   return (
     <div className="space-y-2">
       <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-        태그 필터
+        {t('tagFilter')}
       </div>
       <div className="flex flex-wrap gap-1.5">
         {selectedTag && (
@@ -29,7 +31,7 @@ export default function TagFilter({ tags, selectedTag, onSelect }: TagFilterProp
             }}
           >
             <X className="w-3 h-3" />
-            필터 해제
+            {t('clearFilter')}
           </button>
         )}
         {tags.map((tag) => {

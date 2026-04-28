@@ -12,6 +12,7 @@
 
 import { useEffect, useRef } from 'react';
 import { Pencil, Copy, Trash2, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from '@/components/ui/Toast';
 
 export interface RecordContextMenuState {
@@ -36,6 +37,7 @@ export default function RecordContextMenu({
   onEdit, onDuplicate, onDelete,
   onInsertAbove, onInsertBelow,
 }: Props) {
+  const t = useTranslations('recordCtx');
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -110,15 +112,15 @@ export default function RecordContextMenu({
     >
       <Item
         icon={Pencil}
-        label="편집"
+        label={t('edit')}
         onClick={run(() => onEdit(state.rowId))}
       />
       <Item
         icon={Copy}
-        label="복제"
+        label={t('duplicate')}
         onClick={run(() => {
           onDuplicate(state.rowId);
-          toast.success('복제되었습니다');
+          toast.success(t('duplicated'));
         })}
       />
       {(onInsertAbove || onInsertBelow) && (
@@ -127,25 +129,25 @@ export default function RecordContextMenu({
       {onInsertAbove && (
         <Item
           icon={Plus}
-          label="위에 추가"
+          label={t('insertAbove')}
           onClick={run(() => onInsertAbove(state.rowId))}
         />
       )}
       {onInsertBelow && (
         <Item
           icon={Plus}
-          label="아래에 추가"
+          label={t('insertBelow')}
           onClick={run(() => onInsertBelow(state.rowId))}
         />
       )}
       <div className="h-px my-1" style={{ background: 'var(--border-primary)' }} />
       <Item
         icon={Trash2}
-        label="삭제"
+        label={t('delete')}
         danger
         onClick={run(() => {
           onDelete(state.rowId);
-          toast.info('삭제되었습니다');
+          toast.info(t('deleted'));
         })}
       />
     </div>

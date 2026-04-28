@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface ConfidenceBarProps {
   winRate: number;
@@ -11,6 +12,7 @@ interface ConfidenceBarProps {
 }
 
 export function ConfidenceBar({ winRate, confidence, color, wins, total }: ConfidenceBarProps) {
+  const t = useTranslations('simulation');
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -62,9 +64,9 @@ export function ConfidenceBar({ winRate, confidence, color, wins, total }: Confi
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
           }}
         >
-          <div className="font-medium mb-1" style={{ color }}>{wins.toLocaleString()}승 / {total.toLocaleString()}전</div>
+          <div className="font-medium mb-1" style={{ color }}>{t('winsOver', { wins: wins.toLocaleString(), total: total.toLocaleString() })}</div>
           <div style={{ color: 'var(--text-secondary)' }}>
-            95% 신뢰구간: {(confidence.lower * 100).toFixed(1)}% ~ {(confidence.upper * 100).toFixed(1)}%
+            {t('ci95', { lower: (confidence.lower * 100).toFixed(1), upper: (confidence.upper * 100).toFixed(1) })}
           </div>
         </div>
       )}

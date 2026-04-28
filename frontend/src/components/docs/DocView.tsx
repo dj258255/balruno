@@ -12,6 +12,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   FileText, Trash2, HelpCircle, Link as LinkIcon, Download, Printer,
 } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { findBacklinks } from '@/lib/docReferences';
 import { exportDocAsMarkdown, exportDocAsPDF } from '@/lib/docExport';
@@ -27,6 +28,8 @@ interface Props {
 }
 
 export default function DocView({ projectId, doc, onClose }: Props) {
+  const t = useTranslations('docs');
+  const locale = useLocale();
   const updateDoc = useProjectStore((s) => s.updateDoc);
   const deleteDoc = useProjectStore((s) => s.deleteDoc);
   const setCurrentDoc = useProjectStore((s) => s.setCurrentDoc);
@@ -64,7 +67,7 @@ export default function DocView({ projectId, doc, onClose }: Props) {
   };
 
   const handleDelete = () => {
-    if (window.confirm(`"${doc.name}" 문서를 삭제할까요? 되돌릴 수 없습니다.`)) {
+    if (window.confirm(t('deleteConfirm', { name: doc.name }))) {
       deleteDoc(projectId, doc.id);
       onClose();
     }
@@ -82,8 +85,8 @@ export default function DocView({ projectId, doc, onClose }: Props) {
 
   return (
     <PanelShell
-      title="문서"
-      subtitle="/ 슬래시 명령 · @ 참조"
+      title={t('title')}
+      subtitle={t('subtitle')}
       iconNode={
         <DocIconPicker
           icon={doc.icon}
@@ -98,7 +101,7 @@ export default function DocView({ projectId, doc, onClose }: Props) {
           <button
             onClick={() => exportDocAsMarkdown({ ...doc, content, name }, project)}
             className="p-1 rounded hover:bg-[var(--bg-tertiary)]"
-            title="Markdown 내보내기"
+            title={t('exportMd')}
             style={{ color: 'var(--text-secondary)' }}
           >
             <Download className="w-3.5 h-3.5" />
@@ -106,7 +109,7 @@ export default function DocView({ projectId, doc, onClose }: Props) {
           <button
             onClick={() => exportDocAsPDF({ ...doc, content, name }, project)}
             className="p-1 rounded hover:bg-[var(--bg-tertiary)]"
-            title="PDF 로 인쇄"
+            title={t('printPdf')}
             style={{ color: 'var(--text-secondary)' }}
           >
             <Printer className="w-3.5 h-3.5" />
@@ -114,7 +117,7 @@ export default function DocView({ projectId, doc, onClose }: Props) {
           <button
             onClick={() => setShowHelp((v) => !v)}
             className="p-1 rounded hover:bg-[var(--bg-tertiary)]"
-            title="문법 도움말"
+            title={t('syntaxHelp')}
             style={{ color: showHelp ? '#3b82f6' : 'var(--text-secondary)' }}
           >
             <HelpCircle className="w-3.5 h-3.5" />
@@ -122,7 +125,7 @@ export default function DocView({ projectId, doc, onClose }: Props) {
           <button
             onClick={handleDelete}
             className="p-1 rounded hover:bg-[var(--bg-tertiary)]"
-            title="문서 삭제"
+            title={t('delete')}
             style={{ color: 'var(--text-secondary)' }}
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -145,18 +148,18 @@ export default function DocView({ projectId, doc, onClose }: Props) {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="문서 제목"
+          placeholder={t('titlePlaceholder')}
           className="w-full text-2xl font-bold bg-transparent outline-none"
           style={{ color: 'var(--text-primary)' }}
         />
         <div className="flex items-center gap-3 mt-1 text-caption" style={{ color: 'var(--text-tertiary)' }}>
           <span>
-            수정: {new Date(doc.updatedAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            {t('modifiedPrefix')}: {new Date(doc.updatedAt).toLocaleString(locale === 'ko' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </span>
           {backlinks.length > 0 && (
             <span className="flex items-center gap-1">
               <LinkIcon className="w-3 h-3" />
-              {backlinks.length}개 문서에서 참조
+              {t('backlinkRefs', { count: backlinks.length })}
             </span>
           )}
         </div>
@@ -170,12 +173,12 @@ export default function DocView({ projectId, doc, onClose }: Props) {
           style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
         >
           <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-            에디터 사용법
+            {t('editorUsage')}
           </div>
-          <div><kbd className="px-1 rounded bg-[var(--bg-primary)]">/</kbd> — 슬래시 명령 (M1-3 예정: heading, list, 블록 삽입)</div>
-          <div><kbd className="px-1 rounded bg-[var(--bg-primary)]">@</kbd> — 시트/태스크/문서 참조 (M1-4 예정)</div>
-          <div><kbd className="px-1 rounded bg-[var(--bg-primary)]">**굵게**</kbd> <kbd className="px-1 rounded bg-[var(--bg-primary)]">*기울임*</kbd> <kbd className="px-1 rounded bg-[var(--bg-primary)]">`코드`</kbd> — 인라인 마크다운</div>
-          <div><kbd className="px-1 rounded bg-[var(--bg-primary)]"># 제목</kbd> <kbd className="px-1 rounded bg-[var(--bg-primary)]">- 리스트</kbd> <kbd className="px-1 rounded bg-[var(--bg-primary)]">&gt; 인용</kbd> — 줄 시작 마크다운</div>
+          <div><kbd className="px-1 rounded bg-[var(--bg-primary)]">/</kbd> — {t('helpSlash')}</div>
+          <div><kbd className="px-1 rounded bg-[var(--bg-primary)]">@</kbd> — {t('helpAt')}</div>
+          <div><kbd className="px-1 rounded bg-[var(--bg-primary)]">**bold**</kbd> <kbd className="px-1 rounded bg-[var(--bg-primary)]">*italic*</kbd> <kbd className="px-1 rounded bg-[var(--bg-primary)]">`code`</kbd> — {t('helpInlineMd')}</div>
+          <div><kbd className="px-1 rounded bg-[var(--bg-primary)]"># H1</kbd> <kbd className="px-1 rounded bg-[var(--bg-primary)]">- list</kbd> <kbd className="px-1 rounded bg-[var(--bg-primary)]">&gt; quote</kbd> — {t('helpLineMd')}</div>
         </div>
       )}
 
@@ -199,7 +202,7 @@ export default function DocView({ projectId, doc, onClose }: Props) {
             style={{ color: 'var(--text-tertiary)' }}
           >
             <LinkIcon className="w-3 h-3" />
-            이 문서를 참조
+            {t('thisDocReferenced')}
           </div>
           <div className="space-y-1">
             {backlinks.map((b) => (

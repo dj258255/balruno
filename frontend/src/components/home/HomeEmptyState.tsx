@@ -8,8 +8,10 @@
  */
 
 import { Sparkles, FileSpreadsheet, FolderPlus, Wand2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export default function HomeEmptyState() {
+  const t = useTranslations('home');
   const openAiSetup = () => window.dispatchEvent(new Event('balruno:open-ai-setup'));
   const openGallery = () => window.dispatchEvent(new Event('balruno:open-gallery'));
   const openImport = () => window.dispatchEvent(new Event('balruno:open-import-modal'));
@@ -28,10 +30,10 @@ export default function HomeEmptyState() {
             <Sparkles className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            시작해볼까요?
+            {t('emptyTitle')}
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            게임 밸런싱 · 스프린트 · 플레이테스트를 하나의 워크스페이스에서
+            {t('emptySubtitle')}
           </p>
         </div>
 
@@ -43,10 +45,10 @@ export default function HomeEmptyState() {
           >
             <Wand2 className="w-6 h-6 mb-2" style={{ color: '#8b5cf6' }} />
             <div className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-              AI 로 시작
+              {t('startWithAi')}
             </div>
             <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              요구사항 설명 → 자동 생성
+              {t('startWithAiDesc')}
             </div>
           </button>
 
@@ -57,10 +59,10 @@ export default function HomeEmptyState() {
           >
             <FolderPlus className="w-6 h-6 mb-2" style={{ color: '#3b82f6' }} />
             <div className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-              템플릿 둘러보기
+              {t('browseTemplates')}
             </div>
             <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              RPG · FPS · Idle · 팀 PM
+              {t('browseTemplatesDesc')}
             </div>
           </button>
 
@@ -71,10 +73,10 @@ export default function HomeEmptyState() {
           >
             <FileSpreadsheet className="w-6 h-6 mb-2" style={{ color: '#10b981' }} />
             <div className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-              Excel 가져오기
+              {t('importExcel')}
             </div>
             <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              기존 시트에서 시작
+              {t('importExcelDesc')}
             </div>
           </button>
         </div>

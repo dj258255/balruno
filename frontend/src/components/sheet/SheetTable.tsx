@@ -508,7 +508,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
   const handleStyleChange = useCallback(
     (style: Partial<CellStyle>) => {
       if (selectedCells.length === 0) return;
-      pushState(projects, '스타일 변경');
+      pushState(projects, t('table.styleChange'));
       updateCellsStyle(projectId, sheet.id, selectedCells, style);
     },
     [selectedCells, updateCellsStyle, projectId, sheet.id, pushState, projects]
@@ -1100,7 +1100,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           >
             <table
               role="grid"
-              aria-label="스프레드시트 데이터 그리드"
+              aria-label={t('table.gridAriaLabel')}
               aria-rowcount={sheet?.rows.length ?? 0}
               aria-colcount={sheet?.columns.length ?? 0}
               className="border-collapse table-fixed"
@@ -1210,7 +1210,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                                           fontWeight: 600,
                                           fontStyle: 'italic',
                                         }}
-                                        title={`수식: ${col.formula}`}
+                                        title={t('table.formulaTooltip', { formula: col.formula ?? '' })}
                                       >
                                         ƒ
                                       </span>
@@ -1232,7 +1232,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                                           color: '#ef4444',
                                           borderRadius: 4,
                                         }}
-                                        title="내보내기 제외"
+                                        title={t('table.excludeFromExport')}
                                       >
                                         <EyeOff className="w-2.5 h-2.5" />
                                       </span>
@@ -1825,7 +1825,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
             // unit-mappable 안 되면 disabled hint 항목으로 표시 — 사용자가 왜 시뮬 진입이 없는지 알도록
             if (!isUnitMappable(sheet.columns)) {
               return {
-                label: '시뮬 진입 — hp/atk 컬럼 필요',
+                label: t('table.simNeedsHpAtk'),
                 onClick: () => {},
                 disabled: true,
               };
@@ -1842,7 +1842,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
               const team1Rows = selectedRows.slice(0, half);
               const team2Rows = selectedRows.slice(half);
               return {
-                label: `선택한 ${selectedRows.length}행으로 팀 시뮬`,
+                label: t('table.simTeamWithRows', { count: selectedRows.length }),
                 onClick: () => {
                   useSimulationPreload.getState().queue({
                     mode: 'team',
@@ -1859,7 +1859,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
             const idx = sheet.rows.findIndex((r) => r.id === rowContextMenu.row.id);
             const partner = sheet.rows[idx + 1] ?? sheet.rows.find((r) => r.id !== rowContextMenu.row.id);
             return {
-              label: '이 행으로 시뮬 실행',
+              label: t('table.simRunWithRow'),
               onClick: () => {
                 useSimulationPreload.getState().queue({
                   mode: '1v1',

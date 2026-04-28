@@ -2,6 +2,7 @@
 
 import { ReactNode, useState, useEffect } from 'react';
 import { X, LucideIcon, Move, GripVertical } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface PanelHeaderProps {
   title: string;
@@ -26,6 +27,7 @@ export default function PanelHeader({
   onDragStart,
   extraContent,
 }: PanelHeaderProps) {
+  const t = useTranslations();
   const [showDragHint, setShowDragHint] = useState(false);
 
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function PanelHeader({
       {/* 드래그 핸들 - 미니멀 디자인 */}
       <div
         className="flex items-center justify-center w-5 opacity-40 hover:opacity-70 transition-opacity"
-        title="드래그하여 이동"
+        title={t('panel.dragToMove')}
       >
         <GripVertical className="w-4 h-4" style={{ color }} />
       </div>
@@ -104,7 +106,7 @@ export default function PanelHeader({
             onClick={onClose}
             className="p-1.5 rounded-lg transition-all hover:bg-[var(--bg-hover)] opacity-60 hover:opacity-100"
             style={{ color: 'var(--text-tertiary)' }}
-            aria-label="패널 닫기"
+            aria-label={t('panel.closeAria')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -123,7 +125,7 @@ export default function PanelHeader({
         >
           <Move className="w-4 h-4" style={{ color }} />
           <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-            헤더를 드래그하여 패널을 이동할 수 있어요
+            {t('panel.dragHint')}
           </span>
           <button
             onClick={(e) => {
@@ -134,7 +136,7 @@ export default function PanelHeader({
             className="text-xs px-1.5 py-0.5 rounded ml-1 hover:bg-[var(--bg-hover)]"
             style={{ color: 'var(--text-tertiary)' }}
           >
-            확인
+            {t('panel.confirm')}
           </button>
         </div>
       )}

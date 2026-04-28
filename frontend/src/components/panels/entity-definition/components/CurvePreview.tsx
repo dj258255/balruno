@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   LineChart,
   Line,
@@ -28,6 +29,7 @@ const STAT_COLORS: Record<string, string> = {
 };
 
 export default function CurvePreview({ entity, curveData, overrides = [] }: CurvePreviewProps) {
+  const t = useTranslations('entityDefinition');
   // 모든 스탯 데이터를 하나의 배열로 통합 (차트용)
   const chartData = useMemo(() => {
     const statNames = Object.keys(curveData);
@@ -79,7 +81,7 @@ export default function CurvePreview({ entity, curveData, overrides = [] }: Curv
         className="p-4 rounded-lg text-center text-sm"
         style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}
       >
-        성장 곡선 데이터가 없습니다
+        {t('noCurveData')}
       </div>
     );
   }
@@ -87,7 +89,7 @@ export default function CurvePreview({ entity, curveData, overrides = [] }: Curv
   return (
     <div className="space-y-3">
       <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-        성장 곡선 미리보기
+        {t('curvePreview')}
       </div>
 
       {/* 범례 */}
@@ -116,7 +118,7 @@ export default function CurvePreview({ entity, curveData, overrides = [] }: Curv
                   className="px-1 rounded text-caption"
                   style={{ background: `${color}20`, color }}
                 >
-                  오버라이드
+                  {t('overrideBadge')}
                 </span>
               )}
             </div>
@@ -131,7 +133,7 @@ export default function CurvePreview({ entity, curveData, overrides = [] }: Curv
           style={{ background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }}
         >
           <div className="w-3 h-3 rounded-full border-2 border-white" style={{ background: '#888' }} />
-          <span>오버라이드 포인트 ({overridePoints.length}개) - 이 레벨들은 수동 지정값 사용</span>
+          <span>{t('overrideHelp', { count: overridePoints.length })}</span>
         </div>
       )}
 
@@ -173,7 +175,7 @@ export default function CurvePreview({ entity, curveData, overrides = [] }: Curv
                 value.toLocaleString(),
                 name,
               ]}
-              labelFormatter={(label) => `레벨 ${label}`}
+              labelFormatter={(label) => t('levelLabel', { n: label as number })}
             />
             {statNames.map((statName) => (
               <Line

@@ -14,6 +14,7 @@
 
 import { useState, useEffect, type ReactNode } from 'react';
 import { X, Lightbulb } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   /** 고유 식별자 — localStorage 키. 같은 toolId 면 1회만 표시. */
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export default function ToolPanelHint({ toolId, title, children, accentColor }: Props) {
+  const t = useTranslations('onboarding');
   const [show, setShow] = useState(false);
   const accent = accentColor ?? 'var(--accent)';
 
@@ -52,13 +54,13 @@ export default function ToolPanelHint({ toolId, title, children, accentColor }: 
         border: `1px solid ${accent}`,
       }}
       role="region"
-      aria-label={`${title} 도구 사용 안내`}
+      aria-label={t('toolHintAriaLabel', { title })}
     >
       <button
         type="button"
         onClick={dismiss}
         className="absolute top-2 right-2 p-1 rounded hover:bg-[var(--bg-hover)] transition-colors"
-        aria-label="안내 닫기"
+        aria-label={t('toolHintDismissAria')}
       >
         <X className="w-3.5 h-3.5" style={{ color: 'var(--text-tertiary)' }} />
       </button>
@@ -82,7 +84,7 @@ export default function ToolPanelHint({ toolId, title, children, accentColor }: 
             className="mt-2 text-caption font-medium px-2 py-1 rounded transition-colors hover:bg-[var(--bg-hover)]"
             style={{ color: accent }}
           >
-            이해했어요 →
+            {t('toolHintGotIt')}
           </button>
         </div>
       </div>

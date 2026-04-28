@@ -1,10 +1,12 @@
 'use client';
 
 import { Bug } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { TodaysWork, RowWithContext } from '@/hooks/useTodaysWork';
 import { useProjectStore } from '@/stores/projectStore';
 
 export default function MyBugsWidget({ work }: { work: TodaysWork }) {
+  const t = useTranslations('home');
   const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
 
@@ -17,9 +19,9 @@ export default function MyBugsWidget({ work }: { work: TodaysWork }) {
     const titleCol = ctx.sheet.columns.find(
       (c) => c.name.toLowerCase() === 'title' || c.name.toLowerCase() === 'name' || c.type === 'general'
     );
-    if (!titleCol) return '(제목 없음)';
+    if (!titleCol) return t('noTitle');
     const v = ctx.row.cells[titleCol.id];
-    return v ? String(v) : '(제목 없음)';
+    return v ? String(v) : t('noTitle');
   };
 
   return (
@@ -28,7 +30,7 @@ export default function MyBugsWidget({ work }: { work: TodaysWork }) {
         <div className="flex items-center gap-2">
           <Bug className="w-4 h-4" style={{ color: '#ef4444' }} />
           <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            내 버그
+            {t('myBugs')}
           </h3>
         </div>
         <div className="text-2xl font-bold" style={{ color: '#ef4444' }}>
@@ -38,8 +40,8 @@ export default function MyBugsWidget({ work }: { work: TodaysWork }) {
       {work.myBugs.length === 0 ? (
         <p className="text-xs italic" style={{ color: 'var(--text-tertiary)' }}>
           {work.openBugs.length > 0
-            ? `${work.openBugs.length}개 오픈 — 내게 할당 없음`
-            : '오픈 버그 없음'}
+            ? t('myBugsEmptyWithCount', { count: work.openBugs.length })
+            : t('myBugsEmpty')}
         </p>
       ) : (
         <div className="space-y-0.5 max-h-48 overflow-y-auto">

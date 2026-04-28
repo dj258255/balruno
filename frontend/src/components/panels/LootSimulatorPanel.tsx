@@ -22,6 +22,7 @@ import {
 } from '@/lib/lootSimulator';
 import ProgressBar from '@/components/ui/ProgressBar';
 import PanelShell from '@/components/ui/PanelShell';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
@@ -36,6 +37,7 @@ const RARITY_COLORS: Record<string, string> = {
 };
 
 export default function LootSimulatorPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [items, setItems] = useState<LootItem[]>(DEFAULT_GACHA_TABLE);
   const [pity, setPity] = useState<PityRule[]>(DEFAULT_PITY);
   const [pulls, setPulls] = useState(100);
@@ -128,7 +130,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
   return (
     <PanelShell
       title="Loot / Gacha Simulator"
-      subtitle="드롭 테이블 + pity 몬테카를로"
+      subtitle={t('lootSimulator.subtitleHeader')}
       icon={Dice5}
       onClose={onClose}
     >
@@ -136,14 +138,14 @@ export default function LootSimulatorPanel({ onClose }: Props) {
         {/* 드롭 테이블 */}
         <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>드롭 테이블</h4>
+            <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{t('lootSimulator.dropTableHeader')}</h4>
             <button onClick={addItem} className="text-xs flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--bg-tertiary)]" style={{ color: 'var(--accent)' }}>
-              <Plus size={12} /> 추가
+              <Plus size={12} /> {t('lootSimulator.addBtn')}
             </button>
           </div>
 
           <div className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-            합계 weight: <span className="font-mono">{totalWeight.toFixed(2)}</span> ({items.length} 아이템)
+            {t('lootSimulator.totalWeight')}<span className="font-mono">{totalWeight.toFixed(2)}</span> {t('lootSimulator.itemsCount', { n: items.length })}
           </div>
 
           <div className="space-y-1 max-h-56 overflow-y-auto">
@@ -187,9 +189,9 @@ export default function LootSimulatorPanel({ onClose }: Props) {
         {/* 천장 */}
         <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>천장 (Pity) 규칙</h4>
+            <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{t('lootSimulator.pityRulesHeader')}</h4>
             <button onClick={addPity} className="text-xs flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--bg-tertiary)]" style={{ color: 'var(--accent)' }}>
-              <Plus size={12} /> 추가
+              <Plus size={12} /> {t('lootSimulator.addBtn')}
             </button>
           </div>
           <div className="space-y-1">
@@ -200,7 +202,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
                   onChange={(e) => updatePity(i, 'rarity', e.target.value.toUpperCase())}
                   className="px-1 py-0.5 text-xs rounded border bg-transparent font-mono text-center"
                   style={{ borderColor: 'var(--border-primary)' }}
-                  title="등급"
+                  title={t('lootSimulator.rarityTitle')}
                 />
                 <input
                   type="number"
@@ -208,7 +210,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
                   onChange={(e) => updatePity(i, 'threshold', parseInt(e.target.value) || 1)}
                   className="px-1 py-0.5 text-xs rounded border bg-transparent font-mono"
                   style={{ borderColor: 'var(--border-primary)' }}
-                  title="hard pity 임계"
+                  title={t('lootSimulator.hardPityTitle')}
                 />
                 <input
                   type="number"
@@ -217,7 +219,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
                   onChange={(e) => updatePity(i, 'softFromPull', e.target.value ? parseInt(e.target.value) : undefined)}
                   className="px-1 py-0.5 text-xs rounded border bg-transparent font-mono"
                   style={{ borderColor: 'var(--border-primary)' }}
-                  title="soft pity 시작"
+                  title={t('lootSimulator.softPityStartTitle')}
                 />
                 <input
                   type="number"
@@ -227,7 +229,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
                   onChange={(e) => updatePity(i, 'softMultiplier', e.target.value ? parseFloat(e.target.value) : undefined)}
                   className="px-1 py-0.5 text-xs rounded border bg-transparent font-mono"
                   style={{ borderColor: 'var(--border-primary)' }}
-                  title="soft 배율"
+                  title={t('lootSimulator.softMulTitle')}
                 />
                 <button onClick={() => removePity(i)} className="p-1 rounded hover:bg-[var(--bg-tertiary)]">
                   <Trash2 size={12} style={{ color: 'var(--text-secondary)' }} />
@@ -235,7 +237,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
               </div>
             ))}
             <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-              순서: 등급 / hard pity 임계 / soft pity 시작 (선택) / soft 배율 (선택)
+              {t('lootSimulator.pityOrder')}
             </p>
           </div>
         </section>
@@ -248,12 +250,12 @@ export default function LootSimulatorPanel({ onClose }: Props) {
               checked={bannerEnabled}
               onChange={(e) => setBannerEnabled(e.target.checked)}
             />
-            <span className="font-semibold">피쳐드 배너 (50/50 시스템)</span>
+            <span className="font-semibold">{t('lootSimulator.featuredBanner')}</span>
           </label>
           {bannerEnabled && (
             <div className="space-y-2 pl-5">
               <div>
-                <div className="text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>피쳐드 아이템 (클릭 토글)</div>
+                <div className="text-caption mb-1" style={{ color: 'var(--text-secondary)' }}>{t('lootSimulator.featuredItem')}</div>
                 <div className="flex flex-wrap gap-1">
                   {items.map((it) => (
                     <button
@@ -278,7 +280,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs w-28" style={{ color: 'var(--text-secondary)' }}>피쳐드 확률</label>
+                <label className="text-xs w-28" style={{ color: 'var(--text-secondary)' }}>{t('lootSimulator.featuredRate')}</label>
                 <input
                   type="number"
                   step="0.05"
@@ -299,7 +301,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
                   checked={guaranteeAfterLoss}
                   onChange={(e) => setGuaranteeAfterLoss(e.target.checked)}
                 />
-                <span>50/50 패배 후 다음 SSR 피쳐드 확정 (Genshin)</span>
+                <span>{t('lootSimulator.fiftyFiftyNote')}</span>
               </label>
             </div>
           )}
@@ -308,28 +310,28 @@ export default function LootSimulatorPanel({ onClose }: Props) {
         {/* 컴플리트 분석 */}
         <section className="space-y-1.5 p-2 rounded border" style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}>
           <div className="flex items-center gap-2">
-            <label className="text-xs w-28" style={{ color: 'var(--text-secondary)' }}>컴플리트 등급</label>
+            <label className="text-xs w-28" style={{ color: 'var(--text-secondary)' }}>{t('lootSimulator.completeRarity')}</label>
             <select
               value={collectRarity}
               onChange={(e) => setCollectRarity(e.target.value)}
               className="flex-1 px-2 py-0.5 text-xs rounded border bg-transparent font-mono"
               style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
             >
-              <option value="">— 분석 안 함 —</option>
+              <option value="">{t('lootSimulator.noAnalysis')}</option>
               {uniqueRarities.map((r) => (
-                <option key={r} value={r}>{r} 전체 수집 확률</option>
+                <option key={r} value={r}>{t('lootSimulator.collectAllOf', { r })}</option>
               ))}
             </select>
           </div>
           <p className="text-caption" style={{ color: 'var(--text-secondary)' }}>
-            선택한 등급의 모든 아이템을 한 번 이상 뽑을 확률을 측정합니다.
+            {t('lootSimulator.collectExplain')}
           </p>
         </section>
 
         {/* 시뮬 설정 */}
         <section className="space-y-1.5 p-2 rounded border" style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}>
           <div className="flex items-center gap-2">
-            <label className="text-xs w-24" style={{ color: 'var(--text-secondary)' }}>한 번당 뽑기</label>
+            <label className="text-xs w-24" style={{ color: 'var(--text-secondary)' }}>{t('lootSimulator.pullsPerOnce')}</label>
             <input
               type="number"
               value={pulls}
@@ -340,7 +342,7 @@ export default function LootSimulatorPanel({ onClose }: Props) {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs w-24" style={{ color: 'var(--text-secondary)' }}>시뮬레이션 횟수</label>
+            <label className="text-xs w-24" style={{ color: 'var(--text-secondary)' }}>{t('lootSimulator.simCount')}</label>
             <input
               type="number"
               value={simulations}
@@ -364,13 +366,13 @@ export default function LootSimulatorPanel({ onClose }: Props) {
           }}
         >
           {running ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-          {running ? '시뮬레이션 중...' : `${simulations.toLocaleString()} 회 실행`}
+          {running ? t('lootSimulator.simulating') : t('lootSimulator.runRuns', { n: simulations.toLocaleString() })}
         </button>
 
         {running && (
           <ProgressBar
             value={progress}
-            label="Monte Carlo 진행"
+            label={t('lootSimulator.mcProgress')}
             detail={`${Math.round(progress * simulations).toLocaleString()} / ${simulations.toLocaleString()}`}
           />
         )}
@@ -382,18 +384,19 @@ export default function LootSimulatorPanel({ onClose }: Props) {
 }
 
 function Results({ result }: { result: LootSimResult }) {
+  const t = useTranslations();
   const maxAvg = Math.max(...result.rarityStats.map((r) => r.p95), 1);
 
   return (
     <div className="space-y-3">
       {/* 핵심 지표 */}
       <div className="grid grid-cols-2 gap-2">
-        <Card label="평균 첫 SSR" value={result.avgFirstRarePull > 0 ? `${result.avgFirstRarePull.toFixed(1)}연` : 'N/A'} />
+        <Card label={t('lootSimulator.avgFirstSSR')} value={result.avgFirstRarePull > 0 ? t('lootSimulator.pullSuffix', { n: result.avgFirstRarePull.toFixed(1) }) : 'N/A'} />
         <Card
-          label="천장 발동/시뮬"
+          label={t('lootSimulator.pityPerSim')}
           value={Object.keys(result.pityActivationRate).length > 0
-            ? Object.entries(result.pityActivationRate).map(([r, v]) => `${r}: ${v.toFixed(2)}회`).join(', ')
-            : '없음'}
+            ? Object.entries(result.pityActivationRate).map(([r, v]) => t('lootSimulator.pityFmt', { r, v: v.toFixed(2) })).join(', ')
+            : t('lootSimulator.noneLabel')}
         />
       </div>
 
@@ -401,25 +404,25 @@ function Results({ result }: { result: LootSimResult }) {
       {result.featuredStats && (
         <section className="p-2 rounded border space-y-1.5" style={{ borderColor: 'var(--primary-purple)', background: 'var(--primary-purple-light)' }}>
           <h4 className="text-xs font-semibold" style={{ color: 'var(--primary-purple)' }}>
-            피쳐드 배너 (50/50) 통계
+            {t('lootSimulator.featuredStatsHeader')}
           </h4>
           <div className="grid grid-cols-2 gap-2">
             <Card
-              label="평균 피쳐드 획득"
-              value={`${result.featuredStats.avgFeaturedCount.toFixed(2)}회`}
+              label={t('lootSimulator.avgFeaturedCount')}
+              value={t('lootSimulator.avgFeaturedSuffix', { n: result.featuredStats.avgFeaturedCount.toFixed(2) })}
             />
             <Card
-              label="평균 비피쳐드"
-              value={`${result.featuredStats.avgNonFeaturedCount.toFixed(2)}회`}
+              label={t('lootSimulator.avgNonFeatured')}
+              value={t('lootSimulator.avgFeaturedSuffix', { n: result.featuredStats.avgNonFeaturedCount.toFixed(2) })}
             />
             <Card
-              label="첫 피쳐드까지"
+              label={t('lootSimulator.avgFirstFeatured')}
               value={result.featuredStats.avgFirstFeaturedPull > 0
-                ? `${result.featuredStats.avgFirstFeaturedPull.toFixed(1)}연`
+                ? t('lootSimulator.pullSuffix', { n: result.featuredStats.avgFirstFeaturedPull.toFixed(1) })
                 : 'N/A'}
             />
             <Card
-              label="첫 SSR = 피쳐드 확률"
+              label={t('lootSimulator.firstSSRIsFeatured')}
               value={`${(result.featuredStats.winRateAtFirstSSR * 100).toFixed(1)}%`}
             />
           </div>
@@ -430,7 +433,7 @@ function Results({ result }: { result: LootSimResult }) {
       {result.completeRate !== undefined && (
         <section className="p-2 rounded border" style={{ borderColor: '#f59e0b', background: 'rgba(245, 158, 11, 0.08)' }}>
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold" style={{ color: '#f59e0b' }}>전체 수집 확률</span>
+            <span className="font-semibold" style={{ color: '#f59e0b' }}>{t('lootSimulator.collectRateLabel')}</span>
             <span className="font-mono" style={{ color: 'var(--text-primary)' }}>
               {(result.completeRate * 100).toFixed(1)}%
             </span>
@@ -441,7 +444,7 @@ function Results({ result }: { result: LootSimResult }) {
       {/* 등급별 분포 */}
       <section className="space-y-1.5">
         <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
-          등급별 분포 ({result.totalPulls}회 ×{result.totalSimulations.toLocaleString()} 시뮬)
+          {t('lootSimulator.rarityDistribution', { totalPulls: result.totalPulls, sims: result.totalSimulations.toLocaleString() })}
         </h4>
         {result.rarityStats.map((rs) => (
           <div key={rs.rarity} className="space-y-1">
@@ -450,9 +453,9 @@ function Results({ result }: { result: LootSimResult }) {
                 {rs.rarity}
               </span>
               <span style={{ color: 'var(--text-secondary)' }}>
-                평균 <span className="font-mono">{rs.avgCount.toFixed(2)}</span>회
+                {t('lootSimulator.avgPrefix')}<span className="font-mono">{rs.avgCount.toFixed(2)}</span>
                 · P5/P50/P95 <span className="font-mono">{rs.p5}/{rs.p50}/{rs.p95}</span>
-                · 1+확률 <span className="font-mono">{(rs.atLeastOneRate * 100).toFixed(1)}%</span>
+                {t('lootSimulator.oneOrMoreRate')}<span className="font-mono">{(rs.atLeastOneRate * 100).toFixed(1)}%</span>
               </span>
             </div>
             <div className="relative h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
@@ -470,7 +473,7 @@ function Results({ result }: { result: LootSimResult }) {
 
       {/* Top items */}
       <section className="space-y-1">
-        <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>가장 많이 뽑힌 아이템 Top 5</h4>
+        <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{t('lootSimulator.topItemsHeader')}</h4>
         {result.topItems.map((it) => (
           <div key={it.name} className="flex items-center justify-between text-caption">
             <span style={{ color: 'var(--text-primary)' }}>{it.name}</span>

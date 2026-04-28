@@ -370,8 +370,8 @@ export default function CurveFittingPanel({ onClose, showHelp: externalShowHelp,
 
   return (
     <PanelShell
-      title="곡선 피팅"
-      subtitle="데이터 → 수식 역산 (회귀)"
+      title={t('curveFitting.titleHeader')}
+      subtitle={t('curveFitting.subtitleHeader')}
       icon={PenTool}
       iconColor="#6366f1"
       onClose={onClose ?? (() => {})}

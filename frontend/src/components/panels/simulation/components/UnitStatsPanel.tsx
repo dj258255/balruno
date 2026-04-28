@@ -23,6 +23,7 @@ function SkillSlider({
   value,
   onChange,
   color,
+  tier,
 }: {
   icon: React.ElementType;
   label: string;
@@ -30,9 +31,8 @@ function SkillSlider({
   value: number;
   onChange: (v: number) => void;
   color: string;
+  tier: string;
 }) {
-  const tier =
-    value < 30 ? '초보' : value < 50 ? '평균 이하' : value < 70 ? '평균' : value < 85 ? '숙련' : '전문가';
   return (
     <div className="p-2 rounded-md" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}>
       <div className="flex items-center gap-2 mb-1">
@@ -148,6 +148,9 @@ export function UnitStatsPanel({
   const t = useTranslations('simulation');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  const tierFor = (value: number): string =>
+    value < 30 ? t('skillTier1') : value < 50 ? t('skillTier2') : value < 70 ? t('skillTier3') : value < 85 ? t('skillTier4') : t('skillTier5');
+
   return (
     <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)', border: `2px solid ${color}` }}>
       <div className="flex items-center gap-2 mb-3">
@@ -216,7 +219,7 @@ export function UnitStatsPanel({
       {/* 고급 옵션 (크리티컬, 명중, 회피) */}
       <details className="mt-3 pt-3 group" style={{ borderTop: '1px solid var(--border-primary)' }}>
         <summary className="text-sm cursor-pointer list-none flex items-center justify-between" style={{ color: 'var(--text-secondary)' }}>
-          <span>고급 옵션 (크리티컬, 명중, 회피)</span>
+          <span>{t('advancedOptions')}</span>
           <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" />
         </summary>
         <div className="grid grid-cols-2 gap-2 mt-2">
@@ -238,7 +241,7 @@ export function UnitStatsPanel({
             color="#f59e0b"
           />
           <OptionalStatInput
-            label="명중 %"
+            label={t('hitRate')}
             value={unitStats.accuracy}
             onChange={(v) => setUnitStats(prev => ({ ...prev, accuracy: v }))}
             multiplier={100}
@@ -247,7 +250,7 @@ export function UnitStatsPanel({
             color="#3db88a"
           />
           <OptionalStatInput
-            label="회피 %"
+            label={t('evade')}
             value={unitStats.evasion}
             onChange={(v) => setUnitStats(prev => ({ ...prev, evasion: v }))}
             multiplier={100}
@@ -261,33 +264,36 @@ export function UnitStatsPanel({
       {/* 조종자 실력 (Composite Skill) — Overwatch/Destiny 밸런싱 방식 */}
       <details className="mt-3 pt-3 group" style={{ borderTop: '1px solid var(--border-primary)' }}>
         <summary className="text-sm cursor-pointer list-none flex items-center justify-between" style={{ color: 'var(--text-secondary)' }}>
-          <span>조종자 실력 (에임 · 반응 · 판단)</span>
+          <span>{t('pilotSkill')}</span>
           <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" />
         </summary>
         <div className="space-y-2 mt-2">
           <SkillSlider
             icon={Crosshair}
-            label="에임"
-            description="명중률 · 크리티컬 보정"
+            label={t('aim')}
+            description={t('aimDesc')}
             value={unitStats.aimSkill ?? 50}
             onChange={(v) => setUnitStats(prev => ({ ...prev, aimSkill: v }))}
             color="#e86161"
+            tier={tierFor(unitStats.aimSkill ?? 50)}
           />
           <SkillSlider
             icon={Gauge}
-            label="반응"
-            description="회피율 · 선공 확률 보정"
+            label={t('reaction')}
+            description={t('reactionDesc')}
             value={unitStats.reactionSkill ?? 50}
             onChange={(v) => setUnitStats(prev => ({ ...prev, reactionSkill: v }))}
             color="#5a9cf5"
+            tier={tierFor(unitStats.reactionSkill ?? 50)}
           />
           <SkillSlider
             icon={Brain}
-            label="판단"
-            description="스킬 선택 최적성 (팀전/다중 스킬)"
+            label={t('decision')}
+            description={t('decisionDesc')}
             value={unitStats.decisionSkill ?? 50}
             onChange={(v) => setUnitStats(prev => ({ ...prev, decisionSkill: v }))}
             color="#9179f2"
+            tier={tierFor(unitStats.decisionSkill ?? 50)}
           />
         </div>
       </details>

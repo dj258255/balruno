@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEscapeKey } from '@/hooks';
 
 export interface ConfirmDialogProps {
@@ -21,10 +22,13 @@ export default function ConfirmDialog({
   onConfirm,
   title,
   message,
-  confirmText = '확인',
-  cancelText = '취소',
+  confirmText,
+  cancelText,
   variant = 'danger',
 }: ConfirmDialogProps) {
+  const t = useTranslations('ui');
+  const resolvedConfirm = confirmText ?? t('confirm');
+  const resolvedCancel = cancelText ?? t('cancel');
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
   useEscapeKey(onClose, isOpen);
@@ -107,7 +111,7 @@ export default function ConfirmDialog({
             onClick={onClose}
             className="p-1.5 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
             style={{ color: 'var(--text-tertiary)' }}
-            aria-label="대화상자 닫기"
+            aria-label={t('closeDialog')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -133,7 +137,7 @@ export default function ConfirmDialog({
               color: 'var(--text-secondary)',
             }}
           >
-            {cancelText}
+            {resolvedCancel}
           </button>
           <button
             ref={confirmButtonRef}
@@ -149,7 +153,7 @@ export default function ConfirmDialog({
             onMouseEnter={(e) => (e.currentTarget.style.background = style.buttonHover)}
             onMouseLeave={(e) => (e.currentTarget.style.background = style.buttonBg)}
           >
-            {confirmText}
+            {resolvedConfirm}
           </button>
         </div>
       </div>

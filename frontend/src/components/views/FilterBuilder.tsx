@@ -12,6 +12,7 @@
  */
 
 import { Plus, X, Filter } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import CustomSelect from '@/components/ui/CustomSelect';
 import type { Column, FilterGroup, FilterCondition, FilterOperator } from '@/types';
 import { operatorNeedsValue, OPERATOR_LABELS, createEmptyFilterGroup } from '@/lib/filterEval';
@@ -53,6 +54,7 @@ function genConditionId(): string {
 }
 
 export function FilterBuilder({ columns, value, onChange }: Props) {
+  const t = useTranslations('filterBuilder');
   const group = value ?? createEmptyFilterGroup();
 
   const addCondition = () => {
@@ -95,7 +97,7 @@ export function FilterBuilder({ columns, value, onChange }: Props) {
         <div className="flex items-center gap-2">
           <Filter className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
           <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
-            필터
+            {t('title')}
           </span>
           {group.conditions.length > 1 && (
             <div className="flex gap-0.5 p-0.5 rounded" style={{ background: 'var(--bg-tertiary)' }}>
@@ -123,14 +125,14 @@ export function FilterBuilder({ columns, value, onChange }: Props) {
             className="text-caption opacity-70 hover:opacity-100 transition-opacity"
             style={{ color: 'var(--text-secondary)' }}
           >
-            초기화
+            {t('reset')}
           </button>
         )}
       </div>
 
       {group.conditions.length === 0 && (
         <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-          조건 추가 버튼으로 필터를 시작하세요.
+          {t('empty')}
         </p>
       )}
 
@@ -173,7 +175,7 @@ export function FilterBuilder({ columns, value, onChange }: Props) {
                 type="text"
                 value={cond.value ?? ''}
                 onChange={(e) => updateCondition(idx, { value: e.target.value })}
-                placeholder="값"
+                placeholder={t('valuePlaceholder')}
                 className="flex-1 min-w-[80px] max-w-[180px] px-2 py-1 text-xs rounded"
                 style={{
                   background: 'var(--bg-primary)',
@@ -186,7 +188,7 @@ export function FilterBuilder({ columns, value, onChange }: Props) {
               type="button"
               onClick={() => removeCondition(idx)}
               className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors"
-              aria-label="조건 제거"
+              aria-label={t('removeCondition')}
             >
               <X className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
             </button>
@@ -200,10 +202,10 @@ export function FilterBuilder({ columns, value, onChange }: Props) {
         disabled={columns.length === 0}
         className="flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed"
         style={{ color: 'var(--accent)' }}
-        title={columns.length === 0 ? '시트에 컬럼이 없어 필터를 만들 수 없어요 — 컬럼을 먼저 추가하세요' : '필터 조건 추가'}
+        title={columns.length === 0 ? t('noColumnsTooltip') : t('addConditionTooltip')}
       >
         <Plus className="w-3 h-3" />
-        조건 추가
+        {t('addCondition')}
       </button>
     </div>
   );

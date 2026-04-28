@@ -55,15 +55,15 @@ function FileIcon({ filename }: { filename: string }) {
 // Export 타입
 type ExportType = 'json' | 'csv' | ExportFormat;
 
-// 형식 정보
-const FORMAT_INFO: { id: ExportType; name: string; category: string; description: string; icon: 'database' | 'file' | 'code'; color: string }[] = [
-  { id: 'json', name: 'JSON', category: '기본', description: '프로젝트 백업/복원', icon: 'database', color: '#3b82f6' },
-  { id: 'csv', name: 'CSV', category: '기본', description: '스프레드시트 호환', icon: 'file', color: '#22c55e' },
-  { id: 'unity_scriptable', name: 'ScriptableObject', category: 'Unity', description: 'SO 클래스 + JSON', icon: 'code', color: '#000000' },
-  { id: 'unity_json', name: 'JSON Only', category: 'Unity', description: 'JsonUtility 호환', icon: 'code', color: '#000000' },
-  { id: 'unreal_datatable', name: 'DataTable', category: 'Unreal', description: '구조체 + CSV', icon: 'code', color: '#0E1128' },
-  { id: 'unreal_struct', name: 'Struct Only', category: 'Unreal', description: 'USTRUCT 헤더', icon: 'code', color: '#0E1128' },
-  { id: 'godot_resource', name: 'Resource', category: 'Godot', description: 'Resource + JSON', icon: 'code', color: '#478CBF' },
+// 형식 정보 — categoryKey/descriptionKey는 i18n 키 또는 raw text
+const FORMAT_INFO: { id: ExportType; name: string; categoryKey: string; descriptionKey: string; icon: 'database' | 'file' | 'code'; color: string }[] = [
+  { id: 'json', name: 'JSON', categoryKey: 'export.categoryDefault', descriptionKey: 'export.descJsonBackup', icon: 'database', color: '#3b82f6' },
+  { id: 'csv', name: 'CSV', categoryKey: 'export.categoryDefault', descriptionKey: 'export.descCsvCompat', icon: 'file', color: '#22c55e' },
+  { id: 'unity_scriptable', name: 'ScriptableObject', categoryKey: 'Unity', descriptionKey: 'export.descUnitySo', icon: 'code', color: '#000000' },
+  { id: 'unity_json', name: 'JSON Only', categoryKey: 'Unity', descriptionKey: 'export.descUnityJson', icon: 'code', color: '#000000' },
+  { id: 'unreal_datatable', name: 'DataTable', categoryKey: 'Unreal', descriptionKey: 'export.descUnrealDatatable', icon: 'code', color: '#0E1128' },
+  { id: 'unreal_struct', name: 'Struct Only', categoryKey: 'Unreal', descriptionKey: 'export.descUnrealStruct', icon: 'code', color: '#0E1128' },
+  { id: 'godot_resource', name: 'Resource', categoryKey: 'Godot', descriptionKey: 'Resource + JSON', icon: 'code', color: '#478CBF' },
 ];
 
 export default function ExportModal({ onClose }: ExportModalProps) {
@@ -354,8 +354,9 @@ export default function ExportModal({ onClose }: ExportModalProps) {
 
   // 카테고리별 그룹화
   const formatsByCategory = FORMAT_INFO.reduce((acc, fmt) => {
-    if (!acc[fmt.category]) acc[fmt.category] = [];
-    acc[fmt.category].push(fmt);
+    const cat = fmt.categoryKey.startsWith('export.') ? t(fmt.categoryKey as 'export.categoryDefault') : fmt.categoryKey;
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(fmt);
     return acc;
   }, {} as Record<string, typeof FORMAT_INFO>);
 
@@ -428,7 +429,7 @@ export default function ExportModal({ onClose }: ExportModalProps) {
                                 {fmt.name}
                               </div>
                               <div className="text-xs" style={{ color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--text-tertiary)' }}>
-                                {fmt.description}
+                                {fmt.descriptionKey.startsWith('export.') ? t(fmt.descriptionKey as 'export.descJsonBackup') : fmt.descriptionKey}
                               </div>
                             </button>
                           );
@@ -469,7 +470,7 @@ export default function ExportModal({ onClose }: ExportModalProps) {
                           {t('export.allProjects')}
                         </div>
                         <div className="text-xs" style={{ color: !selectedProjectId ? 'rgba(255,255,255,0.7)' : 'var(--text-tertiary)' }}>
-                          {projects.length}개 프로젝트 전체
+                          {t('export.allProjectsCount', { n: projects.length })}
                         </div>
                       </div>
                       {!selectedProjectId && <Check className="w-4 h-4 text-white" />}
@@ -551,7 +552,7 @@ export default function ExportModal({ onClose }: ExportModalProps) {
                                             opacity: isDisabled ? 0.5 : 1,
                                             cursor: isDisabled ? 'not-allowed' : 'default',
                                           }}
-                                          title={isDisabled ? `${kindMeta.label} 시트는 게임 엔진 포맷으로 export 할 수 없습니다 — JSON 으로만 백업 가능` : undefined}
+                                          title={isDisabled ? t('export.sheetCannotExport', { label: kindMeta.label }) : undefined}
                                         >
                                           <button
                                             onClick={() => handleSheetToggle(sheet.id, project.id)}
@@ -655,11 +656,11 @@ export default function ExportModal({ onClose }: ExportModalProps) {
                   {/* 선택 요약 */}
                   <div className="mt-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
                     {selectedFormat === 'json' && !selectedProjectId ? (
-                      `${projects.length}개 프로젝트 전체`
+                      t('export.allProjectsCount', { n: projects.length })
                     ) : selectedSheetIds.length > 0 ? (
-                      `${selectedSheetIds.length}개 시트 선택됨`
+                      t('export.selectedSheetsCount', { n: selectedSheetIds.length })
                     ) : (
-                      '시트를 선택하세요'
+                      t('export.pleaseSelectSheets')
                     )}
                   </div>
                 </div>

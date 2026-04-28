@@ -498,235 +498,175 @@ export interface CoachmarkStep {
 
 export interface StarterEntry {
   id: string;
-  label: string;
-  description: string;
+  /** i18n key root — `starterPack.{i18nKey}.label/description/stepNTitle…` */
+  i18nKey: string;
   icon: LucideIcon;
   /** lucide 아이콘 색 강조 — 카테고리별 시각 구분 */
   color: string;
   build: () => Project;
-  /** 장르별 5-7단계 코치마크. StarterCoachmark 가 currentProject.starterId 매칭해 표시. */
-  coachmarkSteps: CoachmarkStep[];
+  /** 코치마크 단계 수 (1..N → starterPack.{i18nKey}.stepNTitle/Body/Action 키로 해석) */
+  stepCount: number;
+  /** 단계 번호별 i18n 의 root — entry 자체와 다를 수 있어 (ex: COMMON_STEPS 공유) 별도 지정. 기본 i18nKey. */
+  stepsI18nKey?: string;
 }
 
-// 모든 장르 공통 default 단계 — 일부 장르가 자체 단계 안 정의 시 fallback
-export const COMMON_STEPS: CoachmarkStep[] = [
-  { title: '환영합니다', body: '시트가 미리 채워져 있어요. 셀을 클릭해 값을 바꿔 보세요.', action: '아무 셀이나 클릭 → 편집' },
-  { title: '수식 자동완성', body: '셀에 = 입력 시 함수 popover. ↑↓ Tab/Enter 로 삽입.', action: '빈 셀에 = 입력' },
-  { title: '슬래시 명령', body: '일반 셀에 / 입력 → /today /uuid /random 등 빠른 값.', action: '빈 셀에 / 입력' },
-  { title: '시뮬 진입', body: '캐릭터 시트의 행 우클릭 → "이 행으로 시뮬 실행".', action: '행 우클릭 → 시뮬' },
-  { title: '단축키', body: '? 키로 전체 단축키. ⌘K 로 검색. G/F/K/C/Y/T 뷰 전환.', action: '? 눌러보기' },
-];
+/** 모든 장르 공통 default 단계 — 일부 장르가 자체 단계 안 정의 시 fallback. starterPack.common.* 키 5단계. */
+export const COMMON_STEPS_KEY = 'common';
+export const COMMON_STEPS_COUNT = 5;
+
+/**
+ * 코치마크 1단계 정보 — i18n 키 root + 단계 인덱스로 t() 호출에 필요한 정보 반환.
+ * StarterCoachmark 가 useTranslations('starterPack') 으로 받아서 호출.
+ */
+export function getStepKeys(stepsRoot: string, index: number): { titleKey: string; bodyKey: string; actionKey: string } {
+  const n = index + 1;
+  return {
+    titleKey: `${stepsRoot}.step${n}Title`,
+    bodyKey: `${stepsRoot}.step${n}Body`,
+    actionKey: `${stepsRoot}.step${n}Action`,
+  };
+}
 
 export const STARTER_CATALOG: StarterEntry[] = [
   {
     id: 'tutorial',
-    label: '튜토리얼 (기본)',
+    i18nKey: 'tutorial',
     icon: Sparkles,
     color: '#8b5cf6',
-    description: '캐릭터 + 스프린트 — 처음 사용자에게 추천',
     build: () => buildProject('튜토리얼', '시작용 예시 — 자유롭게 편집/삭제하세요',
       [characterSheet(), sprintBacklogSheet()],
       welcomeDoc('튜토리얼', ['캐릭터', '스프린트']),
       'tutorial'),
-    coachmarkSteps: COMMON_STEPS,
+    stepCount: COMMON_STEPS_COUNT,
+    stepsI18nKey: COMMON_STEPS_KEY,
   },
   {
     id: 'rpg',
-    label: 'RPG',
+    i18nKey: 'rpg',
     icon: Swords,
     color: '#dc2626',
-    description: '캐릭터 스탯 · 무기 · EXP 곡선 · 가챠',
     build: () => buildProject('RPG 프로젝트', 'RPG 밸런싱 시작 팩',
       [characterSheet(), weaponSheet(), expCurveSheet(), gachaSheet()],
       welcomeDoc('RPG', ['캐릭터', '무기', 'EXP 곡선', '가챠 확률'],
         'EXP 곡선의 base/rate 만 바꾸면 1-20렙 자동 재계산. 무기는 등급(별점)으로 정렬해 보세요.'),
       'rpg'),
-    coachmarkSteps: [
-      { title: 'RPG 밸런싱 시작', body: '캐릭터 5명 + 무기 4종 + EXP 곡선 + 가챠 확률 시트가 들어 있어요.', action: '왼쪽 사이드바에서 시트 4개 둘러보기' },
-      { title: '캐릭터 스탯 편집', body: '캐릭터 시트에서 직업별 hp/공격력/방어력 비교. 같은 hp×방어력 = EHP 가 균형 지표.', action: '캐릭터 시트 셀 편집' },
-      { title: '데미지 수식', body: '셀에 =DAMAGE(공격력, 방어력) 입력하면 감소율 공식 자동 계산.', action: '빈 셀에 =DAMAGE(50, 20) 입력' },
-      { title: 'EXP 곡선 조정', body: 'EXP 곡선 시트는 100×1.15^(레벨-1) 자동. 1.15 를 바꾸면 후반 난이도가 가파라짐.', action: 'EXP 곡선 시트의 수식 컬럼 클릭' },
-      { title: '시뮬 + 가챠 분석', body: '캐릭터 행 우클릭 → 시뮬. 가챠 시트는 SSR 0.6% + 80회 피티가 기본.', action: '캐릭터 행 우클릭 → 시뮬' },
-    ],
+    stepCount: 5,
   },
   {
     id: 'fps',
-    label: 'FPS 슈터',
+    i18nKey: 'fps',
     icon: Crosshair,
     color: '#ea580c',
-    description: 'TTK · 무기 카테고리 · 반동',
     build: () => buildProject('FPS 프로젝트', 'FPS 슈터 밸런싱',
       [fpsWeaponSheet()],
       welcomeDoc('FPS 슈터', ['FPS 무기'],
         'TTK = 1000 / (DPS / target_hp). 카테고리별 평균 TTK 가 비슷해야 균형. PM 작업은 별도 "스프린트 보드" 프로젝트 사용.'),
       'fps'),
-    coachmarkSteps: [
-      { title: 'FPS 무기 밸런싱', body: 'AR/SMG/저격/샷건 4 카테고리 + DPS·사거리·반동·TTK 컬럼.', action: 'FPS 무기 시트 열기' },
-      { title: 'TTK 의 의미', body: 'TTK(Time To Kill) ms 가 카테고리별 비슷해야 균형. AR 평균 ~250ms, 저격 1샷 0ms 가 게임 표준.', action: 'TTK 컬럼 정렬' },
-      { title: 'DPS 수식', body: '=DPS(데미지, 연사RPM/60) 으로 초당 데미지. RPM/60 = 초당 발사횟수.', action: '빈 셀에 =DPS(30, 700/60)' },
-      { title: '반동 vs 데미지', body: '별점 컬럼 (반동 1-5) 으로 데미지 대비 균형. 저격은 반동 5 + 데미지 100 패턴.', action: '반동 별점 변경' },
-      { title: 'FPS 시뮬', body: '도구 패널 → "FPS 시뮬" 또는 "FPS 팀 전투" 로 매치 결과 시뮬.', action: '독바 simulate → FPS 시뮬' },
-    ],
+    stepCount: 5,
   },
   {
     id: 'moba',
-    label: 'MOBA',
+    i18nKey: 'moba',
     icon: Shield,
     color: '#0ea5e9',
-    description: '챔피언 스탯 · 포지션',
     build: () => buildProject('MOBA 프로젝트', 'MOBA 챔피언 밸런싱',
       [mobaChampionSheet()],
       welcomeDoc('MOBA', ['챔피언'],
         '난이도 별점은 1=쉬움 5=어려움. 같은 포지션 끼리 ad/ap/hp 평균 비교. PM 작업은 별도 "스프린트 보드" 프로젝트 사용.'),
       'moba'),
-    coachmarkSteps: [
-      { title: 'MOBA 챔피언 밸런싱', body: '챔피언 5명 (탑/정글/미드/원딜/서폿) + HP/AD/AP/방어/MR.', action: '챔피언 시트 열기' },
-      { title: '포지션별 평균', body: '같은 포지션끼리 hp/ad 평균 비교. 한 챔피언이 평균 +20% 면 OP.', action: 'role 컬럼으로 그룹핑' },
-      { title: '난이도 vs 강함', body: '난이도 5 챔피언은 강해도 OK (Yasuo 패턴). 1-2 는 평균 또는 약간 약하게.', action: '난이도 별점 + AD 비교' },
-      { title: '라인 매치업', body: '도구 패널 → "MOBA 라이닝" 으로 1v1 매치업 시뮬.', action: '독바 simulate → MOBA 라이닝' },
-      { title: '카운터 + 시너지', body: 'task-link 컬럼 추가해 챔피언끼리 카운터 관계 표현 가능.', action: '컬럼 + → "Link" 타입' },
-    ],
+    stepCount: 5,
   },
   {
     id: 'rts',
-    label: 'RTS / 전략',
+    i18nKey: 'rts',
     icon: Castle,
     color: '#16a34a',
-    description: '유닛 코스트 · 카운터 매트릭스',
     build: () => buildProject('RTS 프로젝트', 'RTS 유닛 밸런싱',
       [rtsUnitSheet()],
       welcomeDoc('RTS', ['RTS 유닛'],
         '카운터 컬럼은 가위바위보. 보병 → 기병 → 궁수 → 보병 같은 순환이 핵심. PM 작업은 별도 "스프린트 보드" 프로젝트 사용.'),
       'rts'),
-    coachmarkSteps: [
-      { title: 'RTS 유닛 밸런싱', body: '유닛 4종 + 식량/골드/생산시간/HP/데미지/카운터.', action: 'RTS 유닛 시트 열기' },
-      { title: '리소스 vs HP×DMG', body: '비용 대비 HP×DMG 비율 = 효율. 식량/골드 합계 100당 효율 비교.', action: '효율 = HP * DMG / (식량+골드)' },
-      { title: '카운터 순환', body: '보병 → 기병 → 궁수 → 보병 같은 가위바위보 순환이 RTS 핵심.', action: '카운터 컬럼 검토' },
-      { title: '빌드 오더', body: '도구 패널 → "RTS 빌드 오더" 로 초반 빌드 시뮬.', action: '독바 simulate → RTS 빌드' },
-      { title: '생산 시간 균형', body: '생산시간 / DPS 비율이 비슷해야 어느 한 유닛도 압도적이지 않음.', action: '생산시간 정렬해서 비교' },
-    ],
+    stepCount: 5,
   },
   {
     id: 'idle',
-    label: 'Idle 클리커',
+    i18nKey: 'idle',
     icon: Hourglass,
     color: '#f59e0b',
-    description: '업그레이드 비용 곡선 · 회수 시간',
     build: () => buildProject('Idle 프로젝트', 'Idle 클리커 밸런싱',
       [idleUpgradeSheet()],
       welcomeDoc('Idle 클리커', ['Idle 업그레이드'],
         '회수 시간(s) 가 일정하게 늘어야 진행 곡선 부드러움. 비용 1.5배수 / 수익 1.3배수 가 기본. PM 작업은 별도 "스프린트 보드" 프로젝트 사용.'),
       'idle'),
-    coachmarkSteps: [
-      { title: 'Idle 진행 곡선', body: '15렙 업그레이드 시트. 비용 1.5×, 수익 1.3× 가 Idle 게임 표준.', action: 'Idle 업그레이드 시트 열기' },
-      { title: '회수 시간 = 비용 / 수익', body: '회수 시간(s) 컬럼이 등비수열로 늘어야 후반 시간 압박이 자연스러움.', action: '회수 시간 컬럼 확인' },
-      { title: '곡선 수식 변경', body: '비용 1.5 대신 1.4 로 바꾸면 후반 진행이 빨라짐. 1.6 이면 페이월 강함.', action: '비용 컬럼 = 100 * 1.5^(레벨-1)' },
-      { title: '경제 도구 활용', body: '도구 패널 → "경제 설계" 로 수익/지출 균형 + 인플레이션 시뮬.', action: '독바 simulate → 경제 설계' },
-      { title: '광고 vs IAP', body: '회수 시간이 30분 넘으면 광고 보상 지점. 60분 넘으면 IAP 유도 지점.', action: '회수 시간 임계 분석' },
-    ],
+    stepCount: 5,
   },
   {
     id: 'roguelike',
-    label: '로그라이크 덱빌더',
+    i18nKey: 'roguelike',
     icon: SquareStack,
     color: '#7c3aed',
-    description: '카드 덱 · 시너지 · 희귀도',
     build: () => buildProject('덱빌더 프로젝트', '로그라이크 덱빌더 밸런싱',
       [roguelikeDeckSheet()],
       welcomeDoc('로그라이크 덱빌더', ['카드 덱'],
         '희귀도별 평균 데미지/방어 비율 점검. starter 카드는 약하지만 시너지 기반. PM 작업은 별도 "스프린트 보드" 프로젝트 사용.'),
       'roguelike'),
-    coachmarkSteps: [
-      { title: '카드 덱 밸런싱', body: '5장 시작 + 공격/스킬/파워 3 타입 + starter/common/uncommon/rare 4 등급.', action: '카드 덱 시트 열기' },
-      { title: '에너지 = 코스트', body: '에너지 1 = 데미지 6 가 기본 비율. 비싼 카드는 추가 효과 (취약/광역).', action: '에너지 vs 데미지 비교' },
-      { title: '희귀도별 평균', body: 'starter ≤ common ≤ uncommon ≤ rare 순으로 강해야 진행감.', action: '희귀도 컬럼 그룹핑' },
-      { title: '시너지 카드', body: '파워 (Inflame 같은 근력+) 는 후속 공격 카드와 곱해져 강함. 단독은 약하게.', action: 'Inflame 같은 power 카드 추가' },
-      { title: '시뮬 + 클리어율', body: '도구 패널 → "덱 시뮬" 로 클리어율 측정. 60-70% 가 Slay the Spire 패턴.', action: '독바 simulate → 덱 시뮬' },
-    ],
+    stepCount: 5,
   },
   {
     id: 'sprint',
-    label: '스프린트 보드',
+    i18nKey: 'sprint',
     icon: ListTodo,
     color: '#3b82f6',
-    description: '백로그 · 우선순위 · 마감일',
     build: () => buildProject('스프린트 보드', 'PM 작업 관리',
       [sprintBacklogSheet()],
       welcomeDoc('스프린트 보드', ['스프린트'],
         '칸반 뷰 (단축키 K) 로 status 별 카드. 다른 status 로 drag.'),
       'sprint'),
-    coachmarkSteps: [
-      { title: '스프린트 백로그', body: '4 작업 + Status (Todo/Doing/Done) + 우선순위 (P0/P1/P2) + 담당.', action: '스프린트 시트 열기' },
-      { title: '칸반 뷰 전환', body: 'K 키 누르면 칸반 뷰. status 별 카드로 자동 그룹핑.', action: 'K 키 누르기' },
-      { title: '카드 drag', body: '카드를 다른 컬럼으로 drag → status 자동 변경. 같은 컬럼 안 위아래 정렬도 가능.', action: '카드 drag' },
-      { title: '우선순위 필터', body: '뷰 스위처 옆 "필터" 클릭 → "우선순위 = P0" 만 표시.', action: '필터 클릭' },
-      { title: '간트 뷰', body: 'T 키로 간트 뷰. 마감 컬럼이 있으면 일정 막대 자동 표시.', action: 'T 키 누르기' },
-    ],
+    stepCount: 5,
   },
   {
     id: 'bug',
-    label: '버그 트래커',
+    i18nKey: 'bug',
     icon: Bug,
     color: '#ef4444',
-    description: '심각도 · 재현 단계',
     build: () => buildProject('버그 트래커', '버그 관리',
       [bugTrackerSheet()],
       welcomeDoc('버그 트래커', ['버그 트래커']),
       'bug'),
-    coachmarkSteps: [
-      { title: '버그 트래커', body: '심각도 (Critical/Major/Minor) + Status (Open/Fixing/Fixed) + 재현 단계 + 보고자.', action: '버그 트래커 시트 열기' },
-      { title: 'Critical 우선 처리', body: '심각도로 정렬 → Critical 부터 fix. Open 상태 카운트가 0 이 되도록.', action: '심각도 컬럼 정렬' },
-      { title: '재현 단계 명확히', body: '재현 단계가 모호하면 fix 어려움. 1-2-3 단계 또는 입력값 명시.', action: '재현 단계 셀 편집' },
-      { title: '칸반으로 status 흐름', body: 'K 키 → Open / Fixing / Fixed 컬럼으로 작업 진행 시각화.', action: 'K 누르기' },
-      { title: '필터 + 담당', body: '필터로 "내 버그" 만 보기. 담당 컬럼으로 책임 명확히.', action: '필터 → 보고자=내 이름' },
-    ],
+    stepCount: 5,
   },
   {
     id: 'roadmap',
-    label: '에픽 로드맵',
+    i18nKey: 'roadmap',
     icon: MapIcon,
     color: '#10b981',
-    description: '분기별 임팩트 큰 작업',
     build: () => buildProject('로드맵', '에픽 로드맵',
       [epicRoadmapSheet()],
       welcomeDoc('에픽 로드맵', ['에픽 로드맵'],
         '간트 뷰 (단축키 T) 로 분기별 일정 시각화.'),
       'roadmap'),
-    coachmarkSteps: [
-      { title: '에픽 로드맵', body: '3 에픽 + 분기 (Q1/Q2/Q3/Q4) + Status (Planning/Building/Shipped) + 임팩트 별점.', action: '에픽 로드맵 시트 열기' },
-      { title: '임팩트 별점 정렬', body: '별점 5 인 에픽이 분기에 1-2개. 나머지는 별점 3-4 + 자잘한 fix.', action: '임팩트 컬럼 정렬' },
-      { title: '간트 뷰', body: 'T 키로 간트. 분기별 막대 시각화. 같은 분기에 너무 많으면 분배 필요.', action: 'T 키' },
-      { title: 'Status 흐름', body: 'Planning → Building → Shipped 순서. 한 분기에 Building 3개 이상이면 위험.', action: 'Status 컬럼 그룹핑' },
-      { title: '의존성 표현', body: 'task-link 컬럼 추가로 에픽 간 의존성 (A 끝나야 B 시작) 표현.', action: '컬럼 + → Link 타입' },
-    ],
+    stepCount: 5,
   },
   {
     id: 'playtest',
-    label: '플레이테스트 세션',
+    i18nKey: 'playtest',
     icon: TestTube,
     color: '#06b6d4',
-    description: '세션별 피드백 누적',
     build: () => buildProject('플레이테스트', '플레이테스트 세션 기록',
       [playtestSheet()],
       welcomeDoc('플레이테스트', ['플레이테스트'],
         '재미도 별점 평균 + 핵심 피드백 텍스트로 회고.'),
       'playtest'),
-    coachmarkSteps: [
-      { title: '플레이테스트 세션', body: '세션 제목 + 일자 + 테스터 + 재미도 (1-10) + 핵심 피드백.', action: '플레이테스트 시트 열기' },
-      { title: '재미도 추세', body: '세션마다 재미도 평균 추적. 7 이하면 핵심 루프 점검 신호.', action: '재미도 컬럼 정렬' },
-      { title: '핵심 피드백 패턴', body: '같은 피드백이 3회 이상 → 우선 fix. 텍스트 검색으로 키워드 찾기.', action: '핵심 피드백 셀 검색' },
-      { title: 'AI Playtest 도구', body: '실제 사람 전에 도구 → "AI Playtest" 로 자동 시뮬. imbalance 미리 탐지.', action: '독바 check → AI Playtest' },
-      { title: '버그 트래커 연동', body: '플레이테스트에서 발견된 버그를 버그 트래커 시트에 task-link 로 연결.', action: '버그 트래커 시트 추가' },
-    ],
+    stepCount: 5,
   },
   {
     id: 'blank',
-    label: '빈 워크스페이스',
+    i18nKey: 'blank',
     icon: FilePlus2,
     color: '#94a3b8',
-    description: '시트 없이 시작 — 직접 만들기',
     build: () => buildProject('새 프로젝트', '', [], undefined, 'blank'),
-    coachmarkSteps: COMMON_STEPS,
+    stepCount: COMMON_STEPS_COUNT,
+    stepsI18nKey: COMMON_STEPS_KEY,
   },
 ];
 

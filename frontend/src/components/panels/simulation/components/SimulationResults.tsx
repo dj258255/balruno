@@ -46,7 +46,7 @@ export function SimulationResults({
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('winRate')}</div>
           <div className="text-sm px-2 py-1 rounded-full" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
-            {result.totalRuns.toLocaleString()}전
+            {t('totalBattles', { count: result.totalRuns.toLocaleString() })}
           </div>
         </div>
 
@@ -55,7 +55,7 @@ export function SimulationResults({
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="font-medium" style={{ color: 'var(--primary-blue)' }}>{unit1Stats.name}</span>
               <span className="px-2 py-0.5 rounded" style={{ background: 'var(--primary-blue)15', color: 'var(--primary-blue)' }}>
-                {result.unit1Wins.toLocaleString()}승
+                {t('winsCount', { count: result.unit1Wins.toLocaleString() })}
               </span>
             </div>
             <ConfidenceBar
@@ -71,7 +71,7 @@ export function SimulationResults({
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="font-medium" style={{ color: 'var(--primary-red)' }}>{unit2Stats.name}</span>
               <span className="px-2 py-0.5 rounded" style={{ background: 'var(--primary-red)15', color: 'var(--primary-red)' }}>
-                {result.unit2Wins.toLocaleString()}승
+                {t('winsCount', { count: result.unit2Wins.toLocaleString() })}
               </span>
             </div>
             <ConfidenceBar
@@ -321,7 +321,7 @@ export function SimulationResults({
           {/* 시뮬 리플레이 — scrubber + step-by-step 인터랙티브 재생 */}
           {result.sampleBattles[selectedBattleIndex]?.log && (
             <div className="pt-2">
-              <div className="text-sm mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>시뮬 리플레이</div>
+              <div className="text-sm mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('simReplay')}</div>
               <ReplayTimeline
                 units={[
                   { id: unit1Stats.id, name: unit1Stats.name, maxHp: unit1Stats.maxHp } satisfies ReplayUnit,
@@ -434,37 +434,33 @@ export function SimulationResults({
                     </>
                   )}
 
-                  {/* HoT 종료 */}
                   {entry.action === 'hot_end' && (
                     <>
                       <Activity className="w-3 h-3 shrink-0" style={{ color: 'var(--text-secondary)' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>{entry.skillName} 종료</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('skillEnd', { name: entry.skillName ?? '' })}</span>
                     </>
                   )}
 
-                  {/* 무적 발동 */}
                   {entry.action === 'invincible' && (
                     <>
                       <Shield className="w-3 h-3 shrink-0" style={{ color: '#5a9cf5' }} />
                       <span className="font-medium" style={{ color: '#5a9cf5' }}>{entry.skillName}</span>
-                      <span style={{ color: '#5a9cf5' }}>무적!</span>
+                      <span style={{ color: '#5a9cf5' }}>{t('invincibleActive')}</span>
                     </>
                   )}
 
-                  {/* 무적 종료 */}
                   {entry.action === 'invincible_end' && (
                     <>
                       <Shield className="w-3 h-3 shrink-0" style={{ color: 'var(--text-secondary)' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>무적 종료</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('invincibleEnd')}</span>
                     </>
                   )}
 
-                  {/* 부활 */}
                   {entry.action === 'revive' && (
                     <>
                       <RotateCcw className="w-3 h-3 shrink-0" style={{ color: '#a896f5' }} />
                       <span className="font-medium" style={{ color: '#a896f5' }}>{entry.skillName}</span>
-                      <span style={{ color: '#a896f5' }}>부활!</span>
+                      <span style={{ color: '#a896f5' }}>{t('reviveActive')}</span>
                       <span style={{ color: 'var(--text-secondary)' }}>(HP: {entry.remainingHp?.toFixed(0)})</span>
                     </>
                   )}
@@ -596,18 +592,18 @@ export function SimulationResults({
                       <div className="flex justify-between items-center mb-1">
                         <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{skill.skillName}</span>
                         <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
-                          {(skill.totalUses / result.totalRuns).toFixed(1)}회/전투
+                          {t('usesPerBattle', { count: (skill.totalUses / result.totalRuns).toFixed(1) })}
                         </span>
                       </div>
                       <div className="flex gap-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
                         {skill.totalDamage > 0 && (
                           <span>
-                            데미지: <span style={{ color: '#e5a440' }}>{skill.avgDamagePerUse.toFixed(0)}</span>/회
+                            {t('damageShort')}: <span style={{ color: '#e5a440' }}>{skill.avgDamagePerUse.toFixed(0)}</span>{t('perHit')}
                           </span>
                         )}
                         {skill.totalHealing > 0 && (
                           <span>
-                            힐: <span style={{ color: '#3db88a' }}>{(skill.totalHealing / skill.totalUses).toFixed(0)}</span>/회
+                            {t('healShort')}: <span style={{ color: '#3db88a' }}>{(skill.totalHealing / skill.totalUses).toFixed(0)}</span>{t('perHit')}
                           </span>
                         )}
                       </div>
@@ -627,18 +623,18 @@ export function SimulationResults({
                       <div className="flex justify-between items-center mb-1">
                         <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{skill.skillName}</span>
                         <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
-                          {(skill.totalUses / result.totalRuns).toFixed(1)}회/전투
+                          {t('usesPerBattle', { count: (skill.totalUses / result.totalRuns).toFixed(1) })}
                         </span>
                       </div>
                       <div className="flex gap-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
                         {skill.totalDamage > 0 && (
                           <span>
-                            데미지: <span style={{ color: '#e5a440' }}>{skill.avgDamagePerUse.toFixed(0)}</span>/회
+                            {t('damageShort')}: <span style={{ color: '#e5a440' }}>{skill.avgDamagePerUse.toFixed(0)}</span>{t('perHit')}
                           </span>
                         )}
                         {skill.totalHealing > 0 && (
                           <span>
-                            힐: <span style={{ color: '#3db88a' }}>{(skill.totalHealing / skill.totalUses).toFixed(0)}</span>/회
+                            {t('healShort')}: <span style={{ color: '#3db88a' }}>{(skill.totalHealing / skill.totalUses).toFixed(0)}</span>{t('perHit')}
                           </span>
                         )}
                       </div>
@@ -683,10 +679,10 @@ export function SimulationResults({
             onClick={onSaveToSheet}
             className="flex-1 min-w-[140px] py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors hover:opacity-90"
             style={{ background: 'var(--accent)', color: 'white' }}
-            title="현재 시트에 시뮬 결과 행 추가"
+            title={t('saveToSheetTooltip')}
           >
             <FileSpreadsheet className="w-4 h-4" />
-            시트에 저장
+            {t('saveToSheet')}
           </button>
         )}
         <button

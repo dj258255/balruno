@@ -281,7 +281,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
           )}
           style={{ color: 'var(--text-secondary)' }}
           disabled={!canScrollLeft}
-          aria-label="탭 왼쪽으로 스크롤"
+          aria-label={t('sheet.tabScrollLeft')}
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -294,7 +294,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
         >
         {renderables.map((entry) => {
           const isSheet = entry.kind === 'sheet';
-          const name = isSheet ? entry.sheet.name : (entry.doc.name || '(제목 없음)');
+          const name = isSheet ? entry.sheet.name : (entry.doc.name || t('sheet.untitled'));
           const isActive = isSheet ? currentSheetId === entry.id : currentDocId === entry.id;
           const tabWidth = isSheet ? getTabWidth(entry.id) : Math.max(MIN_TAB_WIDTH, 180);
           const dragKey = entryKey(entry.kind, entry.id);
@@ -385,7 +385,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                       handleFinishEdit();
                     }}
                     style={{ color: 'var(--primary-green)' }}
-                    aria-label="이름 변경 확인"
+                    aria-label={t('sheet.tabRenameConfirm')}
                   >
                     <Check className="w-3 h-3" />
                   </button>
@@ -417,7 +417,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                       e.currentTarget.style.border = '1px solid transparent';
                     }}
                     title={t('common.close')}
-                    aria-label={`${name} 탭 닫기`}
+                    aria-label={t('sheet.tabCloseAria', { name })}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -514,7 +514,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                   e.currentTarget.style.background = 'transparent';
                 }}
                 title={t('sheet.newSheet')}
-                aria-label="새 시트 추가"
+                aria-label={t('sheet.tabAddSheet')}
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -546,7 +546,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
           )}
           style={{ color: 'var(--text-secondary)' }}
           disabled={!canScrollRight}
-          aria-label="탭 오른쪽으로 스크롤"
+          aria-label={t('sheet.tabScrollRight')}
         >
           <ChevronRight className="w-4 h-4" />
         </button>

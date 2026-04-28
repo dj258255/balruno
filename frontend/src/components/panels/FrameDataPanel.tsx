@@ -9,6 +9,7 @@ import { useState, useMemo } from 'react';
 import { Zap, Plus, Trash2, GitBranch } from 'lucide-react';
 import PanelShell from '@/components/ui/PanelShell';
 import { analyzeMove, analyzeComboRoute, getCancelRoutes, MOVE_PRESETS, type FrameData } from '@/lib/frameData';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
@@ -23,14 +24,15 @@ const TIER_COLOR: Record<string, string> = {
 };
 
 const TIER_LABEL: Record<string, string> = {
-  'heavily-plus': '크게 유리',
-  'plus': '유리',
-  'neutral': '호각',
-  'minus': '불리',
-  'heavily-minus': '크게 불리',
+  'heavily-plus': 'frameData.tierHeavyPlus',
+  'plus': 'frameData.tierPlus',
+  'neutral': 'frameData.tierNeutral',
+  'minus': 'frameData.tierMinus',
+  'heavily-minus': 'frameData.tierHeavyMinus',
 };
 
 export default function FrameDataPanel({ onClose }: Props) {
+  const t = useTranslations();
   const [moves, setMoves] = useState<FrameData[]>(MOVE_PRESETS);
   const [routeIds, setRouteIds] = useState<string[]>(['lp', 'mp', 'hadouken']);
   const [cancelStartId, setCancelStartId] = useState<string>('lp');
@@ -53,9 +55,10 @@ export default function FrameDataPanel({ onClose }: Props) {
   };
 
   const addMove = () => {
+    const t = useTranslations();
     setMoves((prev) => [
       ...prev,
-      { id: `move-${Date.now()}`, name: '신규 기술', startup: 7, active: 3, recovery: 14, hitstun: 17, blockstun: 13, damage: 50 },
+      { id: `move-${Date.now()}`, name: t('frameData.newMoveName'), startup: 7, active: 3, recovery: 14, hitstun: 17, blockstun: 13, damage: 50 },
     ]);
   };
 
@@ -65,8 +68,8 @@ export default function FrameDataPanel({ onClose }: Props) {
 
   return (
     <PanelShell
-      title="프레임 데이터 시뮬"
-      subtitle="격투게임 · 유리/불리 · 콤보 라우트"
+      title={t('frameData.titleHeader')}
+      subtitle={t('frameData.subtitleHeader')}
       icon={Zap}
       iconColor="#f59e0b"
       onClose={onClose}
@@ -76,21 +79,21 @@ export default function FrameDataPanel({ onClose }: Props) {
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-            기술 목록 ({moves.length})
+            {t('frameData.movesHeader', { n: moves.length })}
           </span>
           <button onClick={addMove} className="btn-primary text-caption inline-flex items-center gap-1">
-            <Plus className="w-3 h-3" /> 추가
+            <Plus className="w-3 h-3" /> {t('frameData.addBtn')}
           </button>
         </div>
         <div className="space-y-1 max-h-80 overflow-y-auto">
           <div className="grid grid-cols-12 gap-1 text-caption px-2" style={{ color: 'var(--text-tertiary)' }}>
-            <div className="col-span-3">이름</div>
-            <div className="col-span-1 text-center">발</div>
-            <div className="col-span-1 text-center">유</div>
-            <div className="col-span-1 text-center">경</div>
-            <div className="col-span-1 text-center">피</div>
-            <div className="col-span-1 text-center">피스</div>
-            <div className="col-span-1 text-center">가스</div>
+            <div className="col-span-3">{t('frameData.colName')}</div>
+            <div className="col-span-1 text-center">{t('frameData.colStartup')}</div>
+            <div className="col-span-1 text-center">{t('frameData.colActive')}</div>
+            <div className="col-span-1 text-center">{t('frameData.colRecovery')}</div>
+            <div className="col-span-1 text-center">{t('frameData.colDamage')}</div>
+            <div className="col-span-1 text-center">{t('frameData.colHitstun')}</div>
+            <div className="col-span-1 text-center">{t('frameData.colBlockstun')}</div>
             <div className="col-span-1 text-center">H+</div>
             <div className="col-span-1 text-center">B+</div>
             <div className="col-span-1"></div>
@@ -117,12 +120,12 @@ export default function FrameDataPanel({ onClose }: Props) {
                 <span
                   className="col-span-1 text-center font-bold tabular-nums text-label rounded px-1"
                   style={{ color: TIER_COLOR[a.advantageBlock], background: `${TIER_COLOR[a.advantageBlock]}20` }}
-                  title={`${TIER_LABEL[a.advantageBlock]} (${a.onBlock >= 0 ? '+' : ''}${a.onBlock})${a.punishableOnBlock ? ' — 펀시 가능' : ''}`}
+                  title={t('frameData.tierBlockTooltip', { tier: t(TIER_LABEL[a.advantageBlock] as 'frameData.tierPlus'), sign: a.onBlock >= 0 ? '+' : '', val: a.onBlock, punish: a.punishableOnBlock ? t('frameData.punishable') : '' })}
                 >
                   {a.onBlock >= 0 ? `+${a.onBlock}` : a.onBlock}
                 </span>
                 <div className="col-span-1 flex items-center gap-0.5">
-                  <button onClick={() => addToRoute(m.id)} className="p-0.5 rounded hover:bg-[var(--bg-hover)]" title="콤보에 추가">
+                  <button onClick={() => addToRoute(m.id)} className="p-0.5 rounded hover:bg-[var(--bg-hover)]" title={t('frameData.addToCombo')}>
                     <Plus className="w-3 h-3" style={{ color: 'var(--accent)' }} />
                   </button>
                   <button onClick={() => removeMove(m.id)} className="p-0.5 rounded hover:bg-[var(--bg-hover)]">
@@ -137,7 +140,7 @@ export default function FrameDataPanel({ onClose }: Props) {
                     <span
                       className="text-caption font-bold px-1.5 py-0.5 rounded"
                       style={{ background: '#10b98130', color: '#10b981' }}
-                      title={`${a.invincibleRange.from}-${a.invincibleRange.to}f ${a.invincibleRange.type} 무적`}
+                      title={t('frameData.invincibleTooltip', { from: a.invincibleRange.from, to: a.invincibleRange.to, type: a.invincibleRange.type })}
                     >
                       INV {a.invincibleRange.from}-{a.invincibleRange.to}f
                     </span>
@@ -146,7 +149,7 @@ export default function FrameDataPanel({ onClose }: Props) {
                     <span
                       className="text-caption font-bold px-1.5 py-0.5 rounded"
                       style={{ background: '#f59e0b30', color: '#f59e0b' }}
-                      title={`카운터 히트 시 ${a.counterHitDamage} 피해 (×${m.counterHitMultiplier.toFixed(1)}) + ${a.counterHitOnHit}f 유리`}
+                      title={t('frameData.counterHitTooltip', { dmg: a.counterHitDamage, mul: m.counterHitMultiplier.toFixed(1), plus: a.counterHitOnHit })}
                     >
                       CH ×{m.counterHitMultiplier.toFixed(1)} → {a.counterHitDamage}dmg, +{a.counterHitOnHit}f
                     </span>
@@ -162,7 +165,7 @@ export default function FrameDataPanel({ onClose }: Props) {
       {/* 프레임 타임라인 시각화 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          프레임 타임라인 (startup · active · recovery)
+          {t('frameData.frameTimeline')}
         </div>
         <div className="space-y-1">
           {moves.map((m) => (
@@ -170,9 +173,9 @@ export default function FrameDataPanel({ onClose }: Props) {
           ))}
         </div>
         <div className="flex gap-3 mt-3 text-caption" style={{ color: 'var(--text-tertiary)' }}>
-          <LegendDot color="#94a3b8" label="Startup (발동)" />
-          <LegendDot color="#ef4444" label="Active (유지, 판정)" />
-          <LegendDot color="#3b82f6" label="Recovery (경직)" />
+          <LegendDot color="#94a3b8" label={t('frameData.legendStartup')} />
+          <LegendDot color="#ef4444" label={t('frameData.legendActive')} />
+          <LegendDot color="#3b82f6" label={t('frameData.legendRecovery')} />
         </div>
       </div>
 
@@ -181,7 +184,7 @@ export default function FrameDataPanel({ onClose }: Props) {
         <div className="flex items-center justify-between mb-2">
           <span className="inline-flex items-center gap-1.5 text-label font-medium" style={{ color: 'var(--text-primary)' }}>
             <GitBranch className="w-4 h-4" />
-            캔슬 루트 (gatling / special cancel)
+            {t('frameData.cancelRoute')}
           </span>
           <select
             value={cancelStartId}
@@ -191,14 +194,14 @@ export default function FrameDataPanel({ onClose }: Props) {
           >
             {moves.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.name}에서 시작
+                {t('frameData.fromMove', { move: m.name })}
               </option>
             ))}
           </select>
         </div>
         {topCancelRoutes.length === 0 ? (
           <p className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-            이 기술은 캔슬 가능한 후속 기술이 없습니다
+            {t('frameData.noCancellable')}
           </p>
         ) : (
           <div className="space-y-1">
@@ -249,16 +252,16 @@ export default function FrameDataPanel({ onClose }: Props) {
                   onClick={() => setRouteIds(route.moves.map((m) => m.id))}
                   className="text-caption px-2 py-0.5 rounded shrink-0"
                   style={{ background: 'var(--bg-tertiary)', color: 'var(--accent)' }}
-                  title="이 루트를 아래 콤보 분석기에 로드"
+                  title={t('frameData.analyzeRoute')}
                 >
-                  분석
+                  {t('frameData.analyzeBtn')}
                 </button>
               </div>
             ))}
           </div>
         )}
         <p className="text-caption italic mt-2" style={{ color: 'var(--text-tertiary)' }}>
-          캔슬: recovery 생략하고 즉시 다음 기술 — SF6 chain/special/super cancel 규칙
+          {t('frameData.cancelExplain')}
         </p>
       </div>
 
@@ -266,7 +269,7 @@ export default function FrameDataPanel({ onClose }: Props) {
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-label font-medium" style={{ color: 'var(--text-primary)' }}>
-            콤보 라우트
+            {t('frameData.comboRoute')}
           </span>
           <span
             className="text-caption font-semibold px-2 py-0.5 rounded"
@@ -275,13 +278,13 @@ export default function FrameDataPanel({ onClose }: Props) {
               color: routeResult.feasible ? '#10b981' : '#ef4444',
             }}
           >
-            {routeResult.feasible ? '연결 가능' : '연결 불가'}
+            {routeResult.feasible ? t('frameData.feasible') : t('frameData.notFeasible')}
           </span>
         </div>
 
         {routeMoves.length === 0 ? (
           <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-            기술 옆 + 버튼으로 콤보 추가
+            {t('frameData.comboHelp')}
           </p>
         ) : (
           <>
@@ -310,16 +313,16 @@ export default function FrameDataPanel({ onClose }: Props) {
               ))}
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <Metric label="총 피해" value={routeResult.totalDamage.toString()} />
-              <Metric label="총 프레임" value={`${routeResult.totalFrames}f`} sub={`${(routeResult.totalFrames * 16.67).toFixed(0)}ms`} />
-              <Metric label="기술 수" value={routeMoves.length.toString()} />
+              <Metric label={t('frameData.totalDamage')} value={routeResult.totalDamage.toString()} />
+              <Metric label={t('frameData.totalFrames')} value={t('frameData.frameUnit', { n: routeResult.totalFrames })} sub={`${(routeResult.totalFrames * 16.67).toFixed(0)}ms`} />
+              <Metric label={t('frameData.movesCount')} value={routeMoves.length.toString()} />
             </div>
           </>
         )}
       </div>
 
       <div className="text-caption italic" style={{ color: 'var(--text-tertiary)' }}>
-        발=발동, 유=유지, 경=경직, 피=피해, 피스=피격경직, 가스=가드경직, H+=onHit, B+=onBlock · 60fps 기준 (1f = 16.67ms)
+        {t('frameData.legendNote')}
       </div>
     </PanelShell>
   );

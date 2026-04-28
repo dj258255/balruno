@@ -260,8 +260,8 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
 
   return (
     <PanelShell
-      title="난이도 곡선"
-      subtitle="스테이지별 벽·마일스톤·플로우 설계"
+      title={t('titleHeader')}
+      subtitle={t('subtitleHeader')}
       icon={TrendingUp}
       iconColor={PANEL_COLOR}
       onClose={onClose ?? (() => {})}
@@ -289,7 +289,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
           }}
         >
           <Zap className="w-3.5 h-3.5" />
-          간단 모드
+          {t('simpleMode')}
         </button>
         <button
           onClick={() => setMode('advanced')}
@@ -300,7 +300,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
           }}
         >
           <Sliders className="w-3.5 h-3.5" />
-          고급 모드
+          {t('advancedMode')}
         </button>
       </div>
 
@@ -310,9 +310,8 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
           className="p-3 rounded-lg text-caption leading-relaxed"
           style={{ background: `${PANEL_COLOR}10`, borderLeft: `3px solid ${PANEL_COLOR}`, color: 'var(--text-secondary)' }}
         >
-          <strong style={{ color: PANEL_COLOR }}>게임 장르 프리셋</strong>을 선택하고{' '}
-          <strong>플레이타임</strong>을 설정하면, 업계 기준 난이도 곡선과 벽 스테이지가 자동 생성됩니다.
-          세밀 조정이 필요하면 <strong>고급 모드</strong>로 전환하세요.
+          {t.rich('introP1', { g: (chunks) => <strong style={{ color: PANEL_COLOR }}>{chunks}</strong>, strong: (chunks) => <strong>{chunks}</strong> })}{' '}
+          {t.rich('introP2', { strong: (chunks) => <strong>{chunks}</strong> })}
         </div>
       )}
 
@@ -330,7 +329,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
               style={{ color: PANEL_COLOR }}
             >
               <ChevronDown className={`w-3 h-3 transition-transform ${simpleExpandCurve ? 'rotate-0' : '-rotate-90'}`} />
-              곡선 타입 자세히
+              {t('curveTypeMore')}
             </button>
             {simpleExpandCurve && (
               <CurveTypeSelector
@@ -369,7 +368,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
               style={{ color: PANEL_COLOR }}
             >
               <ChevronDown className={`w-3 h-3 transition-transform ${simpleExpandStage ? 'rotate-0' : '-rotate-90'}`} />
-              스테이지 수 직접 지정
+              {t('stageCountSet')}
             </button>
             {simpleExpandStage && <MaxStageSelector maxStage={maxStage} setMaxStage={setMaxStage} />}
           </div>
@@ -413,7 +412,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4" style={{ color: PANEL_COLOR }} />
           <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Playtest — 가상 플레이어 시뮬
+            {t('playtestSection')}
           </span>
           <div className="ml-auto flex items-center gap-1.5">
             <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>N</span>
@@ -433,44 +432,43 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
               style={{ background: PANEL_COLOR, color: 'white' }}
             >
               <PlayCircle className="w-3.5 h-3.5" />
-              {playtestRunning ? '실행 중...' : '재생'}
+              {playtestRunning ? t('running') : t('play')}
             </button>
           </div>
         </div>
         {!playtestResult && (
           <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-            재생 버튼을 누르면 가상 플레이어 {playtestPlayers}명이 이 곡선을 플레이 시도 →
-            이탈률·평균 도달 스테이지·가장 막히는 벽 자동 탐지
+            {t('playtestHelp', { n: playtestPlayers })}
           </p>
         )}
         {playtestResult && (
           <>
             <div className="grid grid-cols-3 gap-2">
               <div className="p-2 rounded" style={{ background: 'var(--bg-primary)', borderLeft: `3px solid ${dropoutColor}` }}>
-                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>이탈률</div>
+                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('dropoutRate')}</div>
                 <div className="text-lg font-bold tabular-nums" style={{ color: dropoutColor }}>
                   {Math.round(playtestResult.dropoutRate * 100)}%
                 </div>
                 <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                  {playtestResult.dropoutRate < 0.2 ? '건강' : playtestResult.dropoutRate < 0.5 ? '조정 권장' : '과도하게 어려움'}
+                  {playtestResult.dropoutRate < 0.2 ? t('healthHealthy') : playtestResult.dropoutRate < 0.5 ? t('healthAdjust') : t('healthHard')}
                 </div>
               </div>
               <div className="p-2 rounded" style={{ background: 'var(--bg-primary)' }}>
-                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>평균 도달</div>
+                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('avgReach')}</div>
                 <div className="text-lg font-bold tabular-nums" style={{ color: '#3b82f6' }}>
                   {playtestResult.avgReachedStage.toFixed(1)}
                 </div>
                 <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                  / {curveData.length} 스테이지
+                  {t('stagesUnit', { total: curveData.length })}
                 </div>
               </div>
               <div className="p-2 rounded" style={{ background: 'var(--bg-primary)' }}>
-                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>평균 플레이타임</div>
+                <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('avgPlaytime')}</div>
                 <div className="text-lg font-bold tabular-nums" style={{ color: '#0891b2' }}>
-                  {playtestResult.avgPlaytimeMin.toFixed(0)}분
+                  {t('minutes', { n: playtestResult.avgPlaytimeMin.toFixed(0) })}
                 </div>
                 <div className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-                  생존자 기준
+                  {t('survivorBased')}
                 </div>
               </div>
             </div>
@@ -478,7 +476,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
               <div className="p-2 rounded" style={{ background: '#ef444415', borderLeft: '3px solid #ef4444' }}>
                 <div className="flex items-center gap-1 text-caption font-semibold mb-1" style={{ color: '#ef4444' }}>
                   <AlertTriangle className="w-3 h-3" />
-                  가장 막히는 스테이지 TOP {playtestResult.topDropoutStages.length}
+                  {t('topDropoutStages', { n: playtestResult.topDropoutStages.length })}
                 </div>
                 <div className="flex items-center gap-1 flex-wrap">
                   {playtestResult.topDropoutStages.map((d) => (
@@ -486,7 +484,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
                       key={d.stage}
                       className="px-2 py-0.5 rounded text-caption font-mono"
                       style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-                      title={`Stage ${d.stage} 에서 ${d.dropouts}명 이탈 (${Math.round(d.dropoutRate * 100)}%)`}
+                      title={t('stageDropoutTooltip', { stage: d.stage, dropouts: d.dropouts, percent: Math.round(d.dropoutRate * 100) })}
                     >
                       Stage {d.stage} · {Math.round(d.dropoutRate * 100)}%
                     </span>
@@ -504,7 +502,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
       {mode === 'advanced' && (
         <SectionCard
           icon={BarChart3}
-          title="고급 분석"
+          title={t('advancedAnalysis')}
           color={PANEL_COLOR}
           collapsible
           collapsed={collapsedAdvanced}
@@ -588,7 +586,7 @@ export default function DifficultyCurve({ onClose }: DifficultyCurveProps) {
       {/* Simple 모드 안내 footer — "세부 조정 필요 시 고급 모드" */}
       {mode === 'simple' && (
         <div className="text-caption italic text-center pt-2" style={{ color: 'var(--text-tertiary)' }}>
-          벽 스테이지·마일스톤·휴식 포인트를 직접 편집하려면 상단 <strong>고급 모드</strong>로 전환하세요.
+          {t.rich('advancedHint', { strong: (chunks) => <strong>{chunks}</strong> })}
         </div>
       )}
     </PanelShell>

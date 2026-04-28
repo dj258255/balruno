@@ -11,6 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerT } from '@/lib/serverI18n';
 
 interface RecommendRequest {
   description: string;
@@ -81,18 +82,20 @@ const PM_TEMPLATE: RecommendedSheet[] = [
   },
 ];
 
-const DESIGN_DOC_TEMPLATE: RecommendedSheet[] = [
-  {
-    name: '기획 문서',
-    columns: [
-      { name: '섹션', type: 'general' },
-      { name: '내용', type: 'general' },
-      { name: '담당', type: 'general' },
-      { name: '상태', type: 'select' },
-      { name: '리뷰 마감', type: 'date' },
-    ],
-  },
-];
+function buildDesignDocTemplate(t: (k: string, v?: Record<string, string | number>) => string): RecommendedSheet[] {
+  return [
+    {
+      name: t('designDocSheet'),
+      columns: [
+        { name: t('designDocSection'), type: 'general' },
+        { name: t('designDocContent'), type: 'general' },
+        { name: t('designDocOwner'), type: 'general' },
+        { name: t('designDocStatus'), type: 'select' },
+        { name: t('designDocReview'), type: 'date' },
+      ],
+    },
+  ];
+}
 
 /** 자유 텍스트에서 장르/난이도/규모 키워드 추출 (한국어 + 영어). */
 function extractHints(description: string, context?: string): {
@@ -151,37 +154,46 @@ function generateLevelSample(scale: 'small' | 'medium' | 'large'): Record<string
 }
 
 /** 템플릿 기반 fallback — LLM 없이도 동작. */
-function templateFallback(body: RecommendRequest): RecommendResponse {
+function templateFallback(body: RecommendRequest, t: (k: string, v?: Record<string, string | number>) => string): RecommendResponse {
   const workType = body.workType ?? 'balancing';
+  const desc = body.description.slice(0, 80);
 
   if (workType === 'pm') {
     return {
       sheets: PM_TEMPLATE,
-      note: `팀 PM 템플릿 (스프린트 + 버그 + 로드맵). 요구사항: "${body.description.slice(0, 80)}".`,
+      note: t('notePm', { desc }),
       mode: 'template-fallback',
     };
   }
 
   if (workType === 'design-doc') {
     return {
-      sheets: DESIGN_DOC_TEMPLATE,
-      note: `기획 문서 템플릿 (베타). 요구사항: "${body.description.slice(0, 80)}".`,
+      sheets: buildDesignDocTemplate(t),
+      note: t('noteDesignDoc', { desc }),
       mode: 'template-fallback',
     };
   }
 
-  // workType === 'balancing'
   const hints = extractHints(body.description, body.context);
   const genre = (body.genre?.toLowerCase() ?? hints.genre);
+
+  const N = (k: string) => t(k);
+  const NAME = N('tmplName');
+  const DAMAGE = N('tmplDamage');
+  const COST = N('tmplCost');
+  const EFFECT = N('tmplEffect');
+  const GRADE = N('tmplGrade');
+  const PROB = N('tmplProb');
+  const PITY = N('tmplPity');
 
   const base: Record<string, RecommendedSheet[]> = {
     rpg: [
       {
-        name: '캐릭터',
+        name: N('tmplCharacter'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '직업', type: 'select' },
+          { name: NAME, type: 'general' },
+          { name: N('tmplClass'), type: 'select' },
           { name: 'HP', type: 'general' },
           { name: 'ATK', type: 'general' },
           { name: 'DEF', type: 'general' },
@@ -190,189 +202,189 @@ function templateFallback(body: RecommendRequest): RecommendResponse {
         ],
       },
       {
-        name: '레벨테이블',
+        name: N('tmplLevelTable'),
         columns: [
           { name: 'Level', type: 'general' },
-          { name: '경험치', type: 'formula', formula: '=SCALE(100, Level, 1.2, "exponential")' },
+          { name: N('tmplExp'), type: 'formula', formula: '=SCALE(100, Level, 1.2, "exponential")' },
           { name: 'HP', type: 'formula', formula: '=SCALE(100, Level, 1.1, "exponential")' },
         ],
       },
       {
-        name: '스킬',
+        name: N('tmplSkill'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '데미지', type: 'general' },
-          { name: '쿨다운', type: 'general' },
-          { name: '타입', type: 'select' },
+          { name: NAME, type: 'general' },
+          { name: DAMAGE, type: 'general' },
+          { name: N('tmplCooldown'), type: 'general' },
+          { name: N('tmplType'), type: 'select' },
         ],
       },
     ],
     fps: [
       {
-        name: '무기',
+        name: N('tmplWeapon'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '카테고리', type: 'select' },
-          { name: '데미지', type: 'general' },
+          { name: NAME, type: 'general' },
+          { name: N('tmplCategory'), type: 'select' },
+          { name: DAMAGE, type: 'general' },
           { name: 'RPM', type: 'general' },
-          { name: 'DPS', type: 'formula', formula: '=DPS(데미지, RPM/60, 0, 1)' },
-          { name: 'TTK', type: 'formula', formula: '=TTK(100, 데미지, RPM/60)' },
+          { name: 'DPS', type: 'formula', formula: `=DPS(${DAMAGE}, RPM/60, 0, 1)` },
+          { name: 'TTK', type: 'formula', formula: `=TTK(100, ${DAMAGE}, RPM/60)` },
         ],
       },
     ],
     idle: [
       {
-        name: '업그레이드',
+        name: N('tmplUpgrade'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '기본비용', type: 'general' },
-          { name: '비용증가율', type: 'general' },
-          { name: '효과', type: 'general' },
-          { name: 'ROI', type: 'formula', formula: '=효과 / 기본비용' },
+          { name: NAME, type: 'general' },
+          { name: N('tmplBaseCost'), type: 'general' },
+          { name: N('tmplCostGrowth'), type: 'general' },
+          { name: EFFECT, type: 'general' },
+          { name: 'ROI', type: 'formula', formula: `=${EFFECT} / ${N('tmplBaseCost')}` },
         ],
       },
     ],
     roguelike: [
       {
-        name: '유물',
+        name: N('tmplArtifact'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '등급', type: 'select' },
-          { name: '효과', type: 'general' },
-          { name: '드롭률', type: 'general' },
-          { name: '티어지수', type: 'formula', formula: '=TIER_INDEX(등급)' },
+          { name: NAME, type: 'general' },
+          { name: GRADE, type: 'select' },
+          { name: EFFECT, type: 'general' },
+          { name: N('tmplDropRate'), type: 'general' },
+          { name: N('tmplTierIndex'), type: 'formula', formula: `=TIER_INDEX(${GRADE})` },
         ],
       },
     ],
     moba: [
       {
-        name: '챔피언',
+        name: N('tmplChampion'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '역할', type: 'select' },
+          { name: NAME, type: 'general' },
+          { name: N('tmplRole'), type: 'select' },
           { name: 'HP', type: 'general' },
           { name: 'ATK', type: 'general' },
-          { name: '이속', type: 'general' },
+          { name: N('tmplMs'), type: 'general' },
           { name: 'DPS', type: 'formula', formula: '=DPS(ATK, 1.5, 0.2, 1.8)' },
         ],
       },
       {
-        name: '아이템',
+        name: N('tmplItem'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '카테고리', type: 'select' },
-          { name: '비용', type: 'currency' },
-          { name: '효과', type: 'general' },
+          { name: NAME, type: 'general' },
+          { name: N('tmplCategory'), type: 'select' },
+          { name: COST, type: 'currency' },
+          { name: EFFECT, type: 'general' },
         ],
       },
     ],
     strategy: [
       {
-        name: '유닛',
+        name: N('tmplUnit'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '진영', type: 'select' },
-          { name: '비용', type: 'currency' },
+          { name: NAME, type: 'general' },
+          { name: N('tmplFaction'), type: 'select' },
+          { name: COST, type: 'currency' },
           { name: 'HP', type: 'general' },
           { name: 'ATK', type: 'general' },
-          { name: '범위', type: 'general' },
-          { name: '효율', type: 'formula', formula: '=(HP * ATK) / 비용' },
+          { name: N('tmplRange'), type: 'general' },
+          { name: N('tmplEfficiency'), type: 'formula', formula: `=(HP * ATK) / ${COST}` },
         ],
       },
       {
-        name: '건물',
+        name: N('tmplBuilding'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '비용', type: 'currency' },
-          { name: '건설시간', type: 'general' },
-          { name: '효과', type: 'general' },
+          { name: NAME, type: 'general' },
+          { name: COST, type: 'currency' },
+          { name: N('tmplBuildTime'), type: 'general' },
+          { name: EFFECT, type: 'general' },
         ],
       },
     ],
     puzzle: [
       {
-        name: '레벨',
+        name: N('tmplLevel'),
         columns: [
           { name: 'Level', type: 'general' },
-          { name: '목표', type: 'general' },
-          { name: '제한 시간', type: 'general' },
-          { name: '별 1', type: 'general' },
-          { name: '별 2', type: 'general' },
-          { name: '별 3', type: 'general' },
+          { name: N('tmplGoal'), type: 'general' },
+          { name: N('tmplTimeLimit'), type: 'general' },
+          { name: N('tmplStar1'), type: 'general' },
+          { name: N('tmplStar2'), type: 'general' },
+          { name: N('tmplStar3'), type: 'general' },
         ],
       },
     ],
     card: [
       {
-        name: '카드',
+        name: N('tmplCard'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '비용', type: 'general' },
-          { name: '데미지', type: 'general' },
-          { name: '등급', type: 'select' },
-          { name: '효과', type: 'general' },
-          { name: '효율', type: 'formula', formula: '=데미지 / (비용 + 1)' },
+          { name: NAME, type: 'general' },
+          { name: COST, type: 'general' },
+          { name: DAMAGE, type: 'general' },
+          { name: GRADE, type: 'select' },
+          { name: EFFECT, type: 'general' },
+          { name: N('tmplEfficiency'), type: 'formula', formula: `=${DAMAGE} / (${COST} + 1)` },
         ],
       },
       {
-        name: '덱',
+        name: N('tmplDeck'),
         columns: [
-          { name: '덱이름', type: 'general' },
-          { name: '카드', type: 'multiSelect' },
-          { name: '평균비용', type: 'general' },
+          { name: N('tmplDeckName'), type: 'general' },
+          { name: N('tmplCard'), type: 'multiSelect' },
+          { name: N('tmplAvgCost'), type: 'general' },
         ],
       },
     ],
     platformer: [
       {
-        name: '스테이지',
+        name: N('tmplStage'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '월드', type: 'select' },
-          { name: '난이도', type: 'rating' },
-          { name: '제한 시간', type: 'general' },
-          { name: '코인 목표', type: 'general' },
+          { name: NAME, type: 'general' },
+          { name: N('tmplWorld'), type: 'select' },
+          { name: N('tmplDifficulty'), type: 'rating' },
+          { name: N('tmplTimeLimit'), type: 'general' },
+          { name: N('tmplCoinGoal'), type: 'general' },
         ],
       },
       {
-        name: '능력',
+        name: N('tmplAbility'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '쿨다운', type: 'general' },
-          { name: '효과', type: 'general' },
+          { name: NAME, type: 'general' },
+          { name: N('tmplCooldown'), type: 'general' },
+          { name: EFFECT, type: 'general' },
         ],
       },
     ],
     sandbox: [
       {
-        name: '아이템',
+        name: N('tmplItem'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
-          { name: '카테고리', type: 'select' },
-          { name: '레시피', type: 'general' },
-          { name: '판매가', type: 'currency' },
+          { name: NAME, type: 'general' },
+          { name: N('tmplCategory'), type: 'select' },
+          { name: N('tmplRecipe'), type: 'general' },
+          { name: N('tmplSellPrice'), type: 'currency' },
         ],
       },
       {
-        name: '몹',
+        name: N('tmplMob'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '이름', type: 'general' },
+          { name: NAME, type: 'general' },
           { name: 'HP', type: 'general' },
           { name: 'ATK', type: 'general' },
-          { name: '드롭', type: 'general' },
+          { name: N('tmplDrop'), type: 'general' },
         ],
       },
     ],
@@ -380,86 +392,85 @@ function templateFallback(body: RecommendRequest): RecommendResponse {
 
   let sheets = base[genre] ?? base.rpg;
 
-  // 가챠 시트 자동 추가
   if (hints.hasGacha) {
     sheets = [
       ...sheets,
       {
-        name: '가챠',
+        name: N('tmplGacha'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '아이템', type: 'general' },
-          { name: '등급', type: 'select' },
-          { name: '확률', type: 'general' },
-          { name: '천장', type: 'general' },
-          { name: '기댓값', type: 'formula', formula: '=GACHA_PITY(확률, 천장)' },
+          { name: N('tmplItem'), type: 'general' },
+          { name: GRADE, type: 'select' },
+          { name: PROB, type: 'general' },
+          { name: PITY, type: 'general' },
+          { name: N('tmplExpected'), type: 'formula', formula: `=GACHA_PITY(${PROB}, ${PITY})` },
         ],
       },
     ];
   }
 
-  // PvP 시트 자동 추가
   if (hints.hasPvP) {
     sheets = [
       ...sheets,
       {
-        name: 'PvP 매치',
+        name: N('tmplPvpMatch'),
         columns: [
           { name: 'ID', type: 'general' },
-          { name: '플레이어 A', type: 'general' },
-          { name: '플레이어 B', type: 'general' },
-          { name: '결과', type: 'select' },
-          { name: '날짜', type: 'date' },
+          { name: N('tmplPlayerA'), type: 'general' },
+          { name: N('tmplPlayerB'), type: 'general' },
+          { name: N('tmplResult'), type: 'select' },
+          { name: N('tmplDate'), type: 'date' },
         ],
       },
       {
-        name: '랭크',
+        name: N('tmplRank'),
         columns: [
-          { name: '티어', type: 'select' },
-          { name: '점수 하한', type: 'general' },
-          { name: '점수 상한', type: 'general' },
-          { name: '인구 비율', type: 'general' },
+          { name: N('tmplTier'), type: 'select' },
+          { name: N('tmplScoreLow'), type: 'general' },
+          { name: N('tmplScoreHigh'), type: 'general' },
+          { name: N('tmplPopulation'), type: 'general' },
         ],
       },
     ];
   }
 
-  // RPG/평형 장르에는 레벨 sample row 채우기
+  const levelTableName = N('tmplLevelTable');
   if (genre === 'rpg') {
     const sample = generateLevelSample(hints.scale);
     sheets = sheets.map((s) =>
-      s.name === '레벨테이블' ? { ...s, sampleRows: sample } : s
+      s.name === levelTableName ? { ...s, sampleRows: sample } : s
     );
   }
 
   const detectedHints = [
-    `장르=${genre}`,
-    hints.difficulty !== 'unknown' && `난이도=${hints.difficulty}`,
-    `규모=${hints.scale}`,
-    hints.hasGacha && '가챠↑',
-    hints.hasPvP && 'PvP↑',
+    t('hintGenre', { genre }),
+    hints.difficulty !== 'unknown' && t('hintDifficulty', { difficulty: hints.difficulty }),
+    t('hintScale', { scale: hints.scale }),
+    hints.hasGacha && t('hintGacha'),
+    hints.hasPvP && t('hintPvp'),
   ].filter(Boolean).join(' · ');
 
   return {
     sheets,
-    note: `템플릿 기반 추천 (${detectedHints}). 요구사항: "${body.description.slice(0, 80)}".`,
+    note: t('noteTemplate', { hints: detectedHints, desc }),
     mode: 'template-fallback',
   };
 }
 
 export async function POST(req: NextRequest) {
+  const t = await getServerT(req, 'aiApi');
   let body: RecommendRequest;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: 'JSON 파싱 실패' }, { status: 400 });
+    return NextResponse.json({ error: t('parseFailed') }, { status: 400 });
   }
 
   if (!body.description?.trim()) {
-    return NextResponse.json({ error: 'description 필수' }, { status: 400 });
+    return NextResponse.json({ error: t('descRequired') }, { status: 400 });
   }
 
   // LLM 호출은 백엔드 서버에서 처리 — 프론트는 항상 템플릿 fallback.
   // ANTHROPIC_API_KEY 가 있어도 사용하지 않음 (보안 + 책임 분리).
-  return NextResponse.json(templateFallback(body));
+  return NextResponse.json(templateFallback(body, t));
 }

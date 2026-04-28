@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 /**
  * PM Badge Strip — SheetKind='pm' (또는 자동 감지) 시트 상단에 고정되는 배지 띠.
  *
@@ -36,6 +37,7 @@ function findPriorityColumn(columns: Column[]): Column | undefined {
 }
 
 export function PmBadgeStrip({ sheet }: Props) {
+  const t = useTranslations();
   // 모든 훅은 최상단 — 조건부 반환 전에. Rules of Hooks 준수.
   const detection = useMemo(() => detectPmSheet(sheet), [sheet]);
   const quickFilter = useSheetUIStore((s) => s.quickFilter);
@@ -65,7 +67,7 @@ export function PmBadgeStrip({ sheet }: Props) {
     const counts = new Map<string, number>();
     for (const row of sheet.rows) {
       const v = row.cells[statusCol.id];
-      const key = v === null || v === undefined || v === '' ? '(미지정)' : String(v);
+      const key = v === null || v === undefined || v === '' ? t('sheet.unassignedParen') : String(v);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     const ordered: Array<{ label: string; count: number; color?: string }> = [];
@@ -133,7 +135,7 @@ export function PmBadgeStrip({ sheet }: Props) {
       >
         <TypeBadge label={PM_TYPE_LABELS[pmType]} />
         <span style={{ color: 'var(--text-tertiary)' }}>
-          집계 가능한 컬럼 (Status / Assignee / Priority) 이 없습니다
+          {t('sheet.noAggColumns')}
         </span>
       </div>
     );
@@ -190,10 +192,10 @@ export function PmBadgeStrip({ sheet }: Props) {
           onClick={clearFilter}
           className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded text-caption transition-colors"
           style={{ background: 'var(--accent)', color: 'white' }}
-          title="필터 해제"
+          title={t('sheet.clearFilter')}
         >
           <X className="w-3 h-3" />
-          필터:
+          {t('sheet.filterLabel')}
           {activeFilter.assignee && <span>@{activeFilter.assignee}</span>}
           {activeFilter.priority && <span>{activeFilter.priority}</span>}
         </button>
@@ -246,6 +248,7 @@ function Badge({
   active?: boolean;
   onClick?: () => void;
 }) {
+  const t = useTranslations();
   const interactive = Boolean(onClick);
   const baseStyle: React.CSSProperties = {
     background: active ? (color ?? 'var(--accent)') : color ? `${color}22` : 'var(--bg-tertiary)',
@@ -269,7 +272,7 @@ function Badge({
         onClick={onClick}
         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-caption transition-colors hover:brightness-110"
         style={baseStyle}
-        title={`${label}: ${count}${active ? ' (필터 활성 — 클릭으로 해제)' : ' (클릭으로 필터)'}`}
+        title={active ? t('sheet.filterActiveTooltip', { label, count }) : t('sheet.filterInactiveTooltip', { label, count })}
       >
         {content}
       </button>
@@ -295,6 +298,7 @@ function AssigneeAvatars({
   activeAssignee?: string;
   onToggle?: (name: string) => void;
 }) {
+  const t = useTranslations();
   const visible = names.slice(0, 5);
   const extra = names.length - visible.length;
   return (
@@ -319,7 +323,7 @@ function AssigneeAvatars({
               onClick={() => onToggle?.(name)}
               className="w-5 h-5 rounded-full flex items-center justify-center text-caption font-medium hover:brightness-110"
               style={style}
-              title={`${name}${active ? ' (필터 활성 — 클릭으로 해제)' : ' (클릭으로 필터)'}`}
+              title={active ? t('sheet.filterActiveNameTooltip', { name }) : t('sheet.filterInactiveNameTooltip', { name })}
             >
               {content}
             </button>

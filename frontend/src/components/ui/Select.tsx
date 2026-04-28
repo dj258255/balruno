@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export interface SelectOption {
   value: string;
@@ -38,12 +39,14 @@ export default function Select({
   value,
   onChange,
   options,
-  placeholder = '선택하세요',
+  placeholder,
   disabled,
   className = '',
   searchable,
   size = 'md',
 }: SelectProps) {
+  const t = useTranslations('ui');
+  const resolvedPlaceholder = placeholder ?? t('selectPlaceholder');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIdx, setActiveIdx] = useState(0);
@@ -117,7 +120,7 @@ export default function Select({
         )}
         {selected?.icon && <span className="flex-shrink-0">{selected.icon}</span>}
         <span className="flex-1 truncate text-left">
-          {selected ? selected.label : placeholder}
+          {selected ? selected.label : resolvedPlaceholder}
         </span>
         <ChevronDown
           size={size === 'sm' ? 12 : 14}
@@ -142,7 +145,7 @@ export default function Select({
                 ref={inputRef}
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setActiveIdx(0); }}
-                placeholder="검색..."
+                placeholder={t('searchPlaceholder')}
                 className="w-full px-2 py-1 text-xs rounded bg-transparent border outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
                 style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
               />
@@ -151,7 +154,7 @@ export default function Select({
           <div className="max-h-60 overflow-y-auto py-1">
             {filtered.length === 0 ? (
               <div className="px-3 py-2 text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
-                결과 없음
+                {t('noResults')}
               </div>
             ) : (
               filtered.map((opt, idx) => {

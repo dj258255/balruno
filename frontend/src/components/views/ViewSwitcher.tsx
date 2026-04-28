@@ -114,7 +114,7 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
     <>
     <div
       role="tablist"
-      aria-label="시트 뷰"
+      aria-label={t('viewSwitcher.sheetViewAria')}
       className="flex items-center gap-0.5 px-2 py-1 border-b"
       style={{ borderColor: 'var(--border-primary)' }}
     >
@@ -130,7 +130,7 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
             onClick={() => switchToBase(view.id)}
             role="tab"
             aria-selected={isActive}
-            aria-label={`${t(view.labelKey as 'views.grid')} 뷰`}
+            aria-label={t('viewSwitcher.viewAria', { name: t(view.labelKey as 'views.grid') })}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors flex-shrink-0"
             style={{
               background: isActive ? 'var(--bg-hover)' : 'transparent',
@@ -178,7 +178,7 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
                   fontWeight: isActive ? 600 : 400,
                 }}
                 aria-pressed={isActive}
-                title="더블클릭으로 이름 변경"
+                title={t('viewSwitcher.doubleClickRename')}
               >
                 <Bookmark className="w-3 h-3" />
                 <Icon className="w-3 h-3" />
@@ -187,7 +187,7 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
                   onClick={(e) => { e.stopPropagation(); deleteSaved(sv.id); }}
                   className="ml-0.5 p-0.5 opacity-0 group-hover:opacity-100 hover:bg-[var(--bg-tertiary)] rounded"
                   role="button"
-                  aria-label="삭제"
+                  aria-label={t('viewSwitcher.deleteAria')}
                 >
                   <X size={10} />
                 </span>
@@ -205,10 +205,10 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
           onClick={() => setShowSaveDialog((v) => !v)}
           className="flex items-center gap-1 px-1.5 py-1 rounded-md text-xs hover:bg-[var(--bg-hover)] ml-1"
           style={{ color: 'var(--text-tertiary)' }}
-          title="현재 뷰 설정을 저장"
+          title={t('viewSwitcher.saveCurrentView')}
         >
           <Plus className="w-3 h-3" />
-          뷰 저장
+          {t('viewSwitcher.saveView')}
         </button>
         {showSaveDialog && (
           <div
@@ -223,7 +223,7 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
                 if (e.key === 'Enter') saveCurrent();
                 if (e.key === 'Escape') { setNewName(''); setShowSaveDialog(false); }
               }}
-              placeholder="뷰 이름"
+              placeholder={t('viewSwitcher.viewNamePlaceholder')}
               className="text-xs px-2 py-1.5 rounded border bg-transparent w-40 outline-none focus:ring-2 focus:ring-[var(--accent)]/30 transition"
               style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
             />
@@ -233,7 +233,7 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
               className="text-xs px-3 py-1.5 rounded font-medium flex-shrink-0"
               style={{ background: 'var(--accent)', color: 'white', opacity: newName.trim() ? 1 : 0.5 }}
             >
-              저장
+              {t('viewSwitcher.save')}
             </button>
           </div>
         )}
@@ -247,10 +247,10 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
             background: filterActive ? 'var(--accent)' : showFilter ? 'var(--bg-hover)' : 'transparent',
             color: filterActive ? 'white' : 'var(--text-secondary)',
           }}
-          title="필터 (Kanban · Grid dim 에 적용)"
+          title={t('viewSwitcher.filterTitle')}
         >
           <Filter className="w-3 h-3" />
-          필터
+          {t('viewSwitcher.filter')}
           {filterActive && filterGroup && (
             <span
               className="text-caption px-1 rounded-full"

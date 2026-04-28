@@ -8,6 +8,7 @@
 
 import { useState, useRef } from 'react';
 import { ImageIcon, Plus, Upload } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { formatDisplayValue } from '@/components/sheet/utils';
 import { useProjectStore } from '@/stores/projectStore';
 import { useRecordDetail } from '@/stores/recordDetailStore';
@@ -23,6 +24,7 @@ interface GalleryViewProps {
 }
 
 export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
+  const t = useTranslations('views');
   const openedRowId = useRecordDetail((s) =>
     s.opened && s.opened.sheetId === sheet.id ? s.opened.rowId : null,
   );
@@ -50,20 +52,20 @@ export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
   // 업로드: 로컬 파일 → IndexedDB blob → url 컬럼에 `indb:<id>` 저장
   const uploadImage = async (rowId: string, file: File) => {
     if (!urlCol) {
-      toast.error('url 타입 컬럼을 먼저 만들어주세요');
+      toast.error(t('galleryUrlColFirst'));
       return;
     }
     if (!file.type.startsWith('image/')) {
-      toast.error('이미지 파일만 업로드 가능합니다');
+      toast.error(t('galleryOnlyImage'));
       return;
     }
     setUploadingRowId(rowId);
     try {
       const ref = await storeBlob(file);
       updateCell(projectId, sheet.id, rowId, urlCol.id, ref);
-      toast.success('이미지 업로드 완료');
+      toast.success(t('galleryUploadOk'));
     } catch (e) {
-      toast.error(`업로드 실패: ${e instanceof Error ? e.message : String(e)}`);
+      toast.error(t('galleryUploadFail', { error: e instanceof Error ? e.message : String(e) }));
     } finally {
       setUploadingRowId(null);
     }
@@ -75,7 +77,7 @@ export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
       <div
         className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]"
         role="list"
-        aria-label={`${sheet.name} 갤러리`}
+        aria-label={t('galleryAria', { name: sheet.name })}
       >
         {sheet.rows.map((row) => (
           <GalleryCard
@@ -102,7 +104,7 @@ export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
             <ImageIcon className="w-7 h-7" style={{ color: 'var(--text-tertiary)' }} />
           </div>
           <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-            표시할 레코드가 없습니다
+            {t('galleryNoRecords')}
           </p>
           <button
             type="button"
@@ -110,7 +112,7 @@ export default function GalleryView({ projectId, sheet }: GalleryViewProps) {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
             style={{ background: 'var(--accent)', color: 'white' }}
           >
-            <Plus className="w-4 h-4" /> 첫 레코드 추가
+            <Plus className="w-4 h-4" /> {t('galleryFirstRecord')}
           </button>
         </div>
       )}
@@ -160,6 +162,7 @@ function GalleryCard({
   onContext: (e: React.MouseEvent) => void;
   onUpload: (file: File) => void;
 }) {
+  const t = useTranslations('views');
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const rawRef = urlCol ? row.cells[urlCol.id] : null;
@@ -171,7 +174,7 @@ function GalleryCard({
   return (
     <div
       role="listitem"
-      aria-label={titleRaw || '레코드'}
+      aria-label={titleRaw || t('galleryRecordAria')}
       onClick={onSelect}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -225,7 +228,7 @@ function GalleryCard({
             className="absolute inset-0 flex items-center justify-center text-xs font-medium"
             style={{ background: 'rgba(0,0,0,0.5)', color: 'white' }}
           >
-            업로드 중…
+            {t('galleryUploading')}
           </div>
         )}
         {urlCol && !isUploading && (
@@ -237,8 +240,8 @@ function GalleryCard({
             }}
             className="absolute top-2 right-2 p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
             style={{ background: 'rgba(0,0,0,0.6)', color: 'white' }}
-            title="이미지 업로드 (드래그-드롭 가능)"
-            aria-label="이미지 업로드"
+            title={t('galleryUploadTooltip')}
+            aria-label={t('galleryUploadAria')}
           >
             <Upload className="w-3.5 h-3.5" />
           </button>

@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import type { CurveType } from '@/types';
 import type { GrowthSegment } from '../growth-curve-chart.helpers';
 
@@ -22,14 +23,15 @@ export interface Scenario {
 const SCENARIO_COLORS = ['#5a9cf5', '#e86161', '#3db88a', '#e5a440', '#9179f2', '#e87aa8'];
 
 export function useScenarios(initial: Scenario[]) {
+  const t = useTranslations('growthCurve');
   const [scenarios, setScenarios] = useState<Scenario[]>(initial);
 
   const add = useCallback(() => {
     const templates = [
-      { name: 'HP형', base: 500, rate: 1.06 },
-      { name: '공격형', base: 50, rate: 1.08 },
-      { name: '방어형', base: 30, rate: 1.05 },
-      { name: '속도형', base: 100, rate: 1.03 },
+      { name: t('templateHp'), base: 500, rate: 1.06 },
+      { name: t('templateAtk'), base: 50, rate: 1.08 },
+      { name: t('templateDef'), base: 30, rate: 1.05 },
+      { name: t('templateSpeed'), base: 100, rate: 1.03 },
     ];
     setScenarios((prev) => {
       const template = templates[prev.length % templates.length];
@@ -46,7 +48,7 @@ export function useScenarios(initial: Scenario[]) {
         },
       ];
     });
-  }, []);
+  }, [t]);
 
   const remove = useCallback((id: string) => {
     setScenarios((prev) => prev.filter((s) => s.id !== id));

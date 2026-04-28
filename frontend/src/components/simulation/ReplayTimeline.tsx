@@ -20,6 +20,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Swords, Heart, Shield, Skull, Zap, RefreshCw, Sparkles } from 'lucide-react';
 import type { BattleLogEntry } from '@/lib/simulation/types';
+import { useTranslations } from 'next-intl';
 
 export interface ReplayUnit {
   id: string;
@@ -39,18 +40,18 @@ interface Props {
   summary?: ReplaySummary;
 }
 
-const ACTION_META: Record<BattleLogEntry['action'], { Icon: typeof Swords; color: string; label: string }> = {
-  attack:          { Icon: Swords,     color: '#ef4444', label: '공격' },
-  skill:           { Icon: Sparkles,   color: '#8b5cf6', label: '스킬' },
-  buff:            { Icon: Zap,        color: '#f59e0b', label: '버프' },
-  debuff:          { Icon: Zap,        color: '#6b7280', label: '디버프' },
-  heal:            { Icon: Heart,      color: '#10b981', label: '회복' },
-  hot_tick:        { Icon: Heart,      color: '#34d399', label: 'HoT 틱' },
-  hot_end:         { Icon: Heart,      color: '#6b7280', label: 'HoT 종료' },
-  death:           { Icon: Skull,      color: '#71717a', label: '사망' },
-  invincible:      { Icon: Shield,     color: '#3b82f6', label: '무적' },
-  invincible_end:  { Icon: Shield,     color: '#6b7280', label: '무적 해제' },
-  revive:          { Icon: RefreshCw,  color: '#ec4899', label: '부활' },
+const ACTION_META: Record<BattleLogEntry['action'], { Icon: typeof Swords; color: string; labelKey: string }> = {
+  attack:          { Icon: Swords,     color: '#ef4444', labelKey: 'replayTimeline.evAttack' },
+  skill:           { Icon: Sparkles,   color: '#8b5cf6', labelKey: 'replayTimeline.evSkill' },
+  buff:            { Icon: Zap,        color: '#f59e0b', labelKey: 'replayTimeline.evBuff' },
+  debuff:          { Icon: Zap,        color: '#6b7280', labelKey: 'replayTimeline.evDebuff' },
+  heal:            { Icon: Heart,      color: '#10b981', labelKey: 'replayTimeline.evHeal' },
+  hot_tick:        { Icon: Heart,      color: '#34d399', labelKey: 'replayTimeline.evHotTick' },
+  hot_end:         { Icon: Heart,      color: '#6b7280', labelKey: 'replayTimeline.evHotEnd' },
+  death:           { Icon: Skull,      color: '#71717a', labelKey: 'replayTimeline.evDeath' },
+  invincible:      { Icon: Shield,     color: '#3b82f6', labelKey: 'replayTimeline.evInvincible' },
+  invincible_end:  { Icon: Shield,     color: '#6b7280', labelKey: 'replayTimeline.evInvincibleEnd' },
+  revive:          { Icon: RefreshCw,  color: '#ec4899', labelKey: 'replayTimeline.evRevive' },
 };
 
 const TEAM_COLOR: Record<string, string> = {
@@ -63,6 +64,7 @@ const matchesUnit = (u: ReplayUnit, key: string | undefined): boolean =>
   key !== undefined && (u.id === key || u.name === key);
 
 export default function ReplayTimeline({ units, log, summary }: Props) {
+  const t = useTranslations();
   const [cursorIdx, setCursorIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -127,7 +129,7 @@ export default function ReplayTimeline({ units, log, summary }: Props) {
         className="p-3 rounded-lg text-caption"
         style={{ background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }}
       >
-        시뮬을 1회 이상 실행하면 리플레이 타임라인이 표시됩니다.
+        {t('replayTimeline.noLog')}
       </div>
     );
   }
@@ -146,7 +148,7 @@ export default function ReplayTimeline({ units, log, summary }: Props) {
           disabled={cursorIdx === 0}
           className="p-1.5 rounded disabled:opacity-30"
           style={{ background: 'var(--bg-primary)' }}
-          aria-label="이전 이벤트"
+          aria-label={t('replayTimeline.prevAria')}
         >
           <SkipBack className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
         </button>
@@ -154,7 +156,7 @@ export default function ReplayTimeline({ units, log, summary }: Props) {
           onClick={() => setPlaying((p) => !p)}
           className="p-1.5 rounded"
           style={{ background: playing ? 'var(--accent)' : 'var(--bg-primary)' }}
-          aria-label={playing ? '일시정지' : '재생'}
+          aria-label={playing ? t('replayTimeline.pauseAria') : t('replayTimeline.playAria')}
         >
           {playing ? (
             <Pause className="w-4 h-4" style={{ color: 'white' }} />
@@ -167,12 +169,12 @@ export default function ReplayTimeline({ units, log, summary }: Props) {
           disabled={cursorIdx >= log.length - 1}
           className="p-1.5 rounded disabled:opacity-30"
           style={{ background: 'var(--bg-primary)' }}
-          aria-label="다음 이벤트"
+          aria-label={t('replayTimeline.nextAria')}
         >
           <SkipForward className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
         </button>
         <div className="flex items-center gap-1 ml-2">
-          <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>속도</span>
+          <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>{t('replayTimeline.speedLabel')}</span>
           {[0.5, 1, 2, 4].map((s) => (
             <button
               key={s}
@@ -191,7 +193,7 @@ export default function ReplayTimeline({ units, log, summary }: Props) {
           {cursor ? `${cursor.time.toFixed(2)}s / ${totalDuration.toFixed(2)}s` : '—'}
           {' · '}
           <span style={{ color: 'var(--text-tertiary)' }}>
-            이벤트 {cursorIdx + 1}/{log.length}
+            {t('replayTimeline.eventCounter', { n: cursorIdx + 1, total: log.length })}
           </span>
         </div>
       </div>
@@ -221,7 +223,7 @@ export default function ReplayTimeline({ units, log, summary }: Props) {
                   background: meta.color,
                   opacity: active ? 0.9 : 0.3,
                 }}
-                title={`${entry.time.toFixed(2)}s ${meta.label}`}
+                title={`${entry.time.toFixed(2)}s ${t(meta.labelKey as 'replayTimeline.evAttack')}`}
               />
             );
           })}
@@ -265,7 +267,7 @@ export default function ReplayTimeline({ units, log, summary }: Props) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-label font-semibold" style={{ color: 'var(--text-primary)' }}>
-              {displayName(cursor.actor, units)} {ACTION_META[cursor.action].label}
+              {displayName(cursor.actor, units)} {t(ACTION_META[cursor.action].labelKey as 'replayTimeline.evAttack')}
               {cursor.target && (
                 <span style={{ color: 'var(--text-tertiary)' }}> → {displayName(cursor.target, units)}</span>
               )}
@@ -275,19 +277,19 @@ export default function ReplayTimeline({ units, log, summary }: Props) {
               t = {cursor.time.toFixed(2)}s
               {cursor.damage !== undefined && cursor.damage > 0 && (
                 <span className="ml-2">
-                  피해 <span className="font-bold tabular-nums" style={{ color: '#ef4444' }}>{cursor.damage.toFixed(0)}</span>
+                  {t('replayTimeline.damageLabel')} <span className="font-bold tabular-nums" style={{ color: '#ef4444' }}>{cursor.damage.toFixed(0)}</span>
                   {cursor.isCrit && <span className="ml-1 px-1 rounded text-caption" style={{ background: '#f59e0b30', color: '#f59e0b' }}>CRIT</span>}
                   {cursor.isMiss && <span className="ml-1 px-1 rounded text-caption" style={{ background: '#6b728030', color: '#6b7280' }}>MISS</span>}
                 </span>
               )}
               {cursor.healAmount !== undefined && (
                 <span className="ml-2">
-                  회복 <span className="font-bold tabular-nums" style={{ color: '#10b981' }}>{cursor.healAmount.toFixed(0)}</span>
+                  {t('replayTimeline.healLabel')} <span className="font-bold tabular-nums" style={{ color: '#10b981' }}>{cursor.healAmount.toFixed(0)}</span>
                 </span>
               )}
               {cursor.remainingHp !== undefined && (
                 <span className="ml-2" style={{ color: 'var(--text-tertiary)' }}>
-                  남은 HP {cursor.remainingHp.toFixed(0)}
+                  {t('replayTimeline.remainingHp', { hp: cursor.remainingHp.toFixed(0) })}
                 </span>
               )}
             </div>
@@ -299,12 +301,12 @@ export default function ReplayTimeline({ units, log, summary }: Props) {
       {summary && (
         <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
           <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-            전투 결과
+            {t('replayTimeline.battleResult')}
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <ResultChip label="승자" value={summary.winnerLabel ?? '—'} color="#3b82f6" />
-            <ResultChip label="지속" value={summary.duration !== undefined ? `${summary.duration.toFixed(1)}s` : '—'} color="#8b5cf6" />
-            <ResultChip label="이벤트" value={log.length.toString()} color="#10b981" />
+            <ResultChip label={t('replayTimeline.winner')} value={summary.winnerLabel ?? '—'} color="#3b82f6" />
+            <ResultChip label={t('replayTimeline.duration')} value={summary.duration !== undefined ? `${summary.duration.toFixed(1)}s` : '—'} color="#8b5cf6" />
+            <ResultChip label={t('replayTimeline.events')} value={log.length.toString()} color="#10b981" />
           </div>
         </div>
       )}
@@ -312,7 +314,7 @@ export default function ReplayTimeline({ units, log, summary }: Props) {
       {/* 이벤트 스트림 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
         <div className="text-label font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-          이벤트 스트림
+          {t('replayTimeline.eventStream')}
         </div>
         <div className="space-y-0.5 max-h-72 overflow-y-auto" style={{ fontSize: 11 }}>
           {log.map((entry, i) => {
@@ -335,7 +337,7 @@ export default function ReplayTimeline({ units, log, summary }: Props) {
                 <meta.Icon className="w-3 h-3 shrink-0" style={{ color: meta.color }} />
                 <span className="truncate">
                   <span className="font-semibold">{displayName(entry.actor, units)}</span>
-                  <span style={{ color: 'var(--text-tertiary)' }}> {meta.label}</span>
+                  <span style={{ color: 'var(--text-tertiary)' }}> {t(meta.labelKey as 'replayTimeline.evAttack')}</span>
                   {entry.target && <span> → {displayName(entry.target, units)}</span>}
                   {entry.damage !== undefined && entry.damage > 0 && <span style={{ color: '#ef4444' }}> ({entry.damage.toFixed(0)})</span>}
                   {entry.isCrit && <span style={{ color: '#f59e0b' }}> CRIT</span>}

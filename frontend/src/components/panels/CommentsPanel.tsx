@@ -20,12 +20,14 @@ import PanelShell from '@/components/ui/PanelShell';
 import Checkbox from '@/components/ui/Checkbox';
 import { TextAreaWithMentions, type MentionCandidate } from '@/components/sheet/MentionAutocomplete';
 import type { CellComment } from '@/lib/cellComments';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   onClose: () => void;
 }
 
 export default function CommentsPanel({ onClose }: Props) {
+  const t = useTranslations();
   const { projects, currentProjectId, currentSheetId } = useProjectStore();
   const project = projects.find((p) => p.id === currentProjectId);
   const sheet = project?.sheets.find((s) => s.id === currentSheetId);
@@ -162,13 +164,13 @@ export default function CommentsPanel({ onClose }: Props) {
 
   return (
     <PanelShell
-      title="코멘트 / 멘션"
+      title={t('commentsPanel.titleHeader')}
       subtitle={
         sheet
           ? focusedRowIndex && rowFilterActive
-            ? `시트: ${sheet.name} · Row ${focusedRowIndex}`
-            : `시트: ${sheet.name}`
-          : '시트 선택'
+            ? t('commentsPanel.sheetRowSubtitle', { sheet: sheet.name, row: focusedRowIndex })
+            : t('commentsPanel.sheetSubtitle', { sheet: sheet.name })
+          : t('commentsPanel.noSheet')
       }
       icon={MessageCircle}
       onClose={onClose}
@@ -192,7 +194,7 @@ export default function CommentsPanel({ onClose }: Props) {
               color: filter === f ? 'white' : 'var(--text-secondary)',
             }}
           >
-            {f === 'all' ? '전체' : f === 'open' ? '미해결' : '내 멘션'}
+            {f === 'all' ? t('commentsPanel.filterAll') : f === 'open' ? t('commentsPanel.filterOpen') : t('commentsPanel.filterMyMention')}
           </button>
         ))}
         {focusedRowId && (
@@ -203,10 +205,10 @@ export default function CommentsPanel({ onClose }: Props) {
               background: rowFilterActive ? 'var(--accent)' : 'var(--bg-tertiary)',
               color: rowFilterActive ? 'white' : 'var(--text-secondary)',
             }}
-            title={rowFilterActive ? '현재 행 코멘트만 표시 중 — 클릭해 전체 보기' : '전체 표시 중 — 클릭해 현재 행만'}
+            title={rowFilterActive ? t('commentsPanel.rowFilterActiveTitle') : t('commentsPanel.rowFilterInactiveTitle')}
           >
             <Focus className="w-3 h-3" />
-            현재 행
+            {t('commentsPanel.currentRowLabel')}
           </button>
         )}
         <label className="ml-auto flex items-center gap-1.5 text-caption cursor-pointer select-none" style={{ color: 'var(--text-secondary)' }}>
@@ -214,7 +216,7 @@ export default function CommentsPanel({ onClose }: Props) {
             checked={showResolved}
             onChange={(e) => setShowResolved(e.target.checked)}
           />
-          해결 표시
+          {t('commentsPanel.showResolvedLabel')}
         </label>
       </div>
 
@@ -223,8 +225,8 @@ export default function CommentsPanel({ onClose }: Props) {
         {filteredGroups.length === 0 ? (
           <p className="text-xs text-center py-8" style={{ color: 'var(--text-secondary)' }}>
             {comments.length === 0
-              ? '아직 코멘트가 없습니다. 셀을 선택하고 아래에서 작성하세요.'
-              : '필터 조건에 맞는 코멘트가 없습니다.'}
+              ? t('commentsPanel.noCommentsYet')
+              : t('commentsPanel.noFilteredComments')}
           </p>
         ) : (
           filteredGroups.map((g) => (
@@ -265,7 +267,7 @@ export default function CommentsPanel({ onClose }: Props) {
       <div className="border-t p-2 space-y-1.5" style={{ borderColor: 'var(--border-primary)' }}>
         {!sheet || sheet.rows.length === 0 ? (
           <p className="text-caption text-center" style={{ color: 'var(--text-secondary)' }}>
-            시트가 없거나 행이 비어있습니다.
+            {t('commentsPanel.noSheetOrRows')}
           </p>
         ) : (
           <>
@@ -296,7 +298,7 @@ export default function CommentsPanel({ onClose }: Props) {
                 value={newText}
                 onChange={setNewText}
                 candidates={mentionCandidates}
-                placeholder="@사용자 멘션 가능 · ⌘Enter 로 전송"
+                placeholder={t('commentsPanel.mentionPlaceholder')}
                 rows={2}
                 onSubmit={submit}
               />
@@ -315,7 +317,7 @@ export default function CommentsPanel({ onClose }: Props) {
             {peers.length > 0 && (
               <div className="flex items-center gap-1 flex-wrap">
                 <AtSign size={10} style={{ color: 'var(--text-secondary)' }} />
-                <span className="text-caption" style={{ color: 'var(--text-secondary)' }}>접속자:</span>
+                <span className="text-caption" style={{ color: 'var(--text-secondary)' }}>{t('commentsPanel.onlineLabel')}</span>
                 {peers.map((p) => (
                   <button
                     key={p.id}
@@ -346,6 +348,7 @@ function CommentThread({
   onDelete: (id: string) => void;
   onReply: (text: string) => void;
 }) {
+  const t = useTranslations();
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState('');
 
@@ -393,7 +396,7 @@ function CommentThread({
               value={replyText}
               onChange={setReplyText}
               candidates={candidates}
-              placeholder={`답글 작성 (${myName})`}
+              placeholder={t('commentsPanel.replyPlaceholder', { name: myName })}
               rows={2}
               onSubmit={sendReply}
             />
@@ -427,6 +430,7 @@ function CommentItem({
   onReplyClick?: () => void;
   onResolveToggle?: () => void;
 }) {
+  const t = useTranslations();
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
   const isMine = comment.author === myName;
@@ -461,22 +465,22 @@ function CommentItem({
         </span>
         {comment.resolved && (
           <span className="text-caption px-1 rounded" style={{ background: 'var(--bg-tertiary)', color: '#10b981' }}>
-            해결됨
+            {t('commentsPanel.resolvedLabel')}
           </span>
         )}
         <div className="ml-auto flex items-center gap-0.5">
           {onResolveToggle && (
-            <button onClick={onResolveToggle} title="해결 토글" className="p-0.5 rounded hover:bg-[var(--bg-tertiary)]">
+            <button onClick={onResolveToggle} title={t('commentsPanel.resolveToggle')} className="p-0.5 rounded hover:bg-[var(--bg-tertiary)]">
               <Check size={11} style={{ color: comment.resolved ? '#10b981' : 'var(--text-secondary)' }} />
             </button>
           )}
           {onReplyClick && (
-            <button onClick={onReplyClick} title="답글" className="p-0.5 rounded hover:bg-[var(--bg-tertiary)]">
+            <button onClick={onReplyClick} title={t('commentsPanel.replyTitle')} className="p-0.5 rounded hover:bg-[var(--bg-tertiary)]">
               <Reply size={11} style={{ color: 'var(--text-secondary)' }} />
             </button>
           )}
           {isMine && (
-            <button onClick={() => onDelete(comment.id)} title="삭제" className="p-0.5 rounded hover:bg-[var(--bg-tertiary)]">
+            <button onClick={() => onDelete(comment.id)} title={t('commentsPanel.deleteTitle')} className="p-0.5 rounded hover:bg-[var(--bg-tertiary)]">
               <Trash2 size={11} style={{ color: 'var(--text-secondary)' }} />
             </button>
           )}
@@ -491,8 +495,8 @@ function CommentItem({
             rows={2}
             onSubmit={save}
           />
-          <button onClick={save} className="px-2 py-1 text-caption rounded" style={{ background: 'var(--accent)', color: 'white' }}>저장</button>
-          <button onClick={() => { setEditing(false); setEditText(comment.text); }} className="px-2 py-1 text-caption rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>취소</button>
+          <button onClick={save} className="px-2 py-1 text-caption rounded" style={{ background: 'var(--accent)', color: 'white' }}>{t('commentsPanel.saveBtn')}</button>
+          <button onClick={() => { setEditing(false); setEditText(comment.text); }} className="px-2 py-1 text-caption rounded" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>{t('ui.cancel')}</button>
         </div>
       ) : (
         <p

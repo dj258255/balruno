@@ -116,6 +116,7 @@ interface NumberInputWithCellProps {
 }
 
 function NumberInputWithCell({ label, value, onChange, placeholder }: NumberInputWithCellProps) {
+  const t = useTranslations('simulation');
   const [isHovered, setIsHovered] = useState(false);
   const [inputValue, setInputValue] = useState(String(value));
   const { startCellSelection, cellSelectionMode } = useProjectStore();
@@ -174,7 +175,7 @@ function NumberInputWithCell({ label, value, onChange, placeholder }: NumberInpu
           <button
             onClick={handleCellSelect}
             className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded transition-colors hover:bg-[var(--bg-tertiary)]"
-            title="셀에서 값 가져오기"
+            title={t('cellGetValue')}
           >
             <Grid3X3 className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
           </button>

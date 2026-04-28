@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Grid3X3 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Tooltip } from '@/components/ui/Tooltip';
 
 interface StatInputProps {
@@ -21,6 +22,7 @@ export function StatInput({
   onCellSelect,
   color = 'var(--text-secondary)'
 }: StatInputProps) {
+  const t = useTranslations('simulation');
   const [isHovered, setIsHovered] = useState(false);
   const [inputValue, setInputValue] = useState(String(value));
 
@@ -61,7 +63,7 @@ export function StatInput({
           className="w-full input-base pr-7"
         />
         {isHovered && (
-          <Tooltip content="셀에서 선택" position="top">
+          <Tooltip content={t('cellSelect')} position="top">
             <button
               onClick={onCellSelect}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded transition-colors hover:bg-[var(--bg-tertiary)]"

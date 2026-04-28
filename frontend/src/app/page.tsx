@@ -204,7 +204,7 @@ export default function Home() {
       if (count > 0) {
         import('@/components/ui/Toast').then(({ toast }) => {
           // 토스트는 클릭 액션이 없으므로 warning 으로 알림 + 사용자가 명령 팔레트 / 이벤트로 열기
-          toast.warning(`중복 프로젝트 ${count}개 감지됨. ⌘K 에서 "중복 정리" 검색`, 8000);
+          toast.warning(t('app.duplicateDetected', { count }), 8000);
         });
         sessionStorage.setItem('balruno:dedupe-dismissed', '1');
       }
@@ -328,7 +328,7 @@ export default function Home() {
         ...state.projects,
         {
           id: remoteProjectId,
-          name: '공유 프로젝트 (동기화 중…)',
+          name: t('app.syncProjectName'),
           description: '',
           createdAt: now,
           updatedAt: now,
@@ -557,9 +557,9 @@ export default function Home() {
                   onClick={() => setShowShare(true)}
                   className="px-3 py-1 text-xs rounded-lg font-medium transition-colors hover:opacity-90"
                   style={{ background: 'var(--accent)', color: 'white' }}
-                  title="협업 공유"
+                  title={t('app.shareTitle')}
                 >
-                  공유
+                  {t('app.shareLabel')}
                 </button>
                 <ProjectMenu
                   onShowExport={() => setShowExportModal(true)}

@@ -373,8 +373,8 @@ export default function Sidebar({
           style={{ touchAction: 'none' }}
           role="separator"
           aria-orientation="horizontal"
-          aria-label="프로젝트/문서 영역 크기 조절"
-          title="드래그로 문서 섹션 높이 조절 · 우클릭으로 기본 크기 리셋"
+          aria-label={t('sidebar.resizeAriaLabel')}
+          title={t('sidebar.resizeTitle')}
         >
           <div className="absolute inset-x-0 -top-1 -bottom-1" />
           <div className="absolute inset-0 transition-colors group-hover:bg-[var(--accent)]" />
@@ -551,7 +551,7 @@ export default function Sidebar({
             style={{ color: 'var(--text-primary)' }}
           >
             <FolderPlus className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-            새 프로젝트
+            {t('sidebar.newProject')}
           </button>
           <button
             type="button"
@@ -563,7 +563,7 @@ export default function Sidebar({
             style={{ color: 'var(--text-primary)' }}
           >
             <LayoutTemplate className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-            템플릿 갤러리에서 시작
+            {t('sidebar.startFromTemplate')}
           </button>
         </div>
       )}
