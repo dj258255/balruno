@@ -185,7 +185,9 @@
     "qaClearRecent": "최근 편집 지우기",
     "qaCollapse": "섹션 접기",
     "qaExpand": "섹션 펼치기",
-    "qaGoHome": "Home 으로 이동"
+    "qaGoHome": "Home 으로 이동",
+    "feedback": "피드백",
+    "feedbackTooltip": "Balruno에 오류·버그·새로운 기능 제안 있으면 알려주세요"
   },
   "sheet": {
     "newSheet": "새 시트",

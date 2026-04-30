@@ -185,7 +185,9 @@
     "qaClearRecent": "Clear recent edits",
     "qaCollapse": "Collapse section",
     "qaExpand": "Expand section",
-    "qaGoHome": "Go Home"
+    "qaGoHome": "Go Home",
+    "feedback": "Feedback",
+    "feedbackTooltip": "Report bugs or suggest new features for Balruno"
   },
   "sheet": {
     "newSheet": "New Sheet",
