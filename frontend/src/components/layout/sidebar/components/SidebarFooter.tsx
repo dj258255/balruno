@@ -120,7 +120,7 @@ export function HelpButtons({ onShowHelp, onShowReferences }: HelpButtonsProps) 
   const t = useTranslations();
 
   return (
-    <div className="border-t p-2 space-y-1.5" style={{ borderColor: 'var(--border-primary)' }}>
+    <div className="border-t p-2" style={{ borderColor: 'var(--border-primary)' }}>
       <div className="flex items-center gap-2">
         <button
           onClick={onShowHelp}
@@ -149,22 +149,6 @@ export function HelpButtons({ onShowHelp, onShowReferences }: HelpButtonsProps) 
           {t('sidebar.references')}
         </button>
       </div>
-      <a
-        href={FEEDBACK_FORM_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors hover:bg-[var(--bg-hover)]"
-        style={{
-          background: 'var(--bg-primary)',
-          color: 'var(--accent)',
-          borderColor: 'var(--border-primary)',
-        }}
-        title={t('sidebar.feedbackTooltip')}
-        aria-label={t('sidebar.feedback')}
-      >
-        <MessageSquare className="w-4 h-4" aria-hidden="true" />
-        {t('sidebar.feedback')}
-      </a>
     </div>
   );
 }
@@ -191,21 +175,38 @@ export function SaveStatus({ lastSaved, onShowSettings }: SaveStatusProps) {
       ) : (
         <div />
       )}
-      {onShowSettings && (
-        <button
-          onClick={onShowSettings}
+      <div className="flex items-center gap-1.5">
+        <a
+          href={FEEDBACK_FORM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
           className="flex items-center gap-1 px-2 py-1 rounded border transition-colors hover:bg-[var(--bg-hover)]"
           style={{
-            color: 'var(--text-secondary)',
+            color: 'var(--accent)',
             borderColor: 'var(--border-primary)'
           }}
-          title={t('sidebar.settings')}
-          aria-label={t('sidebar.settings')}
+          title={t('sidebar.feedbackTooltip')}
+          aria-label={t('sidebar.feedback')}
         >
-          <Globe className="w-3.5 h-3.5" aria-hidden="true" />
-          <span className="text-xs font-medium">{locale === 'ko' ? '한국어' : 'EN'}</span>
-        </button>
-      )}
+          <MessageSquare className="w-3.5 h-3.5" aria-hidden="true" />
+          <span className="text-xs font-medium">{t('sidebar.feedback')}</span>
+        </a>
+        {onShowSettings && (
+          <button
+            onClick={onShowSettings}
+            className="flex items-center gap-1 px-2 py-1 rounded border transition-colors hover:bg-[var(--bg-hover)]"
+            style={{
+              color: 'var(--text-secondary)',
+              borderColor: 'var(--border-primary)'
+            }}
+            title={t('sidebar.settings')}
+            aria-label={t('sidebar.settings')}
+          >
+            <Globe className="w-3.5 h-3.5" aria-hidden="true" />
+            <span className="text-xs font-medium">{locale === 'ko' ? '한국어' : 'EN'}</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
