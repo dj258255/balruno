@@ -168,7 +168,7 @@ export function FolderItem({
         }}
         onDragEnd={onFolderDragEnd}
         className={cn(
-          "flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer group transition-colors",
+          "flex items-center gap-2 h-8 px-2.5 rounded-md cursor-pointer group transition-colors duration-[140ms] text-[13px]",
           (isDragOver || isFolderDragOver) && "ring-2 ring-blue-400 bg-blue-50 dark:bg-blue-900/20",
           draggedFolderId === folder.id && "opacity-50"
         )}
@@ -330,14 +330,23 @@ export function FolderItem({
               }}
               tabIndex={0}
               className={cn(
-                "flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors group focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]"
+                "relative flex items-center gap-2 h-8 pl-2.5 pr-2 rounded-md cursor-pointer text-[13px] transition-colors duration-[140ms] group focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]",
+                currentSheetId !== sheet.id && "hover:bg-[var(--bg-hover)]"
               )}
               style={{
                 marginLeft: `${(depth + 1) * 12}px`,
-                background: currentSheetId === sheet.id ? 'var(--accent)' : 'transparent',
-                color: currentSheetId === sheet.id ? 'white' : 'var(--text-primary)',
+                background: currentSheetId === sheet.id ? 'var(--accent-light)' : 'transparent',
+                color: currentSheetId === sheet.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: currentSheetId === sheet.id ? 550 : 450,
               }}
             >
+              {currentSheetId === sheet.id && (
+                <span
+                  aria-hidden
+                  className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-r"
+                  style={{ background: 'var(--accent)' }}
+                />
+              )}
               <span
                 className="flex-shrink-0"
                 onClick={(e) => e.stopPropagation()}
@@ -347,7 +356,7 @@ export function FolderItem({
                   icon={sheet.icon}
                   onChange={(emoji) => updateSheet(projectId, sheet.id, { icon: emoji })}
                   fallbackIcon={FileSpreadsheet}
-                  fallbackColor={currentSheetId === sheet.id ? 'white' : 'var(--accent)'}
+                  fallbackColor={currentSheetId === sheet.id ? 'var(--accent)' : 'var(--text-secondary)'}
                   size="sm"
                 />
               </span>

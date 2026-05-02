@@ -362,11 +362,11 @@ export function ProjectList({
                 setDragOverProjectId(null);
               }}
             >
-              {/* 프로젝트 헤더 — Notion/Linear 패턴: 박스 제거, flat row + hover 강조 */}
+              {/* 프로젝트(=Game) 헤더 — Linear/Geist 식: container hint, 박스 X */}
               <div
                 tabIndex={0}
                 className={cn(
-                  'flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer group transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]',
+                  'flex items-center gap-2 h-8 px-2.5 rounded-md cursor-pointer group transition-colors duration-[140ms] focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]',
                   dragOverProjectIndex === projectIndex && 'ring-2 ring-blue-400',
                   dragOverProjectId === project.id && 'ring-2 ring-green-400 bg-green-50 dark:bg-green-900/20',
                   currentProjectId !== project.id && 'hover:bg-[var(--bg-hover)]'
@@ -375,7 +375,9 @@ export function ProjectList({
                   background: dragOverProjectId === project.id
                     ? undefined
                     : currentProjectId === project.id ? 'var(--accent-light)' : 'transparent',
-                  color: currentProjectId === project.id ? 'var(--accent)' : 'var(--text-primary)',
+                  color: currentProjectId === project.id ? 'var(--text-primary)' : 'var(--text-primary)',
+                  fontSize: '13px',
+                  fontWeight: 550,
                   opacity: draggedProjectIndex === projectIndex ? 0.5 : 1,
                 }}
                 onContextMenu={(e) => {
@@ -444,9 +446,12 @@ export function ProjectList({
                 )}
               </div>
 
-              {/* 태그 필터 chip 영역 — 이 프로젝트가 expand 되어 있고 tag 가 하나라도 있을 때만 */}
+              {/* 태그 필터 chip 영역 — tray 형태로 묶어서 폴더와 시각 분리 (Linear/Height 패턴) */}
               {expandedProjects.has(project.id) && projectTags.length > 0 && (
-                <div className="ml-7 mt-0.5 mb-0.5 flex flex-wrap items-center gap-1">
+                <div
+                  className="mx-2.5 mt-1 mb-1 flex flex-wrap items-center gap-1 px-2 py-1.5 rounded-md"
+                  style={{ background: 'var(--bg-secondary)' }}
+                >
                   <TagsIcon className="w-3 h-3 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
                   {projectTags.map((tag) => {
                     const active = activeTags.includes(tag);
@@ -454,11 +459,11 @@ export function ProjectList({
                       <button
                         key={tag}
                         onClick={() => toggleTagFilter(project.id, tag)}
-                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors"
+                        className="inline-flex items-center h-[18px] px-1.5 rounded text-[11px] font-medium transition-colors"
                         style={
                           active
-                            ? { background: 'var(--accent)', color: 'white', border: '1px solid var(--accent)' }
-                            : { background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border-secondary)' }
+                            ? { background: 'var(--accent-light)', color: 'var(--accent)' }
+                            : { background: 'transparent', color: 'var(--text-tertiary)' }
                         }
                         title={active ? t('sidebar.tagFilterActive', { tag }) : t('sidebar.tagFilterClick', { tag })}
                       >
@@ -469,7 +474,7 @@ export function ProjectList({
                   {activeTags.length > 0 && (
                     <button
                       onClick={() => clearTagFilter(project.id)}
-                      className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] hover:opacity-80"
+                      className="ml-auto inline-flex items-center gap-0.5 h-[18px] px-1 rounded text-[11px] hover:opacity-80"
                       style={{ color: 'var(--text-tertiary)' }}
                       title={t('sidebar.tagFilterClear')}
                     >
@@ -589,16 +594,26 @@ export function ProjectList({
                       }}
                       tabIndex={0}
                       className={cn(
-                        "flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors group focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]",
-                        dragOverIndex === index && dragProjectId === project.id && "ring-2 ring-blue-400"
+                        "relative flex items-center gap-2 h-8 pl-2.5 pr-2 rounded-md cursor-pointer text-[13px] transition-colors duration-[140ms] group focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]",
+                        dragOverIndex === index && dragProjectId === project.id && "ring-2 ring-blue-400",
+                        currentSheetId !== sheet.id && "hover:bg-[var(--bg-hover)]"
                       )}
                       style={{
-                        background: currentSheetId === sheet.id ? 'var(--accent)' :
+                        background: currentSheetId === sheet.id ? 'var(--accent-light)' :
                                    (draggedSheetIndex === index && dragProjectId === project.id) ? 'var(--bg-tertiary)' : 'transparent',
-                        color: currentSheetId === sheet.id ? 'white' : 'var(--text-primary)',
+                        color: currentSheetId === sheet.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        fontWeight: currentSheetId === sheet.id ? 550 : 450,
                         opacity: draggedSheetIndex === index && dragProjectId === project.id ? 0.5 : 1,
                       }}
                     >
+                      {/* Selected 시 2px left accent bar (Linear/Geist 패턴) */}
+                      {currentSheetId === sheet.id && (
+                        <span
+                          aria-hidden
+                          className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-r"
+                          style={{ background: 'var(--accent)' }}
+                        />
+                      )}
                       <span
                         className="flex-shrink-0"
                         onClick={(e) => e.stopPropagation()}
@@ -608,7 +623,7 @@ export function ProjectList({
                           icon={sheet.icon}
                           onChange={(emoji) => updateSheet(project.id, sheet.id, { icon: emoji })}
                           fallbackIcon={FileSpreadsheet}
-                          fallbackColor={currentSheetId === sheet.id ? 'white' : 'var(--accent)'}
+                          fallbackColor={currentSheetId === sheet.id ? 'var(--accent)' : 'var(--text-secondary)'}
                           size="sm"
                         />
                       </span>
@@ -679,7 +694,7 @@ export function ProjectList({
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="px-2 pt-1 pb-1.5 text-overline"
+      className="px-2.5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.06em]"
       style={{ color: 'var(--text-tertiary)' }}
     >
       {children}
