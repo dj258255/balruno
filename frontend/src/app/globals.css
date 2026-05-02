@@ -453,7 +453,7 @@
   /* 접근성: WCAG AA 기준 4.5:1 대비율 충족 */
   --text-primary: #e8ecf2;
   --text-secondary: #a8b4c4;
-  --text-tertiary: #8d9aad; /* 기존 #7d8a9d에서 대비 개선 */
+  --text-tertiary: #98a5b8; /* AA body 안전 마진 (기존 #8d9aad에서 lightness +3) */
   --text-sidebar: #e8ecf2;
   --text-sidebar-muted: rgba(232, 236, 242, 0.72);
 
@@ -461,33 +461,33 @@
   --border-primary: #2e3440;
   --border-secondary: #3d4451;
 
-  /* 메인 액센트 - 채도 20% 낮춘 소프트 블루 */
-  --accent: #6ba8f5;
-  --accent-hover: #5a9cf5;
-  --accent-light: rgba(107, 168, 245, 0.18);
-  --accent-text: #7bb4f7;
+  /* 메인 액센트 - 채도 더 낮춘 소프트 블루 (vibration 방지) */
+  --accent: #7fb0ee;
+  --accent-hover: #6ba8f5;
+  --accent-light: rgba(127, 176, 238, 0.18);
+  --accent-text: #8cb8ec;
 
-  /* 보조 컬러 - 다크 모드용 (채도 낮춤, 광학 진동 방지) */
+  /* 보조 컬러 - 다크 모드용 (블루/퍼플 채도 추가 감소, 텍스트용 teal 명도↑) */
   --primary-green: #5cc9a0;
   --primary-green-light: rgba(92, 201, 160, 0.18);
-  --primary-blue: #7bb4f7;
-  --primary-blue-light: rgba(123, 180, 247, 0.18);
-  --primary-purple: #a896f5;
-  --primary-purple-light: rgba(168, 150, 245, 0.18);
+  --primary-blue: #8cb8ec;
+  --primary-blue-light: rgba(140, 184, 236, 0.18);
+  --primary-purple: #ada0ec;
+  --primary-purple-light: rgba(173, 160, 236, 0.18);
   --primary-red: #f08080;
   --primary-red-light: rgba(240, 128, 128, 0.18);
   --primary-yellow: #f0c060;
   --primary-yellow-light: rgba(240, 192, 96, 0.18);
-  --primary-teal: #4db6ac;
-  --primary-teal-light: rgba(77, 182, 172, 0.18);
+  --primary-teal: #62c4ba;
+  --primary-teal-light: rgba(98, 196, 186, 0.18);
 
   /* 셀 에디터 및 수식 바 - 다크모드 소프트 톤 */
   --editor-bg: #1e2430;
   --editor-bg-formula: #252338;
-  --editor-border-focus: #7bb4f7;
-  --editor-border-formula: #a896f5;
-  --editor-shadow-focus: rgba(123, 180, 247, 0.2);
-  --editor-shadow-formula: rgba(168, 150, 245, 0.2);
+  --editor-border-focus: #8cb8ec;
+  --editor-border-formula: #ada0ec;
+  --editor-shadow-focus: rgba(140, 184, 236, 0.2);
+  --editor-shadow-formula: rgba(173, 160, 236, 0.2);
 
   --success: #5cc9a0;
   --success-light: rgba(92, 201, 160, 0.18);
@@ -502,9 +502,9 @@
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
 
   /* 행/열 하이라이트 */
-  --row-col-highlight: rgba(123, 180, 247, 0.3);
-  --row-col-highlight-text: #a8c8f7;
-  --row-col-highlight-border: #7bb4f7;
+  --row-col-highlight: rgba(140, 184, 236, 0.3);
+  --row-col-highlight-text: #b0c8e8;
+  --row-col-highlight-border: #8cb8ec;
 }
 
 * {
