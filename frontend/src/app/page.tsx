@@ -140,7 +140,6 @@ export default function Home() {
   // UI State
   const [isLoading, setIsLoading] = useState(true);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
-  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showAISetup, setShowAISetup] = useState(false);
   const [showAICopilot, setShowAICopilot] = useState(false);
@@ -360,19 +359,6 @@ export default function Home() {
     },
     onToggleTheme: toggleTheme,
   });
-
-  // History panel outside click
-  useEffect(() => {
-    if (!showHistoryPanel) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('[data-history-panel]')) {
-        setShowHistoryPanel(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showHistoryPanel]);
 
   // Start tour for sample projects when first opened.
   // 온보딩 중복 방지: OnboardingGuide 열려있으면 tour 자동 실행 X (사용자가 닫은 후에만).
