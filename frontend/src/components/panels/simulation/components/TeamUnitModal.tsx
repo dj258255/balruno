@@ -261,7 +261,7 @@ export function TeamUnitModal({
           {/* 시트에서 불러오기 */}
           {units.length > 0 && (
             <div>
-              <label className="block text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{t('loadFromSheet')}</label>
+              <label className="block text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{t('simulation.loadFromSheet')}</label>
               <CustomSelect
                 value=""
                 onChange={(v) => {
@@ -274,7 +274,7 @@ export function TeamUnitModal({
                     });
                   }
                 }}
-                placeholder={t('select')}
+                placeholder={t('simulation.select')}
                 options={units.map(u => ({
                   value: u.id,
                   label: `${u.name} (HP:${u.maxHp} ATK:${u.atk})`
@@ -408,7 +408,7 @@ export function TeamUnitModal({
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
             >
               <span className="flex items-center gap-2">
-                {t('skills')}
+                {t('simulation.skills')}
                 {editUnit.skills && editUnit.skills.length > 0 && (
                   <span
                     className="px-1.5 py-0.5 rounded text-sm"

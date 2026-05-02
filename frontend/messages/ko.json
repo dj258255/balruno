@@ -796,7 +796,13 @@
     "goalRunBtn": "계산",
     "goalRequiredLabel": "필요 {label}:",
     "goalApply": "적용 →",
-    "goalConvergenceFail": "수렴 실패 — 목표값이 해당 변수 범위 밖입니다"
+    "goalConvergenceFail": "수렴 실패 — 목표값이 해당 변수 범위 밖입니다",
+    "sheet": {
+      "rows": "행"
+    },
+    "comparison": {
+      "rowNum": "{num}행"
+    }
   },
   "comparison": {
     "title": "비교 분석",
@@ -3608,7 +3614,31 @@
     "tagFilter": "태그 필터",
     "clearFilter": "필터 해제",
     "generateError": "레벨 테이블 생성 실패:",
-    "generateAllError": "전체 레벨 테이블 생성 실패:"
+    "generateAllError": "전체 레벨 테이블 생성 실패:",
+    "titleHeader": "엔티티 정의",
+    "subtitleHeader": "캐릭터/몬스터 레벨 테이블 자동 생성 (베이스 스탯 + 성장 곡선)",
+    "hintTitle": "엔티티 정의란?",
+    "hintP1": "베이스 스탯과 성장 곡선만 정의하면 레벨별 스탯 테이블이 자동 생성됩니다.",
+    "hintP2": "수정은 곡선을 바꾸기만 하면 전 레벨이 동시에 업데이트됩니다.",
+    "noProjectTitle": "선택된 프로젝트가 없습니다",
+    "noProjectDesc": "왼쪽 사이드바에서 프로젝트를 먼저 선택하세요.",
+    "noSheetInProject": "이 프로젝트에 시트가 없습니다.",
+    "sheetLabel": "원본 시트",
+    "sectionEntity": "1. 엔티티",
+    "sectionGrowth": "2. 성장 곡선",
+    "sectionOverride": "3. 레벨별 오버라이드",
+    "sectionGenerate": "4. 생성",
+    "stepSourceTitle": "원본 선택",
+    "stepSourceDesc": "캐릭터/몬스터가 정의된 시트를 선택합니다.",
+    "stepEntityDesc": "이름/레벨 컬럼을 선택해 엔티티 단위로 인식시킵니다.",
+    "stepMappingTitle": "컬럼 매핑",
+    "stepMappingDesc": "이름/레벨/스탯 컬럼을 지정합니다.",
+    "stepStatsTitle": "성장 정의",
+    "stepStatsDesc": "스탯별 베이스값과 성장 곡선을 설정합니다.",
+    "stepFineTuneDesc": "특정 레벨의 값을 수동으로 조정합니다.",
+    "stepPreviewDesc": "생성될 레벨 테이블을 미리 봅니다.",
+    "stepExportDesc": "새 시트 또는 현재 시트에 적용합니다.",
+    "stepDone": "완료"
   },
   "tour": {
     "step": "단계",
@@ -5074,7 +5104,9 @@
     "decisionDesc": "포커스 fire · 스킬 선택",
     "aim": "에임",
     "reaction": "반응",
-    "decision": "판단"
+    "decision": "판단",
+    "colCritRate": "치명타율",
+    "colCritDmg": "치명타 피해"
   },
   "todayHero": {
     "pmStartTitle": "팀 PM 템플릿으로 시작하세요",

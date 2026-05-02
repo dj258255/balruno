@@ -796,7 +796,13 @@
     "goalRunBtn": "Compute",
     "goalRequiredLabel": "Required {label}:",
     "goalApply": "Apply →",
-    "goalConvergenceFail": "Convergence failed — target is outside the variable's range"
+    "goalConvergenceFail": "Convergence failed — target is outside the variable's range",
+    "sheet": {
+      "rows": "rows"
+    },
+    "comparison": {
+      "rowNum": "row {num}"
+    }
   },
   "comparison": {
     "title": "Comparison Analysis",
@@ -3608,7 +3614,31 @@
     "tagFilter": "Tag filter",
     "clearFilter": "Clear filter",
     "generateError": "Level table generation failed:",
-    "generateAllError": "Bulk level-table generation failed:"
+    "generateAllError": "Bulk level-table generation failed:",
+    "titleHeader": "Entity Definition",
+    "subtitleHeader": "Auto-generate per-level stat tables for characters/monsters (base + growth curve)",
+    "hintTitle": "What is entity definition?",
+    "hintP1": "Define base stats + a growth curve, and per-level stat tables are generated automatically.",
+    "hintP2": "Edits propagate — change the curve, every level updates at once.",
+    "noProjectTitle": "No project selected",
+    "noProjectDesc": "Pick a project in the sidebar first.",
+    "noSheetInProject": "This project has no sheets.",
+    "sheetLabel": "Source sheet",
+    "sectionEntity": "1. Entity",
+    "sectionGrowth": "2. Growth curve",
+    "sectionOverride": "3. Per-level overrides",
+    "sectionGenerate": "4. Generate",
+    "stepSourceTitle": "Source",
+    "stepSourceDesc": "Pick the sheet that defines characters/monsters.",
+    "stepEntityDesc": "Pick the name/level columns so each row becomes a distinct entity.",
+    "stepMappingTitle": "Column mapping",
+    "stepMappingDesc": "Map name/level/stat columns.",
+    "stepStatsTitle": "Growth definition",
+    "stepStatsDesc": "Set base values and growth curves per stat.",
+    "stepFineTuneDesc": "Manually tune values at specific levels.",
+    "stepPreviewDesc": "Preview the generated level table.",
+    "stepExportDesc": "Apply to a new or current sheet.",
+    "stepDone": "Done"
   },
   "tour": {
     "step": "Step",
@@ -5074,7 +5104,9 @@
     "decisionDesc": "Focus fire · skill selection",
     "aim": "Aim",
     "reaction": "Reaction",
-    "decision": "Decision"
+    "decision": "Decision",
+    "colCritRate": "Crit",
+    "colCritDmg": "Crit dmg"
   },
   "todayHero": {
     "pmStartTitle": "Start with a Team PM template",
