@@ -4682,7 +4682,8 @@
     "allDomains": "All domains",
     "btnClicked": "{label} clicked (no automation linked)",
     "noLinkedAutomation": "Linked automation not found",
-    "btnDefault": "Button"
+    "btnDefault": "Button",
+    "wLiveopsKpi": "LiveOps KPI"
   },
   "automations": {
     "tManual": "Manual run",

@@ -62,7 +62,7 @@ const WIDGET_LABELS: Record<WidgetType, string> = {
   'retention-curve': 'interfaceDesigner.wRetentionCurve',
   funnel: 'interfaceDesigner.wFunnel',
   'whale-curve': 'interfaceDesigner.wWhaleCurve',
-  'liveops-kpi': 'LiveOps KPI',
+  'liveops-kpi': 'interfaceDesigner.wLiveopsKpi',
   'sim-metric': 'interfaceDesigner.wSimMetric',
   'sim-trend': 'interfaceDesigner.wSimTrend',
 };

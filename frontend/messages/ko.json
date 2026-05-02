@@ -4682,7 +4682,8 @@
     "allDomains": "모든 도메인",
     "btnClicked": "{label} 클릭됨 (자동화 미연결)",
     "noLinkedAutomation": "연결된 자동화를 찾을 수 없음",
-    "btnDefault": "버튼"
+    "btnDefault": "버튼",
+    "wLiveopsKpi": "LiveOps KPI"
   },
   "automations": {
     "tManual": "수동 실행",
