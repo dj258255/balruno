@@ -55,7 +55,7 @@ import { CellEditor } from './CellEditor';
 import SheetKindEmptyState from './SheetKindEmptyState';
 import { isUnitMappable, rowToUnitStats, rowsToUnitStats } from '@/lib/simulation/rowToUnits';
 import { useSimulationPreload } from '@/stores/simulationPreloadStore';
-import { InlineCheckbox, InlineRating, InlineTaskLink, InlineLink } from './InlineCellControls';
+import { InlineCheckbox, InlineRating, InlineTaskLink, InlineLink, InlineSelectChip, InlineMultiSelectChips } from './InlineCellControls';
 import InlineStatSnapshot from './InlineStatSnapshot';
 import FormulaBar from './FormulaBar';
 import FormulaAutocomplete, { type FormulaAutocompleteRef } from './FormulaAutocomplete';
@@ -1599,6 +1599,22 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                                       column={column}
                                       sourceSheet={sourceSheet}
                                       onCapture={(json) => updateCell(projectId, sheet.id, rowData.id, columnId, json)}
+                                    />
+                                  );
+                                }
+                                if (column.type === 'select' && column.selectOptions) {
+                                  return (
+                                    <InlineSelectChip
+                                      value={rawValue}
+                                      options={column.selectOptions}
+                                    />
+                                  );
+                                }
+                                if (column.type === 'multiSelect' && column.selectOptions) {
+                                  return (
+                                    <InlineMultiSelectChips
+                                      value={rawValue}
+                                      options={column.selectOptions}
                                     />
                                   );
                                 }
