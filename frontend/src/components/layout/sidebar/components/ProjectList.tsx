@@ -13,6 +13,7 @@ import type { Project, Folder as FolderType } from '@/types';
 import { FolderItem } from './FolderItem';
 import { EmptyProjectsCTA } from './EmptyProjectsCTA';
 import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
+import { SheetTagChips } from '@/components/sheet/SheetTagChips';
 import DocIconPicker from '@/components/docs/DocIconPicker';
 
 interface ProjectListProps {
@@ -583,6 +584,7 @@ export function ProjectList({
                               <span style={{ color: 'var(--text-tertiary)' }}> | {sheet.exportClassName}</span>
                             )}
                           </span>
+                          <SheetTagChips sheet={sheet} onAccent={currentSheetId === sheet.id} />
                           <SheetKindBadge sheet={sheet} showDefault onAccent={currentSheetId === sheet.id} />
                         </>
                       )}

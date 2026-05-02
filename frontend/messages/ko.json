@@ -350,7 +350,11 @@
     "historyChangeRating": "별점 변경",
     "historyEditCell": "셀 편집",
     "validationInvalid": "잘못된 값입니다",
-    "toastColumnsAdded": "{count}개 컬럼 자동 추가됨"
+    "toastColumnsAdded": "{count}개 컬럼 자동 추가됨",
+    "editTags": "태그 편집",
+    "tagsPlaceholder": "태그 입력 후 Enter (예: stage:wip, owner:김디)",
+    "tagsHint": "Enter / 쉼표 / Tab 으로 추가. 다중 태그 가능.",
+    "tagsSuggestions": "이 게임의 다른 시트 태그"
   },
   "project": {
     "noProject": "프로젝트가 없습니다",
@@ -495,7 +499,8 @@
     "deleting": "삭제 중...",
     "processing": "처리 중...",
     "areYouSure": "정말 진행하시겠습니까?",
-    "confirmDelete": "정말 삭제하시겠습니까?"
+    "confirmDelete": "정말 삭제하시겠습니까?",
+    "remove": "제거"
   },
   "contextMenu": {
     "openRecordDetail": "레코드 상세 보기",

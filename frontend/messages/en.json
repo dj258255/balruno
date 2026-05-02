@@ -350,7 +350,11 @@
     "historyChangeRating": "Change rating",
     "historyEditCell": "Edit cell",
     "validationInvalid": "Invalid value",
-    "toastColumnsAdded": "{count} column(s) auto-added"
+    "toastColumnsAdded": "{count} column(s) auto-added",
+    "editTags": "Edit tags",
+    "tagsPlaceholder": "Type and press Enter (e.g. stage:wip, owner:lee)",
+    "tagsHint": "Press Enter / comma / Tab to add. Multiple tags allowed.",
+    "tagsSuggestions": "Tags used elsewhere in this game"
   },
   "project": {
     "noProject": "No projects",
@@ -495,7 +499,8 @@
     "deleting": "Deleting...",
     "processing": "Processing...",
     "areYouSure": "Are you sure?",
-    "confirmDelete": "Are you sure you want to delete?"
+    "confirmDelete": "Are you sure you want to delete?",
+    "remove": "Remove"
   },
   "contextMenu": {
     "openRecordDetail": "Open record detail",

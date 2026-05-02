@@ -9,6 +9,7 @@ import { useSheetUIStore } from '@/stores/sheetUIStore';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 import type { ProjectVisibility } from '@/types';
 import { getIncompatibleColumnTypes } from '@/lib/columnTypeMeta';
+import SheetTagsModal from '@/components/modals/SheetTagsModal';
 
 // 분리된 훅과 컴포넌트들
 import { useSidebarState } from './sidebar/hooks';
@@ -99,6 +100,9 @@ export default function Sidebar({
 
   // 시트 용도 변경 차단 다이얼로그 — 호환되지 않는 컬럼이 있으면 변경을 막고 안내
   const [kindChangeBlocked, setKindChangeBlocked] = useState<KindChangeBlockedState | null>(null);
+
+  // 시트 태그 편집 모달
+  const [tagsModal, setTagsModal] = useState<{ projectId: string; sheetId: string } | null>(null);
 
   // 팀스페이스 스크롤 컨테이너 빈 영역 우클릭 메뉴
   const [emptyAreaMenu, setEmptyAreaMenu] = useState<{ x: number; y: number } | null>(null);
@@ -432,6 +436,9 @@ export default function Sidebar({
           setEditingClassNameSheetId(sheetId);
           setEditClassName(className || '');
         }}
+        onEditTags={(projectId, sheetId) => {
+          setTagsModal({ projectId, sheetId });
+        }}
         onSetKind={(projectId, sheetId, kind) => {
           // 'auto' (kind=undefined) 는 자동 감지로 되돌리는 것이라 항상 허용.
           // 명시 kind 로 변경 시에는 incompatible 컬럼 사전 검사로 데이터 손실 방지.
@@ -565,6 +572,14 @@ export default function Sidebar({
         state={kindChangeBlocked}
         onClose={() => setKindChangeBlocked(null)}
       />
+
+      {tagsModal && (
+        <SheetTagsModal
+          projectId={tagsModal.projectId}
+          sheetId={tagsModal.sheetId}
+          onClose={() => setTagsModal(null)}
+        />
+      )}
 
       {emptyAreaMenu && (
         <div

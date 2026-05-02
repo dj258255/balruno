@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { Folder as FolderType, Sheet } from '@/types';
 import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
+import { SheetTagChips } from '@/components/sheet/SheetTagChips';
 import DocIconPicker from '@/components/docs/DocIconPicker';
 
 interface FolderItemProps {
@@ -380,6 +381,7 @@ export function FolderItem({
                       <span style={{ color: 'var(--text-tertiary)' }}> | {sheet.exportClassName}</span>
                     )}
                   </span>
+                  <SheetTagChips sheet={sheet} onAccent={currentSheetId === sheet.id} />
                   <SheetKindBadge sheet={sheet} showDefault onAccent={currentSheetId === sheet.id} />
                 </>
               )}

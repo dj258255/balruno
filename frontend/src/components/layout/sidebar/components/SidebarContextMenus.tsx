@@ -5,7 +5,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Edit2, Trash2, Copy, Plus, Code, FolderPlus, Folder, Tag, Check, ChevronRight, Pin, PinOff, Users, Lock, AlertTriangle, X as XIcon } from 'lucide-react';
+import { Edit2, Trash2, Copy, Plus, Code, FolderPlus, Folder, Tag, Tags, Check, ChevronRight, Pin, PinOff, Users, Lock, AlertTriangle, X as XIcon } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui';
 import { useTranslations } from 'next-intl';
 import type { ColumnType, SheetKind, ProjectVisibility } from '@/types';
@@ -31,6 +31,7 @@ interface SheetContextMenuProps {
   onTogglePin?: (sheetId: string) => void;
   onRename: (sheetId: string, sheetName: string) => void;
   onEditClassName: (sheetId: string, className?: string) => void;
+  onEditTags?: (projectId: string, sheetId: string) => void;
   onSetKind?: (projectId: string, sheetId: string, kind: SheetKind | undefined) => void;
   onDuplicate: (projectId: string, sheetId: string) => void;
   onDelete: (projectId: string, sheetId: string, sheetName: string) => void;
@@ -45,6 +46,7 @@ export function SheetContextMenu({
   onTogglePin,
   onRename,
   onEditClassName,
+  onEditTags,
   onSetKind,
   onDuplicate,
   onDelete,
@@ -128,6 +130,21 @@ export function SheetContextMenu({
         <Code className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
         {t('sheet.editClassName')}
       </button>
+      {onEditTags && (
+        <button
+          onClick={() => {
+            onEditTags(menu.projectId, menu.sheetId);
+            onClose();
+          }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
+          style={{ color: 'var(--text-primary)' }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        >
+          <Tags className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+          {t('sheet.editTags')}
+        </button>
+      )}
       {onSetKind && (
         <div
           className="relative"
