@@ -5,17 +5,25 @@ This repository uses different licenses for different components.
 See `LICENSING.md` for a developer-friendly explanation, or read each
 directory's LICENSE file for the authoritative legal text.
 
-Directory          License                Why
------------------  ---------------------  --------------------------------------
-frontend/          MIT                    Browser-executed code. Free to fork,
-                                          embed, or reuse without restriction.
-                                          See: frontend/LICENSE
-backend/ (TBD)     AGPL v3                Server code. Self-host freely; if you
-                                          modify and offer as a service to
-                                          others, you must publish your changes.
-                                          See: backend/LICENSE (created at
-                                          Phase B-1 bootstrap)
-docs/              MIT                    Same as frontend.
+Directory                License       Why
+-----------------------  ------------  -----------------------------------------
+packages/web/            MIT           Browser-executed Next.js app. Free to
+                                       fork, embed, or reuse without
+                                       restriction. See: packages/web/LICENSE
+packages/shared/         MIT           Platform-agnostic shared code (types +
+                                       game-domain logic: formulas, simulation,
+                                       analysis). Reused by web/desktop/(future
+                                       mobile). See: packages/shared/LICENSE
+packages/desktop/        MIT           Electron desktop app. Bundles
+                                       packages/web build output. Open for fork
+                                       and self-build. See: packages/desktop/LICENSE
+packages/backend/ (TBD)  AGPL v3       Server code (Spring Boot). Self-host
+                                       freely; if you modify and offer as a
+                                       service to others, you must publish your
+                                       changes. Created at Phase B-1 bootstrap.
+docs/ (public files)     MIT           Same as packages/web. (docs/backend/
+                                       and docs/archive/ are kept private via
+                                       .gitignore — internal design notes.)
 
 The historical project-wide MIT license (Copyright (c) 2025 Balruno) applies
 to all code committed before 2026-05-03. The license split above takes effect

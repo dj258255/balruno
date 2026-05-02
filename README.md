@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/public/icon.svg" alt="Balruno Logo" width="120" height="120">
+  <img src="packages/web/public/icon.svg" alt="Balruno Logo" width="120" height="120">
 </p>
 
 <h1 align="center">Balruno</h1>
@@ -23,13 +23,13 @@
     <img src="https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel" alt="Vercel">
   </a>
   <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js 16">
-  <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Electron-41-47848F?logo=electron&logoColor=white" alt="Electron 41">
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19">
+  <img src="https://img.shields.io/badge/Turborepo-2-EF4444?logo=turborepo&logoColor=white" alt="Turborepo 2">
   <img src="https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css&logoColor=white" alt="Tailwind CSS">
-  <img src="https://img.shields.io/badge/Zustand-5.0-orange" alt="Zustand">
-  <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT">
-  </a>
+  <img src="https://img.shields.io/badge/Frontend-MIT-green.svg" alt="Frontend: MIT">
+  <img src="https://img.shields.io/badge/Backend%20(planned)-AGPL%20v3-orange.svg" alt="Backend (planned): AGPL v3">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome">
 </p>
 
@@ -47,11 +47,11 @@
 
 An integrated workspace for game studios — from solo creators to 30+ member teams. **Balance data + agile project management in a single tool** — manage your spreadsheets, sprint boards, bug trackers, and epic roadmaps together.
 
-- **Designers**: 70+ game formulas, Monte Carlo sim, engine export (Unity/Godot/Unreal)
+- **Designers**: 70+ game formulas, Monte Carlo simulation, engine export (Unity/Godot/Unreal)
 - **PMs**: Kanban sprints, bug tracker, Gantt epic roadmap
 - **Team**: Real-time collaboration (Yjs CRDT), AI-powered setup
 
-**Local-first. Browser-native. Open source (MIT).**
+**Local-first. Browser-native. Open source (MIT for client, AGPL v3 for the planned backend).**
 
 ### Features
 
@@ -78,26 +78,27 @@ An integrated workspace for game studios — from solo creators to 30+ member te
 |----------|----------|
 | **Views** | Grid / Form / Kanban / Calendar / Gallery / Gantt |
 | **Field Types** | general / formula / checkbox / select / multiSelect / date / url / currency / rating / link / lookup / rollup |
-| **Collaboration** | Yjs CRDT, y-indexeddb, y-webrtc (Infrastructure) |
+| **Collaboration** | Yjs CRDT, y-indexeddb, y-webrtc (infrastructure) |
 | **Storage** | Local-first (IndexedDB), no server required in free tier |
+| **Desktop** | Native Mac / Windows / Linux app (Electron) with auto-update |
 
 ### Quick Start
 
 ```bash
 # Clone the repository
 git clone https://github.com/dj258255/balruno.git
+cd balruno
 
-# Navigate to frontend
-cd balruno/frontend
-
-# Install dependencies
+# Install all workspace dependencies (monorepo via Turborepo)
 npm install
 
-# Start development server
-npm run dev
-```
+# Run the web app
+cd packages/web && npm run dev
+# → http://localhost:3000
 
-Open [http://localhost:3000](http://localhost:3000)
+# Or run the desktop app (Electron)
+cd packages/desktop && npm run dev
+```
 
 ### Formula Examples
 
@@ -119,83 +120,91 @@ Open [http://localhost:3000](http://localhost:3000)
 ### Tech Stack
 
 ```
-Frontend Framework    Next.js 16 (App Router, Turbopack)
-Language             TypeScript (Strict Mode)
-State Management     Zustand 5
-Local Storage        IndexedDB (via idb)
+Monorepo             Turborepo + npm workspaces
+Web frontend         Next.js 16 (App Router, Turbopack) · React 19 · TypeScript strict
+State                Zustand 5
+Local storage        IndexedDB (idb)
 Styling              Tailwind CSS 3.4
 Charts               Recharts
-Math Engine          mathjs
-i18n                 next-intl (EN/KO)
+Math engine          mathjs + @formulajs/formulajs
+i18n                 next-intl (en, ko — 5170 keys synced)
+Desktop              Electron 41 (ESM) + electron-builder + electron-updater
+Backend (planned)    Java 21 + Spring Boot 3 + PostgreSQL 15 (JSONB)
 ```
 
 ### Project Structure
 
 ```
 balruno/
-├── frontend/
-│   ├── src/
-│   │   ├── app/              # Next.js App Router
-│   │   ├── components/
-│   │   │   ├── modals/       # Modal components
-│   │   │   ├── panels/       # Tool panels (Calculator, Simulation, etc.)
-│   │   │   ├── sheet/        # Spreadsheet components
-│   │   │   └── ui/           # Reusable UI primitives
-│   │   ├── hooks/            # Custom React hooks
-│   │   ├── stores/           # Zustand stores
-│   │   ├── types/            # TypeScript type definitions
-│   │   └── utils/            # Utility functions & formula engine
-│   ├── messages/             # i18n translations (en.json, ko.json)
-│   └── public/               # Static assets
-├── docs/                     # Documentation
-├── .github/                  # GitHub templates & workflows
-├── CONTRIBUTING.md           # Contribution guidelines
-├── CODE_OF_CONDUCT.md        # Code of conduct
-└── LICENSE                   # MIT License
+├── packages/
+│   ├── web/                  # Next.js web app (MIT)
+│   │   ├── src/{app,components,hooks,stores,lib}
+│   │   ├── messages/         # i18n (en.json, ko.json)
+│   │   └── public/
+│   ├── shared/               # Platform-agnostic shared code (MIT)
+│   │   └── src/{types,lib}   # formulaEngine, simulation, templates, formulas, ...
+│   ├── desktop/              # Electron app (MIT)
+│   │   └── src/{main,preload}
+│   └── backend/              # Spring Boot (planned, AGPL v3)
+├── docs/                     # Public docs (MIT)
+├── LICENSE                   # Repository license overview
+├── LICENSING.md              # User-friendly licensing FAQ
+├── TRADEMARK.md              # Name & logo policy
+├── CONTRIBUTING.md
+└── CODE_OF_CONDUCT.md
 ```
 
 ### Contributing
 
-We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) before submitting a PR.
+We welcome contributions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a PR.
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create a feature branch
+3. Commit your changes (write commit messages and code comments in English)
+4. Push to your branch
 5. Open a Pull Request
 
 ### Roadmap
 
 **Done**
-- [x] Spreadsheet engine (Grid + Form + Kanban + Calendar + Gallery + Gantt)
-- [x] 70+ game formulas, Monte Carlo simulation
-- [x] Game engine export (Unity / Godot / Unreal)
-- [x] Yjs CRDT (real-time collab infrastructure)
-- [x] Field types 12 (general/formula/checkbox/select/multiSelect/date/url/currency/rating/link/lookup/rollup)
-- [x] Sprint Board / Bug Tracker / Epic Roadmap templates
-- [x] AI Setup (template-based, LLM fallback)
-- [x] ⌘K Command Palette
-- [x] Docked tool groups (9 categories)
+- Spreadsheet engine (Grid + Form + Kanban + Calendar + Gallery + Gantt)
+- 70+ game formulas, Monte Carlo simulation
+- Game engine export (Unity / Godot / Unreal)
+- Yjs CRDT (real-time collab infrastructure)
+- 12 field types (general/formula/checkbox/select/multiSelect/date/url/currency/rating/link/lookup/rollup)
+- Sprint Board / Bug Tracker / Epic Roadmap templates
+- AI Setup (template-based, LLM fallback)
+- Command palette
+- Docked tool groups (9 categories)
+- **Monorepo migration** (Turborepo + packages/web/shared/desktop)
+- **Electron desktop app** (Mac/Windows/Linux + auto-update via GitHub Releases)
 
 **Next (B2B Team Features)**
-- [ ] Comments & @mentions (Yjs)
-- [ ] Presence / cursors (awareness API)
-- [ ] Member invites, roles (owner/editor/viewer)
-- [ ] Share links per view (read-only)
-- [ ] Full LLM integration (Anthropic / OpenAI)
-- [ ] Git / Slack / Discord webhooks
-- [ ] Interface Designer (dashboard builder)
-- [ ] Automations (n8n-style node editor)
+- Comments & @mentions (Yjs)
+- Presence / cursors (awareness API)
+- Member invites, roles (owner/editor/viewer)
+- Share links per view (read-only)
+- Full LLM integration (Anthropic / OpenAI)
+- Git / Slack / Discord webhooks
+- Interface Designer (dashboard builder)
+- Automations (n8n-style node editor)
+- **Spring Boot backend (AGPL v3) — auth, cloud sync, quota**
 
-**Pricing (tentative)**
-- **Free** — 1 project, 3 members, local-only (MIT)
-- **Team** — $15/user/month, up to 30 members, cloud + AI
-- **Business** — $30/user/month, unlimited + SSO + audit log
-- **Enterprise** — Custom (on-prem, SLA)
+**Pricing (tentative — finalized after beta)**
+- **Free / self-host** — unlimited (MIT for client + AGPL v3 for backend, run anywhere)
+- **Cloud Free** — strict quotas (3 workspaces · 5 projects/ws · 10 sheets/project · 10MB storage)
+- **Cloud Pro** — quotas lifted (price TBD after beta validation)
+- **Team** (v1) — collaboration + members + SSO (price TBD)
 
 ### License
 
-MIT License - see [LICENSE](LICENSE) for details.
+This repository uses different licenses per directory. See [LICENSE](LICENSE) for the overview and [LICENSING.md](LICENSING.md) for a user-friendly FAQ.
+
+- `packages/web/`, `packages/shared/`, `packages/desktop/` — **MIT**
+- `packages/backend/` (planned) — **AGPL v3**
+- Trademarks (PowerBalance / balruno / logo) — see [TRADEMARK.md](TRADEMARK.md)
+
+For commercial licensing inquiries: dj258255@naver.com
 
 ### Links
 
@@ -213,11 +222,11 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 게임 스튜디오를 위한 **통합 워크스페이스** — 1인 개발자부터 30명+ 팀까지. 밸런싱 데이터와 애자일 프로젝트 관리를 **한 툴**에서 — 스프레드시트, 스프린트 보드, 버그 트래커, 에픽 로드맵을 함께 관리합니다.
 
-- **기획자**: 70+ 게임 수식, 몬테카를로 시뮬, 엔진 export (Unity/Godot/Unreal)
+- **기획자**: 70개+ 게임 수식, 몬테카를로 시뮬, 엔진 export (Unity/Godot/Unreal)
 - **PM**: 칸반 스프린트, 버그 트래커, Gantt 에픽 로드맵
 - **팀**: 실시간 협업 (Yjs CRDT), AI 자동 세팅
 
-**로컬 우선. 브라우저 네이티브. 오픈소스 (MIT).**
+**로컬 우선. 브라우저 네이티브. 오픈소스 (클라이언트 MIT · 백엔드 AGPL v3 예정).**
 
 ### 주요 기능
 
@@ -246,24 +255,25 @@ MIT License - see [LICENSE](LICENSE) for details.
 | **필드 타입** | general / formula / checkbox / select / multiSelect / date / url / currency / rating / link / lookup / rollup (12종) |
 | **협업** | Yjs CRDT, y-indexeddb, y-webrtc (인프라) |
 | **저장** | 로컬 우선 (IndexedDB), 무료 플랜 서버 불필요 |
+| **데스크톱** | Mac / Windows / Linux 네이티브 앱 (Electron) + 자동 업데이트 |
 
 ### 빠른 시작
 
 ```bash
 # 저장소 클론
 git clone https://github.com/dj258255/balruno.git
+cd balruno
 
-# frontend 폴더로 이동
-cd balruno/frontend
-
-# 의존성 설치
+# 모든 workspace 의존성 설치 (Turborepo monorepo)
 npm install
 
-# 개발 서버 시작
-npm run dev
-```
+# 웹 앱 실행
+cd packages/web && npm run dev
+# → http://localhost:3000
 
-브라우저에서 [http://localhost:3000](http://localhost:3000) 접속
+# 또는 데스크톱 앱 (Electron)
+cd packages/desktop && npm run dev
+```
 
 ### 수식 예시
 
@@ -284,34 +294,40 @@ npm run dev
 
 ### 기여하기
 
-기여를 환영합니다! PR을 제출하기 전에 [기여 가이드](CONTRIBUTING.md)를 읽어주세요.
+기여를 환영합니다. PR 제출 전에 [CONTRIBUTING.md](CONTRIBUTING.md) 를 읽어주세요.
 
 1. 저장소 Fork
-2. Feature 브랜치 생성 (`git checkout -b feature/amazing-feature`)
-3. 변경사항 커밋 (`git commit -m 'feat: 멋진 기능 추가'`)
-4. 브랜치에 Push (`git push origin feature/amazing-feature`)
+2. Feature 브랜치 생성
+3. 변경사항 커밋 (커밋 메시지 + 코드 주석은 영어)
+4. 브랜치에 Push
 5. Pull Request 생성
 
 ### 참고 자료
 
 #### 게임 밸런스 이론
-- [Game Balance Concepts](https://gamebalanceconcepts.wordpress.com/) - Ian Schreiber
-- [Game Balance Dissected](https://gamebalancing.wordpress.com/) - DPS, TTK, Fire Rate
+- [Game Balance Concepts](https://gamebalanceconcepts.wordpress.com/) — Ian Schreiber
+- [Game Balance Dissected](https://gamebalancing.wordpress.com/) — DPS, TTK, Fire Rate
 
 #### 경제 설계
-- [Machinations.io - Game Inflation](https://machinations.io/articles/what-is-game-economy-inflation-how-to-foresee-it-and-how-to-overcome-it-in-your-game-design) - Faucet/Sink 모델
-- [Lost Garden - Value Chains](https://lostgarden.com/2021/12/12/value-chains/) - 가치 사슬 설계
+- [Machinations.io — Game Inflation](https://machinations.io/articles/what-is-game-economy-inflation-how-to-foresee-it-and-how-to-overcome-it-in-your-game-design) — Faucet/Sink 모델
+- [Lost Garden — Value Chains](https://lostgarden.com/2021/12/12/value-chains/) — 가치 사슬 설계
 
 #### 성장 곡선 및 난이도
-- [Davide Aversa - RPG Progression](https://www.davideaversa.it/blog/gamedesign-math-rpg-level-based-progression/) - 레벨 성장 수식
-- [Game Developer - Difficulty Curves](https://www.gamedeveloper.com/design/difficulty-curves) - 난이도 곡선
+- [Davide Aversa — RPG Progression](https://www.davideaversa.it/blog/gamedesign-math-rpg-level-based-progression/) — 레벨 성장 수식
+- [Game Developer — Difficulty Curves](https://www.gamedeveloper.com/design/difficulty-curves) — 난이도 곡선
 
 ### 라이선스
 
-MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일 참조
+본 저장소는 디렉토리별로 다른 라이센스를 사용합니다. [LICENSE](LICENSE) 와 [LICENSING.md](LICENSING.md) 를 참조하세요.
+
+- `packages/web/`, `packages/shared/`, `packages/desktop/` — **MIT**
+- `packages/backend/` (예정) — **AGPL v3**
+- 트레이드마크 (PowerBalance / balruno / 로고) — [TRADEMARK.md](TRADEMARK.md) 참조
+
+상용 라이센스 문의: dj258255@naver.com
 
 ---
 
 <p align="center">
-  Made with ❤️ for game studios — from solo designers to 30+ member teams
+  Made for game studios — from solo designers to 30+ member teams
 </p>

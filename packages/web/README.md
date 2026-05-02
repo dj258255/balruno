@@ -4,11 +4,13 @@
   <img alt="Balruno Logo" src="public/icon.svg" width="80" height="80">
 </picture>
 
-# Balruno — Frontend
+# Balruno — Web (`@balruno/web`)
 
-게임 스튜디오 워크스페이스 (밸런싱 + 애자일 PM + 로드맵) 의 Next.js 16 프론트엔드.
+게임 스튜디오 워크스페이스의 Next.js 16 웹 앱. monorepo 의 한 워크스페이스.
 
-메인 프로젝트 문서는 [루트 README](../README.md) 참조.
+메인 프로젝트 문서는 [루트 README](../../README.md) 참조.
+
+라이센스: MIT (이 디렉토리의 `LICENSE` 파일).
 
 ## Development
 

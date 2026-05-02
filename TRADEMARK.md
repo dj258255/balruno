@@ -5,10 +5,11 @@ balruno.com / indiebalancing.vercel.app domain identities are trademarks of
 the project owner (Balruno, 범수 / Beomsu).
 
 These trademarks are **NOT covered** by the source code licenses (MIT for
-`frontend/`, AGPL v3 for `backend/`). You may freely use, modify, and
-redistribute the code under those licenses, but you may not use the
-PowerBalance / balruno names or logo to promote your fork or derivative
-service in a way that suggests endorsement by the original project.
+`packages/web/`, `packages/shared/`, `packages/desktop/`; AGPL v3 for
+`packages/backend/`). You may freely use, modify, and redistribute the code
+under those licenses, but you may not use the PowerBalance / balruno names
+or logo to promote your fork or derivative service in a way that suggests
+endorsement by the original project.
 
 ---
 
@@ -67,3 +68,4 @@ Apache, etc).
 | Date | Change |
 |---|---|
 | 2026-05-03 | Initial trademark policy following ADR 0005 license split |
+| 2026-05-03 | Update directory references for monorepo (packages/web, packages/shared, packages/desktop, packages/backend) |
