@@ -402,3 +402,26 @@ export function stopAutoBackup(): void {
     autoBackupInterval = null;
   }
 }
+
+/**
+ * 단순 localStorage 래퍼 — automations / dashboardWidgets / errorReporting 처럼
+ * 가벼운 key-value 저장이 필요한 모듈용. SSR-safe (window 가드).
+ */
+export const kvStorage = {
+  get(key: string): string | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      return window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set(key: string, value: string): void {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      // quota / 차단 — 조용히 스킵
+    }
+  },
+};
