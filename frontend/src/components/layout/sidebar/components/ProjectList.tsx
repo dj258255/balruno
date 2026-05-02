@@ -583,7 +583,7 @@ export function ProjectList({
                               <span style={{ color: 'var(--text-tertiary)' }}> | {sheet.exportClassName}</span>
                             )}
                           </span>
-                          <SheetKindBadge sheet={sheet} showDefault />
+                          <SheetKindBadge sheet={sheet} showDefault onAccent={currentSheetId === sheet.id} />
                         </>
                       )}
                     </div>
