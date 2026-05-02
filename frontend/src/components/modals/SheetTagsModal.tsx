@@ -74,8 +74,13 @@ export default function SheetTagsModal({ projectId, sheetId, onClose }: SheetTag
 
     if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
       if (input.trim()) {
+        // 입력 중인 텍스트가 있으면: chip 추가만 (저장 X)
         e.preventDefault();
         addTag(input);
+      } else if (e.key === 'Enter' && draft.length >= 0) {
+        // 빈 입력 + Enter → 저장 + 닫기 (Linear/Notion 패턴)
+        e.preventDefault();
+        handleSave();
       }
     } else if (e.key === 'Backspace' && !input && draft.length > 0) {
       removeTag(draft[draft.length - 1]);
