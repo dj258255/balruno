@@ -1333,6 +1333,8 @@
     "deleteRow": "Delete Row",
     "editColumn": "Edit Column",
     "deleteColumn": "Delete Column",
+    "deleteColumnConfirmTitle": "Delete column",
+    "deleteColumnConfirmMessage": "Delete column \"{name}\"? All cell data in this column will be removed.",
     "validationSet": "Validation configured",
     "columnLocked": "Column locked",
     "cellFormula": "Cell Formula",

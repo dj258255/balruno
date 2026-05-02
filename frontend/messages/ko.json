@@ -1333,6 +1333,8 @@
     "deleteRow": "행 삭제",
     "editColumn": "열 편집",
     "deleteColumn": "열 삭제",
+    "deleteColumnConfirmTitle": "열 삭제",
+    "deleteColumnConfirmMessage": "\"{name}\" 열을 삭제하시겠습니까? 이 열의 모든 셀 데이터가 함께 삭제됩니다.",
     "validationSet": "유효성 검사 설정됨",
     "columnLocked": "열 잠금됨",
     "cellFormula": "셀 수식",
