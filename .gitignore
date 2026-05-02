@@ -19,6 +19,10 @@ Thumbs.db
 docs/draft/
 **/draft/
 
+# 비공개 설계 문서 (로컬 보존, 원격 제외)
+docs/backend/
+docs/archive/
+
 # firebase
 firebase-debug.log
 firebase-debug.*.log
