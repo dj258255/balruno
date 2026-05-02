@@ -3,7 +3,7 @@
  * 게임 엔진 형식의 데이터를 시트 데이터로 변환
  */
 
-import type { Column, Row, CellValue, ColumnType } from '@/types';
+import type { Column, Row, CellValue, ColumnType } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Import 형식

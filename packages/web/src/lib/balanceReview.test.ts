@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { reviewBalance } from './balanceReview';
-import type { ImbalanceIssue } from './imbalanceDetector';
+import type { ImbalanceIssue } from '@/lib/imbalanceDetector';
 
 function makeIssue(severity: 'critical' | 'warning' | 'info', type: ImbalanceIssue['type'] = 'outlier'): ImbalanceIssue {
   return {

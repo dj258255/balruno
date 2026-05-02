@@ -1,27 +1,22 @@
 /**
- * @balruno/shared — placeholder
+ * @balruno/shared — 플랫폼 비의존 공유 코드.
  *
- * Phase F-2 (Electron 데스크톱) 시작 시점에 packages/web/src/lib 와 packages/web/src/types
- * 중 플랫폼 비의존 부분을 여기로 추출한다.
+ * web / desktop / (미래 mobile) 모두 import.
  *
- * 추출 후보:
- * - lib/formulaEngine.ts
- * - lib/simulation/
- * - lib/balanceAnalysis.ts
- * - lib/economySimulator.ts
- * - lib/curveFitting.ts
- * - lib/imbalanceDetector.ts
- * - lib/goalSolver.ts
- * - lib/dpsVarianceSimulator.ts
- * - lib/templates/
- * - types/index.ts
+ * 직접 사용: `import { ... } from '@balruno/shared/types'`
+ *           `import { ... } from '@balruno/shared/lib/formulaEngine'`
  *
- * 추출 보류 (web 의존):
- * - lib/docExport.ts (DOM 조작 + window.open)
- * - lib/utils.ts 의 일부 (web 다운로드 트리거)
- *
- * 어댑터 (lib/kvStorage.ts, lib/platform.ts) 는 인터페이스만 shared 로,
- * 구현은 각 패키지 (web/desktop) 에서 주입.
+ * 또는 barrel: `import { Sheet, evaluateFormula } from '@balruno/shared'`
  */
 
-export {};
+export * from './types/index.js';
+export * from './lib/formulaEngine.js';
+export * from './lib/balanceAnalysis.js';
+export * from './lib/economySimulator.js';
+export * from './lib/curveFitting.js';
+export * from './lib/imbalanceDetector.js';
+export * from './lib/goalSolver.js';
+export * from './lib/dpsVarianceSimulator.js';
+export * from './lib/gameEngineExport.js';
+export * from './lib/gameEngineImport.js';
+export * from './lib/aiBehavior.js';

@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { mapColumnsToUnitFields, rowToUnitStats, rowsToUnitStats, isUnitMappable } from './rowToUnits';
-import type { Column, Row } from '@/types';
+import type { Column, Row } from '../../types';
 
 const col = (id: string, name: string, type: Column['type'] = 'general'): Column => ({
   id, name, type,

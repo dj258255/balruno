@@ -10,7 +10,7 @@
  *   → 200행 < 500ms 목표
  */
 import { describe, it, expect } from 'vitest';
-import { computeSheetRows } from './formulaEngine';
+import { computeSheetRows } from '@/lib/formulaEngine';
 import type { Sheet } from '@/types';
 
 /** 상호 참조 시트 2개 생성 (REF를 통한 교차 참조 시뮬레이션) */

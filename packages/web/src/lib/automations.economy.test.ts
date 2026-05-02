@@ -18,7 +18,7 @@ import {
   generateNodeId,
   type Automation,
 } from './automations';
-import type { Faucet, Sink } from './economySimulator';
+import type { Faucet, Sink } from '@/lib/economySimulator';
 
 const makeFaucet = (id: string, ratePerHour = 100, name = 'F'): Faucet => ({
   id,

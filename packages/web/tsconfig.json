@@ -22,9 +22,26 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/types": ["../shared/src/types/index.ts"],
+      "@/types/*": ["../shared/src/types/*"],
+      "@/lib/formulaEngine": ["../shared/src/lib/formulaEngine.ts"],
+      "@/lib/balanceAnalysis": ["../shared/src/lib/balanceAnalysis.ts"],
+      "@/lib/economySimulator": ["../shared/src/lib/economySimulator.ts"],
+      "@/lib/curveFitting": ["../shared/src/lib/curveFitting.ts"],
+      "@/lib/imbalanceDetector": ["../shared/src/lib/imbalanceDetector.ts"],
+      "@/lib/goalSolver": ["../shared/src/lib/goalSolver.ts"],
+      "@/lib/dpsVarianceSimulator": ["../shared/src/lib/dpsVarianceSimulator.ts"],
+      "@/lib/gameEngineExport": ["../shared/src/lib/gameEngineExport.ts"],
+      "@/lib/gameEngineImport": ["../shared/src/lib/gameEngineImport.ts"],
+      "@/lib/aiBehavior": ["../shared/src/lib/aiBehavior.ts"],
+      "@/lib/formulas": ["../shared/src/lib/formulas/index.ts"],
+      "@/lib/formulas/*": ["../shared/src/lib/formulas/*"],
+      "@/lib/simulation/*": ["../shared/src/lib/simulation/*"],
+      "@/lib/templates": ["../shared/src/lib/templates/index.ts"],
+      "@/lib/templates/*": ["../shared/src/lib/templates/*"],
+      "@balruno/shared": ["../shared/src/index.ts"],
+      "@balruno/shared/*": ["../shared/src/*"],
+      "@/*": ["./src/*"]
     },
     "target": "ES2017"
   },

@@ -9,7 +9,7 @@
  *  - 다중 행 선택 → 팀 시뮬 자동 분배
  */
 
-import type { Column, Row } from '@/types';
+import type { Column, Row } from '../../types';
 import type { UnitStats } from './types';
 
 /** 컬럼 이름 → 표준 필드 매칭 (소문자 비교, 부분 일치 OK).

@@ -14,8 +14,8 @@
  * |winRate - target| < tolerance(2%) 또는 max iterations(8) 도달.
  */
 
-import { runMonteCarloSimulationAsync } from './simulation/monteCarloSimulator';
-import type { UnitStats, Skill, BattleConfig } from './simulation/types';
+import { runMonteCarloSimulationAsync } from '@/lib/simulation/monteCarloSimulator';
+import type { UnitStats, Skill, BattleConfig } from '@/lib/simulation/types';
 
 export type BalanceTarget = 'unit1' | 'unit2';
 export type BalanceParam = 'hp' | 'atk' | 'def' | 'speed';

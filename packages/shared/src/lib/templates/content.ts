@@ -1,4 +1,4 @@
-import type { ColumnType } from '@/types';
+import type { ColumnType } from '../../types';
 import type { SheetTemplate } from './types';
 
 /**

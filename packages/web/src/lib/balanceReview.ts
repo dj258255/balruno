@@ -10,7 +10,7 @@
  *   - actionable: 즉시 적용 가능한 제안 top 5
  */
 
-import type { ImbalanceIssue, ImbalanceType, Severity } from './imbalanceDetector';
+import type { ImbalanceIssue, ImbalanceType, Severity } from '@/lib/imbalanceDetector';
 
 export interface BalanceReview {
   summary: string;

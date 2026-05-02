@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { Sheet } from '@/types';
+import type { Sheet } from '../types';
 import {
   generateUnityScriptableObject,
   generateUnityEditorImporter,

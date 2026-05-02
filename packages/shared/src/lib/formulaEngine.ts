@@ -1,6 +1,6 @@
 import { create, all, MathJsInstance } from 'mathjs';
 import * as formulajs from '@formulajs/formulajs';
-import type { Sheet, CellValue, CurveType, FormulaResult } from '@/types';
+import type { Sheet, CellValue, CurveType, FormulaResult } from '../types';
 import { formulaBundle, SCALE } from './formulas';
 
 // 공개 API에서 재노출 (기존 import 경로 유지)

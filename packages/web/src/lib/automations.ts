@@ -31,7 +31,7 @@ import type {
   SinglePlayerSource,
   SinglePlayerSink,
   SinglePlayerConfig,
-} from './economySimulator';
+} from '@/lib/economySimulator';
 import {
   DEFAULT_CONFIG,
   DEFAULT_FAUCETS,
@@ -39,8 +39,8 @@ import {
   DEFAULT_SINGLE_CONFIG,
   DEFAULT_SINGLE_SOURCES,
   DEFAULT_SINGLE_SINKS,
-} from './economySimulator';
-import { computeSheetRows } from './formulaEngine';
+} from '@/lib/economySimulator';
+import { computeSheetRows } from '@/lib/formulaEngine';
 import { resolveNodeValue } from './diagramSheetBridge';
 
 export type TriggerType =

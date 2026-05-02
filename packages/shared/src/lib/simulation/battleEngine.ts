@@ -2,7 +2,7 @@
  * 전투 시뮬레이션 엔진
  */
 
-import { evaluateRules, type BehaviorRule } from '@/lib/aiBehavior';
+import { evaluateRules, type BehaviorRule } from '../aiBehavior';
 import type {
   UnitStats,
   Skill,

@@ -12,7 +12,7 @@
  */
 
 import type { Sheet, CellValue } from '@/types';
-import { computeSheetRows } from './formulaEngine';
+import { computeSheetRows } from '@/lib/formulaEngine';
 import { loadSnapshots, type SimSnapshot, type SnapshotDomain } from './simSnapshots';
 
 export type WidgetType =

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { autoBalance } from './autoBalancer';
-import type { UnitStats } from './simulation/types';
+import type { UnitStats } from '@/lib/simulation/types';
 
 const baseUnit1: UnitStats = {
   id: 'u1', name: 'Hero',

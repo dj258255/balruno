@@ -1,4 +1,4 @@
-import type { Column, Row, ColumnType } from '@/types';
+import type { Column, Row, ColumnType } from '../../types';
 
 // Template type definitions
 export interface SheetTemplate {

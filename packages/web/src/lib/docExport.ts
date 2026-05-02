@@ -6,7 +6,7 @@
  */
 
 import type { Doc, Project } from '@/types';
-import { computeSheetRows } from './formulaEngine';
+import { computeSheetRows } from '@/lib/formulaEngine';
 
 export interface ExportOptions {
   /** resolveRefs: true → @참조 를 현재 값으로 치환. false → @syntax 유지 */

@@ -3,7 +3,7 @@
  * 시트 데이터에서 밸런스 문제를 자동으로 찾아냄
  */
 
-import type { Sheet, CellValue } from '@/types';
+import type { Sheet, CellValue } from '../types';
 
 // 불균형 문제 타입
 export type ImbalanceType =

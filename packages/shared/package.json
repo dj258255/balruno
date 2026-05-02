@@ -2,12 +2,21 @@
   "name": "@balruno/shared",
   "version": "0.1.0",
   "private": true,
-  "description": "web ↔ desktop ↔ (미래 mobile) 공유 코드. lib/ 와 types/ 중 플랫폼 비의존 부분을 점진적으로 추출. Phase F-2 (Electron) 시작 시점에 본격 추출 예정.",
+  "description": "플랫폼 비의존 공유 코드 — web/desktop/(미래 mobile). types + 게임 도메인 로직 (수식, 시뮬, 분석).",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types/index.ts",
+    "./lib/*": "./src/lib/*.ts"
+  },
   "scripts": {
-    "lint": "echo 'shared placeholder — no lint yet'",
-    "test": "echo 'shared placeholder — no tests yet'",
-    "typecheck": "echo 'shared placeholder — no typecheck yet'"
+    "lint": "echo 'shared lint TBD'",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.4"
   }
 }

@@ -9,7 +9,7 @@
  * 실측 기준: M1 Mac + Node 20. CI 환경 변동 고려해 상한 여유 둠.
  */
 import { describe, it, expect } from 'vitest';
-import { computeSheetRows } from './formulaEngine';
+import { computeSheetRows } from '@/lib/formulaEngine';
 import type { Sheet } from '@/types';
 
 function makeLargeSheet(rowCount: number): Sheet {

@@ -179,11 +179,11 @@ export async function runPlaytest(scenarios: PlaytestScenario[]): Promise<Playte
 // 기본 시나리오 빌더 — 기존 lib 시뮬들을 래핑
 // ============================================================================
 
-import { simulateBattle } from './simulation/battleEngine';
+import { simulateBattle } from '@/lib/simulation/battleEngine';
 import { simulateFpsDuel, aimSkillToProfile, WEAPON_PRESETS } from './fpsSimulation';
 import { simulateDeck, CARD_PRESETS } from './deckSimulation';
 import { simulateLaning, CHAMPION_PRESETS } from './mobaLaning';
-import type { UnitStats } from './simulation/types';
+import type { UnitStats } from '@/lib/simulation/types';
 
 export function defaultPlaytestScenarios(): PlaytestScenario[] {
   return [

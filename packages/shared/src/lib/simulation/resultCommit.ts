@@ -8,7 +8,7 @@
  *  - 매칭이 전혀 없을 땐 첫 general 컬럼에 요약 텍스트 fallback
  */
 
-import type { Column, Sheet } from '@/types';
+import type { Column, Sheet } from '../../types';
 import type { SimulationResult, UnitStats } from './types';
 
 interface CommitContext {

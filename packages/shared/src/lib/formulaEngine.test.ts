@@ -8,7 +8,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { evaluateFormula, computeSheetRows } from './formulaEngine';
-import type { Sheet } from '@/types';
+import type { Sheet } from '../types';
 
 // ============ 핵심 게임 수식 ============
 

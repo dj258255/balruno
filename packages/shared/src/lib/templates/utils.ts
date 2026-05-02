@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { Sheet, Column, Row } from '@/types';
+import type { Sheet, Column, Row } from '../../types';
 import type { SheetTemplate } from './types';
 
 // Create sheet from template

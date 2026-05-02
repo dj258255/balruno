@@ -3,8 +3,8 @@
  * 시트 데이터를 게임 엔진에서 사용할 수 있는 형식으로 변환
  */
 
-import type { Sheet, Column, CellValue, Project } from '@/types';
-import { evaluateFormula } from '@/lib/formulaEngine';
+import type { Sheet, Column, CellValue, Project } from '../types';
+import { evaluateFormula } from './formulaEngine';
 
 /**
  * 시트의 모든 행에 대해 수식을 평가하여 계산된 값을 반환
