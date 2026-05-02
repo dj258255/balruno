@@ -370,8 +370,8 @@ export default function CurveFittingPanel({ onClose, showHelp: externalShowHelp,
 
   return (
     <PanelShell
-      title={t('curveFitting.titleHeader')}
-      subtitle={t('curveFitting.subtitleHeader')}
+      title={t('titleHeader')}
+      subtitle={t('subtitleHeader')}
       icon={PenTool}
       iconColor="#6366f1"
       onClose={onClose ?? (() => {})}

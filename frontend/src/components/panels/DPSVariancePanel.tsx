@@ -332,8 +332,8 @@ export default function DPSVariancePanel({ onClose, isPanel, showHelp: externalS
 
   return (
     <PanelShell
-      title={t('dpsVariance.titleHeader')}
-      subtitle={t('dpsVariance.subtitleHeader')}
+      title={t('titleHeader')}
+      subtitle={t('subtitleHeader')}
       icon={BarChart2}
       iconColor="#5a9cf5"
       onClose={onClose}

@@ -3332,7 +3332,9 @@
     "fullscreen": "전체화면",
     "axisRange": "축 범위",
     "titleHeader": "곡선 피팅",
-    "subtitleHeader": "데이터 → 수식 역산 (회귀)"
+    "subtitleHeader": "데이터 → 수식 역산 (회귀)",
+    "curveFitting": "곡선 피팅",
+    "helpDescription": "데이터 점을 그리거나 클릭하여 배치한 후, 가장 잘 맞는 곡선을 분석합니다."
   },
   "entityDefinition": {
     "selectPlaceholder": "선택...",

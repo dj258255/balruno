@@ -3332,7 +3332,9 @@
     "fullscreen": "Fullscreen",
     "axisRange": "Axis Range",
     "titleHeader": "Curve Fitting",
-    "subtitleHeader": "Data → formula regression"
+    "subtitleHeader": "Data → formula regression",
+    "curveFitting": "Curve Fitting",
+    "helpDescription": "Draw or click to place data points, then analyze the best-fitting curve."
   },
   "entityDefinition": {
     "selectPlaceholder": "Select…",

@@ -130,8 +130,8 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
 
   return (
     <PanelShell
-      title={t('imbalanceDetector.titleHeader')}
-      subtitle={t('imbalanceDetector.subtitleHeader')}
+      title={t('titleHeader')}
+      subtitle={t('subtitleHeader')}
       icon={AlertTriangle}
       iconColor={PANEL_COLOR}
       onClose={onClose}
@@ -139,9 +139,9 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
       actions={<HelpToggle active={showHelp} onToggle={() => setShowHelp(!showHelp)} color={PANEL_COLOR} />}
     >
       <>
-        <ToolPanelHint toolId="imbalance" title={t('imbalanceDetector.hintTitle')} accentColor="#ec4899">
-          <p>{t.rich('imbalanceDetector.hintP1', { z: (chunks) => <strong>{chunks}</strong> })}</p>
-          <p>{t('imbalanceDetector.hintP2')}</p>
+        <ToolPanelHint toolId="imbalance" title={t('hintTitle')} accentColor="#ec4899">
+          <p>{t.rich('hintP1', { z: (chunks) => <strong>{chunks}</strong> })}</p>
+          <p>{t('hintP2')}</p>
         </ToolPanelHint>
         {/* 프로젝트/시트 선택 */}
         <SheetSelector
@@ -447,10 +447,10 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
                 >
                   <Sparkles size={14} style={{ color: 'var(--accent)' }} />
                   <span className="text-sm font-semibold flex-1 text-left" style={{ color: 'var(--text-primary)' }}>
-                    {t('imbalanceDetector.aiReview')}
+                    {t('aiReview')}
                   </span>
                   <span className="text-caption px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
-                    {t('imbalanceDetector.scoreOf', { score: aiReview.metrics.score })}
+                    {t('scoreOf', { score: aiReview.metrics.score })}
                   </span>
                   {showAiReview ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </button>
@@ -472,7 +472,7 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
 
                     {aiReview.actionable.length > 0 && (
                       <div>
-                        <div className="font-semibold mb-1">{t('imbalanceDetector.actionableTop', { n: aiReview.actionable.length })}</div>
+                        <div className="font-semibold mb-1">{t('actionableTop', { n: aiReview.actionable.length })}</div>
                         <ol className="list-decimal pl-5 space-y-0.5 text-caption" style={{ color: 'var(--text-secondary)' }}>
                           {aiReview.actionable.map((a, i) => (
                             <li key={i}>{a}</li>
@@ -482,7 +482,7 @@ export default function ImbalanceDetectorPanel({ onClose, showHelp: externalShow
                     )}
 
                     <p className="text-caption italic pt-1 border-t" style={{ color: 'var(--text-tertiary)', borderColor: 'var(--border-primary)' }}>
-                      {t('imbalanceDetector.aiReviewNote')}
+                      {t('aiReviewNote')}
                     </p>
                   </div>
                 )}

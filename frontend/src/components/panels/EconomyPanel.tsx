@@ -257,8 +257,8 @@ export default function EconomyPanel({ showHelp: externalShowHelp, setShowHelp: 
 
   return (
     <PanelShell
-      title={t('economy.titleHeader')}
-      subtitle={t('economy.subtitleHeader')}
+      title={t('titleHeader')}
+      subtitle={t('subtitleHeader')}
       icon={Coins}
       iconColor={PANEL_COLOR}
       onClose={onClose ?? (() => {})}
