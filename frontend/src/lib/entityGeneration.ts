@@ -25,7 +25,7 @@ import { SCALE } from '@/lib/formulaEngine';
 /**
  * 특정 레벨의 스탯 값 계산
  */
-export function calculateStatAtLevel(
+function calculateStatAtLevel(
   baseStat: number,
   level: number,
   curveType: CurveType,
@@ -68,7 +68,7 @@ function getInterpolationFunction(type: InterpolationType): (t: number) => numbe
  * 오버라이드 포인트 사이의 값을 보간
  * 오버라이드가 있는 경우, 그 사이 레벨들은 지정된 방식으로 보간
  */
-export function interpolateWithOverrides(
+function interpolateWithOverrides(
   baseStat: number,
   level: number,
   curveType: CurveType,
@@ -146,7 +146,7 @@ export function interpolateWithOverrides(
  * "기본*" 패턴의 컬럼을 스탯으로 인식
  * 예: 기본HP, 기본ATK, 기본DEF, 기본SPD, 기본CRIT 등
  */
-export function detectStatColumns(sheet: Sheet): string[] {
+function detectStatColumns(sheet: Sheet): string[] {
   const stats: string[] = [];
   const basePattern = /^기본(.+)$/;
 
@@ -160,93 +160,6 @@ export function detectStatColumns(sheet: Sheet): string[] {
   return stats;
 }
 
-/**
- * 시트에서 엔티티 정의 목록 추출
- * 동적으로 "기본*" 패턴의 컬럼을 스탯으로 인식
- */
-export function parseEntityDefinitionsFromSheet(sheet: Sheet): EntityDefinition[] {
-  const entities: EntityDefinition[] = [];
-
-  // 컬럼 ID 매핑
-  const colMap: Record<string, string> = {};
-  for (const col of sheet.columns) {
-    colMap[col.name] = col.id;
-  }
-
-  // 필수 컬럼 체크
-  const requiredCols = ['ID', '이름'];
-  const hasRequiredCols = requiredCols.every(name => colMap[name]);
-  if (!hasRequiredCols) {
-    console.warn('엔티티 정의 시트에 필수 컬럼(ID, 이름)이 없습니다.');
-    return entities;
-  }
-
-  // 동적으로 스탯 컬럼 감지
-  const statNames = detectStatColumns(sheet);
-
-  // 각 행을 엔티티 정의로 변환
-  for (const row of sheet.rows) {
-    const id = String(row.cells[colMap['ID']] || '');
-    const name = String(row.cells[colMap['이름']] || '');
-
-    if (!id || !name) continue;
-
-    // 동적 스탯 파싱
-    const baseStats: Record<string, number> = {};
-    const growthCurves: Record<string, { curveType: CurveType; growthRate: number }> = {};
-
-    for (const statName of statNames) {
-      const baseColName = `기본${statName}`;
-      const curveColName = `${statName}곡선`;
-      const rateColName = `${statName}성장률`;
-
-      if (colMap[baseColName]) {
-        const baseValue = Number(row.cells[colMap[baseColName]] || 0);
-        if (baseValue > 0) {
-          baseStats[statName] = baseValue;
-
-          // 곡선 타입 (기본값: exponential)
-          const curveType = colMap[curveColName]
-            ? String(row.cells[colMap[curveColName]] || 'exponential') as CurveType
-            : 'exponential';
-
-          // 성장률 (기본값: 1.08)
-          const growthRate = colMap[rateColName]
-            ? Number(row.cells[colMap[rateColName]] || 1.08)
-            : 1.08;
-
-          growthCurves[statName] = { curveType, growthRate };
-        }
-      }
-    }
-
-    // 스탯이 하나도 없으면 스킵
-    if (Object.keys(baseStats).length === 0) continue;
-
-    // 최대 레벨
-    const maxLevel = Number(row.cells[colMap['최대레벨']] || 50);
-
-    // 엔티티 타입
-    const entityType = (String(row.cells[colMap['타입']] || 'character') as EntityDefinition['entityType']);
-
-    // 태그 (쉼표로 구분)
-    const tagsRaw = colMap['태그'] ? String(row.cells[colMap['태그']] || '') : '';
-    const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : undefined;
-
-    entities.push({
-      id,
-      name,
-      entityType,
-      baseStats,
-      growthCurves,
-      maxLevel,
-      overrides: [],
-      tags,
-    });
-  }
-
-  return entities;
-}
 
 // ============================================
 // 레벨 테이블 생성
@@ -295,75 +208,8 @@ export function generateLevelTableRows(entity: EntityDefinition): LevelTableRow[
   return rows;
 }
 
-/**
- * 여러 엔티티의 레벨 테이블을 하나로 합침
- */
-export function generateCombinedLevelTable(entities: EntityDefinition[]): LevelTableRow[] {
-  const allRows: LevelTableRow[] = [];
 
-  for (const entity of entities) {
-    allRows.push(...generateLevelTableRows(entity));
-  }
 
-  return allRows;
-}
-
-// ============================================
-// 시트 생성
-// ============================================
-
-/**
- * 레벨 테이블 행을 Sheet Row로 변환
- */
-export function createSheetRowsFromLevelTable(
-  levelRows: LevelTableRow[],
-  columns: Column[]
-): Row[] {
-  const colMap: Record<string, string> = {};
-  for (const col of columns) {
-    colMap[col.name] = col.id;
-  }
-
-  return levelRows.map((levelRow, index) => {
-    const cells: Record<string, CellValue> = {};
-
-    if (colMap['엔티티ID']) cells[colMap['엔티티ID']] = levelRow.entityId;
-    if (colMap['엔티티명']) cells[colMap['엔티티명']] = levelRow.entityName;
-    if (colMap['레벨']) cells[colMap['레벨']] = levelRow.level;
-
-    // 스탯 컬럼
-    for (const [statName, value] of Object.entries(levelRow.stats)) {
-      if (colMap[statName]) {
-        cells[colMap[statName]] = value;
-      }
-    }
-
-    return {
-      id: `row-${Date.now()}-${index}`,
-      cells,
-    };
-  });
-}
-
-/**
- * 레벨 테이블 시트 생성을 위한 컬럼 목록 생성
- */
-export function createLevelTableColumns(statNames: string[]): Omit<Column, 'id'>[] {
-  const baseColumns: Omit<Column, 'id'>[] = [
-    { name: '엔티티ID', type: 'general', width: 120, exportName: 'entityId' },
-    { name: '엔티티명', type: 'general', width: 100, exportName: 'entityName' },
-    { name: '레벨', type: 'general', width: 60, exportName: 'level' },
-  ];
-
-  const statColumns: Omit<Column, 'id'>[] = statNames.map(statName => ({
-    name: statName,
-    type: 'general' as const,
-    width: 100,
-    exportName: statName.toLowerCase(),
-  }));
-
-  return [...baseColumns, ...statColumns];
-}
 
 // ============================================
 // 미리보기 데이터 생성

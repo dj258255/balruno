@@ -30,7 +30,7 @@ export type CurveType =
 /**
  * Linear regression: y = ax + b
  */
-export function fitLinear(points: Point[]): FitResult {
+function fitLinear(points: Point[]): FitResult {
   const n = points.length;
   if (n < 2) throw new Error('Need at least 2 points for linear fit');
 
@@ -75,7 +75,7 @@ export function fitLinear(points: Point[]): FitResult {
 /**
  * Polynomial regression using normal equations
  */
-export function fitPolynomial(points: Point[], degree: number): FitResult {
+function fitPolynomial(points: Point[], degree: number): FitResult {
   const n = points.length;
   if (n < degree + 1) throw new Error(`Need at least ${degree + 1} points for degree ${degree} polynomial`);
 
@@ -138,7 +138,7 @@ export function fitPolynomial(points: Point[], degree: number): FitResult {
  * Power regression: y = a * x^b
  * Uses log transformation: ln(y) = ln(a) + b*ln(x)
  */
-export function fitPower(points: Point[]): FitResult {
+function fitPower(points: Point[]): FitResult {
   // Filter out non-positive values
   const validPoints = points.filter(p => p.x > 0 && p.y > 0);
   if (validPoints.length < 2) throw new Error('Need at least 2 positive points for power fit');
@@ -169,7 +169,7 @@ export function fitPower(points: Point[]): FitResult {
  * Exponential regression: y = a * e^(bx)
  * Uses log transformation: ln(y) = ln(a) + bx
  */
-export function fitExponential(points: Point[]): FitResult {
+function fitExponential(points: Point[]): FitResult {
   const validPoints = points.filter(p => p.y > 0);
   if (validPoints.length < 2) throw new Error('Need at least 2 points with positive y values for exponential fit');
 
@@ -198,7 +198,7 @@ export function fitExponential(points: Point[]): FitResult {
 /**
  * Logarithmic regression: y = a * ln(x) + b
  */
-export function fitLogarithmic(points: Point[]): FitResult {
+function fitLogarithmic(points: Point[]): FitResult {
   const validPoints = points.filter(p => p.x > 0);
   if (validPoints.length < 2) throw new Error('Need at least 2 points with positive x values for logarithmic fit');
 
@@ -228,7 +228,7 @@ export function fitLogarithmic(points: Point[]): FitResult {
  * Sigmoid regression: y = L / (1 + e^(-k(x-x0)))
  * Uses iterative optimization
  */
-export function fitSigmoid(points: Point[]): FitResult {
+function fitSigmoid(points: Point[]): FitResult {
   if (points.length < 3) throw new Error('Need at least 3 points for sigmoid fit');
 
   // Initial estimates
