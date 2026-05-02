@@ -999,59 +999,9 @@ export function simulateBattleWithSkills(
 }
 
 /**
- * 시너지 효과 적용
- */
-export function applySynergies(
-  units: UnitStats[],
-  synergies: import('./types').Synergy[]
-): UnitStats[] {
-  const unitIds = new Set(units.map(u => u.id));
-
-  // 각 유닛에 적용될 버프 수집
-  const unitBuffs = new Map<string, import('./types').Buff[]>();
-  units.forEach(u => unitBuffs.set(u.id, []));
-
-  // 시너지 조건 확인 및 버프 적용
-  for (const synergy of synergies) {
-    const hasAll = synergy.requiredUnits.every(id => unitIds.has(id));
-    if (hasAll) {
-      // 모든 유닛에 버프 적용
-      for (const unit of units) {
-        const buffs = unitBuffs.get(unit.id) || [];
-        buffs.push(...synergy.effect);
-        unitBuffs.set(unit.id, buffs);
-      }
-    }
-  }
-
-  // 버프 적용하여 새 유닛 배열 반환
-  return units.map(unit => {
-    const buffs = unitBuffs.get(unit.id) || [];
-    if (buffs.length === 0) return unit;
-
-    const modified = { ...unit };
-
-    for (const buff of buffs) {
-      const stat = buff.stat as keyof UnitStats;
-      const currentValue = modified[stat];
-
-      if (typeof currentValue === 'number') {
-        if (buff.isPercent) {
-          (modified as Record<string, unknown>)[stat] = currentValue * (1 + buff.value);
-        } else {
-          (modified as Record<string, unknown>)[stat] = currentValue + buff.value;
-        }
-      }
-    }
-
-    return modified;
-  });
-}
-
-/**
  * 팀 전투 시뮬레이션 (1:N, N:N)
  */
-export function simulateTeamBattle(
+function simulateTeamBattle(
   team1: UnitStats[],
   team2: UnitStats[],
   config: Partial<import('./types').TeamBattleConfig> = {}
@@ -1580,7 +1530,7 @@ export function runTeamMonteCarloSimulation(
 /**
  * 스킬이 있는 팀 전투 시뮬레이션 (부활/무적/힐/범위 스킬 지원)
  */
-export function simulateTeamBattleWithSkills(
+function simulateTeamBattleWithSkills(
   team1: UnitStats[],
   team2: UnitStats[],
   team1Skills: Map<string, Skill[]>,  // unitId -> skills[]

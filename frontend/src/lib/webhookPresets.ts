@@ -216,6 +216,3 @@ export function renderWebhookBody(
   });
 }
 
-export function getPresetsByService(service: WebhookPreset['service']): WebhookPreset[] {
-  return WEBHOOK_PRESETS.filter((p) => p.service === service);
-}

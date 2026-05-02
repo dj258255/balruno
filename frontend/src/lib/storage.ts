@@ -26,7 +26,7 @@ interface BalrunoDB extends DBSchema {
 let db: IDBPDatabase<BalrunoDB> | null = null;
 
 // DB 초기화
-export async function initDB(): Promise<IDBPDatabase<BalrunoDB>> {
+async function initDB(): Promise<IDBPDatabase<BalrunoDB>> {
   if (db) return db;
 
   db = await openDB<BalrunoDB>(DB_NAME, DB_VERSION, {
@@ -161,13 +161,6 @@ export async function loadProjects(): Promise<Project[]> {
   return projects;
 }
 
-// 프로젝트 저장
-export async function saveProject(project: Project): Promise<void> {
-  const database = await initDB();
-  await database.put('projects', project);
-  await updateMetadata({ lastSaved: Date.now() });
-}
-
 // 모든 프로젝트 저장 (sync - DB에 있지만 projects에 없는 것은 삭제)
 export async function saveAllProjects(projects: Project[]): Promise<void> {
   const database = await initDB();
@@ -195,14 +188,8 @@ export async function deleteProjectFromDB(projectId: string): Promise<void> {
   await database.delete('projects', projectId);
 }
 
-// 메타데이터 로드
-export async function loadMetadata(): Promise<StorageMetadata | undefined> {
-  const database = await initDB();
-  return database.get('metadata', 'main');
-}
-
-// 메타데이터 업데이트
-export async function updateMetadata(updates: Partial<StorageMetadata>): Promise<void> {
+// 메타데이터 업데이트 (내부 saveAllProjects/createBackup 만 호출)
+async function updateMetadata(updates: Partial<StorageMetadata>): Promise<void> {
   const database = await initDB();
   const current = await database.get('metadata', 'main');
   const newMetadata: StorageMetadata = {

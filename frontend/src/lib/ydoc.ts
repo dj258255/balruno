@@ -36,7 +36,7 @@ export function getProjectDoc(projectId: string): Y.Doc {
  * y-indexeddb persistence 연결. 브라우저 IndexedDB 에 Y.Doc 업데이트를 자동 저장.
  * 반환되는 Promise 는 초기 로드 완료 시 resolve.
  */
-export async function persistDoc(projectId: string): Promise<void> {
+async function persistDoc(projectId: string): Promise<void> {
   if (providerCache.has(projectId)) return;
 
   const doc = getProjectDoc(projectId);
@@ -997,33 +997,6 @@ export function updateCellsStyleInDoc(
     touchSheet(sheetFound.sheet);
   });
 }
-
-export function updateCellMemoInDoc(
-  doc: Y.Doc,
-  sheetId: string,
-  rowId: string,
-  columnId: string,
-  memo: string | undefined
-): void {
-  doc.transact(() => {
-    const sheetFound = findSheetMap(doc, sheetId);
-    if (!sheetFound) return;
-    const rowFound = findRowMap(sheetFound.sheet, rowId);
-    if (!rowFound) return;
-    let memos = rowFound.row.get('cellMemos') as Y.Map<string> | undefined;
-    if (memo === undefined || memo === '') {
-      memos?.delete(columnId);
-      return;
-    }
-    if (!memos) {
-      memos = new Y.Map<string>();
-      rowFound.row.set('cellMemos', memos);
-    }
-    memos.set(columnId, memo);
-    touchSheet(sheetFound.sheet);
-  });
-}
-
 // ---- Sticker ----
 
 export function addStickerInDoc(doc: Y.Doc, sheetId: string, sticker: Sticker): void {

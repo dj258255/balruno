@@ -9,7 +9,7 @@
  */
 
 import type { Column, Sheet } from '@/types';
-import type { SimulationResult, TeamBattleResult, UnitStats } from './types';
+import type { SimulationResult, UnitStats } from './types';
 
 interface CommitContext {
   sheet: Sheet;
@@ -172,9 +172,3 @@ export function commitTeamResult(
   return ctx.addRow(cells);
 }
 
-/** 팀 시뮬 result 의 unitStats[] 에서 팀 합 집계 헬퍼 — TeamResult 의 옵셔널 필드 보강용 */
-export function summarizeTeamSurvivors(result: TeamBattleResult): { team1: number; team2: number } {
-  const team1 = result.unitResults.filter((u) => u.team === 'team1' && u.survived).length;
-  const team2 = result.unitResults.filter((u) => u.team === 'team2' && u.survived).length;
-  return { team1, team2 };
-}
