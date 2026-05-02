@@ -1,21 +1,29 @@
-MIT License
+PowerBalance / balruno — Repository License Overview
+=====================================================
 
-Copyright (c) 2025 Balruno
+This repository uses different licenses for different components.
+See `LICENSING.md` for a developer-friendly explanation, or read each
+directory's LICENSE file for the authoritative legal text.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Directory          License                Why
+-----------------  ---------------------  --------------------------------------
+frontend/          MIT                    Browser-executed code. Free to fork,
+                                          embed, or reuse without restriction.
+                                          See: frontend/LICENSE
+backend/ (TBD)     AGPL v3                Server code. Self-host freely; if you
+                                          modify and offer as a service to
+                                          others, you must publish your changes.
+                                          See: backend/LICENSE (created at
+                                          Phase B-1 bootstrap)
+docs/              MIT                    Same as frontend.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+The historical project-wide MIT license (Copyright (c) 2025 Balruno) applies
+to all code committed before 2026-05-03. The license split above takes effect
+for files added on or after 2026-05-03 per ADR 0005
+(`docs/backend/decisions/0005-oss-monetization.md`).
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+For the trademark "PowerBalance" and "balruno", and the project logo, see
+`TRADEMARK.md`. These are NOT covered by the source code licenses above.
+
+For commercial licensing inquiries (e.g. embedding the AGPL backend in a
+proprietary product without AGPL obligations), contact: dj258255@naver.com

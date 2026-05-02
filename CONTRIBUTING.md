@@ -18,6 +18,24 @@ This project and everyone participating in it is governed by our [Code of Conduc
 
 이 프로젝트는 [행동 강령](CODE_OF_CONDUCT.md)을 따릅니다. 참여하시면 이 규칙을 준수해주세요.
 
+## Licensing & CLA / 라이센스 및 기여자 동의
+
+**This repository uses two licenses depending on directory** (see `LICENSING.md` for FAQ, `LICENSE` for overview):
+
+| Directory | License |
+|---|---|
+| `frontend/` | MIT |
+| `backend/` (예정) | AGPL v3 |
+| `docs/` | MIT |
+
+**By submitting a PR, you agree that your contribution will be licensed under the same license as the directory you're modifying.**
+
+For external contributors, a Contributor License Agreement (CLA) check via [CLA Assistant](https://cla-assistant.io/) will run automatically on your PR. The CLA grants the project owner the right to relicense your contribution if needed (e.g. for a future commercial dual license). Without this, the project's license could become permanently locked.
+
+**라이센스 안내**: 본 저장소는 디렉토리별로 다른 라이센스를 사용합니다 (`LICENSING.md` 참조). PR 제출 시 해당 디렉토리의 라이센스에 동의하는 것으로 간주되며, 외부 기여자는 PR 시 CLA 자동 검증이 진행됩니다.
+
+자세한 정책: `docs/backend/decisions/0005-oss-monetization.md`
+
 ## How Can I Contribute? / 어떻게 기여할 수 있나요?
 
 ### 🐛 Reporting Bugs / 버그 제보
