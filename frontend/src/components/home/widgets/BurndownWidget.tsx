@@ -14,13 +14,21 @@ export default function BurndownWidget() {
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
 
-  // 활성 프로젝트에서 sprint 타입 시트를 모두 찾고, 사용자가 선택 가능
+  // 활성 프로젝트에서 sprint 타입 시트를 모두 찾고, 사용자가 선택 가능.
+  // ID 기준 dedupe — 데이터 손상으로 같은 ID 시트가 두 번 들어오면 React key
+  // 충돌이 발생하므로 방어적으로 한 번 거른다.
   const sprintSheets = useMemo(() => {
     const project = projects.find((p) => p.id === currentProjectId);
     if (!project) return [];
-    return project.sheets.filter((s) => {
+    const filtered = project.sheets.filter((s) => {
       const pm = detectPmSheet(s);
       return pm.type === 'sprint' || pm.type === 'generic-pm';
+    });
+    const seen = new Set<string>();
+    return filtered.filter((s) => {
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
     });
   }, [projects, currentProjectId]);
 
