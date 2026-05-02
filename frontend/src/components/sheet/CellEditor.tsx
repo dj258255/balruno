@@ -173,35 +173,77 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
       );
     }
 
-    // select 는 <select> 드롭다운
+    // select — multiSelect 와 동일한 커스텀 popup 으로 통일.
+    // native <select> 는 macOS Safari/Chrome 에서 autoFocus + 즉시 onBlur 조합
+    // 시 옵션 클릭의 mouseup 이 onChange 에 닿기 전에 blur 가 먼저 발생해
+    // 빈값 ""이 저장되는 race 가 발생 (실증). 단일 선택 button popup 으로 안전.
     if (columnType === 'select' && selectOptions && !isFormula) {
+      const selectedId = value !== null && value !== undefined ? String(value) : '';
       return (
-        <select
-          value={value ?? ''}
-          // 셀 mousedown 가로채기 방지 — 체크박스와 동일 가드
+        <div
+          className="absolute z-50 rounded shadow-lg overflow-y-auto"
+          style={{
+            top: position.top,
+            left: position.left,
+            width: Math.max(position.width, 180),
+            maxHeight: 240,
+            background: 'var(--bg-primary)',
+            border: `${borderWidth}px solid var(--editor-border-focus)`,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          }}
           onPointerDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
-          onChange={(e) => {
-            const next = e.target.value;
-            onChange(next);
-            // onBlur 를 onChange 와 같은 tick 에서 호출하면 ChangeEvent 가
-            // onBlur 의 setState 와 race 해서 onChange 가 손실될 수 있음.
-            // 다음 tick 으로 미뤄 onChange 가 먼저 적용되게 한다.
-            setTimeout(() => onBlur?.(e as unknown as React.FocusEvent<HTMLSelectElement>), 0);
-          }}
-          onKeyDown={onKeyDown}
-          onBlur={onBlur}
-          autoFocus
-          className="absolute z-50"
-          style={baseStyle}
+          onBlur={onBlur as React.FocusEventHandler<HTMLDivElement>}
+          tabIndex={-1}
         >
-          <option value="">—</option>
-          {selectOptions.map((opt) => (
-            <option key={opt.id} value={opt.id}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          {selectOptions.length === 0 ? (
+            <div className="p-2 text-xs" style={{ color: 'var(--text-secondary)' }}>{t('sheet.noOptionsHint')}</div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={() => {
+                  onChange('');
+                  onBlur?.();
+                }}
+                className="w-full text-left px-2 py-1 text-xs flex items-center gap-2 hover:bg-[var(--bg-tertiary)]"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                <span className="w-3 h-3 flex items-center justify-center flex-shrink-0">
+                  {selectedId === '' && <svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4 L3 6 L7 1.5" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>}
+                </span>
+                <span>—</span>
+              </button>
+              {selectOptions.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={() => {
+                    onChange(opt.id);
+                    onBlur?.();
+                  }}
+                  className="w-full text-left px-2 py-1 text-xs flex items-center gap-2 hover:bg-[var(--bg-tertiary)]"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  <span
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ background: opt.color ?? '#94a3b8' }}
+                  />
+                  <span className="truncate flex-1">{opt.label}</span>
+                  {selectedId === opt.id && (
+                    <svg width="10" height="10" viewBox="0 0 8 8" style={{ color: 'var(--accent)' }}>
+                      <path d="M1 4 L3 6 L7 1.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
       );
     }
 
