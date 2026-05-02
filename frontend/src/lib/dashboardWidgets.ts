@@ -274,8 +274,8 @@ export function saveDashboard(projectId: string, layout: DashboardLayout): void 
   localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(layout));
 }
 
-/** 시트의 한 컬럼 값들을 숫자 배열로 추출 (formula 컬럼은 computed 사용). */
-export function getColumnNumbers(sheet: Sheet, sheets: Sheet[], columnName: string): number[] {
+/** 시트의 한 컬럼 값들을 숫자 배열로 추출 (formula 컬럼은 computed 사용). (private — 같은 파일 내부 widget 계산만 사용) */
+function getColumnNumbers(sheet: Sheet, sheets: Sheet[], columnName: string): number[] {
   const computed = computeSheetRows(sheet, sheets);
   return computed
     .map((row) => Number(row[columnName]))

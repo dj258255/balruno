@@ -97,22 +97,3 @@ export function reportError(error: Error | unknown, context: ErrorContext): void
   }
 }
 
-/** 개발자/관리자가 최근 에러 확인 */
-export function getRecentErrors(): unknown[] {
-  try {
-    if (typeof window === 'undefined') return [];
-    const raw = localStorage.getItem('balruno:error-log');
-    return raw ? (JSON.parse(raw) as unknown[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function clearErrorLog(): void {
-  try {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem('balruno:error-log');
-  } catch {
-    // ignore
-  }
-}

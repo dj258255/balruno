@@ -16,8 +16,8 @@ import type { Project } from '@/types';
 
 export type RowKey = string; // `${sheetId}:${rowId}`
 
-/** Doc content (HTML 직렬화) 에서 모든 mention id 를 추출. */
-export function extractMentionIds(content: string): string[] {
+/** Doc content (HTML 직렬화) 에서 모든 mention id 를 추출. (private — buildRowBacklinks 만 사용) */
+function extractMentionIds(content: string): string[] {
   if (!content) return [];
   const ids: string[] = [];
   for (const m of content.matchAll(/data-id="([^"]+)"/g)) {
@@ -53,8 +53,3 @@ export function buildRowBacklinks(project: Project): Map<RowKey, string[]> {
   return map;
 }
 
-/** 특정 row 를 참조하는 doc id 배열만 빠르게 조회. */
-export function getDocsReferencingRow(project: Project, sheetId: string, rowId: string): string[] {
-  const map = buildRowBacklinks(project);
-  return map.get(`${sheetId}:${rowId}`) ?? [];
-}

@@ -14,9 +14,9 @@ export interface ExportOptions {
 }
 
 /**
- * HTML → Markdown 변환.
+ * HTML → Markdown 변환. (private — exportDocAsMarkdown 만 사용)
  */
-export function docToMarkdown(
+function docToMarkdown(
   doc: Doc,
   project: Project | null | undefined,
   options: ExportOptions = { resolveRefs: true },

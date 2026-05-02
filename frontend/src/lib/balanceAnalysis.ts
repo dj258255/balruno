@@ -188,33 +188,6 @@ export interface PowerCurveAnalysis {
 }
 
 /**
- * 파워 값 계산 (스탯 가중 합)
- */
-export function calculatePower(
-  stats: Record<string, number>,
-  weights?: Record<string, number>
-): number {
-  const defaultWeights: Record<string, number> = {
-    hp: 1,
-    atk: 2,
-    def: 1.5,
-    speed: 3,
-    critRate: 50,
-    critDamage: 10,
-  };
-
-  const w = weights || defaultWeights;
-  let power = 0;
-
-  for (const [stat, value] of Object.entries(stats)) {
-    const weight = w[stat] || 1;
-    power += value * weight;
-  }
-
-  return power;
-}
-
-/**
  * 파워 커브 피팅 및 분석
  */
 export function analyzePowerCurve(
@@ -431,89 +404,6 @@ export function detectDeadZones(
   }
 
   return deadZones;
-}
-
-// ==================== 수확체감 분석 ====================
-
-export interface DiminishingReturnsAnalysis {
-  stat: string;
-  effectiveCap: number;      // 실질적 효과 상한
-  halfEffectPoint: number;   // 효과가 50%로 줄어드는 지점
-  recommendedRange: [number, number];
-  formula: string;
-}
-
-/**
- * 수확체감 분석 (방어력/크리율 등)
- */
-export function analyzeDiminishingReturns(
-  stat: string,
-  formula: 'defense' | 'crit' | 'custom',
-  customFormula?: (value: number) => number
-): DiminishingReturnsAnalysis {
-  let effectFunc: (v: number) => number;
-  let formulaStr: string;
-
-  switch (formula) {
-    case 'defense':
-      // LoL 스타일: reduction = DEF / (DEF + 100)
-      effectFunc = (v) => v / (v + 100);
-      formulaStr = 'reduction = DEF / (DEF + 100)';
-      break;
-    case 'crit':
-      // 크리율: 직접적 (하지만 100% 이상은 의미 없음)
-      effectFunc = (v) => Math.min(1, v);
-      formulaStr = 'effect = min(1, critRate)';
-      break;
-    case 'custom':
-      effectFunc = customFormula || ((v) => v);
-      formulaStr = 'custom formula';
-      break;
-    default:
-      effectFunc = (v) => v;
-      formulaStr = 'y = x';
-  }
-
-  // 효과적 상한 찾기 (99% 효과 달성점)
-  let effectiveCap = 0;
-  for (let v = 0; v <= 10000; v += 10) {
-    if (effectFunc(v) >= 0.99) {
-      effectiveCap = v;
-      break;
-    }
-  }
-  if (effectiveCap === 0) effectiveCap = 10000;
-
-  // 50% 효과 지점
-  let halfEffectPoint = 0;
-  const maxEffect = effectFunc(effectiveCap);
-  for (let v = 0; v <= effectiveCap; v += 1) {
-    if (effectFunc(v) >= maxEffect * 0.5) {
-      halfEffectPoint = v;
-      break;
-    }
-  }
-
-  // 권장 범위 (20%~80% 효율)
-  let minRecommended = 0;
-  let maxRecommended = 0;
-  for (let v = 0; v <= effectiveCap; v += 1) {
-    if (effectFunc(v) >= maxEffect * 0.2 && minRecommended === 0) {
-      minRecommended = v;
-    }
-    if (effectFunc(v) >= maxEffect * 0.8 && maxRecommended === 0) {
-      maxRecommended = v;
-      break;
-    }
-  }
-
-  return {
-    stat,
-    effectiveCap,
-    halfEffectPoint,
-    recommendedRange: [minRecommended, maxRecommended],
-    formula: formulaStr,
-  };
 }
 
 // ==================== 밸런스 커브 자동 생성 ====================
