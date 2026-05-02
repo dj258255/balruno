@@ -5,7 +5,6 @@ export { default as StickerLayer } from './StickerLayer';
 // 분리된 하위 컴포넌트 (오픈소스 패턴)
 // 출처: https://github.com/myliang/x-spreadsheet, https://handsontable.com/
 export { default as SheetHeader } from './SheetHeader';
-export { default as SheetBody } from './SheetBody';
 export { default as SheetCell } from './SheetCell';
 export { CellEditor } from './CellEditor';
 

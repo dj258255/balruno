@@ -746,7 +746,8 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           const usesColumnFormula = !!(col.type === 'formula' && col.formula && !rawValue);
           const hasCellOverride = rawValue !== null && rawValue !== undefined && rawValue !== '';
 
-          return null; // SheetCell은 SheetBody에서 렌더링
+          // 실제 SheetCell 렌더는 아래 1494 라인에서 직접 수행 (react-table cell renderer 미사용)
+          return null;
         },
         size: col.width || 120,
       });
