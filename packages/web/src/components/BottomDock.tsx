@@ -118,7 +118,7 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
   const currentHintGroupId = showHint ? DOCK_HINT_STEPS[hintStep].groupId : null;
 
   const isMobile = useIsMobile();
-  const leftOffset = isMobile ? 0 : mounted ? sidebarWidth : 256;
+  const leftOffset = isMobile ? 0 : mounted ? sidebarWidth : 280;
 
   const handleGroupClick = (groupId: ToolGroupId) => {
     if (isModalOpen) return;

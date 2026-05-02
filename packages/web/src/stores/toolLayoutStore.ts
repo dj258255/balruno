@@ -141,7 +141,7 @@ export const useToolLayoutStore = create<ToolLayoutState>()(
       bottomToolOrder: [...DEFAULT_BOTTOM_ORDER],
       bottomToolZOrder: ['formulaHelper', 'balanceValidator', 'difficultyCurve', 'simulation', 'entityDefinition'] as AllToolId[],
       pinnedTools: [] as AllToolId[],
-      sidebarWidth: 256, // 기본값 256px (w-64)
+      sidebarWidth: 280, // 280px — 게임/시트 이름 + 태그 chip + 종류 배지 한 줄에 안 잘리게
       toolsSectionHeight: 200, // 기본값 200px
 
       setSidebarWidth: (width) => {
@@ -331,7 +331,7 @@ export const useToolLayoutStore = create<ToolLayoutState>()(
           bottomToolOrder: [...DEFAULT_BOTTOM_ORDER],
           bottomToolZOrder: ['formulaHelper', 'balanceValidator', 'difficultyCurve', 'simulation', 'entityDefinition'] as AllToolId[],
           pinnedTools: [] as AllToolId[],
-          sidebarWidth: 256,
+          sidebarWidth: 280,
           toolsSectionHeight: 200,
         });
       },

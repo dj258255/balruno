@@ -179,7 +179,7 @@ export function useSidebarState() {
   }, []);
 
   // 계산된 값
-  const effectiveWidth = mounted ? toolLayoutStore.sidebarWidth : 256;
+  const effectiveWidth = mounted ? toolLayoutStore.sidebarWidth : 280;
   const effectiveToolsHeight = mounted ? toolLayoutStore.toolsSectionHeight : 200;
 
   // 프로젝트 토글
