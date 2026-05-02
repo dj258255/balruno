@@ -89,6 +89,10 @@ export function InlineCheckbox({
   return (
     <button
       type="button"
+      // pointerdown/mousedown 도 stopPropagation — 셀 드래그 시작이 pointerdown 시점이라
+      // 이게 없으면 체크박스 클릭이 드래그에 가려져 작동 안 함.
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
         if (!disabled) onChange(!checked);
