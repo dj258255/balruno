@@ -191,6 +191,7 @@
   },
   "sheet": {
     "newSheet": "New Sheet",
+    "newSheetKindHint": "Sheet kind — auto-detect or pick explicitly",
     "noSheets": "No sheets",
     "createSheet": "Create New Sheet",
     "createSheetDesc": "Create a new sheet to manage your data",

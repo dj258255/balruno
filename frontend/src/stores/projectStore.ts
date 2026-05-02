@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type {
   Project,
   Sheet,
+  SheetKind,
   Column,
   Row,
   CellValue,
@@ -72,7 +73,12 @@ export interface ProjectState {
   loadProjects: (projects: Project[]) => void;
 
   // 시트 액션
-  createSheet: (projectId: string, name: string, exportClassName?: string) => string;
+  createSheet: (
+    projectId: string,
+    name: string,
+    exportClassName?: string,
+    kind?: SheetKind,
+  ) => string;
   updateSheet: (
     projectId: string,
     sheetId: string,

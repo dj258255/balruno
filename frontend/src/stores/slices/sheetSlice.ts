@@ -7,7 +7,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import type { StoreApi } from 'zustand';
-import type { Sheet, Column, Row, CellValue } from '@/types';
+import type { Sheet, SheetKind, Column, Row, CellValue } from '@/types';
 import type { ProjectState, TabEntry } from '../projectStore';
 import {
   getProjectDoc,
@@ -37,7 +37,12 @@ const nextActiveAfterClose = (tabs: TabEntry[]): TabEntry | null => {
 };
 
 export const createSheetActions = (set: SetFn, get: GetFn) => ({
-  createSheet: (projectId: string, name: string, exportClassName?: string): string => {
+  createSheet: (
+    projectId: string,
+    name: string,
+    exportClassName?: string,
+    kind?: SheetKind,
+  ): string => {
     const id = uuidv4();
     const now = Date.now();
 
@@ -46,6 +51,7 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     const newSheet: Sheet = {
       id,
       name,
+      kind,
       columns: [
         { id: col1, name: 'Column1', type: 'general', width: 120 },
         { id: col2, name: 'Column2', type: 'general', width: 120 },

@@ -191,6 +191,7 @@
   },
   "sheet": {
     "newSheet": "새 시트",
+    "newSheetKindHint": "시트 용도 — 자동 감지 또는 직접 선택",
     "noSheets": "시트가 없습니다",
     "createSheet": "새 시트 만들기",
     "createSheetDesc": "새 시트를 만들어 데이터를 관리해보세요",

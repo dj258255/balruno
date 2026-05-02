@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, X, Edit2, Copy, Check, LayoutTemplate, GripVertical, ChevronLeft, ChevronRight, XCircle, FileText, FileSpreadsheet } from 'lucide-react';
 import DocIconPicker from '@/components/docs/DocIconPicker';
 import { useProjectStore } from '@/stores/projectStore';
-import type { Project } from '@/types';
+import type { Project, SheetKind } from '@/types';
 import { TemplateSelector } from '@/components/panels';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
+import { KIND_META } from '@/lib/sheetKind';
 
 interface SheetTabsProps {
   project: Project;
@@ -39,6 +40,9 @@ export default function SheetTabs({ project }: SheetTabsProps) {
   const [showNewSheet, setShowNewSheet] = useState(false);
   const [newSheetName, setNewSheetName] = useState('');
   const [newSheetClassName, setNewSheetClassName] = useState('');
+  // 신규 시트 용도. undefined = 자동 감지. 사용자가 의식적으로 선택할 때만 명시.
+  const [newSheetKind, setNewSheetKind] = useState<SheetKind | undefined>(undefined);
+  const [showKindMenu, setShowKindMenu] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
   // 탭 너비 상태
@@ -135,9 +139,15 @@ export default function SheetTabs({ project }: SheetTabsProps) {
 
   const handleCreateSheet = () => {
     if (newSheetName.trim()) {
-      createSheet(project.id, newSheetName.trim(), newSheetClassName.trim() || undefined);
+      createSheet(
+        project.id,
+        newSheetName.trim(),
+        newSheetClassName.trim() || undefined,
+        newSheetKind,
+      );
       setNewSheetName('');
       setNewSheetClassName('');
+      setNewSheetKind(undefined);
       setShowNewSheet(false);
     }
   };
@@ -449,6 +459,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                     setShowNewSheet(false);
                     setNewSheetName('');
                     setNewSheetClassName('');
+                    setNewSheetKind(undefined);
                   }
                 }}
                 placeholder={t('table.sheetName')}
@@ -470,6 +481,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                     setShowNewSheet(false);
                     setNewSheetName('');
                     setNewSheetClassName('');
+                    setNewSheetKind(undefined);
                   }
                 }}
                 placeholder={t('sheet.className')}
@@ -479,6 +491,12 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                   borderColor: 'var(--border-primary)',
                   color: 'var(--text-tertiary)'
                 }}
+              />
+              <NewSheetKindPicker
+                value={newSheetKind}
+                onChange={setNewSheetKind}
+                open={showKindMenu}
+                setOpen={setShowKindMenu}
               />
               <button
                 onClick={handleCreateSheet}
@@ -492,6 +510,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                   setShowNewSheet(false);
                   setNewSheetName('');
                   setNewSheetClassName('');
+                  setNewSheetKind(undefined);
                 }}
                 className="px-2 py-1 text-sm rounded transition-colors"
                 style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
@@ -657,5 +676,120 @@ export default function SheetTabs({ project }: SheetTabsProps) {
         </div>
       )}
     </>
+  );
+}
+
+// ─── NewSheetKindPicker ────────────────────────────────────────────────
+// 신규 시트 생성 시 용도(SheetKind) 선택 드롭다운. 의도적으로 칩 5개 가로 배치
+// 대신 컴팩트 드롭다운으로 — 인라인 폼 공간 절약. 디폴트는 "자동 감지" 라
+// 빠른 생성 흐름을 막지 않으면서 의식적으로 명시 가능.
+interface NewSheetKindPickerProps {
+  value: SheetKind | undefined;
+  onChange: (kind: SheetKind | undefined) => void;
+  open: boolean;
+  setOpen: (v: boolean) => void;
+}
+
+function NewSheetKindPicker({ value, onChange, open, setOpen }: NewSheetKindPickerProps) {
+  const t = useTranslations();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [open, setOpen]);
+
+  const currentLabel = value ? KIND_META[value].label : t('sidebar.autoDetect');
+  const currentColor = value ? KIND_META[value].color : 'var(--text-tertiary)';
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 px-2 py-1 text-xs rounded border"
+        style={{
+          background: 'var(--bg-primary)',
+          borderColor: 'var(--border-primary)',
+          color: 'var(--text-secondary)',
+        }}
+        title={t('sheet.newSheetKindHint')}
+      >
+        <span
+          className="w-1.5 h-1.5 rounded-full shrink-0"
+          style={{ background: currentColor }}
+        />
+        <span className="truncate max-w-[80px]">{currentLabel}</span>
+      </button>
+      {open && (
+        <div
+          ref={menuRef}
+          className="absolute top-full left-0 mt-1 z-50 min-w-[160px] py-1 rounded-lg shadow-lg border"
+          style={{
+            background: 'var(--bg-primary)',
+            borderColor: 'var(--border-primary)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              onChange(undefined);
+              setOpen(false);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ background: 'var(--text-tertiary)' }}
+            />
+            <span className="flex-1">{t('sidebar.autoDetect')}</span>
+            {value === undefined && (
+              <Check className="w-3 h-3" style={{ color: 'var(--accent)' }} />
+            )}
+          </button>
+          <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />
+          {(Object.keys(KIND_META) as SheetKind[]).map((kind) => {
+            const meta = KIND_META[kind];
+            return (
+              <button
+                key={kind}
+                type="button"
+                onClick={() => {
+                  onChange(kind);
+                  setOpen(false);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors hover:bg-[var(--bg-hover)]"
+                style={{ color: 'var(--text-primary)' }}
+                title={meta.description}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ background: meta.color }}
+                />
+                <span className="flex-1">{meta.label}</span>
+                {value === kind && (
+                  <Check className="w-3 h-3" style={{ color: 'var(--accent)' }} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
