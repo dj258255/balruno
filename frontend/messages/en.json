@@ -187,7 +187,10 @@
     "qaExpand": "Expand section",
     "qaGoHome": "Go Home",
     "feedback": "Feedback",
-    "feedbackTooltip": "Report bugs or suggest new features for Balruno"
+    "feedbackTooltip": "Report bugs or suggest new features for Balruno",
+    "tagFilterClick": "Filter by {tag}",
+    "tagFilterActive": "Remove {tag} filter",
+    "tagFilterClear": "Clear"
   },
   "sheet": {
     "newSheet": "New Sheet",

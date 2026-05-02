@@ -187,7 +187,10 @@
     "qaExpand": "섹션 펼치기",
     "qaGoHome": "Home 으로 이동",
     "feedback": "피드백",
-    "feedbackTooltip": "Balruno에 오류·버그·새로운 기능 제안 있으면 알려주세요"
+    "feedbackTooltip": "Balruno에 오류·버그·새로운 기능 제안 있으면 알려주세요",
+    "tagFilterClick": "{tag} 로 필터",
+    "tagFilterActive": "{tag} 필터 해제",
+    "tagFilterClear": "필터 초기화"
   },
   "sheet": {
     "newSheet": "새 시트",

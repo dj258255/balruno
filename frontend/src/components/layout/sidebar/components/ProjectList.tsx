@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { FileSpreadsheet, ChevronRight, ChevronDown, FolderPlus, LayoutTemplate } from 'lucide-react';
+import { FileSpreadsheet, ChevronRight, ChevronDown, FolderPlus, LayoutTemplate, Tags as TagsIcon, X as XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import type { Project, Folder as FolderType } from '@/types';
@@ -262,6 +262,19 @@ export function ProjectList({
     setDraggedFolderProjectId(null);
   };
 
+  // 프로젝트별 활성 tag 필터 (AND 조건). component-local 상태 — 페이지 새로고침 시 리셋.
+  const [tagFilters, setTagFilters] = useState<Record<string, string[]>>({});
+  const toggleTagFilter = (projectId: string, tag: string) => {
+    setTagFilters((prev) => {
+      const cur = prev[projectId] ?? [];
+      const next = cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag];
+      return { ...prev, [projectId]: next };
+    });
+  };
+  const clearTagFilter = (projectId: string) => {
+    setTagFilters((prev) => ({ ...prev, [projectId]: [] }));
+  };
+
   return (
     <div className="p-2" onContextMenu={handleEmptyContextMenu}>
       {renderEmptyContextMenu(emptyMenu, setEmptyMenu, t)}
@@ -280,8 +293,22 @@ export function ProjectList({
               });
           })();
 
-          // 루트 레벨 시트들 (folderId가 없는 것)
-          // 루트 시트 — 과거 저장 데이터의 id 중복 방어 (IndexedDB 에 남은 구버전 데이터 대응)
+          // 활성 tag 필터 (AND) + matcher 함수
+          const activeTags = tagFilters[project.id] ?? [];
+          const sheetMatcher = activeTags.length === 0
+            ? undefined
+            : (s: { tags?: string[] }) => activeTags.every((t) => (s.tags ?? []).includes(t));
+
+          // 이 프로젝트의 모든 unique tag 수집 (chip row 표시용)
+          const projectTags = (() => {
+            const set = new Set<string>();
+            for (const s of project.sheets) {
+              for (const tag of s.tags ?? []) set.add(tag);
+            }
+            return Array.from(set).sort();
+          })();
+
+          // 루트 레벨 시트들 (folderId가 없는 것) — id 중복 방어 + tag 필터
           const rootSheets = (() => {
             const seen = new Set<string>();
             return project.sheets
@@ -290,7 +317,8 @@ export function ProjectList({
                 if (seen.has(s.id)) return false;
                 seen.add(s.id);
                 return true;
-              });
+              })
+              .filter(s => (sheetMatcher ? sheetMatcher(s) : true));
           })();
 
           return (
@@ -411,6 +439,41 @@ export function ProjectList({
                 )}
               </div>
 
+              {/* 태그 필터 chip 영역 — 이 프로젝트가 expand 되어 있고 tag 가 하나라도 있을 때만 */}
+              {expandedProjects.has(project.id) && projectTags.length > 0 && (
+                <div className="ml-5 mt-1 mb-1 flex flex-wrap items-center gap-1">
+                  <TagsIcon className="w-3 h-3 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+                  {projectTags.map((tag) => {
+                    const active = activeTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => toggleTagFilter(project.id, tag)}
+                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors"
+                        style={
+                          active
+                            ? { background: 'var(--accent)', color: 'white', border: '1px solid var(--accent)' }
+                            : { background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border-secondary)' }
+                        }
+                        title={active ? t('sidebar.tagFilterActive', { tag }) : t('sidebar.tagFilterClick', { tag })}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                  {activeTags.length > 0 && (
+                    <button
+                      onClick={() => clearTagFilter(project.id)}
+                      className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] hover:opacity-80"
+                      style={{ color: 'var(--text-tertiary)' }}
+                      title={t('sidebar.tagFilterClear')}
+                    >
+                      <XIcon className="w-3 h-3" /> {t('sidebar.tagFilterClear')}
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* 프로젝트 내용 */}
               {expandedProjects.has(project.id) && (
                 <div
@@ -460,6 +523,7 @@ export function ProjectList({
                       draggedFolderId={draggedFolderId}
                       onSheetDelete={onSheetDelete}
                       onFolderDelete={onFolderDelete || (() => {})}
+                      sheetMatcher={sheetMatcher}
                     />
                   ))}
 

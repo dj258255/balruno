@@ -56,6 +56,9 @@ interface FolderItemProps {
   // 삭제
   onSheetDelete: (projectId: string, sheetId: string, sheetName: string) => void;
   onFolderDelete: (projectId: string, folderId: string, folderName: string) => void;
+
+  // 태그 필터 — 활성 태그가 있으면 모든 활성 태그를 가진 시트만 통과 (AND)
+  sheetMatcher?: (sheet: Sheet) => boolean;
 }
 
 export function FolderItem({
@@ -89,12 +92,13 @@ export function FolderItem({
   draggedFolderId,
   onSheetDelete,
   onFolderDelete,
+  sheetMatcher,
 }: FolderItemProps) {
   const t = useTranslations();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isFolderDragOver, setIsFolderDragOver] = useState(false);
 
-  // 이 폴더에 속한 시트들 — 구버전 저장 데이터의 id 중복 방어
+  // 이 폴더에 속한 시트들 — 구버전 저장 데이터의 id 중복 방어 + tag 필터 적용
   const folderSheets = (() => {
     const seen = new Set<string>();
     return sheets
@@ -103,7 +107,8 @@ export function FolderItem({
         if (seen.has(s.id)) return false;
         seen.add(s.id);
         return true;
-      });
+      })
+      .filter(s => (sheetMatcher ? sheetMatcher(s) : true));
   })();
 
   // 이 폴더의 하위 폴더들 — 구버전 저장 데이터의 id 중복 방어
@@ -290,6 +295,7 @@ export function FolderItem({
               draggedFolderId={draggedFolderId}
               onSheetDelete={onSheetDelete}
               onFolderDelete={onFolderDelete}
+              sheetMatcher={sheetMatcher}
             />
           ))}
 
