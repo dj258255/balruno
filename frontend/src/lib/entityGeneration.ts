@@ -296,12 +296,3 @@ export const DEFAULT_GROWTH_RATES: Record<CurveType, number> = {
   scurve: 0.1,       // S-커브 기울기
 };
 
-/**
- * 엔티티 타입 목록
- */
-export const ENTITY_TYPES: { value: EntityDefinition['entityType']; label: string }[] = [
-  { value: 'character', label: '캐릭터' },
-  { value: 'monster', label: '몬스터' },
-  { value: 'npc', label: 'NPC' },
-  { value: 'item', label: '아이템' },
-];

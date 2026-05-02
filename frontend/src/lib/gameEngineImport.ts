@@ -16,22 +16,6 @@ export type ImportFormat =
   | 'godot_gd'          // Godot GDScript
   | 'unreal_h';         // Unreal C++ Header
 
-export const IMPORT_FORMATS: {
-  id: ImportFormat;
-  name: string;
-  engine: string;
-  description: string;
-  accept: string;
-}[] = [
-  { id: 'json', name: 'JSON', engine: '공통', description: '일반 JSON 배열 형식', accept: '.json' },
-  { id: 'unity_json', name: 'Unity JSON', engine: 'Unity', description: 'ScriptableObject JSON (items 배열)', accept: '.json' },
-  { id: 'unity_cs', name: 'Unity C#', engine: 'Unity', description: 'C# 클래스 필드 파싱', accept: '.cs' },
-  { id: 'csv', name: 'CSV', engine: '공통', description: '쉼표로 구분된 값', accept: '.csv' },
-  { id: 'unreal_csv', name: 'Unreal DataTable', engine: 'Unreal', description: 'DataTable CSV 형식', accept: '.csv' },
-  { id: 'unreal_h', name: 'Unreal Header', engine: 'Unreal', description: 'UPROPERTY 필드 파싱', accept: '.h' },
-  { id: 'godot_gd', name: 'GDScript', engine: 'Godot', description: 'GDScript 변수 파싱', accept: '.gd' },
-];
-
 export interface ImportResult {
   success: boolean;
   columns: Omit<Column, 'id'>[];
