@@ -15,6 +15,7 @@ import { EmptyProjectsCTA } from './EmptyProjectsCTA';
 import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
 import { SheetTagChips } from '@/components/sheet/SheetTagChips';
 import DocIconPicker from '@/components/docs/DocIconPicker';
+import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 
 interface ProjectListProps {
   projects: Project[];
@@ -262,18 +263,10 @@ export function ProjectList({
     setDraggedFolderProjectId(null);
   };
 
-  // 프로젝트별 활성 tag 필터 (AND 조건). component-local 상태 — 페이지 새로고침 시 리셋.
-  const [tagFilters, setTagFilters] = useState<Record<string, string[]>>({});
-  const toggleTagFilter = (projectId: string, tag: string) => {
-    setTagFilters((prev) => {
-      const cur = prev[projectId] ?? [];
-      const next = cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag];
-      return { ...prev, [projectId]: next };
-    });
-  };
-  const clearTagFilter = (projectId: string) => {
-    setTagFilters((prev) => ({ ...prev, [projectId]: [] }));
-  };
+  // 프로젝트별 활성 tag 필터 (AND) — sidebarPrefsStore (localStorage persist) 로 영속화
+  const tagFilters = useSidebarPrefs((s) => s.tagFilters);
+  const toggleTagFilter = useSidebarPrefs((s) => s.toggleTagFilter);
+  const clearTagFilter = useSidebarPrefs((s) => s.clearTagFilter);
 
   return (
     <div className="p-2" onContextMenu={handleEmptyContextMenu}>

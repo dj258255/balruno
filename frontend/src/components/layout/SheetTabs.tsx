@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react
 import { createPortal } from 'react-dom';
 import { Plus, X, Edit2, Copy, Check, LayoutTemplate, GripVertical, ChevronLeft, ChevronRight, XCircle, FileText, FileSpreadsheet } from 'lucide-react';
 import DocIconPicker from '@/components/docs/DocIconPicker';
+import { SheetTagChips } from '@/components/sheet/SheetTagChips';
 import { useProjectStore } from '@/stores/projectStore';
 import type { Project, SheetKind } from '@/types';
 import { TemplateSelector } from '@/components/panels';
@@ -409,6 +410,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                   >
                     {name}
                   </span>
+                  {isSheet && <SheetTagChips sheet={entry.sheet} max={1} />}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

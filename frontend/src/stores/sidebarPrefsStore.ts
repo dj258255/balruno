@@ -24,12 +24,16 @@ interface SidebarPrefsState {
   activeWorkspaceId: WorkspaceId;
   /** UI 자리만. 실제 멀티 워크스페이스는 백엔드 연동 시 채워짐. */
   workspaces: Workspace[];
+  /** 프로젝트별 활성 tag 필터 (AND 조건). key=projectId, value=tag[] */
+  tagFilters: Record<string, string[]>;
 
   togglePinSheet: (sheetId: string) => void;
   isSheetPinned: (sheetId: string) => boolean;
   unpinSheet: (sheetId: string) => void;
   setActiveWorkspace: (id: WorkspaceId) => void;
   renameWorkspace: (id: WorkspaceId, name: string) => void;
+  toggleTagFilter: (projectId: string, tag: string) => void;
+  clearTagFilter: (projectId: string) => void;
 }
 
 export const useSidebarPrefs = create<SidebarPrefsState>()(
@@ -38,6 +42,7 @@ export const useSidebarPrefs = create<SidebarPrefsState>()(
       pinnedSheetIds: [],
       activeWorkspaceId: 'default',
       workspaces: [{ id: 'default', name: 'Default Workspace' }],
+      tagFilters: {},
 
       togglePinSheet: (sheetId) => {
         set((state) => {
@@ -67,6 +72,20 @@ export const useSidebarPrefs = create<SidebarPrefsState>()(
           workspaces: state.workspaces.map((w) =>
             w.id === id ? { ...w, name: trimmed } : w,
           ),
+        }));
+      },
+
+      toggleTagFilter: (projectId, tag) => {
+        set((state) => {
+          const cur = state.tagFilters[projectId] ?? [];
+          const next = cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag];
+          return { tagFilters: { ...state.tagFilters, [projectId]: next } };
+        });
+      },
+
+      clearTagFilter: (projectId) => {
+        set((state) => ({
+          tagFilters: { ...state.tagFilters, [projectId]: [] },
         }));
       },
     }),

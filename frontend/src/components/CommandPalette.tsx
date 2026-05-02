@@ -98,7 +98,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
     }
   }, [open]);
 
-  // 모든 시트 flatten (프로젝트당 시트들)
+  // 모든 시트 flatten (프로젝트당 시트들). tags 까지 검색 value 에 포함.
   const allSheets = useMemo(() => {
     return projects.flatMap((p) =>
       p.sheets.map((s) => ({
@@ -106,6 +106,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
         projectName: p.name,
         sheetId: s.id,
         sheetName: s.name,
+        tags: s.tags ?? [],
       }))
     );
   }, [projects]);
@@ -202,32 +203,58 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
               </Command.Group>
             )}
 
-            {/* Navigate — 모든 시트 */}
+            {/* Navigate — 모든 시트. tags 도 검색 value 에 포함되어 #tag:wip 같은 query 로 매칭 */}
             {allSheets.length > 0 && (
               <Command.Group heading={t('commandPalette.navigate')}>
-                {allSheets.map((item) => (
-                  <Command.Item
-                    key={`sheet-${item.sheetId}`}
-                    value={`${item.projectName} ${item.sheetName}`}
-                    onSelect={() =>
-                      runAction(() => {
-                        setCurrentProject(item.projectId);
-                        setCurrentSheet(item.sheetId);
-                      })
-                    }
-                    className="cmdk-item"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                        {item.sheetName}
-                      </span>
-                      <span className="ml-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                        {item.projectName}
-                      </span>
-                    </div>
-                  </Command.Item>
-                ))}
+                {allSheets.map((item) => {
+                  // cmdk fuzzy matching 용 value: 프로젝트/시트/tags 한 줄에 합쳐 hash prefix 도 포함
+                  const tagSearchTokens = item.tags.flatMap((tg) => [tg, `#${tg}`]).join(' ');
+                  return (
+                    <Command.Item
+                      key={`sheet-${item.sheetId}`}
+                      value={`${item.projectName} ${item.sheetName} ${tagSearchTokens}`}
+                      onSelect={() =>
+                        runAction(() => {
+                          setCurrentProject(item.projectId);
+                          setCurrentSheet(item.sheetId);
+                        })
+                      }
+                      className="cmdk-item"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                          {item.sheetName}
+                        </span>
+                        <span className="ml-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                          {item.projectName}
+                        </span>
+                        {item.tags.length > 0 && (
+                          <span className="ml-2 inline-flex items-center gap-1">
+                            {item.tags.slice(0, 3).map((tg) => (
+                              <span
+                                key={tg}
+                                className="text-[10px] px-1 rounded"
+                                style={{
+                                  background: 'var(--bg-tertiary)',
+                                  color: 'var(--text-secondary)',
+                                  border: '1px solid var(--border-secondary)',
+                                }}
+                              >
+                                {tg}
+                              </span>
+                            ))}
+                            {item.tags.length > 3 && (
+                              <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                                +{item.tags.length - 3}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </Command.Item>
+                  );
+                })}
               </Command.Group>
             )}
 
