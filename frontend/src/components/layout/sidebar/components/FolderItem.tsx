@@ -380,7 +380,7 @@ export function FolderItem({
                       <span style={{ color: 'var(--text-tertiary)' }}> | {sheet.exportClassName}</span>
                     )}
                   </span>
-                  <SheetKindBadge sheet={sheet} />
+                  <SheetKindBadge sheet={sheet} showDefault />
                 </>
               )}
             </div>
