@@ -140,6 +140,32 @@ export function getUndoManager(projectId: string): Y.UndoManager {
 // ============================================================================
 
 /** Project 객체 → Y.Doc 에 직렬화 (초기 로드 or 마이그레이션용). */
+/**
+ * 메모리 Sheet 배열에서 같은 ID 중복 제거 — updatedAt 가장 큰 인스턴스 우선.
+ * docToProject 의 마지막 방어선. yjs Y.Array 손상이 메모리로 새지 않게 한다.
+ */
+function dedupeSheetsByLatest(sheets: Sheet[]): Sheet[] {
+  const winner = new Map<string, Sheet>();
+  for (const s of sheets) {
+    const cur = winner.get(s.id);
+    if (!cur || (s.updatedAt ?? 0) > (cur.updatedAt ?? 0)) {
+      winner.set(s.id, s);
+    }
+  }
+  // 원래 순서 보존을 위해 sheets 순회하되 winner 만 한 번씩 yield
+  const emitted = new Set<string>();
+  const result: Sheet[] = [];
+  for (const s of sheets) {
+    if (emitted.has(s.id)) continue;
+    const w = winner.get(s.id);
+    if (w) {
+      result.push(w);
+      emitted.add(s.id);
+    }
+  }
+  return result;
+}
+
 export function hydrateDocFromProject(doc: Y.Doc, project: Project): void {
   doc.transact(() => {
     const meta = doc.getMap('meta');
@@ -181,7 +207,11 @@ export function docToProject(doc: Y.Doc): Project {
     updatedAt: meta.get('updatedAt') as number,
     syncMode: (meta.get('syncMode') as 'local' | 'cloud' | undefined) ?? 'local',
     syncRoomId: meta.get('syncRoomId') as string | undefined,
-    sheets: sheets.toArray().map(yMapToSheet),
+    // 메모리 dedupe — yjs Y.Array 에 같은 sheet ID 가 여러 번 박혀있어도 (yjs sync race
+    // / 이전 버전 버그로 누적된 IndexedDB 손상) 메모리 상으로는 한 번만 노출.
+    // updatedAt 가장 큰 인스턴스 우선 — dedupeSheetsInDoc 와 동일 정책.
+    // 이건 마지막 방어선이고, 진짜 정리는 dedupeSheetsInDoc 가 yjs Y.Array 에서 수행.
+    sheets: dedupeSheetsByLatest(sheets.toArray().map(yMapToSheet)),
     folders: folders.length > 0 ? folders.toArray().map(yMapToFolder) : undefined,
     docs: docs.length > 0 ? docs.toArray().map(yMapToDoc) : undefined,
     changelog: changelog.length > 0 ? changelog.toArray().map((m) => m.toJSON() as ChangeEntry) : undefined,

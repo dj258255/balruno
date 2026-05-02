@@ -353,4 +353,30 @@ describe('데이터 손상 가드', () => {
     const removed = dedupeSheetsInDoc(doc);
     expect(removed).toBe(0);
   });
+
+  it('docToProject 가 yjs Y.Array 에 중복이 있어도 메모리에선 1개만 노출 (마지막 방어선)', () => {
+    const doc = new Y.Doc();
+    hydrateDocFromProject(doc, makeSampleProject());
+    // hydrate 후 yjs Y.Array 에 같은 sheet 를 직접 추가 (가드를 우회 — 진짜 손상 시뮬)
+    doc.transact(() => {
+      const sheets = doc.getArray<Y.Map<unknown>>('sheets');
+      const existing = sheets.get(0);
+      const existingId = existing.get('id') as string;
+      // 더 오래된 인스턴스 추가
+      const older = new Y.Map<unknown>();
+      older.set('id', existingId);
+      older.set('name', 'older copy');
+      older.set('updatedAt', 0);
+      older.set('createdAt', 0);
+      older.set('columns', new Y.Array<Y.Map<unknown>>());
+      older.set('rows', new Y.Array<Y.Map<unknown>>());
+      older.set('stickers', new Y.Array<Y.Map<unknown>>());
+      sheets.push([older]);
+    });
+
+    const project = docToProject(doc);
+    // 메모리에선 1개만 + 가장 최신 인스턴스 (원본 'Characters')
+    expect(project.sheets.length).toBe(1);
+    expect(project.sheets[0].name).toBe('Characters');
+  });
 });

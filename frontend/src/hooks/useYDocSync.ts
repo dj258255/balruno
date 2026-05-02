@@ -47,10 +47,14 @@ export function useYDocSync(): void {
     }
 
     // 새 프로젝트: y-indexeddb persist → hydrate(필요 시) → observer → 초기 sync
-    (async () => {
-      for (const project of projects) {
-        if (observersRef.current.has(project.id)) continue;
+    // 각 프로젝트를 병렬 처리 — 순차 await 면 첫 프로젝트가 끝나기 전 cancelled 되어
+    // 나머지 프로젝트가 영영 처리 못 됨 (React strict mode / HMR 에서 자주 발생).
+    for (const project of projects) {
+      if (observersRef.current.has(project.id)) continue;
+      // 진입 표시를 placeholder 로 미리 — 같은 effect 사이클에서 중복 진입 방지
+      observersRef.current.set(project.id, () => {});
 
+      void (async () => {
         await initializeProjectDoc(project);
         if (cancelled) return;
 
@@ -74,6 +78,7 @@ export function useYDocSync(): void {
             ),
           }));
         });
+        // placeholder 를 실제 unobserve 로 교체
         observersRef.current.set(project.id, unobserve);
 
         // observer 등록 전에 발생한 write (+ y-indexeddb 에서 복원된 최신 상태)
@@ -84,8 +89,8 @@ export function useYDocSync(): void {
             p.id === current.id ? current : p
           ),
         }));
-      }
-    })();
+      })();
+    }
 
     return () => {
       cancelled = true;
