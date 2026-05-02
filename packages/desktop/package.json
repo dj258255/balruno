@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "PowerBalance / balruno 데스크톱 앱 (Electron). packages/web 빌드 결과를 패키징하여 Mac/Windows/Linux native 앱으로 배포.",
+  "description": "PowerBalance / balruno desktop app (Electron). Packages the packages/web build output as native Mac/Windows/Linux apps.",
+  "author": {
+    "name": "Balruno",
+    "email": "dj258255@naver.com"
+  },
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "concurrently -k -n web,electron \"npm:dev:web\" \"wait-on http://localhost:3000 && npm run dev:electron\"",
@@ -26,7 +30,7 @@
     "@types/node": "^22.0.0",
     "concurrently": "^9.2.0",
     "cross-env": "^10.0.0",
-    "electron": "^41.0.0",
+    "electron": "41.5.0",
     "electron-builder": "^26.0.0",
     "typescript": "^5.7.0",
     "wait-on": "^9.0.0"
