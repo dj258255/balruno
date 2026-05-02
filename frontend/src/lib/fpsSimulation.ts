@@ -85,12 +85,6 @@ export const SHIELD_BRACKETS: Record<ShieldTier, ShieldBracket> = {
   red:    { tier: 'red',    label: 'Red',  shieldHp: 125, headshotReduction: 0.25, color: '#ef4444' },
 };
 
-/** 티어에서 PlayerStats 생성 — 기본 HP 100 */
-export function playerFromShieldTier(tier: ShieldTier, baseHp = 100): PlayerStats {
-  const b = SHIELD_BRACKETS[tier];
-  return { hp: baseHp, shield: b.shieldHp, armor: 0 };
-}
-
 /**
  * 쉴드 티어별 TTK/BTK 비교 (한 번의 연산으로 전체 티어).
  * 각 티어에서 몇 발에 깨지고 몇 초 걸리는지 brackets chart 로 표시.

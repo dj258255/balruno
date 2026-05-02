@@ -214,8 +214,8 @@ export async function updateMetadata(updates: Partial<StorageMetadata>): Promise
   await database.put('metadata', newMetadata, 'main');
 }
 
-// 백업 생성
-export async function createBackup(projects: Project[]): Promise<void> {
+// 백업 생성 (saveProject 자동 백업 전용 — 외부 호출 없음)
+async function createBackup(projects: Project[]): Promise<void> {
   const database = await initDB();
   const timestamp = Date.now();
 
@@ -234,20 +234,6 @@ export async function createBackup(projects: Project[]): Promise<void> {
   }
 
   await updateMetadata({ lastBackup: timestamp });
-}
-
-// 백업 목록 조회
-export async function listBackups(): Promise<{ timestamp: number }[]> {
-  const database = await initDB();
-  const keys = await database.getAllKeys('backups');
-  return keys.map((timestamp) => ({ timestamp: timestamp as number })).reverse();
-}
-
-// 백업 복원
-export async function restoreBackup(timestamp: number): Promise<Project[] | null> {
-  const database = await initDB();
-  const backup = await database.get('backups', timestamp);
-  return backup?.projects || null;
 }
 
 // JSON 파일로 내보내기

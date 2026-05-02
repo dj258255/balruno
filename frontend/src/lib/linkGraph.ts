@@ -90,7 +90,7 @@ function findCycle(
 }
 
 /** 전체 시트 그래프에서 사이클 검사. 첫 번째 발견된 사이클 반환. */
-export function detectLinkCycles(sheets: Sheet[]): CycleResult {
+function detectLinkCycles(sheets: Sheet[]): CycleResult {
   const graph = buildGraph(sheets);
   for (const sheet of sheets) {
     const result = findCycle(sheet.id, graph, sheets);

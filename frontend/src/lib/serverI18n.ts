@@ -16,7 +16,7 @@ async function loadMessages(locale: string): Promise<Messages> {
   return cache[locale];
 }
 
-export function pickLocale(req: NextRequest): 'ko' | 'en' {
+function pickLocale(req: NextRequest): 'ko' | 'en' {
   const cookieLocale = req.cookies.get('NEXT_LOCALE')?.value;
   if (cookieLocale === 'ko' || cookieLocale === 'en') return cookieLocale;
   const accept = req.headers.get('accept-language') ?? '';

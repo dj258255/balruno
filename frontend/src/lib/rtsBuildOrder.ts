@@ -108,7 +108,7 @@ const DEFAULT_CONFIG: Omit<RtsSimConfig, 'steps' | 'durationSec'> = {
   workerMineralCost: 50,
 };
 
-export function mergeDefaults(
+function mergeDefaults(
   partial: Partial<RtsSimConfig> & { steps: BuildStep[]; durationSec: number },
 ): RtsSimConfig {
   return { ...DEFAULT_CONFIG, ...partial };

@@ -58,28 +58,9 @@ export function createSheetFromTemplate(template: SheetTemplate): Sheet {
   };
 }
 
-// Search templates - uses sheetTemplates from data
-export function searchTemplates(query: string): SheetTemplate[] {
-  // Lazy import to avoid circular dependency
-  const { sheetTemplates } = require('./data');
-  const lowerQuery = query.toLowerCase();
-  return sheetTemplates.filter(
-    (t: SheetTemplate) =>
-      t.name.toLowerCase().includes(lowerQuery) ||
-      t.description.toLowerCase().includes(lowerQuery)
-  );
-}
-
 // Get templates by category
 export function getTemplatesByCategory(category: string): SheetTemplate[] {
   // Lazy import to avoid circular dependency
   const { sheetTemplates } = require('./data');
   return sheetTemplates.filter((t: SheetTemplate) => t.category === category);
-}
-
-// Get templates by genre
-export function getTemplatesByGenre(genre: string): SheetTemplate[] {
-  // Lazy import to avoid circular dependency
-  const { sheetTemplates } = require('./data');
-  return sheetTemplates.filter((t: SheetTemplate) => t.genre?.includes(genre));
 }

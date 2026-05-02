@@ -300,7 +300,7 @@ public:
 /**
  * Unreal용 CSV 생성
  */
-export function generateUnrealCsv(sheet: Sheet, project?: Project): string {
+function generateUnrealCsv(sheet: Sheet, project?: Project): string {
   // 수식 계산된 값 가져오기
   const computedRows = computeSheetValues(sheet, project);
   const exportableColumns = getExportableColumns(sheet);

@@ -5,7 +5,7 @@ export type { SheetTemplate, GameGenre, TemplateCategory } from './types';
 export { gameGenres, templateCategories } from './genres';
 
 // Re-export utility functions
-export { createSheetFromTemplate, searchTemplates, getTemplatesByCategory, getTemplatesByGenre } from './utils';
+export { createSheetFromTemplate, getTemplatesByCategory } from './utils';
 
 // Re-export template data from the data file
 export { sheetTemplates } from './data';

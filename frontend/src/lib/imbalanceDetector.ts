@@ -440,30 +440,3 @@ export function getSeverityColor(severity: Severity): string {
   }
 }
 
-/**
- * 타입별 아이콘 이름
- */
-export function getTypeIcon(type: ImbalanceType): string {
-  switch (type) {
-    case 'outlier':
-      return 'AlertTriangle';
-    case 'power_creep':
-      return 'TrendingUp';
-    case 'stat_dominance':
-      return 'Crown';
-    case 'dead_zone':
-      return 'MinusCircle';
-    case 'cliff':
-      return 'Mountain';
-    case 'diminishing':
-      return 'ArrowRight';
-    case 'correlation':
-      return 'Link';
-    case 'variance':
-      return 'BarChart';
-    case 'efficiency':
-      return 'Scale';
-    default:
-      return 'AlertCircle';
-  }
-}
