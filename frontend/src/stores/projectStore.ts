@@ -252,3 +252,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   ...createSelectionActions(set, get),
   ...createDocActions(set),
 }));
+
+// dev 모드에서만 콘솔 디버깅용으로 window 에 노출. 데이터 무결성 점검·일회성
+// 쿼리 등에 활용. 프로덕션 빌드에선 NODE_ENV 가 'production' 이라 미노출.
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  (window as unknown as { useProjectStore: typeof useProjectStore }).useProjectStore =
+    useProjectStore;
+}
