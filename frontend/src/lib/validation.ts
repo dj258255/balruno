@@ -114,52 +114,5 @@ function validateDataType(value: CellValue, dataType: DataType): ValidationResul
 }
 
 /**
- * 값 변환 (타입에 맞게)
- */
-export function convertValue(value: string, dataType?: DataType): CellValue {
-  if (!value || value.trim() === '') {
-    return null;
-  }
-
-  // 수식은 그대로 반환
-  if (value.startsWith('=')) {
-    return value;
-  }
-
-  switch (dataType) {
-    case 'number':
-    case 'integer': {
-      const num = parseFloat(value);
-      if (!isNaN(num)) {
-        return dataType === 'integer' ? Math.round(num) : num;
-      }
-      return value;
-    }
-
-    case 'text':
-      return value;
-
-    case 'any':
-    default: {
-      // 자동 감지: 숫자면 숫자로
-      const num = parseFloat(value);
-      if (!isNaN(num) && value.trim() !== '') {
-        return num;
-      }
-      return value;
-    }
-  }
-}
-
-/**
  * 유효성 오류 메시지 포맷
  */
-export function formatValidationErrors(
-  errors: Map<string, string>
-): string {
-  const messages: string[] = [];
-  errors.forEach((error, cellRef) => {
-    messages.push(`${cellRef}: ${error}`);
-  });
-  return messages.join('\n');
-}

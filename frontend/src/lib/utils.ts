@@ -5,17 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatNumber(value: number, decimals: number = 2): string {
-  if (Number.isInteger(value)) {
-    return value.toLocaleString();
-  }
-  return value.toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: decimals,
-  });
-}
-
-export function formatDate(timestamp: number): string {
+// formatDate 는 formatRelativeTime 만 호출 (private)
+function formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleString('ko-KR', {
     year: 'numeric',
     month: '2-digit',
@@ -55,14 +46,3 @@ export function downloadFile(content: string, filename: string, type: string = '
   URL.revokeObjectURL(url);
 }
 
-export function debounce<T extends (...args: unknown[]) => unknown>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null;
-
-  return (...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}

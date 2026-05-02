@@ -44,22 +44,6 @@ export async function storeBlob(blob: Blob): Promise<string> {
   return `indb:${id}`;
 }
 
-/** 참조에서 Blob 로드 */
-export async function loadBlob(ref: string): Promise<Blob | null> {
-  if (!ref.startsWith('indb:')) return null;
-  const id = ref.slice(5);
-  const db = await getDb();
-  const blob = (await db.get(STORE, id)) as Blob | undefined;
-  return blob ?? null;
-}
-
-/** Blob 삭제 */
-export async function deleteBlob(ref: string): Promise<void> {
-  if (!ref.startsWith('indb:')) return;
-  const id = ref.slice(5);
-  const db = await getDb();
-  await db.delete(STORE, id);
-}
 
 /**
  * 이미지 src 리졸버 — 입력이 다양한 형태를 모두 처리:
@@ -73,7 +57,9 @@ export async function deleteBlob(ref: string): Promise<void> {
 export async function resolveImageSrc(value: string | null | undefined): Promise<string | null> {
   if (!value) return null;
   if (value.startsWith('indb:')) {
-    const blob = await loadBlob(value);
+    const id = value.slice(5);
+    const db = await getDb();
+    const blob = await db.get(STORE, id);
     if (!blob) return null;
     return URL.createObjectURL(blob);
   }
