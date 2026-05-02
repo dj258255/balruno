@@ -4,7 +4,7 @@
 
 'use client';
 
-import { Download, Upload, HelpCircle, BookOpen, Globe, MessageSquare } from 'lucide-react';
+import { Globe, MessageSquare } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { formatRelativeTime } from '@/lib/utils';
 
@@ -66,92 +66,7 @@ export function SidebarFooter({
   );
 }
 
-interface DataButtonsProps {
-  onShowExportModal?: () => void;
-  onShowImportModal?: () => void;
-}
-
-export function DataButtons({ onShowExportModal, onShowImportModal }: DataButtonsProps) {
-  const t = useTranslations();
-
-  return (
-    <div className="border-t p-2" style={{ borderColor: 'var(--border-primary)' }}>
-      <div className="flex gap-1.5 lg:gap-2">
-        <button
-          onClick={onShowExportModal}
-          className="flex-1 flex items-center justify-center gap-1 lg:gap-1.5 px-2 lg:px-3 py-2 text-xs lg:text-sm font-medium rounded-lg border transition-colors whitespace-nowrap hover:bg-[var(--bg-hover)]"
-          style={{
-            borderColor: 'var(--border-primary)',
-            color: 'var(--text-secondary)',
-            background: 'var(--bg-primary)'
-          }}
-          aria-label={t('common.export')}
-        >
-          <Download className="w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0" aria-hidden="true" />
-          <span className="truncate">{t('common.export')}</span>
-        </button>
-
-        <button
-          onClick={onShowImportModal}
-          className="flex-1 flex items-center justify-center gap-1 lg:gap-1.5 px-2 lg:px-3 py-2 text-xs lg:text-sm font-medium rounded-lg border transition-colors whitespace-nowrap hover:bg-[var(--bg-hover)]"
-          style={{
-            borderColor: 'var(--border-primary)',
-            color: 'var(--text-secondary)',
-            background: 'var(--bg-primary)'
-          }}
-          aria-label={t('common.import')}
-        >
-          <Upload className="w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0" aria-hidden="true" />
-          <span className="truncate">{t('common.import')}</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-interface HelpButtonsProps {
-  onShowHelp: () => void;
-  onShowReferences: () => void;
-}
-
-export const FEEDBACK_FORM_URL = 'https://forms.gle/jfStPBidvpqieh3Z8';
-
-export function HelpButtons({ onShowHelp, onShowReferences }: HelpButtonsProps) {
-  const t = useTranslations();
-
-  return (
-    <div className="border-t p-2" style={{ borderColor: 'var(--border-primary)' }}>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onShowHelp}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors hover:bg-[var(--bg-hover)]"
-          style={{
-            background: 'var(--bg-primary)',
-            color: 'var(--text-secondary)',
-            borderColor: 'var(--border-primary)'
-          }}
-          aria-label={t('sidebar.help')}
-        >
-          <HelpCircle className="w-4 h-4" aria-hidden="true" />
-          {t('sidebar.help')}
-        </button>
-        <button
-          onClick={onShowReferences}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors hover:bg-[var(--bg-hover)]"
-          style={{
-            background: 'var(--bg-primary)',
-            color: 'var(--text-secondary)',
-            borderColor: 'var(--border-primary)'
-          }}
-          aria-label={t('sidebar.references')}
-        >
-          <BookOpen className="w-4 h-4" aria-hidden="true" />
-          {t('sidebar.references')}
-        </button>
-      </div>
-    </div>
-  );
-}
+const FEEDBACK_FORM_URL = 'https://forms.gle/jfStPBidvpqieh3Z8';
 
 interface SaveStatusProps {
   lastSaved: number | null;
