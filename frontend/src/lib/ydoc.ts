@@ -228,8 +228,8 @@ function sheetToYMap(sheet: Sheet): Y.Map<unknown> {
   if (sheet.kind) map.set('kind', sheet.kind);
   if (sheet.exportClassName) map.set('exportClassName', sheet.exportClassName);
   if (sheet.folderId) map.set('folderId', sheet.folderId);
-  // 다중 라벨 (cross-cutting 분류)
-  if (sheet.tags && sheet.tags.length > 0) map.set('tags', sheet.tags.slice());
+  // 다중 라벨 — JSON string 으로 저장 (yjs Y.Map 의 array 값 persist 일관성 확보)
+  if (sheet.tags && sheet.tags.length > 0) map.set('tags', JSON.stringify(sheet.tags));
   // 뷰 스위처 상태
   if (sheet.activeView) map.set('activeView', sheet.activeView);
   if (sheet.viewGroupColumnId) map.set('viewGroupColumnId', sheet.viewGroupColumnId);
@@ -264,8 +264,18 @@ function yMapToSheet(map: Y.Map<unknown>): Sheet {
     exportClassName: map.get('exportClassName') as string | undefined,
     folderId: map.get('folderId') as string | undefined,
     tags: (() => {
-      const t = map.get('tags');
-      return Array.isArray(t) ? (t as string[]).slice() : undefined;
+      const raw = map.get('tags');
+      // 신규 포맷 (JSON string) 우선, 구포맷 (JS array) 도 fallback 처리
+      if (typeof raw === 'string') {
+        try {
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? (parsed as string[]) : undefined;
+        } catch {
+          return undefined;
+        }
+      }
+      if (Array.isArray(raw)) return (raw as string[]).slice();
+      return undefined;
     })(),
     activeView: map.get('activeView') as Sheet['activeView'] | undefined,
     viewGroupColumnId: map.get('viewGroupColumnId') as string | undefined,
@@ -625,8 +635,8 @@ export function updateSheetInDoc(
       if (v === undefined) {
         found.sheet.delete(k);
       } else if (k === 'tags' && Array.isArray(v)) {
-        // 배열은 새 인스턴스로 set (yjs primitive array)
-        found.sheet.set(k, (v as string[]).slice());
+        // 다중 라벨 — JSON string 으로 저장 (Y.Map array 값 persist 일관성)
+        found.sheet.set(k, JSON.stringify(v));
       } else {
         found.sheet.set(k, v);
       }

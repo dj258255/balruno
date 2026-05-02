@@ -213,7 +213,7 @@
     "colCount": "{count} columns",
     "selectCellFor": "Select a cell for {field}",
     "sheets": "sheets",
-    "moveConfirm": "Move \"{sheetName}\" sheet to \"{gameName}\" game?",
+    "moveConfirm": "Move \"{sheetName}\" sheet to \"{projectName}\" game?",
     "moveSheet": "Move Sheet",
     "deleteSheet": "Delete Sheet",
     "className": "Class Name",

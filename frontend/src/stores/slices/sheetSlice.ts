@@ -94,6 +94,7 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
       | 'viewGanttDependsColumnId'
       | 'savedViews'
       | 'activeSavedViewId'
+      | 'tags'
     >>
   ) => {
     updateSheetInDoc(getProjectDoc(projectId), sheetId, updates);
