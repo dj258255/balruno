@@ -5,11 +5,13 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Edit2, Trash2, Copy, Plus, Code, FolderPlus, Folder, Tag, Check, ChevronRight, Pin, PinOff, Users, Lock } from 'lucide-react';
+import { Edit2, Trash2, Copy, Plus, Code, FolderPlus, Folder, Tag, Check, ChevronRight, Pin, PinOff, Users, Lock, AlertTriangle, X as XIcon } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui';
 import { useTranslations } from 'next-intl';
-import type { SheetKind, ProjectVisibility } from '@/types';
+import type { ColumnType, SheetKind, ProjectVisibility } from '@/types';
 import { KIND_META } from '@/lib/sheetKind';
+import { COLUMN_TYPE_META } from '@/lib/columnTypeMeta';
+import { useEscapeKey } from '@/hooks';
 import type {
   SheetContextMenuState,
   ProjectContextMenuState,
@@ -617,5 +619,129 @@ export function ConfirmDialogs({
         />
       )}
     </>
+  );
+}
+
+// === Kind Change Blocked Dialog ===
+// 시트 용도 변경 시 호환되지 않는 컬럼이 있으면 변경을 차단하고 안내한다.
+// 자동 변환/삭제는 데이터 손실 위험이 있어 의도적으로 사용자가 수동으로
+// 해당 컬럼을 정리하도록 강제한다 (1인/판매 의식한 안전 우선 정책).
+export interface KindChangeBlockedState {
+  sheetName: string;
+  fromKind: SheetKind | undefined;
+  toKind: SheetKind;
+  incompatibleTypes: ColumnType[];
+  /** incompatible 컬럼 이름 목록 — 사용자가 어떤 컬럼인지 식별하도록 */
+  incompatibleColumns: Array<{ id: string; name: string; type: ColumnType }>;
+}
+
+interface KindChangeBlockedDialogProps {
+  state: KindChangeBlockedState | null;
+  onClose: () => void;
+}
+
+export function KindChangeBlockedDialog({ state, onClose }: KindChangeBlockedDialogProps) {
+  const t = useTranslations();
+  useEscapeKey(onClose, !!state);
+  if (!state) return null;
+
+  const targetMeta = KIND_META[state.toKind];
+
+  return (
+    <div
+      className="fixed inset-0 z-[1100] flex items-center justify-center modal-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      role="presentation"
+    >
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        className="w-full max-w-md mx-4 rounded-xl shadow-2xl animate-scaleIn overflow-hidden"
+        style={{
+          background: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
+        }}
+      >
+        <div
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: '1px solid var(--border-primary)' }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background: 'var(--warning-light)' }}
+            >
+              <AlertTriangle className="w-5 h-5" style={{ color: 'var(--warning)' }} />
+            </div>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {t('sheet.kindChangeBlockedTitle')}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+            style={{ color: 'var(--text-tertiary)' }}
+            aria-label={t('common.close')}
+          >
+            <XIcon className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            {t('sheet.kindChangeBlockedMessage', {
+              sheetName: state.sheetName,
+              targetLabel: targetMeta.label,
+            })}
+          </p>
+
+          <div
+            className="rounded-lg p-3 space-y-1.5"
+            style={{ background: 'var(--bg-tertiary)' }}
+          >
+            <div className="text-overline" style={{ color: 'var(--text-tertiary)' }}>
+              {t('sheet.kindChangeIncompatibleColumns')}
+            </div>
+            {state.incompatibleColumns.map((col) => {
+              const colMeta = COLUMN_TYPE_META[col.type];
+              const ColIcon = colMeta.Icon;
+              return (
+                <div key={col.id} className="flex items-center gap-2 text-sm">
+                  <ColIcon
+                    className="w-3.5 h-3.5 shrink-0"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  />
+                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {col.name}
+                  </span>
+                  <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                    · {colMeta.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            {t('sheet.kindChangeBlockedHint')}
+          </p>
+        </div>
+
+        <div
+          className="flex justify-end px-5 py-4"
+          style={{ borderTop: '1px solid var(--border-primary)' }}
+        >
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            style={{ background: 'var(--accent)', color: 'white' }}
+          >
+            {t('common.confirm')}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

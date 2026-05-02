@@ -14,4 +14,6 @@ export {
   FolderContextMenu,
   ClassNameEditModal,
   ConfirmDialogs,
+  KindChangeBlockedDialog,
 } from './SidebarContextMenus';
+export type { KindChangeBlockedState } from './SidebarContextMenus';

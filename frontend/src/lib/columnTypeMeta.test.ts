@@ -172,7 +172,7 @@ describe('getColumnTypesByCategory — picker UI 데이터', () => {
   });
 });
 
-describe('getIncompatibleColumnTypes — Phase 2 변경 가드', () => {
+describe('getIncompatibleColumnTypes — Phase 2 변경 가드 (sidebar 가드 시나리오)', () => {
   it('pm → game-data 변경 시 task-link/person/stat-snapshot 이 incompatible', () => {
     const currentTypes: ColumnType[] = [
       'general',
@@ -201,5 +201,22 @@ describe('getIncompatibleColumnTypes — Phase 2 변경 가드', () => {
       'reference',
     );
     expect(incompatible).toEqual([]);
+  });
+
+  it('중복 타입은 한 번만 반환', () => {
+    const incompatible = getIncompatibleColumnTypes(
+      ['task-link', 'task-link', 'person', 'person'],
+      'game-data',
+    );
+    // Set 기반이라 중복 제거됨
+    expect(incompatible.sort()).toEqual(['person', 'task-link']);
+  });
+
+  it('reference 시트는 PM/balance 도구 타입을 모두 거부한다', () => {
+    const incompatible = getIncompatibleColumnTypes(
+      ['general', 'task-link', 'person', 'stat-snapshot'],
+      'reference',
+    );
+    expect(incompatible.sort()).toEqual(['person', 'stat-snapshot', 'task-link']);
   });
 });

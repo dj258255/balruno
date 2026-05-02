@@ -8,6 +8,7 @@ import { AllToolId } from '@/stores/toolLayoutStore';
 import { useSheetUIStore } from '@/stores/sheetUIStore';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 import type { ProjectVisibility } from '@/types';
+import { getIncompatibleColumnTypes } from '@/lib/columnTypeMeta';
 
 // 분리된 훅과 컴포넌트들
 import { useSidebarState } from './sidebar/hooks';
@@ -25,7 +26,9 @@ import {
   FolderContextMenu,
   ClassNameEditModal,
   ConfirmDialogs,
+  KindChangeBlockedDialog,
 } from './sidebar/components';
+import type { KindChangeBlockedState } from './sidebar/components';
 
 interface SidebarProps {
   onShowChart: () => void;
@@ -93,6 +96,9 @@ export default function Sidebar({
   const t = useTranslations();
   const state = useSidebarState();
   const sidebarPrefs = useSidebarPrefs();
+
+  // 시트 용도 변경 차단 다이얼로그 — 호환되지 않는 컬럼이 있으면 변경을 막고 안내
+  const [kindChangeBlocked, setKindChangeBlocked] = useState<KindChangeBlockedState | null>(null);
 
   // 팀스페이스 스크롤 컨테이너 빈 영역 우클릭 메뉴
   const [emptyAreaMenu, setEmptyAreaMenu] = useState<{ x: number; y: number } | null>(null);
@@ -427,6 +433,31 @@ export default function Sidebar({
           setEditClassName(className || '');
         }}
         onSetKind={(projectId, sheetId, kind) => {
+          // 'auto' (kind=undefined) 는 자동 감지로 되돌리는 것이라 항상 허용.
+          // 명시 kind 로 변경 시에는 incompatible 컬럼 사전 검사로 데이터 손실 방지.
+          if (kind !== undefined) {
+            const project = projectStore.projects.find((p) => p.id === projectId);
+            const sheet = project?.sheets.find((s) => s.id === sheetId);
+            if (sheet) {
+              const incompatibleTypes = getIncompatibleColumnTypes(
+                sheet.columns.map((c) => c.type),
+                kind,
+              );
+              if (incompatibleTypes.length > 0) {
+                const incompatibleColumns = sheet.columns
+                  .filter((c) => incompatibleTypes.includes(c.type))
+                  .map((c) => ({ id: c.id, name: c.name, type: c.type }));
+                setKindChangeBlocked({
+                  sheetName: sheet.name,
+                  fromKind: sheet.kind,
+                  toKind: kind,
+                  incompatibleTypes,
+                  incompatibleColumns,
+                });
+                return;
+              }
+            }
+          }
           projectStore.updateSheet(projectId, sheetId, { kind });
         }}
         onDuplicate={(projectId, sheetId) => {
@@ -528,6 +559,11 @@ export default function Sidebar({
         onDeleteFolder={(projectId, folderId) => {
           projectStore.deleteFolder(projectId, folderId);
         }}
+      />
+
+      <KindChangeBlockedDialog
+        state={kindChangeBlocked}
+        onClose={() => setKindChangeBlocked(null)}
       />
 
       {emptyAreaMenu && (
