@@ -257,14 +257,14 @@ export function TeamBattlePanel({
                 style={{ background: 'var(--primary-blue)15', color: 'var(--primary-blue)', border: '1.5px solid var(--primary-blue)' }}
               >
                 <User className="w-3 h-3" />
-                {t('newUnit')}
+                {t('simulation.newUnit')}
               </button>
               {units.length > 0 && (
                 <UnitPicker
                   units={units.filter(u => !team1Units.find(t => t.id === u.id))}
                   onSelect={(unit) => onAddToTeam(1, { ...unit, id: `team1_${Date.now()}_${unit.id}` })}
                   color="var(--primary-blue)"
-                  buttonText={t('loadFromSheet')}
+                  buttonText={t('simulation.loadFromSheet')}
                 />
               )}
             </div>
@@ -282,7 +282,7 @@ export function TeamBattlePanel({
             ))}
             {team1Units.length === 0 && (
               <div className="text-center py-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {t('clickNewUnitOrSheet')}
+                {t('simulation.clickNewUnitOrSheet')}
               </div>
             )}
           </div>
@@ -305,14 +305,14 @@ export function TeamBattlePanel({
                 style={{ background: 'var(--primary-red)15', color: 'var(--primary-red)', border: '1.5px solid var(--primary-red)' }}
               >
                 <User className="w-3 h-3" />
-                {t('newUnit')}
+                {t('simulation.newUnit')}
               </button>
               {units.length > 0 && (
                 <UnitPicker
                   units={units.filter(u => !team2Units.find(t => t.id === u.id))}
                   onSelect={(unit) => onAddToTeam(2, { ...unit, id: `team2_${Date.now()}_${unit.id}` })}
                   color="var(--primary-red)"
-                  buttonText={t('loadFromSheet')}
+                  buttonText={t('simulation.loadFromSheet')}
                 />
               )}
             </div>
@@ -330,7 +330,7 @@ export function TeamBattlePanel({
             ))}
             {team2Units.length === 0 && (
               <div className="text-center py-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {t('clickNewUnitOrSheet')}
+                {t('simulation.clickNewUnitOrSheet')}
               </div>
             )}
           </div>
@@ -359,7 +359,7 @@ export function TeamBattlePanel({
 
       {/* 타겟팅 모드 선택 */}
       <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
-        <label className="block text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{t('targetingMode')}</label>
+        <label className="block text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{t('simulation.targetingMode')}</label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {(['random', 'lowest_hp', 'highest_atk', 'focused'] as const).map(mode => (
             <button
@@ -391,12 +391,12 @@ export function TeamBattlePanel({
           {isRunning ? (
             <>
               <RefreshCw className="w-4 h-4 animate-spin" />
-              {t('running')}
+              {t('simulation.running')}
             </>
           ) : (
             <>
               <Play className="w-4 h-4" />
-              {t('runTeamSimulation')}
+              {t('simulation.runTeamSimulation')}
             </>
           )}
         </button>
@@ -489,7 +489,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
       {/* 승률 + 저장 버튼 */}
       <div className="p-4 rounded-xl" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}>
         <div className="flex items-center justify-between mb-4">
-          <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('teamWinRate')}</div>
+          <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('simulation.teamWinRate')}</div>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -553,7 +553,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
           {teamResult.draws > 0 && (
             <div className="flex items-center justify-center gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-primary)' }}>
               <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {t('draw')}: {teamResult.draws.toLocaleString()} ({((teamResult.draws / teamResult.totalRuns) * 100).toFixed(1)}%)
+                {t('simulation.draw')}: {teamResult.draws.toLocaleString()} ({((teamResult.draws / teamResult.totalRuns) * 100).toFixed(1)}%)
               </span>
             </div>
           )}
@@ -568,7 +568,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent)20' }}>
                 <Zap className="w-4 h-4" style={{ color: 'var(--accent)' }} />
               </div>
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('teamDps')}</span>
+              <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('simulation.teamDps')}</span>
             </div>
             <div className="space-y-3">
               <div className="p-2 rounded-lg" style={{ background: 'var(--bg-primary)' }}>
@@ -580,7 +580,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                   <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>DPS</span>
                 </div>
                 <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  {t('avgTotalDamage')}: {teamResult.avgTeam1Damage.toFixed(0)}
+                  {t('simulation.avgTotalDamage')}: {teamResult.avgTeam1Damage.toFixed(0)}
                 </div>
               </div>
               <div className="p-2 rounded-lg" style={{ background: 'var(--bg-primary)' }}>
@@ -592,7 +592,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                   <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>DPS</span>
                 </div>
                 <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  {t('avgTotalDamage')}: {teamResult.avgTeam2Damage.toFixed(0)}
+                  {t('simulation.avgTotalDamage')}: {teamResult.avgTeam2Damage.toFixed(0)}
                 </div>
               </div>
             </div>
@@ -604,20 +604,20 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e5a44020' }}>
                 <TrendingUp className="w-4 h-4" style={{ color: '#e5a440' }} />
               </div>
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('battleAnalysis')}</span>
+              <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('simulation.battleAnalysis')}</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="p-2 rounded-lg text-center" style={{ background: 'var(--bg-primary)' }}>
                 <div className="text-lg font-bold" style={{ color: 'var(--primary-blue)' }}>{teamResult.team1Reversals}</div>
-                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>T1 {t('reversalWins')}</div>
+                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>T1 {t('simulation.reversalWins')}</div>
               </div>
               <div className="p-2 rounded-lg text-center" style={{ background: 'var(--bg-primary)' }}>
                 <div className="text-lg font-bold" style={{ color: 'var(--primary-red)' }}>{teamResult.team2Reversals}</div>
-                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>T2 {t('reversalWins')}</div>
+                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>T2 {t('simulation.reversalWins')}</div>
               </div>
               <div className="p-2 rounded-lg text-center col-span-2" style={{ background: 'var(--bg-primary)' }}>
                 <div className="text-lg font-bold" style={{ color: '#9179f2' }}>{teamResult.closeMatches}</div>
-                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('closeMatches')}</div>
+                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t('simulation.closeMatches')}</div>
               </div>
             </div>
           </div>
@@ -627,19 +627,19 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
       {/* 통계 요약 */}
       <div className="grid grid-cols-3 gap-2">
         <div className="p-3 rounded-xl text-center transition-transform hover:scale-105" style={{ background: 'linear-gradient(135deg, var(--bg-tertiary), var(--bg-primary))', border: '1px solid var(--border-primary)' }}>
-          <div className="text-sm mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('avgBattleTime')}</div>
+          <div className="text-sm mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('simulation.avgBattleTime')}</div>
           <div className="text-xl font-bold" style={{ color: 'var(--accent)' }}>
             {teamResult.avgDuration.toFixed(1)}<span className="text-sm font-normal">s</span>
           </div>
         </div>
         <div className="p-3 rounded-xl text-center transition-transform hover:scale-105" style={{ background: 'linear-gradient(135deg, var(--bg-tertiary), var(--bg-primary))', border: '1px solid var(--border-primary)' }}>
-          <div className="text-sm mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('avgSurvivors')} (T1)</div>
+          <div className="text-sm mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('simulation.avgSurvivors')} (T1)</div>
           <div className="text-xl font-bold" style={{ color: 'var(--primary-blue)' }}>
             {teamResult.avgTeam1Survivors.toFixed(1)}
           </div>
         </div>
         <div className="p-3 rounded-xl text-center transition-transform hover:scale-105" style={{ background: 'linear-gradient(135deg, var(--bg-tertiary), var(--bg-primary))', border: '1px solid var(--border-primary)' }}>
-          <div className="text-sm mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('avgSurvivors')} (T2)</div>
+          <div className="text-sm mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('simulation.avgSurvivors')} (T2)</div>
           <div className="text-xl font-bold" style={{ color: 'var(--primary-red)' }}>
             {teamResult.avgTeam2Survivors.toFixed(1)}
           </div>
@@ -651,11 +651,11 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
         <div className="p-4 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
           <div className="flex items-center gap-2 mb-3">
             <BarChart3 className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('distribution')}</span>
+            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('simulation.distribution')}</span>
           </div>
           <Histogram
             data={teamResult.durationDistribution}
-            label={t('battleTimeDist')}
+            label={t('simulation.battleTimeDist')}
             color="var(--accent)"
             unit="s"
             rangeLabels={{ min: teamResult.minDuration, max: teamResult.maxDuration }}
@@ -668,7 +668,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
         <div className="p-4 rounded-xl space-y-4" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}>
           <div className="flex items-center gap-2">
             <Swords className="w-4 h-4" style={{ color: '#e5a440' }} />
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('damageComparison')}</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('simulation.damageComparison')}</span>
           </div>
 
           {/* 유닛별 데미지 막대 그래프 */}
@@ -705,7 +705,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
 
           {/* 생존율 비교 그래프 - 팀별 분리 */}
           <div className="pt-3 border-t" style={{ borderColor: 'var(--border-primary)' }}>
-            <div className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>{t('survivalRateComparison')}</div>
+            <div className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>{t('simulation.survivalRateComparison')}</div>
 
             {/* Team 1 */}
             <div className="mb-3">
@@ -772,7 +772,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
             className="w-full flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-[var(--bg-hover)]"
             style={{ background: 'var(--bg-tertiary)' }}
           >
-            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('unitStats')}</span>
+            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('simulation.unitStats')}</span>
             {showUnitStats ? (
               <ChevronUp className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
             ) : (
@@ -784,7 +784,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
             <div className="p-4 rounded-xl space-y-4" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}>
               {/* Team 1 유닛 통계 */}
               <div>
-                <div className="text-sm font-semibold mb-3" style={{ color: 'var(--primary-blue)' }}>Team 1 {t('unitStats')}</div>
+                <div className="text-sm font-semibold mb-3" style={{ color: 'var(--primary-blue)' }}>Team 1 {t('simulation.unitStats')}</div>
                 <div className="space-y-2">
                   {team1UnitStats.map((unit, idx) => (
                     <div key={unit.unitId} className="p-3 rounded-lg" style={{ background: 'var(--bg-primary)' }}>
@@ -799,13 +799,13 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                           )}
                         </div>
                         <span className="text-xs px-2 py-0.5 rounded" style={{ background: unit.survivalRate > 0.5 ? '#3db88a20' : '#ef444420', color: unit.survivalRate > 0.5 ? '#3db88a' : '#ef4444' }}>
-                          {t('survivalRate')}: {(unit.survivalRate * 100).toFixed(1)}%
+                          {t('simulation.survivalRate')}: {(unit.survivalRate * 100).toFixed(1)}%
                         </span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
                         <div>
                           <div className="font-medium" style={{ color: 'var(--primary-blue)' }}>{unit.avgDamageDealt.toFixed(0)}</div>
-                          <div>{t('avgDamage')}</div>
+                          <div>{t('simulation.avgDamage')}</div>
                         </div>
                         <div>
                           <div className="font-medium" style={{ color: '#e5a440' }}>{unit.dps.toFixed(1)}</div>
@@ -813,7 +813,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                         </div>
                         <div>
                           <div className="font-medium" style={{ color: '#ef4444' }}>{unit.avgKills.toFixed(2)}</div>
-                          <div>{t('avgKills')}</div>
+                          <div>{t('simulation.avgKills')}</div>
                         </div>
                       </div>
                     </div>
@@ -823,7 +823,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
 
               {/* Team 2 유닛 통계 */}
               <div>
-                <div className="text-sm font-semibold mb-3" style={{ color: 'var(--primary-red)' }}>Team 2 {t('unitStats')}</div>
+                <div className="text-sm font-semibold mb-3" style={{ color: 'var(--primary-red)' }}>Team 2 {t('simulation.unitStats')}</div>
                 <div className="space-y-2">
                   {team2UnitStats.map((unit, idx) => (
                     <div key={unit.unitId} className="p-3 rounded-lg" style={{ background: 'var(--bg-primary)' }}>
@@ -838,13 +838,13 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                           )}
                         </div>
                         <span className="text-xs px-2 py-0.5 rounded" style={{ background: unit.survivalRate > 0.5 ? '#3db88a20' : '#ef444420', color: unit.survivalRate > 0.5 ? '#3db88a' : '#ef4444' }}>
-                          {t('survivalRate')}: {(unit.survivalRate * 100).toFixed(1)}%
+                          {t('simulation.survivalRate')}: {(unit.survivalRate * 100).toFixed(1)}%
                         </span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
                         <div>
                           <div className="font-medium" style={{ color: 'var(--primary-red)' }}>{unit.avgDamageDealt.toFixed(0)}</div>
-                          <div>{t('avgDamage')}</div>
+                          <div>{t('simulation.avgDamage')}</div>
                         </div>
                         <div>
                           <div className="font-medium" style={{ color: '#e5a440' }}>{unit.dps.toFixed(1)}</div>
@@ -852,7 +852,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                         </div>
                         <div>
                           <div className="font-medium" style={{ color: '#ef4444' }}>{unit.avgKills.toFixed(2)}</div>
-                          <div>{t('avgKills')}</div>
+                          <div>{t('simulation.avgKills')}</div>
                         </div>
                       </div>
                     </div>
@@ -872,7 +872,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
             className="w-full flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-[var(--bg-hover)]"
             style={{ background: 'var(--bg-tertiary)' }}
           >
-            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('sampleBattleLog')}</span>
+            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('simulation.sampleBattleLog')}</span>
             {showDetailedStats ? (
               <ChevronUp className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
             ) : (
@@ -885,14 +885,14 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('sampleBattleLog')}</span>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('simulation.sampleBattleLog')}</span>
                 </div>
                 <CustomSelect
                   value={String(selectedSampleIndex)}
                   onChange={(v) => setSelectedSampleIndex(Number(v))}
                   options={teamResult.sampleBattles.map((_, i) => ({
                     value: String(i),
-                    label: `${t('battle')} #${i + 1}`
+                    label: `${t('simulation.battle')} #${i + 1}`
                   }))}
                   size="sm"
                 />
@@ -905,26 +905,26 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                     <div className="p-3 rounded-lg" style={{ background: 'var(--bg-primary)' }}>
                       <div className="text-sm font-medium mb-2" style={{ color: 'var(--primary-blue)' }}>Team 1</div>
                       <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        {t('survivors')}: {teamResult.sampleBattles[selectedSampleIndex].team1Survivors}/{team1Units.length}
+                        {t('simulation.survivors')}: {teamResult.sampleBattles[selectedSampleIndex].team1Survivors}/{team1Units.length}
                       </div>
                       <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        {t('totalDamage')}: {teamResult.sampleBattles[selectedSampleIndex].team1TotalDamage.toLocaleString()}
+                        {t('simulation.totalDamage')}: {teamResult.sampleBattles[selectedSampleIndex].team1TotalDamage.toLocaleString()}
                       </div>
                     </div>
                     <div className="p-3 rounded-lg" style={{ background: 'var(--bg-primary)' }}>
                       <div className="text-sm font-medium mb-2" style={{ color: 'var(--primary-red)' }}>Team 2</div>
                       <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        {t('survivors')}: {teamResult.sampleBattles[selectedSampleIndex].team2Survivors}/{team2Units.length}
+                        {t('simulation.survivors')}: {teamResult.sampleBattles[selectedSampleIndex].team2Survivors}/{team2Units.length}
                       </div>
                       <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        {t('totalDamage')}: {teamResult.sampleBattles[selectedSampleIndex].team2TotalDamage.toLocaleString()}
+                        {t('simulation.totalDamage')}: {teamResult.sampleBattles[selectedSampleIndex].team2TotalDamage.toLocaleString()}
                       </div>
                     </div>
                   </div>
 
                   {/* 유닛별 결과 */}
                   <div className="max-h-64 overflow-y-auto space-y-1">
-                    <div className="text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>{t('unitResults')}</div>
+                    <div className="text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>{t('simulation.unitResults')}</div>
                     {teamResult.sampleBattles[selectedSampleIndex].unitResults.map((unitResult, idx) => {
                       const isTeam1 = unitResult.team === 'team1';
                       const color = isTeam1 ? 'var(--primary-blue)' : 'var(--primary-red)';
@@ -939,7 +939,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                             <span className="font-medium" style={{ color }}>{unitResult.unit.name}</span>
                           </div>
                           <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                            <Tooltip content={t('damageDealt')} position="top">
+                            <Tooltip content={t('simulation.damageDealt')} position="top">
                               <span className="flex items-center cursor-help"><Swords className="w-3 h-3 mr-1" />{unitResult.damageDealt.toLocaleString()}</span>
                             </Tooltip>
                             {unitResult.kills > 0 && (
@@ -954,7 +954,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                   </div>
 
                   <div className="text-sm pt-2 border-t" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}>
-                    {t('winner')}: <span className="font-medium" style={{
+                    {t('simulation.winner')}: <span className="font-medium" style={{
                       color: teamResult.sampleBattles[selectedSampleIndex].winner === 'team1'
                         ? 'var(--primary-blue)'
                         : teamResult.sampleBattles[selectedSampleIndex].winner === 'team2'
@@ -965,9 +965,9 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                         ? 'Team 1'
                         : teamResult.sampleBattles[selectedSampleIndex].winner === 'team2'
                           ? 'Team 2'
-                          : t('draw')}
+                          : t('simulation.draw')}
                     </span>
-                    {' '}| {t('battleTime')}: {teamResult.sampleBattles[selectedSampleIndex].duration.toFixed(1)}s
+                    {' '}| {t('simulation.battleTime')}: {teamResult.sampleBattles[selectedSampleIndex].duration.toFixed(1)}s
                   </div>
 
                   {/* 시뮬 리플레이 — 다대다 timeline + scrubber */}
@@ -986,7 +986,7 @@ function TeamBattleResults({ teamResult, team1Units, team2Units }: TeamBattleRes
                               ? 'Team 1'
                               : teamResult.sampleBattles[selectedSampleIndex].winner === 'team2'
                                 ? 'Team 2'
-                                : t('draw'),
+                                : t('simulation.draw'),
                           duration: teamResult.sampleBattles[selectedSampleIndex].duration,
                         }}
                       />
