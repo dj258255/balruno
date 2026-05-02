@@ -9,13 +9,19 @@
  */
 
 import { app, BrowserWindow, shell } from 'electron';
-import * as path from 'path';
-import { registerStorageHandlers } from './ipc/storage';
-import { registerDialogHandlers } from './ipc/dialog';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { registerStorageHandlers } from './ipc/storage.js';
+import { registerDialogHandlers } from './ipc/dialog.js';
+import { initAutoUpdate } from './autoUpdate.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = process.env.NODE_ENV === 'development';
 
 function createMainWindow(): BrowserWindow {
+  const isMac = process.platform === 'darwin';
+  const isWin = process.platform === 'win32';
+
   const win = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -23,7 +29,20 @@ function createMainWindow(): BrowserWindow {
     minHeight: 640,
     title: 'PowerBalance',
     backgroundColor: '#0a0a0a',
-    titleBarStyle: 'hiddenInset',
+    // Mac: hiddenInset (traffic lights 만 보임, frameless 모던 룩)
+    // Windows: hidden + titleBarOverlay (우측 상단 시스템 컨트롤 자동 그림)
+    // Linux: default (DE 의 기본 titlebar 사용 — 데스크톱 환경마다 다름)
+    titleBarStyle: isMac ? 'hiddenInset' : isWin ? 'hidden' : 'default',
+    // Mac 전용: traffic lights 위치 — 위쪽 컴팩트한 22px 영역에 배치 (Linear/Notion 패턴)
+    ...(isMac && { trafficLightPosition: { x: 12, y: 6 } }),
+    // Windows 전용: 우측 상단 시스템 컨트롤 영역 색상 (frameless 모던 룩)
+    ...(isWin && {
+      titleBarOverlay: {
+        color: '#0a0a0a',
+        symbolColor: '#ffffff',
+        height: 32,
+      },
+    }),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -55,6 +74,7 @@ app.whenReady().then(() => {
   registerStorageHandlers();
   registerDialogHandlers();
   createMainWindow();
+  initAutoUpdate();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();

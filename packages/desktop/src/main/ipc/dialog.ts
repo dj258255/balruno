@@ -6,7 +6,7 @@
  */
 
 import { ipcMain, dialog, BrowserWindow } from 'electron';
-import * as fs from 'fs/promises';
+import * as fs from 'node:fs/promises';
 
 export function registerDialogHandlers(): void {
   ipcMain.handle(

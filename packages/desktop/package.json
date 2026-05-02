@@ -2,6 +2,7 @@
   "name": "@balruno/desktop",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "PowerBalance / balruno 데스크톱 앱 (Electron). packages/web 빌드 결과를 패키징하여 Mac/Windows/Linux native 앱으로 배포.",
   "main": "dist/main/index.js",
   "scripts": {
@@ -18,23 +19,26 @@
     "typecheck": "tsc --noEmit -p tsconfig.main.json"
   },
   "dependencies": {
-    "electron-store": "^10.0.0"
+    "electron-store": "^11.0.0",
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "concurrently": "^9.1.0",
-    "cross-env": "^7.0.3",
-    "electron": "^33.0.0",
-    "electron-builder": "^25.1.0",
+    "concurrently": "^9.2.0",
+    "cross-env": "^10.0.0",
+    "electron": "^41.0.0",
+    "electron-builder": "^26.0.0",
     "typescript": "^5.7.0",
-    "wait-on": "^8.0.1"
+    "wait-on": "^9.0.0"
   },
   "build": {
     "appId": "com.balruno.app",
     "productName": "PowerBalance",
+    "copyright": "Copyright © 2026 Balruno",
     "asar": true,
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
@@ -42,22 +46,48 @@
       "../web/.next/static/**/*",
       "../web/public/**/*"
     ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "dj258255",
+        "repo": "balruno",
+        "releaseType": "release"
+      }
+    ],
     "mac": {
       "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] }
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
       ]
     },
+    "dmg": {
+      "title": "PowerBalance ${version}",
+      "icon": "build/icon.icns",
+      "writeUpdateInfo": true
+    },
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         { "target": "nsis", "arch": ["x64"] }
       ]
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
     "linux": {
+      "icon": "build/icon.png",
+      "category": "Development",
       "target": [
-        { "target": "AppImage", "arch": ["x64"] }
-      ],
-      "category": "Development"
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb", "arch": ["x64"] }
+      ]
     }
   }
 }

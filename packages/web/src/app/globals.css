@@ -1710,3 +1710,62 @@ tr.row-flash {
 .tippy-box[data-theme~=''] > .tippy-arrow {
   display: none;
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   Electron platform-aware spacing
+   - Mac (hiddenInset): 사이드바 좌상단의 워크스페이스 스위처 위에 traffic lights 가
+     겹치지 않도록 좌측 padding 으로 영역 확보 (Linear/Notion 패턴)
+   - Windows (hidden + overlay): 우측 상단의 시스템 컨트롤 (min/max/close) 영역
+     32px 만큼 헤더 우측 padding (필요 시 헤더 컴포넌트에서 추가 처리)
+   - Linux (default titlebar): 기본 titlebar 사용 → 별도 padding 불필요
+   ───────────────────────────────────────────────────────────────── */
+
+/* Mac: 화면 전체 상단 28px 를 traffic lights 전용 영역으로 확보.
+   - body padding-top 으로 모든 컨텐츠 (사이드바 + 메인) 를 28px 아래로 내림
+   - body::before fixed 1px 줄로 화면 전체 가로지르는 구분선 (사이드바 + 메인 통과)
+   - traffic lights 는 그 28px 빈 영역 안에 위치 (trafficLightPosition x:12 y:6)
+   - WorkspaceSwitcher 자체 padding 은 제거 (body 가 처리)
+   - 표준 `app-region` + 벤더 prefix 둘 다 적용 (drag region) */
+.platform-electron-mac body {
+  padding-top: 28px;
+}
+.platform-electron-mac body::before {
+  content: '';
+  position: fixed;
+  top: 28px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-primary);
+  z-index: 50;
+  pointer-events: none;
+}
+/* traffic lights 위 28px 영역 자체를 drag region 으로 (창 이동 가능) */
+.platform-electron-mac body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  -webkit-app-region: drag;
+  app-region: drag;
+  z-index: 49;
+  pointer-events: none;
+}
+/* WorkspaceSwitcher 의 추가 padding/구분선은 모두 제거 (body 가 일원화) */
+.platform-electron-mac [data-electron-traffic-zone] {
+  /* drag region 은 body::after 가 담당 — 사이드바 내부는 normal */
+}
+.platform-electron-mac [data-electron-traffic-zone] button,
+.platform-electron-mac [data-electron-traffic-zone] input,
+.platform-electron-mac [data-electron-traffic-zone] a,
+.platform-electron-mac [data-electron-traffic-zone] [role='button'] {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* Windows: 우측 상단 시스템 컨트롤 (overlay height 32px) 영역 확보 */
+.platform-electron:not(.platform-electron-mac) header {
+  padding-right: 140px;
+}

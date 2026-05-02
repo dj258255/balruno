@@ -8,23 +8,27 @@
 import { ipcMain } from 'electron';
 import Store from 'electron-store';
 
-const store = new Store({
+interface KvSchema {
+  [key: string]: string;
+}
+
+const store = new Store<KvSchema>({
   name: 'balruno-kv',
   defaults: {},
 });
 
 export function registerStorageHandlers(): void {
   ipcMain.on('kv-storage:get', (event, key: string) => {
-    event.returnValue = (store as unknown as { get(k: string): unknown }).get(key) ?? null;
+    event.returnValue = store.get(key) ?? null;
   });
 
   ipcMain.on('kv-storage:set', (event, key: string, value: string) => {
-    (store as unknown as { set(k: string, v: unknown): void }).set(key, value);
+    store.set(key, value);
     event.returnValue = true;
   });
 
   ipcMain.on('kv-storage:remove', (event, key: string) => {
-    (store as unknown as { delete(k: string): void }).delete(key);
+    store.delete(key);
     event.returnValue = true;
   });
 }

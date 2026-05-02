@@ -61,6 +61,7 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
   return (
     <div
       ref={rootRef}
+      data-electron-traffic-zone
       className="relative px-2 py-2 border-b flex items-center gap-1"
       style={{ borderColor: 'var(--border-primary)' }}
     >
