@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, X, Edit2, Copy, Check, LayoutTemplate, GripVertical, ChevronLeft, ChevronRight, XCircle, FileText, FileSpreadsheet } from 'lucide-react';
 import DocIconPicker from '@/components/docs/DocIconPicker';
 import { useProjectStore } from '@/stores/projectStore';
@@ -694,6 +695,31 @@ function NewSheetKindPicker({ value, onChange, open, setOpen }: NewSheetKindPick
   const t = useTranslations();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  // 버튼의 화면 좌표 — portal 로 document.body 에 렌더하므로 fixed 위치 필요
+  const [menuPos, setMenuPos] = useState<{ left: number; top: number } | null>(null);
+
+  // open 시 버튼 좌표 캡처. SheetTabs 부모 컨테이너의 overflow-x-auto 가 메뉴를
+  // 클립하기 때문에 portal + fixed 좌표로 stacking context 와 overflow 를 모두 우회.
+  // useLayoutEffect: 페인트 전에 위치 계산해서 메뉴 깜빡임 방지.
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPos(null);
+      return;
+    }
+    const updatePos = () => {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (rect) {
+        setMenuPos({ left: rect.left, top: rect.bottom + 4 });
+      }
+    };
+    updatePos();
+    window.addEventListener('scroll', updatePos, true);
+    window.addEventListener('resize', updatePos);
+    return () => {
+      window.removeEventListener('scroll', updatePos, true);
+      window.removeEventListener('resize', updatePos);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -716,7 +742,7 @@ function NewSheetKindPicker({ value, onChange, open, setOpen }: NewSheetKindPick
   const currentColor = value ? KIND_META[value].color : 'var(--text-tertiary)';
 
   return (
-    <div className="relative">
+    <>
       <button
         ref={buttonRef}
         type="button"
@@ -735,11 +761,13 @@ function NewSheetKindPicker({ value, onChange, open, setOpen }: NewSheetKindPick
         />
         <span className="truncate max-w-[80px]">{currentLabel}</span>
       </button>
-      {open && (
+      {open && menuPos && typeof window !== 'undefined' && createPortal(
         <div
           ref={menuRef}
-          className="absolute top-full left-0 mt-1 z-50 min-w-[160px] py-1 rounded-lg shadow-lg border"
+          className="fixed z-[1200] min-w-[160px] py-1 rounded-lg shadow-lg border"
           style={{
+            left: menuPos.left,
+            top: menuPos.top,
             background: 'var(--bg-primary)',
             borderColor: 'var(--border-primary)',
           }}
@@ -788,8 +816,9 @@ function NewSheetKindPicker({ value, onChange, open, setOpen }: NewSheetKindPick
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }
