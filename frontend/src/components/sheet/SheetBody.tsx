@@ -17,7 +17,7 @@ import { VirtualItem } from '@tanstack/react-virtual';
 import { cn } from '@/lib/utils';
 import type { Row, Column, CellValue, CellStyle } from '@/types';
 import SheetCell from './SheetCell';
-import { InlineCheckbox, InlineRating, InlinePerson } from './InlineCellControls';
+import { InlineCheckbox, InlineRating, InlinePerson, InlineSelectChip, InlineMultiSelectChips } from './InlineCellControls';
 import { cellKey, formatDisplayValue, type DisplayContext } from './utils';
 
 interface SheetBodyProps {
@@ -320,6 +320,22 @@ const SheetBody = memo(function SheetBody({
                       }
                       if (column.type === 'person') {
                         return <InlinePerson value={rawValue} />;
+                      }
+                      if (column.type === 'select' && column.selectOptions) {
+                        return (
+                          <InlineSelectChip
+                            value={rawValue}
+                            options={column.selectOptions}
+                          />
+                        );
+                      }
+                      if (column.type === 'multiSelect' && column.selectOptions) {
+                        return (
+                          <InlineMultiSelectChips
+                            value={rawValue}
+                            options={column.selectOptions}
+                          />
+                        );
                       }
                       return undefined;
                     })()}

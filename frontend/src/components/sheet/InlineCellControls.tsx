@@ -11,7 +11,7 @@ import { useTranslations } from 'next-intl';
  */
 
 import { Check, Star, Circle, User } from 'lucide-react';
-import type { CellValue, Column, Sheet } from '@/types';
+import type { CellValue, Column, Sheet, SelectOption } from '@/types';
 
 /**
  * person / assignee 컬럼 인라인 렌더. 값은 콤마 split — 한 명 또는 여러 명.
@@ -345,5 +345,84 @@ export function InlineRating({
         );
       })}
     </div>
+  );
+}
+
+/**
+ * select 셀의 readonly chip — 옵션 색 배경 + label.
+ * 클릭 시 셀이 편집 모드로 진입 (popup 표시) — 이 컴포넌트는 표시 전용.
+ */
+export function InlineSelectChip({
+  value,
+  options,
+}: {
+  value: CellValue;
+  options: SelectOption[];
+}) {
+  if (value === null || value === undefined || value === '') return null;
+  const opt = options.find((o) => o.id === value || o.label === value);
+  if (!opt) return null;
+  const color = opt.color ?? '#94a3b8';
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+      style={{
+        background: `${color}25`,
+        color: color,
+        border: `1px solid ${color}40`,
+        maxWidth: '100%',
+      }}
+      title={opt.label}
+    >
+      <span className="truncate">{opt.label}</span>
+    </span>
+  );
+}
+
+/**
+ * multiSelect 셀의 readonly chips — 여러 옵션을 칩 묶음으로.
+ */
+export function InlineMultiSelectChips({
+  value,
+  options,
+}: {
+  value: CellValue;
+  options: SelectOption[];
+}) {
+  if (value === null || value === undefined || value === '') return null;
+  const ids = String(value).split(',').map((s) => s.trim()).filter(Boolean);
+  if (ids.length === 0) return null;
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {ids.map((id) => {
+        const opt = options.find((o) => o.id === id || o.label === id);
+        if (!opt) {
+          return (
+            <span
+              key={id}
+              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs"
+              style={{ background: '#f3f4f6', color: '#6b7280' }}
+            >
+              {id}
+            </span>
+          );
+        }
+        const color = opt.color ?? '#94a3b8';
+        return (
+          <span
+            key={id}
+            className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium"
+            style={{
+              background: `${color}25`,
+              color: color,
+              border: `1px solid ${color}40`,
+            }}
+            title={opt.label}
+          >
+            <span className="truncate max-w-[120px]">{opt.label}</span>
+          </span>
+        );
+      })}
+    </span>
   );
 }

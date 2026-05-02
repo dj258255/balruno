@@ -50,6 +50,25 @@ export function parseValue(value: string): CellValue {
   return value;
 }
 
+/**
+ * formula bar 표시용 — select 등은 raw uuid 대신 사용자 친화적인 label 로 변환.
+ * formula 컬럼은 raw 수식 그대로 (편집 위해).
+ */
+export function formatForFormulaBar(value: CellValue, column?: Column): string {
+  if (value === null || value === undefined) return '';
+  if (column?.type === 'select' && column.selectOptions) {
+    const opt = column.selectOptions.find((o) => o.id === value || o.label === value);
+    return opt?.label ?? String(value);
+  }
+  if (column?.type === 'multiSelect' && column.selectOptions) {
+    const ids = String(value).split(',').map((s) => s.trim()).filter(Boolean);
+    return ids
+      .map((id) => column.selectOptions!.find((o) => o.id === id || o.label === id)?.label ?? id)
+      .join(', ');
+  }
+  return String(value);
+}
+
 // 표시값 포맷팅: column.type 에 따라 타입별 표시.
 // link/lookup/rollup 은 DisplayContext (다른 시트 참조) 필요.
 export function formatDisplayValue(

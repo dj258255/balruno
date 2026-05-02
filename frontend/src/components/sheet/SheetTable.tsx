@@ -69,7 +69,7 @@ import SheetToolbar from './SheetToolbar';
 import { ConfirmDialog } from '@/components/ui';
 
 // Utils
-import { cellKey, rafThrottle, formatDisplayValue } from './utils';
+import { cellKey, rafThrottle, formatDisplayValue, formatForFormulaBar } from './utils';
 import { evaluateFormula } from '@/lib/formulaEngine';
 import { cn } from '@/lib/utils';
 import { usePresence } from '@/hooks/usePresence';
@@ -591,8 +591,8 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
       selectCellByIndex(ri, ci);
 
       const row = sheet.rows[ri];
-      const rawValue = row?.cells[columnId];
-      setFormulaBarValue(rawValue?.toString() || '');
+      const rawValue = row?.cells[columnId] ?? '';
+      setFormulaBarValue(formatForFormulaBar(rawValue, sheet.columns.find((c) => c.id === columnId)));
     },
     [
       sheet.rows,
@@ -953,8 +953,9 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
             e.preventDefault();
             setIsFormulaBarFocused(false);
             const row = sheet.rows.find((r) => r.id === selectedCell?.rowId);
-            const rawValue = row?.cells[selectedCell?.columnId || ''];
-            setFormulaBarValue(rawValue?.toString() || '');
+            const colId = selectedCell?.columnId || '';
+            const rawValue = row?.cells[colId] ?? '';
+            setFormulaBarValue(formatForFormulaBar(rawValue, sheet.columns.find((c) => c.id === colId)));
           }
         }}
         onCancelEdit={() => {
@@ -963,8 +964,8 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           setIsFormulaBarFocused(false);
           if (selectedCell) {
             const row = sheet.rows.find((r) => r.id === selectedCell.rowId);
-            const rawValue = row?.cells[selectedCell.columnId];
-            setFormulaBarValue(rawValue?.toString() || '');
+            const rawValue = row?.cells[selectedCell.columnId] ?? '';
+            setFormulaBarValue(formatForFormulaBar(rawValue, sheet.columns.find((c) => c.id === selectedCell.columnId)));
           }
         }}
         onConfirmEdit={() => {
