@@ -16,6 +16,8 @@ import {
   updateProjectMeta,
   isDocHydrated,
   observeProjectDoc,
+  addSheetInDoc,
+  dedupeSheetsInDoc,
 } from './ydoc';
 
 function makeSampleProject(): Project {
@@ -296,5 +298,59 @@ describe('Y.Doc hydrate 상태 + observer (Track 0 Phase 1)', () => {
     expect(count).toBe(1);
 
     unobserve();
+  });
+});
+
+describe('데이터 손상 가드', () => {
+  it('addSheetInDoc 가 같은 ID 시트 중복 추가 거부', () => {
+    const doc = new Y.Doc();
+    const sheet = makeSampleProject().sheets[0];
+    addSheetInDoc(doc, sheet);
+    addSheetInDoc(doc, sheet); // 두 번째는 거부
+    addSheetInDoc(doc, sheet); // 세 번째도 거부
+    const sheets = doc.getArray('sheets');
+    expect(sheets.length).toBe(1);
+  });
+
+  it('dedupeSheetsInDoc 가 중복 ID 정리 + updatedAt 가장 큰 인스턴스 보존', () => {
+    const doc = new Y.Doc();
+    // hydrate 우회 — 직접 손상 데이터를 Y.Array 에 push
+    doc.transact(() => {
+      const sheets = doc.getArray<Y.Map<unknown>>('sheets');
+      const mk = (id: string, updatedAt: number, name: string) => {
+        const m = new Y.Map<unknown>();
+        m.set('id', id);
+        m.set('updatedAt', updatedAt);
+        m.set('name', name);
+        return m;
+      };
+      sheets.push([mk('s1', 100, 'old1')]);
+      sheets.push([mk('s1', 300, 'newest')]); // winner
+      sheets.push([mk('s2', 50, 's2-only')]);
+      sheets.push([mk('s1', 200, 'old2')]);
+    });
+
+    const removed = dedupeSheetsInDoc(doc);
+    expect(removed).toBe(2); // s1 의 두 개 중복 제거
+
+    const sheets = doc.getArray<Y.Map<unknown>>('sheets');
+    expect(sheets.length).toBe(2);
+    const ids = [];
+    const names = [];
+    for (let i = 0; i < sheets.length; i++) {
+      ids.push(sheets.get(i).get('id'));
+      names.push(sheets.get(i).get('name'));
+    }
+    expect(ids.sort()).toEqual(['s1', 's2']);
+    expect(names).toContain('newest'); // updatedAt 가장 큰 인스턴스 보존
+    expect(names).not.toContain('old1');
+    expect(names).not.toContain('old2');
+  });
+
+  it('dedupeSheetsInDoc 가 중복 없는 doc 에 호출 시 0 반환', () => {
+    const doc = new Y.Doc();
+    hydrateDocFromProject(doc, makeSampleProject());
+    const removed = dedupeSheetsInDoc(doc);
+    expect(removed).toBe(0);
   });
 });

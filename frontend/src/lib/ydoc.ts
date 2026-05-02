@@ -544,6 +544,19 @@ export function touchSheet(sheet: Y.Map<unknown>): void {
 export function addSheetInDoc(doc: Y.Doc, sheet: Sheet): void {
   doc.transact(() => {
     const sheets = doc.getArray<Y.Map<unknown>>('sheets');
+    // 같은 ID 가 이미 존재하면 거부 — 데이터 손상 방지 가드.
+    // 손상 발생 시 콘솔 stack trace 로 호출 경로 추적 가능.
+    for (let i = 0; i < sheets.length; i++) {
+      const existingId = sheets.get(i).get('id');
+      if (existingId === sheet.id) {
+        // eslint-disable-next-line no-console
+        console.error(
+          `[addSheetInDoc] 중복 sheet ID 추가 거부: ${sheet.id} (${sheet.name}). 호출 경로 확인:`,
+          new Error('duplicate sheet add').stack,
+        );
+        return;
+      }
+    }
     sheets.push([sheetToYMap(sheet)]);
   });
 }
@@ -593,6 +606,17 @@ export function deleteSheetInDoc(doc: Y.Doc, sheetId: string): void {
 export function duplicateSheetInDoc(doc: Y.Doc, newSheet: Sheet, atIndex?: number): void {
   doc.transact(() => {
     const sheets = doc.getArray<Y.Map<unknown>>('sheets');
+    // 중복 ID 가드 (addSheetInDoc 와 동일 정책)
+    for (let i = 0; i < sheets.length; i++) {
+      if (sheets.get(i).get('id') === newSheet.id) {
+        // eslint-disable-next-line no-console
+        console.error(
+          `[duplicateSheetInDoc] 중복 sheet ID 추가 거부: ${newSheet.id} (${newSheet.name}). 호출 경로 확인:`,
+          new Error('duplicate sheet duplicate').stack,
+        );
+        return;
+      }
+    }
     const ymap = sheetToYMap(newSheet);
     if (atIndex !== undefined && atIndex <= sheets.length) {
       sheets.insert(atIndex, [ymap]);
@@ -600,6 +624,40 @@ export function duplicateSheetInDoc(doc: Y.Doc, newSheet: Sheet, atIndex?: numbe
       sheets.push([ymap]);
     }
   });
+}
+
+/**
+ * 데이터 손상 복구용: 같은 sheet ID 가 sheets Y.Array 에 여러 번 들어간 경우
+ * updatedAt 가 가장 큰 (가장 최근) 인스턴스만 남기고 나머지를 삭제.
+ * yjs 동기화 race / 이전 버전 버그로 누적된 IndexedDB 데이터를 정리한다.
+ *
+ * 반환값: 제거한 중복 시트 수.
+ */
+export function dedupeSheetsInDoc(doc: Y.Doc): number {
+  let removed = 0;
+  doc.transact(() => {
+    const sheets = doc.getArray<Y.Map<unknown>>('sheets');
+    // 1단계: ID 별로 가장 최신 인덱스 찾기
+    const winner = new Map<string, { index: number; updatedAt: number }>();
+    for (let i = 0; i < sheets.length; i++) {
+      const id = sheets.get(i).get('id') as string | undefined;
+      if (typeof id !== 'string') continue;
+      const u = (sheets.get(i).get('updatedAt') as number | undefined) ?? 0;
+      const cur = winner.get(id);
+      if (!cur || u > cur.updatedAt) {
+        winner.set(id, { index: i, updatedAt: u });
+      }
+    }
+    // 2단계: winner 가 아닌 인덱스 수집 후 뒤에서부터 삭제
+    const keepIndices = new Set(Array.from(winner.values()).map((w) => w.index));
+    for (let i = sheets.length - 1; i >= 0; i--) {
+      if (!keepIndices.has(i)) {
+        sheets.delete(i, 1);
+        removed++;
+      }
+    }
+  });
+  return removed;
 }
 
 export function reorderSheetsInDoc(doc: Y.Doc, fromIndex: number, toIndex: number): void {

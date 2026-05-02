@@ -8,6 +8,7 @@ import {
   observeProjectDoc,
   docToProject,
   detachDoc,
+  dedupeSheetsInDoc,
 } from '@/lib/ydoc';
 
 /**
@@ -54,6 +55,17 @@ export function useYDocSync(): void {
         if (cancelled) return;
 
         const doc = getProjectDoc(project.id);
+
+        // 데이터 손상 자동 복구: 같은 sheet ID 가 sheets Y.Array 에 여러 번 박혀있으면
+        // updatedAt 가장 큰 인스턴스만 남기고 정리. yjs sync race / 이전 버전 버그로
+        // 누적된 IndexedDB 손상을 새 세션 진입 시 한 번 청소.
+        const removed = dedupeSheetsInDoc(doc);
+        if (removed > 0) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[useYDocSync] 프로젝트 "${project.name}" 에서 중복 시트 ${removed}개 제거됨`,
+          );
+        }
 
         const unobserve = observeProjectDoc(doc, (updated) => {
           useProjectStore.setState((state) => ({
