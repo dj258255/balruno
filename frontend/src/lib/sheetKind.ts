@@ -7,8 +7,9 @@
  *   3. 기본 'game-data'
  */
 
-import type { Sheet, SheetKind } from '@/types';
+import type { ColumnType, Sheet, SheetKind } from '@/types';
 import { detectPmSheet } from './pmSheetDetection';
+import { COLUMN_TYPE_META } from './columnTypeMeta';
 
 export interface SheetKindMeta {
   kind: SheetKind;
@@ -65,6 +66,16 @@ export function resolveSheetKind(sheet: Sheet): SheetKindMeta {
 
 export function isEngineExportable(sheet: Sheet): boolean {
   return resolveSheetKind(sheet).engineExportable;
+}
+
+/**
+ * 시트 용도에서 추천되는 컬럼 타입 목록 — 신규 컬럼 빠른 preset 등에 활용.
+ * COLUMN_TYPE_META.recommendedIn 을 inverse 로 모은 결과.
+ */
+export function getRecommendedColumnTypes(kind: SheetKind): ColumnType[] {
+  return Object.values(COLUMN_TYPE_META)
+    .filter((m) => m.recommendedIn.includes(kind))
+    .map((m) => m.type);
 }
 
 export function groupSheetsByKind(sheets: Sheet[]): Record<SheetKind, Sheet[]> {
