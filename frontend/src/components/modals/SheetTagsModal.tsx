@@ -88,16 +88,7 @@ export default function SheetTagsModal({ projectId, sheetId, onClose }: SheetTag
   };
 
   const handleSave = () => {
-    // 진단: 어디서 끊기는지 추적 — 테스트 후 제거 예정
-    // eslint-disable-next-line no-console
-    console.log('[SheetTagsModal] save', { projectId, sheetId, draft });
     updateSheet(projectId, sheetId, { tags: draft.length > 0 ? draft : undefined });
-    // 저장 직후 store 의 시트 tags 도 함께 출력 (50ms observer 후 갱신될 것)
-    setTimeout(() => {
-      const updated = useProjectStore.getState().projects.find((p) => p.id === projectId)?.sheets.find((s) => s.id === sheetId);
-      // eslint-disable-next-line no-console
-      console.log('[SheetTagsModal] after-save sheet.tags', updated?.tags);
-    }, 200);
     onClose();
   };
 
