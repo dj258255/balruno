@@ -1,19 +1,25 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Check, HelpCircle, Lock, Globe, Plus, Trash2 } from 'lucide-react';
+import { X, Check, HelpCircle, Lock, Globe, Plus, Trash2, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslations } from 'next-intl';
 import { useEscapeKey } from '@/hooks';
 import FormulaAutocomplete from './FormulaAutocomplete';
 import CustomSelect from '@/components/ui/CustomSelect';
 import Checkbox from '@/components/ui/Checkbox';
+import {
+  COLUMN_TYPE_META,
+  getColumnTypesByCategory,
+  type ColumnTypeMeta,
+} from '@/lib/columnTypeMeta';
 import type {
   Column,
   ColumnType,
   DataType,
   ValidationConfig,
   Sheet,
+  SheetKind,
   SelectOption as FieldOption,
 } from '@/types';
 
@@ -22,6 +28,8 @@ interface ColumnModalProps {
   columns: Column[];
   sheets?: Sheet[];  // 다른 시트들 (시트 참조 자동완성용)
   currentSheetId?: string;  // 현재 시트 ID
+  /** 현재 시트의 용도 — picker 카테고리/추천/dim 처리용. 없으면 game-data 로 가정 */
+  sheetKind?: SheetKind;
   onSave: (data: {
     name: string;
     type: ColumnType;
@@ -42,6 +50,7 @@ export default function ColumnModal({
   columns,
   sheets = [],
   currentSheetId,
+  sheetKind = 'game-data',
   onSave,
   onClose,
   mode,
@@ -266,62 +275,12 @@ export default function ColumnModal({
             </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-              {t('column.type')}
-            </label>
-            {/* 빠른 preset — 4 가지 흔한 컬럼 즉시 선택 */}
-            <div className="grid grid-cols-4 gap-1.5 mb-2">
-              {([
-                { id: 'general', label: t('column.presetTextNumber'), hint: t('column.presetTextNumberHint') },
-                { id: 'date', label: t('column.presetDate'), hint: t('column.presetDateHint') },
-                { id: 'select', label: t('column.presetSelect'), hint: t('column.presetSelectHint') },
-                { id: 'link', label: t('column.presetLink'), hint: t('column.presetLinkHint') },
-              ] as Array<{ id: ColumnType; label: string; hint: string }>).map((p) => {
-                const active = type === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setType(p.id)}
-                    className="px-2 py-2 rounded-md text-xs font-medium transition-colors text-left"
-                    style={{
-                      background: active ? 'var(--accent)' : 'var(--bg-secondary)',
-                      color: active ? 'white' : 'var(--text-primary)',
-                      border: `1px solid ${active ? 'var(--accent)' : 'var(--border-primary)'}`,
-                    }}
-                  >
-                    <div className="font-semibold">{p.label}</div>
-                    <div className="text-caption mt-0.5" style={{ color: active ? 'rgba(255,255,255,0.8)' : 'var(--text-tertiary)' }}>
-                      {p.hint}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <CustomSelect
-              value={type}
-              onChange={(v) => setType(v as ColumnType)}
-              options={[
-                { value: 'general', label: t('column.typeGeneral') },
-                { value: 'formula', label: t('column.typeFormula') },
-                { value: 'checkbox', label: 'Checkbox' },
-                { value: 'select', label: 'Select' },
-                { value: 'multiSelect', label: 'Multi-select' },
-                { value: 'date', label: 'Date' },
-                { value: 'url', label: 'URL' },
-                { value: 'currency', label: 'Currency' },
-                { value: 'rating', label: 'Rating' },
-                { value: 'link', label: 'Link' },
-                { value: 'lookup', label: 'Lookup' },
-                { value: 'rollup', label: 'Rollup' },
-                { value: 'task-link', label: 'Task Link' },
-                { value: 'person', label: 'Person / @mention' },
-                { value: 'stat-snapshot', label: 'Stat Snapshot' },
-              ]}
-              size="md"
-            />
-          </div>
+          <ColumnTypePicker
+            value={type}
+            onChange={setType}
+            sheetKind={sheetKind}
+          />
+
 
           {/* link 설정 */}
           {type === 'link' && (
@@ -850,5 +809,158 @@ export default function ColumnModal({
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Column Type Picker ────────────────────────────────────────────────
+// 카테고리 섹션 + 아이콘 그리드 + 추천 배지 + dim/접힘.
+// Airtable 식 그룹 picker 를 도메인(시트 용도) 인식 형태로 재구성.
+// 시트 용도가 primary 가 아닌 카테고리는 기본적으로 접힌 상태로 노출.
+interface ColumnTypePickerProps {
+  value: ColumnType;
+  onChange: (type: ColumnType) => void;
+  sheetKind: SheetKind;
+}
+
+function ColumnTypePicker({ value, onChange, sheetKind }: ColumnTypePickerProps) {
+  const t = useTranslations();
+  const groups = getColumnTypesByCategory(sheetKind);
+
+  // primary 카테고리는 펼침, secondary 는 접힘. 현재 선택된 type 이 속한 카테고리는
+  // 강제 펼침 (사용자 컨텍스트에서 사라지지 않게).
+  const currentCategoryId = COLUMN_TYPE_META[value].category;
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    for (const g of groups) {
+      if (!g.isPrimary && g.category.category !== currentCategoryId) {
+        initial.add(g.category.category);
+      }
+    }
+    return initial;
+  });
+  const toggle = (id: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+        {t('column.type')}
+      </label>
+      <div className="space-y-2">
+        {groups.map((group) => {
+          const isCollapsed = collapsed.has(group.category.category);
+          const isCurrent = group.category.category === currentCategoryId;
+          return (
+            <div
+              key={group.category.category}
+              className="rounded-lg overflow-hidden"
+              style={{
+                background: 'var(--bg-secondary)',
+                border: `1px solid ${isCurrent ? 'var(--accent)' : 'var(--border-primary)'}`,
+                opacity: group.isPrimary ? 1 : 0.85,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => toggle(group.category.category)}
+                className="w-full flex items-center justify-between px-3 py-2 text-left transition-colors"
+                style={{ background: 'transparent' }}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-overline font-semibold"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {group.category.label}
+                  </span>
+                  {!group.isPrimary && (
+                    <span
+                      className="text-caption px-1.5 py-0.5 rounded"
+                      style={{
+                        background: 'var(--bg-tertiary)',
+                        color: 'var(--text-tertiary)',
+                      }}
+                      title={t('column.categorySecondaryHint')}
+                    >
+                      {t('column.categorySecondaryBadge')}
+                    </span>
+                  )}
+                </div>
+                <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+                  {isCollapsed ? '+' : '−'}
+                </span>
+              </button>
+              {!isCollapsed && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-2 pt-0">
+                  {group.types.map((meta) => (
+                    <ColumnTypeCell
+                      key={meta.type}
+                      meta={meta}
+                      active={value === meta.type}
+                      recommended={meta.recommendedIn.includes(sheetKind)}
+                      onClick={() => onChange(meta.type)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+interface ColumnTypeCellProps {
+  meta: ColumnTypeMeta;
+  active: boolean;
+  recommended: boolean;
+  onClick: () => void;
+}
+
+function ColumnTypeCell({ meta, active, recommended, onClick }: ColumnTypeCellProps) {
+  const Icon = meta.Icon;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={meta.description}
+      className="relative px-2 py-2 rounded-md text-left transition-colors"
+      style={{
+        background: active ? 'var(--accent)' : 'var(--bg-primary)',
+        color: active ? 'white' : 'var(--text-primary)',
+        border: `1px solid ${active ? 'var(--accent)' : 'var(--border-primary)'}`,
+      }}
+    >
+      {recommended && !active && (
+        <Sparkles
+          className="absolute top-1 right-1 w-3 h-3"
+          style={{ color: 'var(--accent)' }}
+        />
+      )}
+      <div className="flex items-center gap-1.5">
+        <Icon
+          className="w-3.5 h-3.5 shrink-0"
+          style={{ color: active ? 'white' : 'var(--text-secondary)' }}
+        />
+        <span className="text-xs font-semibold truncate">{meta.label}</span>
+      </div>
+      {meta.preview && (
+        <div
+          className="text-caption mt-0.5 truncate font-mono"
+          style={{
+            color: active ? 'rgba(255,255,255,0.8)' : 'var(--text-tertiary)',
+          }}
+        >
+          {meta.preview}
+        </div>
+      )}
+    </button>
   );
 }

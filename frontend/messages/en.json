@@ -1310,7 +1310,9 @@
     "taskLinkSheetLabel": "Select Task/Sprint sheet + status / assignee columns",
     "placeholderSelectTaskSheet": "— Select task sheet —",
     "placeholderSelectNone": "— None —",
-    "taskLinkHelp": "Top: status column (Kanban status). Bottom: assignee column (name / avatar)."
+    "taskLinkHelp": "Top: status column (Kanban status). Bottom: assignee column (name / avatar).",
+    "categorySecondaryBadge": "Other use",
+    "categorySecondaryHint": "Column types not typical for this sheet kind — expand to see them"
   },
   "formula": {
     "functions": "Functions",

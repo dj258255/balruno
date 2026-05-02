@@ -36,6 +36,7 @@ import { useHistoryStore } from '@/stores/historyStore';
 import { useSheetUIStore, DEFAULT_CELL_STYLE } from '@/stores/sheetUIStore';
 import { useRecordDetail } from '@/stores/recordDetailStore';
 import { detectPmSheet } from '@/lib/pmSheetDetection';
+import { resolveSheetKind } from '@/lib/sheetKind';
 import { applyFilter } from '@/lib/filterEval';
 
 // Hooks
@@ -1689,6 +1690,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           columns={sheet.columns}
           sheets={currentProject?.sheets}
           currentSheetId={sheet.id}
+          sheetKind={resolveSheetKind(sheet).kind}
           mode="add"
           onSave={(data) => {
             addColumn(projectId, sheet.id, data);
@@ -1703,6 +1705,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           columns={sheet.columns}
           sheets={currentProject?.sheets}
           currentSheetId={sheet.id}
+          sheetKind={resolveSheetKind(sheet).kind}
           mode="edit"
           column={editingColumn}
           onSave={(data) => {

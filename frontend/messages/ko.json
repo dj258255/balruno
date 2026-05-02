@@ -1310,7 +1310,9 @@
     "taskLinkSheetLabel": "Task/Sprint 시트 선택 + 상태·담당자 컬럼",
     "placeholderSelectTaskSheet": "— task 시트 선택 —",
     "placeholderSelectNone": "— 선택 안 함 —",
-    "taskLinkHelp": "위: 상태 컬럼 (Kanban status 표시). 아래: 담당자 컬럼 (이름/avatar 표시)."
+    "taskLinkHelp": "위: 상태 컬럼 (Kanban status 표시). 아래: 담당자 컬럼 (이름/avatar 표시).",
+    "categorySecondaryBadge": "다른 용도",
+    "categorySecondaryHint": "이 시트 용도엔 잘 안 쓰는 컬럼들 — 펼쳐서 확인 가능"
   },
   "formula": {
     "functions": "함수",
