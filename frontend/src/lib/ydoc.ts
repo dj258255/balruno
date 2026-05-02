@@ -228,6 +228,8 @@ function sheetToYMap(sheet: Sheet): Y.Map<unknown> {
   if (sheet.kind) map.set('kind', sheet.kind);
   if (sheet.exportClassName) map.set('exportClassName', sheet.exportClassName);
   if (sheet.folderId) map.set('folderId', sheet.folderId);
+  // 다중 라벨 (cross-cutting 분류)
+  if (sheet.tags && sheet.tags.length > 0) map.set('tags', sheet.tags.slice());
   // 뷰 스위처 상태
   if (sheet.activeView) map.set('activeView', sheet.activeView);
   if (sheet.viewGroupColumnId) map.set('viewGroupColumnId', sheet.viewGroupColumnId);
@@ -261,6 +263,10 @@ function yMapToSheet(map: Y.Map<unknown>): Sheet {
     kind: map.get('kind') as Sheet['kind'] | undefined,
     exportClassName: map.get('exportClassName') as string | undefined,
     folderId: map.get('folderId') as string | undefined,
+    tags: (() => {
+      const t = map.get('tags');
+      return Array.isArray(t) ? (t as string[]).slice() : undefined;
+    })(),
     activeView: map.get('activeView') as Sheet['activeView'] | undefined,
     viewGroupColumnId: map.get('viewGroupColumnId') as string | undefined,
     createdAt: map.get('createdAt') as number,
@@ -609,6 +615,7 @@ export function updateSheetInDoc(
     | 'viewGanttDependsColumnId'
     | 'savedViews'
     | 'activeSavedViewId'
+    | 'tags'
   >>
 ): void {
   doc.transact(() => {
@@ -617,6 +624,9 @@ export function updateSheetInDoc(
     for (const [k, v] of Object.entries(updates)) {
       if (v === undefined) {
         found.sheet.delete(k);
+      } else if (k === 'tags' && Array.isArray(v)) {
+        // 배열은 새 인스턴스로 set (yjs primitive array)
+        found.sheet.set(k, (v as string[]).slice());
       } else {
         found.sheet.set(k, v);
       }

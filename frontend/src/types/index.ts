@@ -16,7 +16,17 @@ export type ProjectSyncMode = 'local' | 'cloud';
  *  기본 'teamspace' (없으면 teamspace 로 간주). 백엔드 연결 전에는 시각적 분리만 담당. */
 export type ProjectVisibility = 'teamspace' | 'private';
 
-// 프로젝트 타입
+/** 프로젝트(=Game) 멤버 role. 백엔드 연결 전 자리만 확보. */
+export type ProjectRole = 'owner' | 'editor' | 'commenter' | 'viewer';
+
+/** 프로젝트(=Game) 멤버. members[] 에 들어감. 백엔드 연결 전 시드 데이터 없음. */
+export interface ProjectMember {
+  userId: string;
+  role: ProjectRole;
+  addedAt: number;
+}
+
+// 프로젝트(=Game) 타입 — UI 노출 명칭은 "Game", 데이터 모델은 Project 유지
 export interface Project {
   id: string;
   name: string;
@@ -24,7 +34,7 @@ export interface Project {
   createdAt: number;
   updatedAt: number;
   sheets: Sheet[];
-  folders?: Folder[];       // 폴더 목록
+  folders?: Folder[];       // 폴더 목록 (navigation only — ACL 없음)
   docs?: Doc[];             // GDD · 설계안 문서 (Phase A)
   changelog?: ChangeEntry[]; // Track변경 이력 (내부 기록)
   // 동기화 설정
@@ -35,6 +45,8 @@ export interface Project {
   /** STARTER_CATALOG 의 entry id (rpg/fps/moba/...). starter pack 시드된 프로젝트만 set.
    *  StarterCoachmark 가 이 값으로 장르별 5단계 가이드 매칭. */
   starterId?: string;
+  /** B2B 팀 모드 대비 — 게임당 멤버. 백엔드 연결 전엔 미사용 (자리만 확보). */
+  members?: ProjectMember[];
 }
 
 // GDD · 설계안 문서 (Tiptap 기반)
@@ -157,6 +169,10 @@ export interface Sheet {
   activeSavedViewId?: string;
   /** 현재 적용된 ad-hoc 필터. SavedView 에 포함시켜 저장 가능 */
   filterGroup?: FilterGroup;
+  /** 다중 라벨 — folder 와 직교하는 cross-cutting 분류
+   *  예: ["stage:wip", "owner:김디", "system:전투", "version:v1.3-beta"]
+   *  prefix 자유 (강제 안 함). 사이드바 chip + 검색 query 로 활용. */
+  tags?: string[];
   createdAt: number;
   updatedAt: number;
 }

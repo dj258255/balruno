@@ -97,6 +97,7 @@ export interface ProjectState {
       | 'savedViews'
       | 'activeSavedViewId'
       | 'filterGroup'
+      | 'tags'
     >>
   ) => void;
   deleteSheet: (projectId: string, sheetId: string) => void;
