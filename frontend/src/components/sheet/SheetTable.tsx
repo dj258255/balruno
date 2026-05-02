@@ -1022,6 +1022,7 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                       }
                     : undefined
                 }
+                onCommit={(v) => finishEditing(v)}
                 onChange={(value) => {
                   setEditValue(value);
                   setFormulaBarValue(value);

@@ -41,10 +41,15 @@ interface CellEditorProps {
   rowIndex?: number;
   /** 슬래시 명령에서 컬럼 type 변환 — 제공 시 /checkbox /select /date /number /text /link 명령 추가. */
   onConvertColumn?: (newType: ColumnType) => void;
+  /**
+   * select popup 등 "한 번에 commit" 흐름 전용. 호출 시 부모가 즉시 finishEditing(value)
+   * 로 store 에 저장. onChange + onBlur 분리 패턴의 React closure race 회피.
+   */
+  onCommit?: (value: string) => void;
 }
 
 export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
-  ({ value, onChange, onKeyDown, onBlur, isFormula = false, position, cellStyle, columnType, selectOptions, linkedSheet, linkedDisplayColumnId, linkedMultiple, rowIndex, onConvertColumn }, ref) => {
+  ({ value, onChange, onKeyDown, onBlur, isFormula = false, position, cellStyle, columnType, selectOptions, linkedSheet, linkedDisplayColumnId, linkedMultiple, rowIndex, onConvertColumn, onCommit }, ref) => {
     const t = useTranslations();
     const internalInputRef = useRef<HTMLInputElement>(null);
 
@@ -205,8 +210,10 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
                 onPointerDown={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => {
-                  onChange('');
-                  onBlur?.();
+                  // onCommit 우선 — React closure race 회피 (editValue setState 가 finishEditing
+                  // closure 보다 늦게 적용되어 빈값으로 commit 되는 문제 방지)
+                  if (onCommit) onCommit('');
+                  else { onChange(''); onBlur?.(); }
                 }}
                 className="w-full text-left px-2 py-1 text-xs flex items-center gap-2 hover:bg-[var(--bg-tertiary)]"
                 style={{ color: 'var(--text-tertiary)' }}
@@ -223,8 +230,8 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
                   onPointerDown={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={() => {
-                    onChange(opt.id);
-                    onBlur?.();
+                    if (onCommit) onCommit(opt.id);
+                    else { onChange(opt.id); onBlur?.(); }
                   }}
                   className="w-full text-left px-2 py-1 text-xs flex items-center gap-2 hover:bg-[var(--bg-tertiary)]"
                   style={{ color: 'var(--text-primary)' }}
