@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { platform } from './platform';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -35,14 +36,9 @@ export function downloadFile(content: string, filename: string, type: string = '
   // CSV 파일인 경우 UTF-8 BOM 추가 (Excel 한글 깨짐 방지)
   const isCSV = type === 'text/csv' || filename.endsWith('.csv');
   const bom = isCSV ? '\uFEFF' : '';
-  const blob = new Blob([bom + content], { type: isCSV ? 'text/csv;charset=utf-8' : type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const mime = isCSV ? 'text/csv;charset=utf-8' : type;
+  const blob = new Blob([bom + content], { type: mime });
+  // fire-and-forget — platform 어댑터가 web/desktop 별 다운로드 처리
+  void platform.downloadFile(blob, filename, mime);
 }
 

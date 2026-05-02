@@ -113,12 +113,13 @@ export interface Automation {
   updatedAt: number;
 }
 
+import { kvStorage } from './kvStorage';
+
 const STORAGE_KEY_PREFIX = 'balruno:automations:';
 
 export function loadAutomations(projectId: string): Automation[] {
-  if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_PREFIX + projectId);
+    const raw = kvStorage.get(STORAGE_KEY_PREFIX + projectId);
     if (!raw) return [];
     return JSON.parse(raw) as Automation[];
   } catch {
@@ -127,8 +128,7 @@ export function loadAutomations(projectId: string): Automation[] {
 }
 
 export function saveAutomations(projectId: string, list: Automation[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(list));
+  kvStorage.set(STORAGE_KEY_PREFIX + projectId, JSON.stringify(list));
 }
 
 export function generateAutomationId(): string {

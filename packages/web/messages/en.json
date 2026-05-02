@@ -190,7 +190,8 @@
     "feedbackTooltip": "Report bugs or suggest new features for Balruno",
     "tagFilterClick": "Filter by {tag}",
     "tagFilterActive": "Remove {tag} filter",
-    "tagFilterClear": "Clear"
+    "tagFilterClear": "Clear",
+    "sheetCount": "{n} sheets"
   },
   "sheet": {
     "newSheet": "New Sheet",

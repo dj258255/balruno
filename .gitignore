@@ -9,6 +9,12 @@ out/
 build/
 dist/
 
+# Electron 빌드 산출물 (DMG/EXE/AppImage)
+packages/desktop/release/
+
+# Turborepo
+.turbo/
+
 # misc
 .DS_Store
 *.pem

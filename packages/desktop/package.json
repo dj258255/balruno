@@ -1,0 +1,63 @@
+{
+  "name": "@balruno/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PowerBalance / balruno 데스크톱 앱 (Electron). packages/web 빌드 결과를 패키징하여 Mac/Windows/Linux native 앱으로 배포.",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "concurrently -k -n web,electron \"npm:dev:web\" \"wait-on http://localhost:3000 && npm run dev:electron\"",
+    "dev:web": "cd ../web && npm run dev",
+    "dev:electron": "cross-env NODE_ENV=development electron .",
+    "build": "tsc -p tsconfig.main.json",
+    "package": "electron-builder",
+    "package:mac": "electron-builder --mac",
+    "package:win": "electron-builder --win",
+    "package:linux": "electron-builder --linux",
+    "lint": "echo 'desktop lint TBD'",
+    "test": "echo 'desktop tests TBD'",
+    "typecheck": "tsc --noEmit -p tsconfig.main.json"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.0",
+    "typescript": "^5.7.0",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.balruno.app",
+    "productName": "PowerBalance",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "../web/.next/standalone/**/*",
+      "../web/.next/static/**/*",
+      "../web/public/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ]
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ]
+    },
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] }
+      ],
+      "category": "Development"
+    }
+  }
+}

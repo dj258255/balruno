@@ -168,7 +168,7 @@ export function FolderItem({
         }}
         onDragEnd={onFolderDragEnd}
         className={cn(
-          "flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer group transition-colors",
+          "flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer group transition-colors",
           (isDragOver || isFolderDragOver) && "ring-2 ring-blue-400 bg-blue-50 dark:bg-blue-900/20",
           draggedFolderId === folder.id && "opacity-50"
         )}
@@ -253,9 +253,14 @@ export function FolderItem({
           </span>
         )}
 
-        <span className="text-xs opacity-50">
-          {folderSheets.length}
-        </span>
+        {(folderSheets.length + childFolders.length) > 0 && (
+          <span
+            className="text-xs shrink-0 tabular-nums"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            {folderSheets.length + childFolders.length}
+          </span>
+        )}
       </div>
 
       {/* 폴더 내용 (펼쳐진 경우) */}
@@ -325,7 +330,7 @@ export function FolderItem({
               }}
               tabIndex={0}
               className={cn(
-                "flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors group focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]"
+                "flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors group focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]"
               )}
               style={{
                 marginLeft: `${(depth + 1) * 12}px`,

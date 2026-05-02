@@ -362,20 +362,20 @@ export function ProjectList({
                 setDragOverProjectId(null);
               }}
             >
-              {/* 프로젝트 헤더 */}
+              {/* 프로젝트 헤더 — Notion/Linear 패턴: 박스 제거, flat row + hover 강조 */}
               <div
                 tabIndex={0}
                 className={cn(
-                  'flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer group transition-colors border focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]',
+                  'flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer group transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]',
                   dragOverProjectIndex === projectIndex && 'ring-2 ring-blue-400',
-                  dragOverProjectId === project.id && 'ring-2 ring-green-400 bg-green-50 dark:bg-green-900/20'
+                  dragOverProjectId === project.id && 'ring-2 ring-green-400 bg-green-50 dark:bg-green-900/20',
+                  currentProjectId !== project.id && 'hover:bg-[var(--bg-hover)]'
                 )}
                 style={{
                   background: dragOverProjectId === project.id
                     ? undefined
                     : currentProjectId === project.id ? 'var(--accent-light)' : 'transparent',
-                  color: currentProjectId === project.id ? 'var(--accent)' : 'var(--text-secondary)',
-                  borderColor: currentProjectId === project.id ? 'var(--accent)' : 'var(--border-primary)',
+                  color: currentProjectId === project.id ? 'var(--accent)' : 'var(--text-primary)',
                   opacity: draggedProjectIndex === projectIndex ? 0.5 : 1,
                 }}
                 onContextMenu={(e) => {
@@ -420,21 +420,33 @@ export function ProjectList({
                     autoFocus
                   />
                 ) : (
-                  <span
-                    onClick={() => {
-                      setCurrentProject(project.id);
-                      if (!expandedProjects.has(project.id)) toggleProject(project.id);
-                    }}
-                    className="flex-1 text-sm font-medium truncate"
-                  >
-                    {project.name}
-                  </span>
+                  <>
+                    <span
+                      onClick={() => {
+                        setCurrentProject(project.id);
+                        if (!expandedProjects.has(project.id)) toggleProject(project.id);
+                      }}
+                      className="flex-1 text-sm font-medium truncate"
+                    >
+                      {project.name}
+                    </span>
+                    {/* 게임 안 시트 총 개수 — Notion/Linear/Airtable 패턴 */}
+                    {project.sheets.length > 0 && (
+                      <span
+                        className="text-xs shrink-0 tabular-nums"
+                        style={{ color: 'var(--text-tertiary)' }}
+                        aria-label={t('sidebar.sheetCount', { n: project.sheets.length })}
+                      >
+                        {project.sheets.length}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
 
               {/* 태그 필터 chip 영역 — 이 프로젝트가 expand 되어 있고 tag 가 하나라도 있을 때만 */}
               {expandedProjects.has(project.id) && projectTags.length > 0 && (
-                <div className="ml-5 mt-1 mb-1 flex flex-wrap items-center gap-1">
+                <div className="ml-7 mt-0.5 mb-0.5 flex flex-wrap items-center gap-1">
                   <TagsIcon className="w-3 h-3 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
                   {projectTags.map((tag) => {
                     const active = activeTags.includes(tag);
@@ -577,7 +589,7 @@ export function ProjectList({
                       }}
                       tabIndex={0}
                       className={cn(
-                        "flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors group focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]",
+                        "flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors group focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]",
                         dragOverIndex === index && dragProjectId === project.id && "ring-2 ring-blue-400"
                       )}
                       style={{

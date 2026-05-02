@@ -190,7 +190,8 @@
     "feedbackTooltip": "Balruno에 오류·버그·새로운 기능 제안 있으면 알려주세요",
     "tagFilterClick": "{tag} 로 필터",
     "tagFilterActive": "{tag} 필터 해제",
-    "tagFilterClear": "필터 초기화"
+    "tagFilterClear": "필터 초기화",
+    "sheetCount": "시트 {n}개"
   },
   "sheet": {
     "newSheet": "새 시트",

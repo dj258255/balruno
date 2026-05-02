@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { Analytics } from "@vercel/analytics/next";
+import { DesktopBootstrap } from "./components/DesktopBootstrap";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -57,6 +58,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
+        <DesktopBootstrap />
         <ThemeProvider>
           <NextIntlClientProvider messages={messages}>
             {children}

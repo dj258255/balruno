@@ -256,12 +256,13 @@ export interface DashboardLayout {
   positions: Array<{ i: string; x: number; y: number; w: number; h: number }>;
 }
 
+import { kvStorage } from './kvStorage';
+
 const STORAGE_KEY_PREFIX = 'balruno:dashboard:';
 
 export function loadDashboard(projectId: string): DashboardLayout {
-  if (typeof window === 'undefined') return { widgets: [], positions: [] };
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_PREFIX + projectId);
+    const raw = kvStorage.get(STORAGE_KEY_PREFIX + projectId);
     if (!raw) return { widgets: [], positions: [] };
     return JSON.parse(raw) as DashboardLayout;
   } catch {
@@ -270,8 +271,7 @@ export function loadDashboard(projectId: string): DashboardLayout {
 }
 
 export function saveDashboard(projectId: string, layout: DashboardLayout): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(layout));
+  kvStorage.set(STORAGE_KEY_PREFIX + projectId, JSON.stringify(layout));
 }
 
 /** 시트의 한 컬럼 값들을 숫자 배열로 추출 (formula 컬럼은 computed 사용). (private — 같은 파일 내부 widget 계산만 사용) */

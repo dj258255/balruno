@@ -7,9 +7,11 @@
  *   2. `NEXT_PUBLIC_SENTRY_DSN` 환경변수 설정
  *   → 앱 로드 시 `initErrorReporting()` 가 자동 감지해서 init.
  *
- * 컴포넌트/바운더리가 `reportError(err)` 호출만 하면 Sentry / console / localStorage
+ * 컴포넌트/바운더리가 `reportError(err)` 호출만 하면 Sentry / console / kvStorage
  * 어디로 갈지 결정은 이 파일이 일원화.
  */
+
+import { kvStorage } from './kvStorage';
 
 export interface ErrorContext {
   /** 소스 레이블 (예: 'app-error', 'global-error', 'panel-crash') */
@@ -80,9 +82,8 @@ export function reportError(error: Error | unknown, context: ErrorContext): void
 
   // 3) 로컬 저장 — 오프라인 재전송용 (최근 50개)
   try {
-    if (typeof window === 'undefined') return;
     const key = 'balruno:error-log';
-    const raw = localStorage.getItem(key);
+    const raw = kvStorage.get(key);
     const list = raw ? (JSON.parse(raw) as unknown[]) : [];
     list.unshift({
       timestamp: Date.now(),
@@ -91,7 +92,7 @@ export function reportError(error: Error | unknown, context: ErrorContext): void
       stack: err.stack?.split('\n').slice(0, 5).join('\n'),
       extra: context.extra,
     });
-    localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
+    kvStorage.set(key, JSON.stringify(list.slice(0, 50)));
   } catch {
     // 쿼터 초과 등 — 무시
   }
