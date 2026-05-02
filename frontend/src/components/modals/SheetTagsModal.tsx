@@ -68,6 +68,10 @@ export default function SheetTagsModal({ projectId, sheetId, onClose }: SheetTag
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // 한글/일본어 IME 조합 중에는 Enter 가 compose 종료용으로 한 번 더 발화됨.
+    // 그 첫 Enter 를 commit 으로 처리하면 "안녕" → "안녕" + "녕" 두 번 add 되는 버그.
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+
     if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
       if (input.trim()) {
         e.preventDefault();
