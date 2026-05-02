@@ -127,6 +127,9 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
             border: `${borderWidth}px solid var(--editor-border-focus)`,
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           }}
+          // 컨테이너 mousedown 도 셀 드래그 핸들러로 전파되지 않게
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
           onBlur={onBlur as React.FocusEventHandler<HTMLDivElement>}
           tabIndex={-1}
         >
@@ -137,6 +140,8 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
               <button
                 key={opt.id}
                 type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => toggle(opt.id)}
                 className="w-full text-left px-2 py-1 text-xs flex items-center gap-2 hover:bg-[var(--bg-tertiary)]"
                 style={{ color: 'var(--text-primary)' }}
@@ -172,11 +177,17 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
     if (columnType === 'select' && selectOptions && !isFormula) {
       return (
         <select
-          value={value}
+          value={value ?? ''}
+          // 셀 mousedown 가로채기 방지 — 체크박스와 동일 가드
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
           onChange={(e) => {
-            onChange(e.target.value);
-            // 선택 즉시 편집 종료
-            onBlur?.(e as unknown as React.FocusEvent<HTMLSelectElement>);
+            const next = e.target.value;
+            onChange(next);
+            // onBlur 를 onChange 와 같은 tick 에서 호출하면 ChangeEvent 가
+            // onBlur 의 setState 와 race 해서 onChange 가 손실될 수 있음.
+            // 다음 tick 으로 미뤄 onChange 가 먼저 적용되게 한다.
+            setTimeout(() => onBlur?.(e as unknown as React.FocusEvent<HTMLSelectElement>), 0);
           }}
           onKeyDown={onKeyDown}
           onBlur={onBlur}
