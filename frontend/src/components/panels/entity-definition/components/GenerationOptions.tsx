@@ -91,7 +91,7 @@ export default function GenerationOptions({
             type="text"
             value={sheetNamePattern}
             onChange={(e) => onSheetNamePatternChange(e.target.value)}
-            placeholder={t('patternPlaceholder')}
+            placeholder={t.raw('patternPlaceholder') as string}
             className="w-full input-base"
             style={{
               background: 'var(--bg-secondary)',

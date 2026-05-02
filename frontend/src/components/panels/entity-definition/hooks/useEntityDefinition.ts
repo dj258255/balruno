@@ -72,7 +72,7 @@ export function useEntityDefinition() {
   const [editingOverrides, setEditingOverrides] = useState<StatOverride[]>([]);
   const [levelRange, setLevelRange] = useState({ min: 1, max: 50 });
   const [outputMode, setOutputMode] = useState<'new-sheet' | 'current-sheet'>('new-sheet');
-  const [sheetNamePattern, setSheetNamePattern] = useState(t('patternPlaceholder'));
+  const [sheetNamePattern, setSheetNamePattern] = useState(t.raw('patternPlaceholder') as string);
   const [exportFieldNames, setExportFieldNames] = useState<ExportFieldNames>({
     entityId: '',
     entityName: '',
