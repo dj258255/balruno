@@ -406,13 +406,14 @@ export default function SheetTabs({ project }: SheetTabsProps) {
               ) : (
                 <>
                   <span
-                    className="text-sm flex-1 whitespace-nowrap overflow-hidden text-ellipsis"
+                    className="text-sm flex-1 whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     {name}
                   </span>
-                  {isSheet && <SheetTagChips sheet={entry.sheet} max={1} />}
-                  {isSheet && <SheetKindBadge sheet={entry.sheet} showDefault size="xs" />}
+                  {/* 좁은 탭에선 chip/badge 숨김 — 이름과 함께 progressive 하게 사라지는 일관성 */}
+                  {isSheet && tabWidth >= 180 && <SheetTagChips sheet={entry.sheet} max={1} />}
+                  {isSheet && tabWidth >= 140 && <SheetKindBadge sheet={entry.sheet} showDefault size="xs" />}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
