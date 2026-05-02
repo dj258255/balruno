@@ -1,15 +1,3 @@
-export { default as Calculator } from './Calculator';
-export { default as ComparisonChart } from './ComparisonChart';
-export { default as GrowthCurveChart } from './GrowthCurveChart';
-export { default as BalanceAnalysisPanel } from './BalanceAnalysisPanel';
-export { default as BalanceValidator } from './BalanceValidator';
-export { default as ImbalanceDetectorPanel } from './ImbalanceDetectorPanel';
-export { default as GoalSolverPanel } from './GoalSolverPanel';
-export { default as DifficultyCurve } from './DifficultyCurve';
-export { default as SimulationPanel } from './SimulationPanel';
-export { default as EconomyPanel } from './EconomyPanel';
-export { default as DPSVariancePanel } from './DPSVariancePanel';
-export { default as CurveFittingPanel } from './CurveFittingPanel';
-export { default as FormulaHelper } from './FormulaHelper';
+// 다른 panel 들은 dynamic import 로 직접 path 사용 (page.tsx 의 dynamic())
+// 이 index 는 정적 import 가 필요한 panel 만 re-export
 export { default as TemplateSelector } from './TemplateSelector';
-export { default as EntityDefinition } from './EntityDefinition';
