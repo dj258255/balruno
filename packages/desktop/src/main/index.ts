@@ -11,6 +11,7 @@
 import { app, BrowserWindow, shell } from 'electron';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { registerStorageHandlers } from './ipc/storage.js';
 import { registerDialogHandlers } from './ipc/dialog.js';
 import { initAutoUpdate } from './autoUpdate.js';
@@ -18,7 +19,48 @@ import { initAutoUpdate } from './autoUpdate.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = process.env.NODE_ENV === 'development';
 
-function createMainWindow(): BrowserWindow {
+// Production: load the bundled Next.js standalone server in this same process
+// (no child_process). One process => one Dock icon (no stray "exec" tile).
+const PROD_PORT = '3939';
+let serverStarted = false;
+
+function startNextServer(): Promise<string> {
+  if (serverStarted) return Promise.resolve(`http://127.0.0.1:${PROD_PORT}`);
+
+  // app layout (production):
+  //   Contents/Resources/app.asar/dist/main/index.js  ← __dirname here
+  //   Contents/Resources/web/.next/standalone/packages/web/server.js  ← extraResources
+  const resourcesPath = process.resourcesPath || path.join(__dirname, '..', '..', '..');
+  const serverScript = path.join(
+    resourcesPath,
+    'web',
+    '.next',
+    'standalone',
+    'packages',
+    'web',
+    'server.js',
+  );
+
+  // The standalone server.js is CJS and uses require('next'). We must execute
+  // it via a require() function rooted at its own location so that
+  // node_modules resolution works (../../node_modules/next).
+  process.env.PORT = PROD_PORT;
+  process.env.HOSTNAME = '127.0.0.1';
+  process.env.NODE_ENV = 'production';
+
+  const requireFromServer = createRequire(serverScript);
+  // Load + execute server.js in-process. It calls .listen(PORT) synchronously
+  // during module load; no further await needed.
+  requireFromServer(serverScript);
+  serverStarted = true;
+
+  // Wait briefly for the listen() to be ready before loadURL.
+  return new Promise((resolveStarted) => {
+    setTimeout(() => resolveStarted(`http://127.0.0.1:${PROD_PORT}`), 800);
+  });
+}
+
+async function createMainWindow(): Promise<BrowserWindow> {
   const isMac = process.platform === 'darwin';
   const isWin = process.platform === 'win32';
 
@@ -27,7 +69,7 @@ function createMainWindow(): BrowserWindow {
     height: 900,
     minWidth: 1024,
     minHeight: 640,
-    title: 'PowerBalance',
+    title: 'Balruno',
     backgroundColor: '#0a0a0a',
     // Mac: hiddenInset (traffic lights 만 보임, frameless 모던 룩)
     // Windows: hidden + titleBarOverlay (우측 상단 시스템 컨트롤 자동 그림)
@@ -55,7 +97,8 @@ function createMainWindow(): BrowserWindow {
     win.loadURL('http://localhost:3000');
     win.webContents.openDevTools({ mode: 'detach' });
   } else {
-    win.loadFile(path.join(__dirname, '../../../web/.next/standalone/index.html'));
+    const url = await startNextServer();
+    win.loadURL(url);
   }
 
   // 외부 링크는 기본 브라우저로
@@ -70,17 +113,19 @@ function createMainWindow(): BrowserWindow {
   return win;
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   registerStorageHandlers();
   registerDialogHandlers();
-  createMainWindow();
+  await createMainWindow();
   initAutoUpdate();
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
+  app.on('activate', async () => {
+    if (BrowserWindow.getAllWindows().length === 0) await createMainWindow();
   });
 });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
+
+// In-process server shuts down with the app — no manual teardown needed.

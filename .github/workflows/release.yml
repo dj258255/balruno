@@ -1,0 +1,75 @@
+name: Release
+
+# Trigger on version tags (v0.1.0, v1.2.3, etc.)
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Allow Actions to create releases and upload assets.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, windows-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install workspace dependencies
+        run: npm install
+
+      - name: Build web (Next.js standalone)
+        working-directory: packages/web
+        run: npm run build
+
+      - name: Build + sign + notarize (macOS)
+        if: matrix.os == 'macos-14'
+        working-directory: packages/desktop
+        env:
+          # GitHub Releases publish target.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # electron-builder picks up CSC_LINK (base64-encoded .p12) and
+          # CSC_KEY_PASSWORD automatically. This overrides "identity": null
+          # in package.json — when both are set, electron-builder enables
+          # signing and uses the cert from the secret.
+          CSC_LINK: ${{ secrets.MAC_CERTIFICATE_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+          # Notarization credentials (electron-builder reads these env vars).
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          npm run build
+          npx electron-builder --mac --publish always
+
+      - name: Build + publish (Windows)
+        if: matrix.os == 'windows-latest'
+        working-directory: packages/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm run build
+          npx electron-builder --win --publish always
+
+      - name: Build + publish (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: packages/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm run build
+          npx electron-builder --linux --publish always

@@ -37,18 +37,46 @@
   },
   "build": {
     "appId": "com.balruno.app",
-    "productName": "PowerBalance",
+    "productName": "Balruno",
     "copyright": "Copyright © 2026 Balruno",
     "asar": true,
+    "afterPack": "./build/afterPack.cjs",
     "directories": {
       "output": "release",
       "buildResources": "build"
     },
     "files": [
-      "dist/**/*",
-      "../web/.next/standalone/**/*",
-      "../web/.next/static/**/*",
-      "../web/public/**/*"
+      "dist/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../web/.next/standalone/packages",
+        "to": "web/.next/standalone/packages",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../web/.next/standalone/node_modules",
+        "to": "web/.next/standalone/node_modules",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../web/.next/static",
+        "to": "web/.next/standalone/packages/web/.next/static",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../web/public",
+        "to": "web/.next/standalone/packages/web/public",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "publish": [
       {
@@ -63,20 +91,43 @@
       "icon": "build/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "identity": null,
+      "notarize": {
+        "teamId": "KR8RWBD6SY"
+      },
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] },
-        { "target": "zip", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ]
     },
     "dmg": {
-      "title": "PowerBalance ${version}",
+      "title": "Balruno ${version}",
       "icon": "build/icon.icns",
       "writeUpdateInfo": true
     },
     "win": {
       "icon": "build/icon.ico",
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
@@ -89,8 +140,18 @@
       "icon": "build/icon.png",
       "category": "Development",
       "target": [
-        { "target": "AppImage", "arch": ["x64"] },
-        { "target": "deb", "arch": ["x64"] }
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     }
   }

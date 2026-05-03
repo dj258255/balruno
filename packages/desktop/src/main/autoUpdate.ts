@@ -14,9 +14,13 @@
  *   3. 또는 로컬에서 GH_TOKEN 환경변수 + npm run package -- --publish always
  */
 
-import { autoUpdater } from 'electron-updater';
+// electron-updater is CJS-style, only provides a default export.
+// In ESM we must import it as default and destructure.
+import electronUpdater from 'electron-updater';
 import { app, dialog } from 'electron';
 import log from 'node:console';
+
+const { autoUpdater } = electronUpdater;
 
 export function initAutoUpdate(): void {
   if (!app.isPackaged) {
@@ -32,13 +36,13 @@ export function initAutoUpdate(): void {
   });
 
   autoUpdater.on('update-downloaded', (info) => {
-    log.log('[autoUpdate] 업데이트 다운로드 완료', info.version);
+    log.log('[autoUpdate] update downloaded', info.version);
     void dialog
       .showMessageBox({
         type: 'info',
         buttons: ['지금 재시작', '나중에'],
         defaultId: 0,
-        title: 'PowerBalance 업데이트',
+        title: 'Balruno 업데이트',
         message: `새 버전 ${info.version} 이 준비됐습니다`,
         detail: '재시작하면 즉시 적용됩니다.',
       })
@@ -51,12 +55,15 @@ export function initAutoUpdate(): void {
     log.error('[autoUpdate] error', err);
   });
 
-  // 30분마다 체크
-  void autoUpdater.checkForUpdates();
-  setInterval(
-    () => {
-      void autoUpdater.checkForUpdates();
-    },
-    30 * 60 * 1000,
-  );
+  // Wrap update checks so any rejection (e.g. "No published versions on GitHub"
+  // before the first release) is swallowed by our 'error' handler instead of
+  // surfacing as an unhandledRejection.
+  const safeCheck = (): void => {
+    autoUpdater.checkForUpdates().catch(() => {
+      // already logged via the 'error' listener above
+    });
+  };
+
+  safeCheck();
+  setInterval(safeCheck, 30 * 60 * 1000);
 }
