@@ -94,9 +94,7 @@
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "identity": null,
-      "notarize": {
-        "teamId": "KR8RWBD6SY"
-      },
+      "notarize": true,
       "target": [
         {
           "target": "dmg",
