@@ -48,9 +48,9 @@ jobs:
           # GitHub Releases publish target.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # electron-builder picks up CSC_LINK (base64-encoded .p12) and
-          # CSC_KEY_PASSWORD automatically. This overrides "identity": null
-          # in package.json — when both are set, electron-builder enables
-          # signing and uses the cert from the secret.
+          # CSC_KEY_PASSWORD automatically, then derives the signing identity
+          # from the cert. Note: do NOT set mac.identity=null in package.json
+          # - that flag wins over CSC_LINK and silently skips signing.
           CSC_LINK: ${{ secrets.MAC_CERTIFICATE_BASE64 }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
           # Notarization credentials (electron-builder reads these env vars).

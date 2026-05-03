@@ -98,7 +98,6 @@
       "gatekeeperAssess": false,
       "entitlements": "electron-resources/entitlements.mac.plist",
       "entitlementsInherit": "electron-resources/entitlements.mac.plist",
-      "identity": null,
       "notarize": true,
       "target": [
         {
