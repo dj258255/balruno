@@ -11,14 +11,14 @@ export interface Point {
 }
 
 export interface FitResult {
-  type: CurveType;
+  type: CurveFitType;
   equation: string;
   coefficients: number[];
   rSquared: number;
   predict: (x: number) => number;
 }
 
-export type CurveType =
+export type CurveFitType =
   | 'linear'      // y = ax + b
   | 'quadratic'   // y = ax² + bx + c
   | 'cubic'       // y = ax³ + bx² + cx + d

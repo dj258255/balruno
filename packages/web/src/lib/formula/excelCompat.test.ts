@@ -5,7 +5,7 @@
  * 가 한 엔진에 주입됐을 때, 각 레이어의 함수가 모두 동작하고 충돌 없는지 검증.
  */
 import { describe, it, expect } from 'vitest';
-import { evaluateFormula } from '../formulaEngine';
+import { evaluateFormula } from '@/lib/formulaEngine';
 import type { Sheet } from '@/types';
 
 function bareContext() {

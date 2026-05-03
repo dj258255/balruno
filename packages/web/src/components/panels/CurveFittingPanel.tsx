@@ -23,7 +23,7 @@ function removeTokenBackgrounds(style: Record<string, React.CSSProperties>): Rec
 import {
   Point,
   FitResult,
-  CurveType,
+  CurveFitType,
   fitAllCurves,
   generateFormulaCode
 } from '@/lib/curveFitting';
@@ -39,7 +39,7 @@ type CodeLanguage = 'typescript' | 'csharp' | 'python';
 
 const PANEL_COLOR = '#9179f2'; // 소프트 퍼플
 
-const CURVE_COLORS: Record<CurveType, string> = {
+const CURVE_COLORS: Record<CurveFitType, string> = {
   linear: '#5a9cf5',
   quadratic: '#9179f2',
   cubic: '#e87aa8',
@@ -49,7 +49,7 @@ const CURVE_COLORS: Record<CurveType, string> = {
   sigmoid: '#e86161'
 };
 
-const CURVE_NAMES: Record<CurveType, string> = {
+const CURVE_NAMES: Record<CurveFitType, string> = {
   linear: 'Linear',
   quadratic: 'Quadratic',
   cubic: 'Cubic',
