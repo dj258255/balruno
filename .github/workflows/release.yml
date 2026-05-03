@@ -10,6 +10,11 @@ on:
 permissions:
   contents: write
 
+# Force GitHub-provided actions (checkout/setup-node) to run on Node 24 instead
+# of the deprecated Node 20 runtime (default change scheduled for 2026-06-02).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   release:
     strategy:
