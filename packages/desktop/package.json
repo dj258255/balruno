@@ -142,6 +142,8 @@
     "linux": {
       "icon": "electron-resources/icon.png",
       "category": "Development",
+      "executableName": "balruno",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "AppImage",
