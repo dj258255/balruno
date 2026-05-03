@@ -3,7 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "PowerBalance / balruno desktop app (Electron). Packages the packages/web build output as native Mac/Windows/Linux apps.",
+  "description": "Balruno desktop app (Electron). Packages the packages/web build output as native Mac/Windows/Linux apps.",
+  "homepage": "https://balruno.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dj258255/balruno.git"
+  },
   "author": {
     "name": "Balruno",
     "email": "dj258255@naver.com"
