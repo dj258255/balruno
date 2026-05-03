@@ -40,10 +40,10 @@
     "productName": "Balruno",
     "copyright": "Copyright © 2026 Balruno",
     "asar": true,
-    "afterPack": "./build/afterPack.cjs",
+    "afterPack": "./electron-resources/afterPack.cjs",
     "directories": {
       "output": "release",
-      "buildResources": "build"
+      "buildResources": "electron-resources"
     },
     "files": [
       "dist/**/*"
@@ -88,11 +88,11 @@
     ],
     "mac": {
       "category": "public.app-category.developer-tools",
-      "icon": "build/icon.icns",
+      "icon": "electron-resources/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist",
+      "entitlements": "electron-resources/entitlements.mac.plist",
+      "entitlementsInherit": "electron-resources/entitlements.mac.plist",
       "identity": null,
       "notarize": true,
       "target": [
@@ -114,11 +114,11 @@
     },
     "dmg": {
       "title": "Balruno ${version}",
-      "icon": "build/icon.icns",
+      "icon": "electron-resources/icon.icns",
       "writeUpdateInfo": true
     },
     "win": {
-      "icon": "build/icon.ico",
+      "icon": "electron-resources/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -135,7 +135,7 @@
       "createStartMenuShortcut": true
     },
     "linux": {
-      "icon": "build/icon.png",
+      "icon": "electron-resources/icon.png",
       "category": "Development",
       "target": [
         {
