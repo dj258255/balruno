@@ -23,7 +23,7 @@ log "starting daily upload run for $TODAY"
 #    the backup role keeps 7 days locally on the backup machine.
 mkdir -p "$STAGING"
 rsync -az --partial --remove-source-files=false \
-  -e 'ssh -o StrictHostKeyChecking=yes -o BatchMode=yes' \
+  -e 'ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes' \
   "$REMOTE" "$STAGING/" \
   || fail "rsync from backup failed"
 

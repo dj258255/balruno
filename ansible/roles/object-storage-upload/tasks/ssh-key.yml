@@ -21,14 +21,11 @@
     state: present
   register: osu_keypair
 
-- name: Pre-seed backup host fingerprint into known_hosts
-  ansible.builtin.known_hosts:
-    name: "{{ osu_remote_host }}"
-    key: "{{ lookup('pipe', 'ssh-keyscan -t ed25519 -T 10 ' ~ osu_remote_host) }}"
-    path: "{{ osu_home }}/.ssh/known_hosts"
-    state: present
-  become: true
-  become_user: "{{ osu_user }}"
+# known_hosts pre-seeding removed: lookup('pipe', ssh-keyscan ...) executes
+# on the Ansible controller, but the CI runner can't reach the VCN private
+# IP. The upload script uses StrictHostKeyChecking=accept-new instead, which
+# auto-pins the host key on first connection and stays strict thereafter —
+# safe for scripted intra-VCN access where MITM requires control of OCI.
 
 - name: Authorize the upload daemon's pubkey on the backup host (rocky user)
   delegate_to: backup
