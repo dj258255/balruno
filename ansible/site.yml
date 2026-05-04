@@ -73,12 +73,11 @@
 # ───────────────────────────────────────────────────────────────────
 # 5. status — Uptime Kuma + Object Storage upload daemon.
 # ───────────────────────────────────────────────────────────────────
-# - name: Deploy status
-#   hosts: status
-#   become: true
-#   tags: [status]
-#   roles:
-#     - role: uptime-kuma
-#       tags: [uptime-kuma]
-#     - role: object-storage-upload
-#       tags: [object-storage]
+- name: Deploy status (Uptime Kuma + Object Storage upload)
+  hosts: status
+  become: true
+  tags: [status]
+  roles:
+    - role: uptime-kuma
+      tags: [uptime-kuma]
+    # object-storage-upload role enabled in a follow-up commit.

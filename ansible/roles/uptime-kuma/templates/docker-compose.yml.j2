@@ -1,0 +1,26 @@
+# {{ ansible_managed }}
+# Uptime Kuma — public status page (status.balruno.com).
+# Bound to the VCN private IP only; cloudflared on the same host proxies it
+# externally once the cloudflared role lands.
+
+name: balruno-uptime-kuma
+
+volumes:
+  uptime-kuma-data:
+
+services:
+  uptime-kuma:
+    image: {{ uptime_kuma_image }}
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "{{ uptime_kuma_bind_address }}:{{ uptime_kuma_port }}:3001"
+    volumes:
+      - uptime-kuma-data:/app/data
+    mem_limit: {{ uptime_kuma_mem_limit }}
+    healthcheck:
+      test: ["CMD", "extra/healthcheck"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
