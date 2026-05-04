@@ -70,13 +70,22 @@ GH Secrets (Settings → Secrets and variables → Actions):
 
 ## 로컬 사용법
 
+### 0. 환경 변수 (1회 — `~/.zshrc` 등에 추가)
+
+```bash
+# vault decrypt 용 — wikiEngine 의 동일 password 재사용
+export ANSIBLE_VAULT_PASSWORD_FILE="$HOME/Desktop/wikiEngine/ansible/.vault_pass"
+```
+
+CI 는 GitHub Secret `ANSIBLE_VAULT_PASSWORD` 로 자동 주입되므로 별도 설정 불필요.
+
 ### 1. 사전 준비 (1회)
 
 ```bash
 # vault.yml 생성 (예시 복사 후 실제 시크릿 채우기)
 cp group_vars/vault.yml.example group_vars/vault.yml
 # 시크릿 채운 후 암호화
-ansible-vault encrypt group_vars/vault.yml --vault-password-file /Users/beomsu/Desktop/wikiEngine/ansible/.vault_pass
+ansible-vault encrypt group_vars/vault.yml --vault-password-file "$ANSIBLE_VAULT_PASSWORD_FILE"
 ```
 
 ### 2. 4대 SSH 접속 검증 (Step 1 — 첫 작업)
@@ -108,7 +117,7 @@ ansible-playbook site.yml --check --diff
 ### 4. 시크릿 편집
 
 ```bash
-ansible-vault edit group_vars/vault.yml --vault-password-file /Users/beomsu/Desktop/wikiEngine/ansible/.vault_pass
+ansible-vault edit group_vars/vault.yml --vault-password-file "$ANSIBLE_VAULT_PASSWORD_FILE"
 ```
 
 ---
