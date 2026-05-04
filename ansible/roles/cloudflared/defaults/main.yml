@@ -3,11 +3,9 @@
 # monitor.balruno.com URL through Cloudflare's network into our private
 # VCN, hitting the Grafana container on the monitor host.
 
-# Cloudflared is installed via the RPM from cloudflare's GitHub releases —
-# the dnf repo at pkg.cloudflare.com works too but the direct .rpm is one
-# fewer moving part and pinned-version friendly.
-cloudflared_release_arch: "{{ 'arm64' if arch == 'arm64' else 'amd64' }}"
-cloudflared_rpm_url: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-{{ cloudflared_release_arch }}.rpm"
+# Cloudflared is installed from Cloudflare's official yum repo.
+# (GitHub releases don't ship .rpm artifacts; the pkg.cloudflare.com repo is
+# the supported install path on RHEL/Rocky.)
 
 # Tunnel install token. Vault var, must be filled before this role runs.
 cloudflared_tunnel_token: "{{ vault_cloudflare_tunnel_token }}"

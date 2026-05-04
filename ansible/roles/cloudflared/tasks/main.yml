@@ -2,11 +2,18 @@
 # Provides public access to monitor.balruno.com → Grafana on monitor:3000
 # without opening any inbound port (tunnel is outbound-only).
 
-- name: Install cloudflared (RPM from GitHub releases)
+- name: Install Cloudflare yum repo
+  ansible.builtin.get_url:
+    url: https://pkg.cloudflare.com/cloudflared-ascii.repo
+    dest: /etc/yum.repos.d/cloudflared.repo
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install cloudflared from Cloudflare's repo
   ansible.builtin.dnf:
-    name: "{{ cloudflared_rpm_url }}"
+    name: cloudflared
     state: present
-    disable_gpg_check: true   # GitHub-hosted RPM isn't signed with PGDG-style keys
   register: cloudflared_install
 
 - name: Check if cloudflared service is already configured
