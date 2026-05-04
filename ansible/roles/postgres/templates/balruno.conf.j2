@@ -16,6 +16,7 @@ maintenance_work_mem = '{{ postgres_tunables.maintenance_work_mem }}'
 
 # ─── PG 18 async I/O ────────────────────────────────────────────────────
 io_method = '{{ postgres_tunables.io_method }}'
+io_workers = {{ postgres_tunables.io_workers }}
 
 # ─── WAL ────────────────────────────────────────────────────────────────
 wal_level = {{ postgres_tunables.wal_level }}

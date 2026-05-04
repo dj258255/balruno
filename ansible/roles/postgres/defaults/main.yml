@@ -31,8 +31,12 @@ postgres_tunables:
   work_mem: "{{ postgres_work_mem }}"
   maintenance_work_mem: "{{ postgres_maintenance_work_mem }}"
   max_connections: "{{ postgres_max_connections }}"
-  # PG 18 specifics — async I/O on, default subscribers ring, default wal level.
-  io_method: "io_uring"             # PG 18 async I/O backend (Linux kernel >=5.1).
+  # PG 18 async I/O backend. OCI Rocky 9 ships with kernel.io_uring_disabled=2
+  # for sandbox safety, so 'io_uring' fails to start. 'worker' uses dedicated
+  # PG worker processes to keep IO async without depending on the kernel
+  # interface and is the right fit for this environment.
+  io_method: "worker"
+  io_workers: 3
   wal_level: "replica"
   max_wal_size: "2GB"
   min_wal_size: "256MB"
