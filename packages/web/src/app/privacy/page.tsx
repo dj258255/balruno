@@ -1,6 +1,7 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Privacy Policy — Balruno',
   description: 'Balruno 개인정보처리방침',
 };
