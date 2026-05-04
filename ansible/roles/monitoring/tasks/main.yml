@@ -1,0 +1,111 @@
+# monitoring role — Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB
+# on the monitor host, orchestrated by Docker Compose.
+#
+# Requires the common role (Docker engine + Compose plugin) to have run first.
+# That sets common_install_docker=true on the monitor host.
+
+- name: Install docker Python SDK (required by community.docker modules)
+  ansible.builtin.dnf:
+    name:
+      - python3-pip
+    state: present
+
+- name: Install docker SDK via pip
+  ansible.builtin.pip:
+    name:
+      - docker>=7.0.0
+      - docker-compose>=1.29.0
+    state: present
+
+- name: Ensure monitoring root tree exists
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - "{{ monitoring_root }}"
+    - "{{ monitoring_root }}/grafana/provisioning/datasources"
+    - "{{ monitoring_root }}/grafana/provisioning/dashboards"
+    - "{{ monitoring_root }}/loki"
+    - "{{ monitoring_root }}/alloy"
+    - "{{ monitoring_root }}/prometheus"
+    - "{{ monitoring_root }}/alertmanager"
+
+- name: Render docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_compose_file }}"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart monitoring stack
+
+- name: Render Prometheus config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_root }}/prometheus/prometheus.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload prometheus
+
+- name: Render Loki config
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: "{{ monitoring_root }}/loki/loki-config.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart monitoring stack
+
+- name: Render Alloy config
+  ansible.builtin.template:
+    src: alloy-config.alloy.j2
+    dest: "{{ monitoring_root }}/alloy/config.alloy"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart monitoring stack
+
+- name: Render Alertmanager config
+  ansible.builtin.template:
+    src: alertmanager.yml.j2
+    dest: "{{ monitoring_root }}/alertmanager/alertmanager.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart monitoring stack
+
+- name: Render Grafana datasources provisioning
+  ansible.builtin.template:
+    src: grafana-datasources.yml.j2
+    dest: "{{ monitoring_root }}/grafana/provisioning/datasources/datasources.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart monitoring stack
+
+- name: Allow monitoring ports from VCN private range
+  ansible.posix.firewalld:
+    rich_rule: 'rule family="ipv4" source address="10.0.0.0/24" port port="{{ item }}" protocol="tcp" accept'
+    permanent: true
+    immediate: true
+    state: enabled
+  loop:
+    - "{{ monitoring_port_grafana }}"
+    - "{{ monitoring_port_loki }}"
+    - "{{ monitoring_port_prometheus }}"
+    - "{{ monitoring_port_alertmanager }}"
+    - "{{ monitoring_port_influxdb }}"
+    - "{{ monitoring_port_node_exporter }}"
+
+- name: Pull container images
+  community.docker.docker_compose_v2_pull:
+    project_src: "{{ monitoring_root }}"
+
+- name: Start monitoring stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_root }}"
+    state: present

@@ -1,0 +1,33 @@
+# {{ ansible_managed }}
+# Grafana provisioned datasources — replaces UI configuration so the data
+# sources exist on first start. Three sources: Prometheus (metrics),
+# Loki (logs), InfluxDB (k6 load-test results).
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    jsonData:
+      version: Flux
+      organization: "{{ vault_influxdb_org }}"
+      defaultBucket: "{{ vault_influxdb_bucket_k6 }}"
+      tlsSkipVerify: true
+    secureJsonData:
+      token: "{{ vault_influxdb_admin_token }}"
+    editable: false

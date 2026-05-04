@@ -1,0 +1,19 @@
+# {{ ansible_managed }}
+# Stage 0 placeholder — receives alerts but does not route anywhere yet.
+# Stage 1 trigger: add Discord webhook + email receiver and a `routes:` block
+# that maps severity (warning|critical|page) to channel.
+
+route:
+  group_by: ["alertname", "severity"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: void
+
+receivers:
+  - name: void
+
+inhibit_rules:
+  - source_matchers: ["severity = critical"]
+    target_matchers: ["severity = warning"]
+    equal: ["alertname", "instance"]

@@ -43,15 +43,15 @@
 # ───────────────────────────────────────────────────────────────────
 # 3. monitor: PostgreSQL + Grafana stack + InfluxDB  (Phase B-6 후속)
 # ───────────────────────────────────────────────────────────────────
-# - name: Deploy monitor (PG + monitoring stack)
-#   hosts: monitor
-#   become: true
-#   tags: [monitor]
-#   roles:
-#     - role: postgres
-#       tags: [postgres]
-#     - role: monitoring
-#       tags: [monitoring]
+- name: Deploy monitor (monitoring stack)
+  hosts: monitor
+  become: true
+  tags: [monitor]
+  roles:
+    # postgres role enabled in a follow-up commit, after monitoring is live
+    # so Postgres metrics land in Grafana from boot.
+    - role: monitoring
+      tags: [monitoring]
 
 # ───────────────────────────────────────────────────────────────────
 # 4. backup: pg_dump rsync 수신 + cloudflared (monitor.balruno.com Tunnel)

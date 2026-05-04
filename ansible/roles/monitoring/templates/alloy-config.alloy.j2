@@ -1,0 +1,22 @@
+// {{ ansible_managed }}
+// Grafana Alloy — collects journald entries from monitor host (where this
+// container runs) and forwards them to Loki. Other hosts get their own
+// Alloy instance via a future role; for now the monitor's logs are enough
+// to bootstrap the dashboard.
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+loki.source.journal "monitor_host" {
+  forward_to = [loki.write.default.receiver]
+  labels = {
+    job  = "systemd-journal",
+    host = "monitor",
+  }
+  max_age = "12h"
+}
+
+prometheus.exporter.self "alloy" { }

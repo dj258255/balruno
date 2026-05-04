@@ -1,0 +1,36 @@
+# {{ ansible_managed }}
+# Prometheus scrape config — pulls node_exporter from each of the four hosts
+# plus its own metrics. Targets that are unreachable (e.g. before node-exporter
+# is rolled out to other hosts) are reported as `up=0` rather than failing the
+# whole scrape.
+
+global:
+  scrape_interval: {{ monitoring_prometheus_scrape_interval }}
+  evaluation_interval: {{ monitoring_prometheus_scrape_interval }}
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: node
+    static_configs:
+      - targets:
+{% for target in monitoring_node_targets %}
+          - "{{ target }}"
+{% endfor %}
+        labels:
+          env: prod
+
+  - job_name: loki
+    static_configs:
+      - targets: ["loki:3100"]
+
+  - job_name: alloy
+    static_configs:
+      - targets: ["alloy:12345"]

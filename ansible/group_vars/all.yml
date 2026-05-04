@@ -28,7 +28,7 @@ status_domain: "status.balruno.com"
 monitor_domain: "monitor.balruno.com"
 
 # ─── 버전 ────────────────────────────────────────────────────────────────
-postgres_version: "17"
+postgres_version: "18"      # PG 18 GA 2025-09. UUIDv7 native + async I/O + skip-scan.
 java_version: "25"
 spring_boot_version: "4.1.0"
 node_version: "22"             # Hocuspocus

@@ -7,3 +7,5 @@ collections:
     version: ">=1.5.4"
   - name: community.general   # timezone, etc.
     version: ">=9.0.0"
+  - name: community.docker    # docker_compose_v2 — used by monitoring + uptime-kuma roles
+    version: ">=4.0.0"

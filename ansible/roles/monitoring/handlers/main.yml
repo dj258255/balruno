@@ -1,0 +1,10 @@
+# Restart / reload triggers for the monitoring stack.
+
+- name: restart monitoring stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_root }}"
+    state: restarted
+
+- name: reload prometheus
+  ansible.builtin.command: docker kill --signal=SIGHUP prometheus
+  changed_when: true

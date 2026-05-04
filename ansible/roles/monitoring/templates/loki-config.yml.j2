@@ -1,0 +1,55 @@
+# {{ ansible_managed }}
+# Loki single-binary mode for Stage 0 — ingestion ~4MB/s ceiling, 7d retention.
+# Storage backend = local filesystem (BoltDB index + filesystem chunks).
+# Stage 2+ trigger: switch chunks to OCI Object Storage (S3-compatible).
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9095
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  ingestion_rate_mb: {{ monitoring_loki_ingestion_rate_mb }}
+  ingestion_burst_size_mb: {{ (monitoring_loki_ingestion_rate_mb | int) * 2 }}
+  retention_period: {{ monitoring_loki_retention }}
+  max_query_parallelism: 16
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+  max_global_streams_per_user: 5000
+
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  delete_request_store: filesystem
+
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+
+analytics:
+  reporting_enabled: false

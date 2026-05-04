@@ -1,0 +1,132 @@
+# {{ ansible_managed }}
+# Balruno monitoring stack — monitor host only.
+# Services bind to the VCN private IP so the public internet can only reach
+# Grafana via the Cloudflare Tunnel daemon running on the backup host.
+
+name: balruno-monitoring
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  grafana-data:
+  loki-data:
+  prometheus-data:
+  alertmanager-data:
+  influxdb-data:
+
+services:
+  grafana:
+    image: {{ monitoring_image_grafana }}
+    container_name: grafana
+    restart: unless-stopped
+    networks: [monitoring]
+    ports:
+      - "{{ monitoring_bind_address }}:{{ monitoring_port_grafana }}:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "{{ vault_grafana_admin_password }}"
+      GF_SERVER_ROOT_URL: "https://{{ monitor_domain }}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - {{ monitoring_root }}/grafana/provisioning:/etc/grafana/provisioning:ro
+    mem_limit: {{ monitoring_mem_grafana }}
+    depends_on: [prometheus, loki, influxdb]
+
+  loki:
+    image: {{ monitoring_image_loki }}
+    container_name: loki
+    restart: unless-stopped
+    networks: [monitoring]
+    ports:
+      - "{{ monitoring_bind_address }}:{{ monitoring_port_loki }}:3100"
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - loki-data:/loki
+      - {{ monitoring_root }}/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+    mem_limit: {{ monitoring_mem_loki }}
+
+  alloy:
+    image: {{ monitoring_image_alloy }}
+    container_name: alloy
+    restart: unless-stopped
+    networks: [monitoring]
+    ports:
+      - "{{ monitoring_bind_address }}:{{ monitoring_port_alloy }}:12345"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - {{ monitoring_root }}/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/log/journal:/var/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
+    mem_limit: {{ monitoring_mem_alloy }}
+    depends_on: [loki]
+
+  prometheus:
+    image: {{ monitoring_image_prometheus }}
+    container_name: prometheus
+    restart: unless-stopped
+    networks: [monitoring]
+    ports:
+      - "{{ monitoring_bind_address }}:{{ monitoring_port_prometheus }}:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time={{ monitoring_prometheus_retention }}
+      - --web.enable-lifecycle
+    volumes:
+      - prometheus-data:/prometheus
+      - {{ monitoring_root }}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    mem_limit: {{ monitoring_mem_prometheus }}
+
+  alertmanager:
+    image: {{ monitoring_image_alertmanager }}
+    container_name: alertmanager
+    restart: unless-stopped
+    networks: [monitoring]
+    ports:
+      - "{{ monitoring_bind_address }}:{{ monitoring_port_alertmanager }}:9093"
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - alertmanager-data:/alertmanager
+      - {{ monitoring_root }}/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    mem_limit: {{ monitoring_mem_alertmanager }}
+
+  influxdb:
+    image: {{ monitoring_image_influxdb }}
+    container_name: influxdb
+    restart: unless-stopped
+    networks: [monitoring]
+    ports:
+      - "{{ monitoring_bind_address }}:{{ monitoring_port_influxdb }}:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: "setup"
+      DOCKER_INFLUXDB_INIT_USERNAME: "admin"
+      DOCKER_INFLUXDB_INIT_PASSWORD: "{{ vault_grafana_admin_password }}"
+      DOCKER_INFLUXDB_INIT_ORG: "{{ vault_influxdb_org }}"
+      DOCKER_INFLUXDB_INIT_BUCKET: "{{ vault_influxdb_bucket_k6 }}"
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: "{{ vault_influxdb_admin_token }}"
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    mem_limit: {{ monitoring_mem_influxdb }}
+
+  node-exporter:
+    image: {{ monitoring_image_node_exporter }}
+    container_name: node-exporter
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+      - --web.listen-address=:{{ monitoring_port_node_exporter }}
+    volumes:
+      - /:/host:ro,rslave
+    mem_limit: {{ monitoring_mem_node_exporter }}

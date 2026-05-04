@@ -1,11 +1,11 @@
-# Ansible vault — 시크릿
-group_vars/vault.yml
-
-# Ansible 임시 파일
-*.retry
+# Ansible vault password (plaintext — never commit).
+# group_vars/vault.yml itself IS committed because it's encrypted with this password.
 .vault_pass
+
+# Ansible runtime artifacts
+*.retry
 .ansible/
 
-# 로컬 override
+# Local overrides (not in CI flow)
 group_vars/local.yml
 inventory.local.yml

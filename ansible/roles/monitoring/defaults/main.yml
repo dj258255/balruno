@@ -1,0 +1,51 @@
+# Defaults for the monitoring role (monitor host).
+# Pinned image versions live here so a single PR can bump the stack.
+
+monitoring_root: /opt/balruno/monitoring
+monitoring_compose_file: "{{ monitoring_root }}/docker-compose.yml"
+
+# Container images. Tags are major.minor only — patch upgrades happen on
+# manual review, not silent pulls.
+monitoring_image_grafana: "grafana/grafana:11.4.0"
+monitoring_image_loki: "grafana/loki:3.3.0"
+monitoring_image_alloy: "grafana/alloy:v1.5.0"
+monitoring_image_prometheus: "prom/prometheus:v3.0.0"
+monitoring_image_alertmanager: "prom/alertmanager:v0.27.0"
+monitoring_image_influxdb: "influxdb:2.7.10"
+monitoring_image_node_exporter: "prom/node-exporter:v1.9.0"
+
+# Ports exposed to host (loopback or VCN-only — Cloudflare Tunnel routes externally).
+monitoring_port_grafana: 3000
+monitoring_port_loki: 3100
+monitoring_port_alloy: 12345        # /metrics + UI
+monitoring_port_prometheus: 9090
+monitoring_port_alertmanager: 9093
+monitoring_port_influxdb: 8086
+monitoring_port_node_exporter: 9100
+
+# Bind to private VCN IP only — the Cloudflare Tunnel daemon (on backup host)
+# proxies Grafana to the public internet via monitor.balruno.com.
+monitoring_bind_address: "{{ monitor_private_ip }}"
+
+# Retention.
+monitoring_prometheus_retention: "{{ prometheus_retention_days }}d"
+monitoring_loki_retention: "{{ loki_retention_period }}"
+monitoring_loki_ingestion_rate_mb: "{{ loki_ingestion_rate_mb }}"
+monitoring_prometheus_scrape_interval: "{{ prometheus_scrape_interval }}"
+
+# Per-container memory limits (Stage 0 fail-safe).
+monitoring_mem_grafana: "256m"
+monitoring_mem_loki: "1g"
+monitoring_mem_alloy: "256m"
+monitoring_mem_prometheus: "1g"
+monitoring_mem_alertmanager: "128m"
+monitoring_mem_influxdb: "1g"
+monitoring_mem_node_exporter: "64m"
+
+# Hosts that Prometheus scrapes via node_exporter (each runs its own exporter).
+# Filled at apply time — see prometheus.yml.j2.
+monitoring_node_targets:
+  - "{{ prod_app_private_ip }}:{{ monitoring_port_node_exporter }}"
+  - "{{ monitor_private_ip }}:{{ monitoring_port_node_exporter }}"
+  - "{{ backup_private_ip }}:{{ monitoring_port_node_exporter }}"
+  - "{{ status_private_ip }}:{{ monitoring_port_node_exporter }}"
