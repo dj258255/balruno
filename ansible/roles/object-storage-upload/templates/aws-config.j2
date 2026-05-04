@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+# AWS CLI default region/endpoint. R2 ignores region but the SDK requires
+# it set to *something* for SigV4 signing — 'auto' is Cloudflare's convention.
+[default]
+region = auto
+output = json
+# Use SigV4 + path-style addressing for R2 compatibility.
+s3 =
+    addressing_style = virtual

@@ -1,0 +1,43 @@
+# AWS CLI v2 — single static binary, used as the S3-compatible client for R2.
+# Installed under /usr/local/aws-cli, symlinked into /usr/local/bin/aws.
+# Re-runs are no-ops thanks to the version-pinned `creates:` guard.
+
+- name: Check whether aws-cli at the pinned version is present
+  ansible.builtin.stat:
+    path: "/opt/aws-cli/v2/{{ osu_awscli_version }}/bin/aws"
+  register: aws_bin
+
+- name: Download + install aws-cli v2
+  when: not aws_bin.stat.exists
+  vars:
+    awscli_arch: "{{ 'aarch64' if arch == 'arm64' else 'x86_64' }}"
+  block:
+    - name: Fetch AWS CLI bundle
+      ansible.builtin.get_url:
+        url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ awscli_arch }}-{{ osu_awscli_version }}.zip"
+        dest: /tmp/awscliv2.zip
+        mode: '0644'
+
+    - name: Ensure unzip is installed
+      ansible.builtin.dnf:
+        name: unzip
+        state: present
+
+    - name: Unpack
+      ansible.builtin.unarchive:
+        src: /tmp/awscliv2.zip
+        dest: /tmp/
+        remote_src: true
+
+    - name: Install
+      ansible.builtin.command:
+        cmd: "/tmp/aws/install -i /opt/aws-cli/v2/{{ osu_awscli_version }} -b /usr/local/bin --update"
+      changed_when: true
+
+    - name: Clean unpacked tree
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/aws
+        - /tmp/awscliv2.zip

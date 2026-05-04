@@ -47,8 +47,12 @@ backup_retention_days: 7        # backup host local disk
 object_storage_retention_days: 30
 backup_cron_hour: 3             # daily 03:00 (monitor → backup rsync)
 object_storage_cron_hour: 5     # daily 05:00 (backup → status → Object Storage upload)
-oci_object_storage_region: "ap-seoul-1"  # Stage 0. Cross-region kicks in at Stage 2 (paying users).
-oci_object_storage_bucket: "balruno-backup"
+# Cloudflare R2 — backup offsite (3-2-1, replaces OCI Object Storage in v1.2).
+r2_account_id: "7465c2cb743365780e3cb24eaed2cc72"
+r2_bucket: "balruno-backup"
+r2_endpoint: "https://{{ r2_account_id }}.r2.cloudflarestorage.com"
+# Region hint is decided by Cloudflare on bucket creation (we picked APAC).
+# Cross-cloud DR check is the value here, not region steering.
 
 # ─── JVM / PG fail-safe defaults (Stage 0, ADR 0007 v1.1 §3.8) ───────────
 spring_boot_mem_limit: "2g"

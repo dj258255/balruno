@@ -1,0 +1,27 @@
+# Dedicated system user for the upload daemon. Non-login shell, locked
+# password — only Ansible-installed cron entries or sudo can execute as it.
+
+- name: Create system user for backup uploader
+  ansible.builtin.user:
+    name: "{{ osu_user }}"
+    system: true
+    shell: /sbin/nologin
+    home: "{{ osu_home }}"
+    create_home: true
+    state: present
+
+- name: Ensure staging directory exists
+  ansible.builtin.file:
+    path: "{{ osu_staging_dir }}"
+    state: directory
+    owner: "{{ osu_user }}"
+    group: "{{ osu_user }}"
+    mode: '0700'
+
+- name: Ensure log directory exists
+  ansible.builtin.file:
+    path: /var/log/balruno
+    state: directory
+    owner: "{{ osu_user }}"
+    group: "{{ osu_user }}"
+    mode: '0750'

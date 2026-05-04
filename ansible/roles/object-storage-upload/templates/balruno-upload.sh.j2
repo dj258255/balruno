@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# {{ ansible_managed }}
+# Balruno offsite backup uploader.
+# Pulls newest pg_dump from backup host, uploads to Cloudflare R2, deletes local copy.
+# Run by cron as the {{ osu_user }} user.
+
+set -euo pipefail
+
+STAGING="{{ osu_staging_dir }}"
+REMOTE="{{ osu_remote_user }}@{{ osu_remote_host }}:{{ osu_remote_dir }}/"
+BUCKET="{{ osu_r2_bucket }}"
+ENDPOINT="{{ osu_r2_endpoint }}"
+PREFIX="{{ osu_r2_prefix }}"
+TODAY="$(date -u +%Y-%m-%d)"
+LOG_PREFIX="[$(date -u +%FT%TZ) balruno-upload]"
+
+log() { echo "$LOG_PREFIX $*"; }
+fail() { log "ERROR: $*"; exit 1; }
+
+log "starting daily upload run for $TODAY"
+
+# 1. Pull the newest .sql.gz file from backup host. We only need the latest one;
+#    the backup role keeps 7 days locally on the backup machine.
+mkdir -p "$STAGING"
+rsync -az --partial --remove-source-files=false \
+  -e 'ssh -o StrictHostKeyChecking=yes -o BatchMode=yes' \
+  "$REMOTE" "$STAGING/" \
+  || fail "rsync from backup failed"
+
+LATEST="$(ls -1t "$STAGING"/*.sql.gz 2>/dev/null | head -1 || true)"
+[ -n "$LATEST" ] || fail "no .sql.gz found in staging after rsync"
+
+log "latest dump: $(basename "$LATEST") ($(du -h "$LATEST" | cut -f1))"
+
+# 2. Upload to R2. Path-style + auto region — R2's S3 API quirks are handled
+#    via ~/.aws/config (addressing_style=virtual, region=auto).
+KEY="$PREFIX/$TODAY/$(basename "$LATEST")"
+aws s3 cp "$LATEST" "s3://$BUCKET/$KEY" \
+  --endpoint-url "$ENDPOINT" \
+  --no-progress \
+  || fail "aws s3 cp failed"
+
+log "uploaded -> s3://$BUCKET/$KEY"
+
+# 3. Verify the object actually exists on R2 (defence in depth — cp can return 0
+#    even when the SDK retries silently in some failure modes).
+aws s3api head-object --bucket "$BUCKET" --key "$KEY" --endpoint-url "$ENDPOINT" \
+  > /dev/null 2>&1 \
+  || fail "head-object verification failed for $KEY"
+
+log "verified -> s3://$BUCKET/$KEY"
+
+# 4. Trim local staging — keep only today's run for debugging, delete older.
+find "$STAGING" -type f -mmin +60 -name '*.sql.gz' -delete
+
+log "done"

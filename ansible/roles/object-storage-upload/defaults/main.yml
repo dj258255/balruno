@@ -1,0 +1,28 @@
+# Defaults for the object-storage-upload role (status host).
+# Pulls daily pg_dumps from the backup host and uploads them to Cloudflare R2.
+
+# Local user that owns the upload script + cron entry. Created if absent.
+osu_user: balruno-backup
+osu_home: /var/lib/{{ osu_user }}
+
+# Where pg_dumps land on the backup host (mirror of backup role's path).
+osu_remote_user: rocky
+osu_remote_host: "{{ backup_private_ip }}"
+osu_remote_dir: /var/backups/postgres
+
+# Local staging dir on status — minimal residency, files deleted right after
+# successful R2 PUT.
+osu_staging_dir: "{{ osu_home }}/staging"
+
+# R2 bucket layout: daily/YYYY-MM-DD/balruno.sql.gz
+osu_r2_bucket: "{{ r2_bucket }}"
+osu_r2_endpoint: "{{ r2_endpoint }}"
+osu_r2_prefix: "daily"
+
+# Cron schedule (status host TZ = UTC, ADR 0007 §3.7).
+osu_cron_minute: 0
+osu_cron_hour: "{{ object_storage_cron_hour }}"   # default 5 (UTC) — see all/vars.yml
+
+# AWS CLI v2 — used for S3-compatible R2 upload.
+# Install via the official zip bundle to get the Rocky 9 x86_64 / aarch64 binary.
+osu_awscli_version: "2.31.13"

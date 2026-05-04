@@ -1,0 +1,9 @@
+# Daily upload script. Runs as balruno-backup via cron.
+
+- name: Render upload script
+  ansible.builtin.template:
+    src: balruno-upload.sh.j2
+    dest: /usr/local/bin/balruno-upload.sh
+    owner: root
+    group: root
+    mode: '0755'

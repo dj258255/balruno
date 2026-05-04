@@ -1,0 +1,28 @@
+# object-storage-upload role — daily pg_dump → Cloudflare R2 (3-2-1 offsite).
+#
+# Flow:
+#   05:00 UTC daily, on the status host:
+#     1. SSH+rsync to backup host, fetch the latest pg_dump file
+#     2. aws s3 cp the file to s3://{r2_bucket}/daily/YYYY-MM-DD/...
+#     3. Delete the local copy (R2 lifecycle rule handles 30-day retention)
+#
+# All steps run as a non-root system user (balruno-backup). The user has its
+# own SSH key for pulling from backup, and its own ~/.aws/ credentials for R2.
+
+- import_tasks: user.yml
+  tags: [object-storage, user]
+
+- import_tasks: awscli.yml
+  tags: [object-storage, awscli]
+
+- import_tasks: ssh-key.yml
+  tags: [object-storage, ssh]
+
+- import_tasks: credentials.yml
+  tags: [object-storage, credentials]
+
+- import_tasks: script.yml
+  tags: [object-storage, script]
+
+- import_tasks: cron.yml
+  tags: [object-storage, cron]

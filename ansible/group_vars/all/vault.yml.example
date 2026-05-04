@@ -44,11 +44,11 @@ vault_cloudflare_access_allowed_emails:
 # Cloudflare API (optional — used for DNS automation only)
 vault_cloudflare_api_token: "REPLACE_IF_USING_DDNS_OR_AUTO_DNS"
 
-# OCI CLI (Object Storage upload daemon)
-vault_oci_user_ocid: "ocid1.user.oc1..."
-vault_oci_tenancy_ocid: "ocid1.tenancy.oc1..."
-vault_oci_fingerprint: "aa:bb:cc:dd:..."
-vault_oci_private_key_path: "~/.oci/oci_api_key.pem"
+# Cloudflare R2 — backup offsite (S3-compatible). ADR 0007 v1.2.
+# Generate via: Cloudflare dashboard → R2 → Manage R2 API Tokens → Create.
+# Permissions: Object Read & Write, scoped to balruno-backup bucket.
+vault_r2_access_key_id: "REPLACE_WITH_R2_ACCESS_KEY_ID"
+vault_r2_secret_access_key: "REPLACE_WITH_R2_SECRET_ACCESS_KEY"
 
 # Sentry (same DSN as frontend or a separate one)
 vault_sentry_dsn_backend: ""

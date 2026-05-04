@@ -1,0 +1,12 @@
+# Cron entry for the upload daemon. Logs to /var/log/balruno/upload.log so
+# Loki/Alloy on monitor can pick it up later (Stage 1 trigger).
+
+- name: Schedule daily R2 upload cron
+  ansible.builtin.cron:
+    name: balruno-r2-upload
+    user: "{{ osu_user }}"
+    minute: "{{ osu_cron_minute }}"
+    hour: "{{ osu_cron_hour }}"
+    job: "/usr/local/bin/balruno-upload.sh >> /var/log/balruno/upload.log 2>&1"
+    cron_file: balruno-r2-upload
+    state: present

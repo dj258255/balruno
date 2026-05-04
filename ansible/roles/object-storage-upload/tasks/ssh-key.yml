@@ -1,0 +1,42 @@
+# Provision a dedicated SSH key on the status host so the upload daemon can
+# rsync from backup. The pubkey is delegated onto the backup host's rocky user
+# authorized_keys via Ansible's delegate_to, so the operator doesn't need to
+# copy keys by hand.
+
+- name: Generate SSH key pair for the upload daemon (status side)
+  ansible.builtin.openssh_keypair:
+    path: "{{ osu_home }}/.ssh/id_ed25519"
+    type: ed25519
+    owner: "{{ osu_user }}"
+    group: "{{ osu_user }}"
+    mode: '0600'
+    state: present
+  register: osu_keypair
+
+- name: Ensure .ssh dir mode
+  ansible.builtin.file:
+    path: "{{ osu_home }}/.ssh"
+    state: directory
+    owner: "{{ osu_user }}"
+    group: "{{ osu_user }}"
+    mode: '0700'
+
+- name: Pre-seed backup host fingerprint into known_hosts
+  ansible.builtin.known_hosts:
+    name: "{{ osu_remote_host }}"
+    key: "{{ lookup('pipe', 'ssh-keyscan -t ed25519 -T 10 ' ~ osu_remote_host) }}"
+    path: "{{ osu_home }}/.ssh/known_hosts"
+    state: present
+  become: true
+  become_user: "{{ osu_user }}"
+
+- name: Authorize the upload daemon's pubkey on the backup host (rocky user)
+  delegate_to: backup
+  ansible.posix.authorized_key:
+    user: "{{ osu_remote_user }}"
+    state: present
+    key: "{{ osu_keypair.public_key }}"
+    comment: "balruno-backup uploader (status host)"
+    # Stage 0 hardening: disable everything but the rsync we need. Stage 1+
+    # trigger: wrap with rrsync to bind to one path read-only.
+    key_options: 'no-agent-forwarding,no-port-forwarding,no-pty,no-X11-forwarding,no-user-rc'

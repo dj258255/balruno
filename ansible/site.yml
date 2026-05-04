@@ -79,10 +79,10 @@
 # Dashboards covers public status pages. Cloudflare Workers cron handles
 # the truly external vantage point. See ADR 0007 v1.2.
 # ───────────────────────────────────────────────────────────────────
-# - name: Deploy status (Object Storage upload daemon)
-#   hosts: status
-#   become: true
-#   tags: [status]
-#   roles:
-#     - role: object-storage-upload
-#       tags: [object-storage]
+- name: Deploy status (R2 upload daemon)
+  hosts: status
+  become: true
+  tags: [status]
+  roles:
+    - role: object-storage-upload
+      tags: [object-storage]
