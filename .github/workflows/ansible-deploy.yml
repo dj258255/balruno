@@ -96,7 +96,7 @@ jobs:
           [ -n "$TAGS" ] && extra+=(--tags "$TAGS")
           # Pass --vault-password-file explicitly. ansible-core 2.20 picks it
           # up via ANSIBLE_VAULT_PASSWORD_FILE for ansible-vault CLI but not
-          # consistently for ansible-playbook auto-loaded group_vars/vault.yml.
+          # consistently for ansible-playbook auto-loaded group_vars/all/vault.yml.
           ansible-playbook -i inventory.yml site.yml \
             --vault-password-file "$ANSIBLE_VAULT_PASSWORD_FILE" \
             --limit "$LIMIT" \

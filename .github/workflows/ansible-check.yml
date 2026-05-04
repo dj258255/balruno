@@ -3,7 +3,7 @@
 #
 # Decision: ADR 0007 v1.1 §3.6 — Ansible automation gated by GitHub Actions
 # Secrets required:
-#   ANSIBLE_VAULT_PASSWORD  — contents of ~/.vault_pass (decrypts group_vars/vault.yml)
+#   ANSIBLE_VAULT_PASSWORD  — contents of ~/.vault_pass (decrypts group_vars/all/vault.yml)
 #   OCI_SSH_PRIVATE_KEY     — contents of ~/.ssh/oci_key (rocky@ access to 4 hosts)
 #
 # This workflow does not consume any untrusted github.event.* input,

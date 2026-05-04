@@ -27,9 +27,10 @@ ansible/
 ├── ansible.cfg                    Ansible 설정 (vault_password_file, ssh)
 ├── inventory.yml                  4대 host 정의 + 그룹
 ├── group_vars/
-│   ├── all.yml                    공통 변수 (도메인, 버전, JVM/PG 기본값)
-│   ├── vault.yml                  시크릿 (ansible-vault 암호화) — git ignore
-│   └── vault.yml.example          시크릿 템플릿
+│   └── all/                       모든 호스트에 적용되는 변수 (Ansible 권장 패턴)
+│       ├── vars.yml               공통 변수 (도메인, 버전, JVM/PG 기본값)
+│       ├── vault.yml              시크릿 (ansible-vault 암호화) — commit OK
+│       └── vault.yml.example      시크릿 템플릿
 ├── playbooks/                     (선택) 개별 playbook
 ├── roles/
 │   ├── common                     swap / fail2ban / Docker / SSH hardening
@@ -72,7 +73,7 @@ GH Secrets (Settings → Secrets and variables → Actions):
 
 ### 0. 환경 변수 (1회 — `~/.zshrc` 등에 추가)
 
-`group_vars/vault.yml` 은 `ansible-vault` 로 암호화돼 commit 됨. 복호화 password 가 들어 있는 파일 경로를 환경변수로 알려줘야 로컬에서 playbook 실행 가능.
+`group_vars/all/vault.yml` 은 `ansible-vault` 로 암호화돼 commit 됨. 복호화 password 가 들어 있는 파일 경로를 환경변수로 알려줘야 로컬에서 playbook 실행 가능.
 
 ```bash
 # 본인이 사용할 password 파일 경로 (operator 가 직접 선택).
@@ -80,7 +81,7 @@ GH Secrets (Settings → Secrets and variables → Actions):
 export ANSIBLE_VAULT_PASSWORD_FILE="$HOME/.config/balruno/ansible.vault_pass"
 ```
 
-이 프로젝트 owner (범수) 는 wikiEngine 의 vault password 를 재사용하므로 실제 값은 `$HOME/Desktop/wikiEngine/ansible/.vault_pass` 임. OSS contributor 는 본인 password 로 vault 를 다시 암호화해야 함 (`ansible-vault rekey group_vars/vault.yml`).
+이 프로젝트 owner (범수) 는 wikiEngine 의 vault password 를 재사용하므로 실제 값은 `$HOME/Desktop/wikiEngine/ansible/.vault_pass` 임. OSS contributor 는 본인 password 로 vault 를 다시 암호화해야 함 (`ansible-vault rekey group_vars/all/vault.yml`).
 
 CI 는 GitHub Secret `ANSIBLE_VAULT_PASSWORD` 로 자동 주입되므로 별도 설정 불필요.
 
@@ -88,9 +89,9 @@ CI 는 GitHub Secret `ANSIBLE_VAULT_PASSWORD` 로 자동 주입되므로 별도 
 
 ```bash
 # vault.yml 생성 (예시 복사 후 실제 시크릿 채우기)
-cp group_vars/vault.yml.example group_vars/vault.yml
+cp group_vars/all/vault.yml.example group_vars/all/vault.yml
 # 시크릿 채운 후 암호화
-ansible-vault encrypt group_vars/vault.yml --vault-password-file "$ANSIBLE_VAULT_PASSWORD_FILE"
+ansible-vault encrypt group_vars/all/vault.yml --vault-password-file "$ANSIBLE_VAULT_PASSWORD_FILE"
 ```
 
 ### 2. 4대 SSH 접속 검증 (Step 1 — 첫 작업)
@@ -122,7 +123,7 @@ ansible-playbook site.yml --check --diff
 ### 4. 시크릿 편집
 
 ```bash
-ansible-vault edit group_vars/vault.yml --vault-password-file "$ANSIBLE_VAULT_PASSWORD_FILE"
+ansible-vault edit group_vars/all/vault.yml --vault-password-file "$ANSIBLE_VAULT_PASSWORD_FILE"
 ```
 
 ---
