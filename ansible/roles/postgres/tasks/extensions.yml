@@ -1,0 +1,12 @@
+# Enable required PG extensions in the balruno DB.
+# pg_stat_statements needs shared_preload_libraries set in postgresql.conf —
+# that's wired in the balruno.conf.j2 template.
+
+- name: Create extensions in balruno DB
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_ext:
+    db: "{{ postgres_db_name }}"
+    name: "{{ item }}"
+    state: present
+  loop: "{{ postgres_extensions }}"

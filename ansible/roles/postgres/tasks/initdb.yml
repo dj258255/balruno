@@ -1,0 +1,25 @@
+# initdb only on first run — guarded by check on data dir's PG_VERSION file.
+
+- name: Check whether PG is already initialised
+  ansible.builtin.stat:
+    path: "{{ postgres_data_dir }}/PG_VERSION"
+  register: pg_version_file
+
+- name: Run initdb (UTF-8, en_US.UTF-8 locale)
+  become: true
+  become_user: postgres
+  ansible.builtin.command: >
+    /usr/pgsql-{{ postgres_version }}/bin/initdb
+      --pgdata={{ postgres_data_dir }}
+      --auth-host=scram-sha-256
+      --auth-local=peer
+      --encoding=UTF8
+      --locale=en_US.UTF-8
+      --data-checksums
+  when: not pg_version_file.stat.exists
+
+- name: Enable + start PostgreSQL
+  ansible.builtin.systemd:
+    name: "{{ postgres_unit }}"
+    enabled: true
+    state: started

@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+# Host-based authentication. PG ignores the file's existing comments after
+# we render — the rules below are the *complete* policy.
+
+# TYPE   DATABASE        USER            ADDRESS                 METHOD
+{% for e in postgres_hba_entries %}
+{% if e.type == 'local' %}
+{{ '%-7s %-15s %-15s' | format(e.type, e.db, e.user) }}                 {{ e.method }}
+{% else %}
+{{ '%-7s %-15s %-15s %-23s' | format(e.type, e.db, e.user, e.address) }} {{ e.method }}
+{% endif %}
+{% endfor %}

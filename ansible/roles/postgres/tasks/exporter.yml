@@ -1,0 +1,74 @@
+# postgres_exporter — single static binary, runs as systemd unit, scraped by
+# Prometheus over VCN. Connects to PG over loopback.
+
+- name: Create postgres_exporter system user
+  ansible.builtin.user:
+    name: postgres_exporter
+    system: true
+    shell: /sbin/nologin
+    home: /var/lib/postgres_exporter
+    create_home: true
+
+- name: Check whether postgres_exporter binary exists at expected version
+  ansible.builtin.stat:
+    path: "/usr/local/bin/postgres_exporter-{{ postgres_exporter_version }}"
+  register: exporter_bin
+
+- name: Download + install postgres_exporter
+  when: not exporter_bin.stat.exists
+  block:
+    - name: Download tarball
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_version }}/postgres_exporter-{{ postgres_exporter_version }}.linux-{{ 'arm64' if arch == 'arm64' else 'amd64' }}.tar.gz"
+        dest: "/tmp/postgres_exporter.tar.gz"
+        mode: '0644'
+
+    - name: Extract
+      ansible.builtin.unarchive:
+        src: /tmp/postgres_exporter.tar.gz
+        dest: /tmp/
+        remote_src: true
+
+    - name: Install versioned binary
+      ansible.builtin.copy:
+        src: "/tmp/postgres_exporter-{{ postgres_exporter_version }}.linux-{{ 'arm64' if arch == 'arm64' else 'amd64' }}/postgres_exporter"
+        dest: "/usr/local/bin/postgres_exporter-{{ postgres_exporter_version }}"
+        owner: root
+        group: root
+        mode: '0755'
+        remote_src: true
+
+    - name: Symlink current
+      ansible.builtin.file:
+        src: "/usr/local/bin/postgres_exporter-{{ postgres_exporter_version }}"
+        dest: /usr/local/bin/postgres_exporter
+        state: link
+        force: true
+      notify: restart postgres_exporter
+
+- name: Render postgres_exporter env file
+  ansible.builtin.template:
+    src: postgres_exporter.env.j2
+    dest: /etc/postgres_exporter.env
+    owner: postgres_exporter
+    group: postgres_exporter
+    mode: '0600'
+  notify: restart postgres_exporter
+
+- name: Render postgres_exporter systemd unit
+  ansible.builtin.template:
+    src: postgres_exporter.service.j2
+    dest: /etc/systemd/system/postgres_exporter.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart postgres_exporter
+
+- name: Enable + start postgres_exporter
+  ansible.builtin.systemd:
+    name: postgres_exporter
+    enabled: true
+    state: started
+    daemon_reload: true

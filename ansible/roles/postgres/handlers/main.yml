@@ -1,0 +1,22 @@
+# Restart / reload triggers for postgres + postgres_exporter.
+# Reload (SIGHUP) for hot-reloadable config (pg_hba). Restart for kernel-level
+# changes (shared_buffers, listen_addresses, shared_preload_libraries).
+
+- name: reload postgres
+  ansible.builtin.systemd:
+    name: "{{ postgres_unit }}"
+    state: reloaded
+
+- name: restart postgres
+  ansible.builtin.systemd:
+    name: "{{ postgres_unit }}"
+    state: restarted
+
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart postgres_exporter
+  ansible.builtin.systemd:
+    name: postgres_exporter
+    state: restarted

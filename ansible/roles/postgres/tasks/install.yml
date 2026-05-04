@@ -1,0 +1,39 @@
+# Install PostgreSQL 18 from the official PGDG repo.
+# Rocky 9 ships PG 13 in AppStream — we want 18 for UUIDv7 + async I/O,
+# so we add PGDG and disable the AppStream postgresql module.
+
+- name: Install PGDG repo RPM
+  vars:
+    pgdg_arch: "{{ 'aarch64' if arch == 'arm64' else 'x86_64' }}"
+  ansible.builtin.dnf:
+    name: "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-{{ pgdg_arch }}/pgdg-redhat-repo-latest.noarch.rpm"
+    state: present
+    disable_gpg_check: true
+  register: pgdg_install
+  retries: 3
+  delay: 5
+  until: pgdg_install is success
+
+- name: Disable Rocky's built-in postgresql module
+  ansible.builtin.command: dnf -qy module disable postgresql
+  args:
+    creates: /etc/dnf/modules.d/postgresql.module
+  changed_when: false
+
+- name: Install PostgreSQL {{ postgres_version }} server + client
+  ansible.builtin.dnf:
+    name:
+      - "postgresql{{ postgres_version }}"
+      - "postgresql{{ postgres_version }}-server"
+      - "postgresql{{ postgres_version }}-contrib"
+      - python3-psycopg2          # required by community.postgresql modules
+    state: present
+
+- name: Ensure /etc/profile.d has PG bin in PATH
+  ansible.builtin.copy:
+    dest: /etc/profile.d/postgres.sh
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      export PATH=/usr/pgsql-{{ postgres_version }}/bin:$PATH

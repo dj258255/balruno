@@ -1,0 +1,37 @@
+# Render postgresql.conf + pg_hba.conf from templates and reload PG.
+# We layer our settings under a `conf.d/balruno.conf` include so PGDG default
+# postgresql.conf stays untouched — easier rollbacks via dropping the file.
+
+- name: Ensure conf.d include directory exists
+  ansible.builtin.file:
+    path: "{{ postgres_data_dir }}/conf.d"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0750'
+
+- name: Ensure postgresql.conf includes conf.d/*.conf
+  ansible.builtin.lineinfile:
+    path: "{{ postgres_data_dir }}/postgresql.conf"
+    regexp: '^#?include_dir\s*='
+    line: "include_dir = 'conf.d'"
+    state: present
+  notify: restart postgres
+
+- name: Render Balruno tunables
+  ansible.builtin.template:
+    src: balruno.conf.j2
+    dest: "{{ postgres_data_dir }}/conf.d/balruno.conf"
+    owner: postgres
+    group: postgres
+    mode: '0600'
+  notify: restart postgres
+
+- name: Render pg_hba.conf
+  ansible.builtin.template:
+    src: pg_hba.conf.j2
+    dest: "{{ postgres_data_dir }}/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: '0600'
+  notify: reload postgres

@@ -1,0 +1,16 @@
+# Allow PG from VCN private range only (10.0.0.0/24). Public internet is blocked
+# at the OCI Security List level too — defence in depth.
+
+- name: Allow Postgres from VCN
+  ansible.posix.firewalld:
+    rich_rule: 'rule family="ipv4" source address="10.0.0.0/24" port port="{{ postgres_port }}" protocol="tcp" accept'
+    permanent: true
+    immediate: true
+    state: enabled
+
+- name: Allow postgres_exporter from VCN
+  ansible.posix.firewalld:
+    rich_rule: 'rule family="ipv4" source address="10.0.0.0/24" port port="{{ postgres_exporter_port }}" protocol="tcp" accept'
+    permanent: true
+    immediate: true
+    state: enabled

@@ -1,0 +1,40 @@
+# Create the balruno DB + application user. Idempotent — community.postgresql
+# checks existing state and only mutates on diff.
+
+- name: Wait for PG to accept connections
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ postgres_port }}"
+    timeout: 30
+
+- name: Create application role
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_user:
+    name: "{{ postgres_db_user }}"
+    password: "{{ vault_postgres_password }}"
+    role_attr_flags: LOGIN
+    state: present
+    encrypted: true
+
+- name: Create application database
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    name: "{{ postgres_db_name }}"
+    owner: "{{ postgres_db_user }}"
+    encoding: UTF8
+    lc_collate: en_US.UTF-8
+    lc_ctype: en_US.UTF-8
+    template: template0
+    state: present
+
+- name: Create replication role (used at Stage 3+ for read replica)
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_user:
+    name: replicator
+    password: "{{ vault_postgres_replication_password }}"
+    role_attr_flags: LOGIN,REPLICATION
+    state: present
+    encrypted: true

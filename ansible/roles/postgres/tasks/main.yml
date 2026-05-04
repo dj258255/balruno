@@ -1,0 +1,29 @@
+# postgres role — PG 18 on monitor host, native systemd (no Docker).
+#
+# PGDG repo provides RHEL 9 packages for PG 17/18. We install postgresql-server
+# from the PG 18 channel, run initdb, drop in our config, then create the
+# balruno DB + user + extensions.
+#
+# Idempotency: every step is guarded so re-runs don't reinitdb or rewrite SCRAM
+# verifiers. The notify handlers restart PG only when config actually changes.
+
+- import_tasks: install.yml
+  tags: [postgres, install]
+
+- import_tasks: initdb.yml
+  tags: [postgres, initdb]
+
+- import_tasks: configure.yml
+  tags: [postgres, configure]
+
+- import_tasks: firewall.yml
+  tags: [postgres, firewall]
+
+- import_tasks: db-user.yml
+  tags: [postgres, db-user]
+
+- import_tasks: extensions.yml
+  tags: [postgres, extensions]
+
+- import_tasks: exporter.yml
+  tags: [postgres, exporter]

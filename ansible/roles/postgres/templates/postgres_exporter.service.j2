@@ -1,0 +1,26 @@
+# {{ ansible_managed }}
+# postgres_exporter — Prometheus metrics for PostgreSQL.
+# Connects over loopback so the credential never leaves the host.
+
+[Unit]
+Description=Prometheus exporter for PostgreSQL
+After=network-online.target {{ postgres_unit }}.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=postgres_exporter
+Group=postgres_exporter
+EnvironmentFile=/etc/postgres_exporter.env
+ExecStart=/usr/local/bin/postgres_exporter
+Restart=on-failure
+RestartSec=5
+
+# Hardening
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

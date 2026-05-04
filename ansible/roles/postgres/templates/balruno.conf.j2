@@ -1,0 +1,41 @@
+# {{ ansible_managed }}
+# Balruno-specific PostgreSQL tuning.
+# Loaded via include_dir = 'conf.d' in postgresql.conf so PGDG defaults stay
+# untouched and a single rm restores stock behaviour.
+
+# ─── Listen / connection ────────────────────────────────────────────────
+listen_addresses = '{{ postgres_listen_addresses }}'
+port = {{ postgres_port }}
+max_connections = {{ postgres_tunables.max_connections }}
+
+# ─── Memory ─────────────────────────────────────────────────────────────
+shared_buffers = '{{ postgres_tunables.shared_buffers }}'
+effective_cache_size = '{{ postgres_tunables.effective_cache_size }}'
+work_mem = '{{ postgres_tunables.work_mem }}'
+maintenance_work_mem = '{{ postgres_tunables.maintenance_work_mem }}'
+
+# ─── PG 18 async I/O ────────────────────────────────────────────────────
+io_method = '{{ postgres_tunables.io_method }}'
+
+# ─── WAL ────────────────────────────────────────────────────────────────
+wal_level = {{ postgres_tunables.wal_level }}
+max_wal_size = '{{ postgres_tunables.max_wal_size }}'
+min_wal_size = '{{ postgres_tunables.min_wal_size }}'
+checkpoint_completion_target = {{ postgres_tunables.checkpoint_completion_target }}
+
+# ─── Planner ────────────────────────────────────────────────────────────
+random_page_cost = {{ postgres_tunables.random_page_cost }}
+effective_io_concurrency = {{ postgres_tunables.effective_io_concurrency }}
+jit = {{ postgres_tunables.jit }}
+
+# ─── Logging ────────────────────────────────────────────────────────────
+log_min_duration_statement = '{{ postgres_tunables.log_min_duration_statement }}'
+log_line_prefix = '{{ postgres_tunables.log_line_prefix }}'
+log_lock_waits = on
+log_temp_files = 0
+log_checkpoints = on
+
+# ─── Extensions to preload ──────────────────────────────────────────────
+shared_preload_libraries = 'pg_stat_statements'
+pg_stat_statements.max = 10000
+pg_stat_statements.track = all

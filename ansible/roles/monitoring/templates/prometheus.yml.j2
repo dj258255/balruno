@@ -34,3 +34,9 @@ scrape_configs:
   - job_name: alloy
     static_configs:
       - targets: ["alloy:12345"]
+
+  - job_name: postgres
+    static_configs:
+      - targets: ["{{ monitor_private_ip }}:9187"]
+        labels:
+          db: balruno
