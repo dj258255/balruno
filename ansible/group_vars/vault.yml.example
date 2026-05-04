@@ -34,7 +34,7 @@ vault_influxdb_bucket_k6: "k6"
 vault_cloudflare_tunnel_token: "REPLACE_WITH_TUNNEL_TOKEN"
 # Cloudflare Access GitHub OAuth allowlist
 vault_cloudflare_access_allowed_emails:
-  - "dj258255@naver.com"
+  - "REPLACE_WITH_OPERATOR_EMAIL"
 
 # Cloudflare API (DNS 자동 갱신용, 선택)
 vault_cloudflare_api_token: "REPLACE_IF_USING_DDNS_OR_AUTO_DNS"

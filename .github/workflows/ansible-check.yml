@@ -28,7 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      ANSIBLE_VAULT_PASSWORD_FILE: ${{ runner.temp }}/.vault_pass
+      # runner.* context is only available inside steps, so we publish the
+      # vault password file path through $GITHUB_ENV in the prep step below.
       ANSIBLE_HOST_KEY_CHECKING: 'False'
     steps:
       - uses: actions/checkout@v5
@@ -59,6 +60,7 @@ jobs:
         run: |
           printf '%s' "$ANSIBLE_VAULT_PASSWORD" > "$RUNNER_TEMP/.vault_pass"
           chmod 600 "$RUNNER_TEMP/.vault_pass"
+          echo "ANSIBLE_VAULT_PASSWORD_FILE=$RUNNER_TEMP/.vault_pass" >> "$GITHUB_ENV"
 
       - name: Lint inventory + syntax
         working-directory: ansible
