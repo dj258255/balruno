@@ -72,10 +72,15 @@ GH Secrets (Settings → Secrets and variables → Actions):
 
 ### 0. 환경 변수 (1회 — `~/.zshrc` 등에 추가)
 
+`group_vars/vault.yml` 은 `ansible-vault` 로 암호화돼 commit 됨. 복호화 password 가 들어 있는 파일 경로를 환경변수로 알려줘야 로컬에서 playbook 실행 가능.
+
 ```bash
-# vault decrypt 용 — wikiEngine 의 동일 password 재사용
-export ANSIBLE_VAULT_PASSWORD_FILE="$HOME/Desktop/wikiEngine/ansible/.vault_pass"
+# 본인이 사용할 password 파일 경로 (operator 가 직접 선택).
+# 권장 위치 예: ~/.config/balruno/ansible.vault_pass 또는 1Password CLI fetch script.
+export ANSIBLE_VAULT_PASSWORD_FILE="$HOME/.config/balruno/ansible.vault_pass"
 ```
+
+이 프로젝트 owner (범수) 는 wikiEngine 의 vault password 를 재사용하므로 실제 값은 `$HOME/Desktop/wikiEngine/ansible/.vault_pass` 임. OSS contributor 는 본인 password 로 vault 를 다시 암호화해야 함 (`ansible-vault rekey group_vars/vault.yml`).
 
 CI 는 GitHub Secret `ANSIBLE_VAULT_PASSWORD` 로 자동 주입되므로 별도 설정 불필요.
 

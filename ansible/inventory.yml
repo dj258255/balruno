@@ -1,5 +1,5 @@
-# Balruno OCI 4대 인벤토리
-# 모든 설정값은 group_vars/all.yml + group_vars/vault.yml 에서 관리
+# Balruno OCI 4-host inventory.
+# Configuration values live in group_vars/all.yml + group_vars/vault.yml.
 #
 # Host names use underscore (prod_app, not prod-app) so Ansible can expose them
 # as Python identifiers (hostvars.prod_app), and so they don't collide with

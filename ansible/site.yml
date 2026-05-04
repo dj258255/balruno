@@ -1,32 +1,32 @@
-# Balruno 전체 통합 playbook
-# 결정: ADR 0007 v1.1 §3.6 Ansible 자동화
+# Balruno top-level playbook.
+# Source of truth: ADR 0007 v1.1 §3.6 — Ansible automation.
 #
-# 사용법:
-#   전체 셋업:        ansible-playbook -i inventory.yml site.yml
-#   특정 머신:        ansible-playbook site.yml --limit prod_app
-#   특정 role 재실행: ansible-playbook site.yml --tags nginx
-#   ping 검증:        ansible -i inventory.yml all -m ping
+# Usage:
+#   apply everything:    ansible-playbook -i inventory.yml site.yml
+#   single host:         ansible-playbook site.yml --limit prod_app
+#   replay one role:     ansible-playbook site.yml --tags nginx
+#   reachability check:  ansible -i inventory.yml all -m ping
 #
 # Roles are enabled progressively: each play below is uncommented in the
 # same PR that adds the role's tasks. Until then, leaving them commented
 # out keeps `--check` and apply runs green.
 
 # ───────────────────────────────────────────────────────────────────
-# 1. 공통 — 4대 모두 (swap / fail2ban / Docker / SSH hardening)
+# 1. Common baseline applied to every host (swap / fail2ban / Docker / SSH).
 # ───────────────────────────────────────────────────────────────────
-- name: Common setup (모든 머신)
+- name: Common setup (all hosts)
   hosts: all
   become: true
   tags: [common]
   roles:
     - role: common
       vars:
-        # Docker only on monitor (Grafana stack) and status (Uptime Kuma).
+        # Docker is needed on monitor (Grafana stack) and status (Uptime Kuma).
         # prod-app + backup run their workloads as plain systemd units.
         common_install_docker: "{{ inventory_hostname in ['monitor', 'status'] }}"
 
 # ───────────────────────────────────────────────────────────────────
-# 2. prod-app: Spring Boot + Hocuspocus + Nginx  (Phase B-7)
+# 2. prod-app — Spring Boot + Hocuspocus + Nginx  (Phase B-7).
 # ───────────────────────────────────────────────────────────────────
 # - name: Deploy prod-app
 #   hosts: prod_app
@@ -41,7 +41,7 @@
 #       tags: [nginx]
 
 # ───────────────────────────────────────────────────────────────────
-# 3. monitor: PostgreSQL + Grafana stack + InfluxDB  (Phase B-6 후속)
+# 3. monitor — PostgreSQL + Grafana stack + InfluxDB  (Phase B-6 follow-up).
 # ───────────────────────────────────────────────────────────────────
 - name: Deploy monitor (monitoring stack)
   hosts: monitor
@@ -54,7 +54,7 @@
       tags: [monitoring]
 
 # ───────────────────────────────────────────────────────────────────
-# 4. backup: pg_dump rsync 수신 + cloudflared (monitor.balruno.com Tunnel)
+# 4. backup — pg_dump rsync receiver + cloudflared (monitor.balruno.com tunnel).
 # ───────────────────────────────────────────────────────────────────
 # - name: Deploy backup
 #   hosts: backup
@@ -71,7 +71,7 @@
 #         cloudflared_hostname: "{{ monitor_domain }}"
 
 # ───────────────────────────────────────────────────────────────────
-# 5. status: Uptime Kuma + Object Storage upload daemon
+# 5. status — Uptime Kuma + Object Storage upload daemon.
 # ───────────────────────────────────────────────────────────────────
 # - name: Deploy status
 #   hosts: status

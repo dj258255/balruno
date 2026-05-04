@@ -1,12 +1,16 @@
-# vault.yml 예시 — 실제 사용 시 ansible-vault encrypt
+# Template for group_vars/vault.yml — encrypt with ansible-vault before use.
 #
-# 작성 후:
+# First-time setup:
+#   cp group_vars/vault.yml.example group_vars/vault.yml
+#   # fill in real secrets, then encrypt in place:
 #   ansible-vault encrypt group_vars/vault.yml
 #
-# 편집:
-#   ansible-vault edit group_vars/vault.yml --vault-password-file ~/.ssh/.vault_pass
+# Edit later:
+#   ansible-vault edit group_vars/vault.yml
 #
-# 진짜 vault.yml 은 .gitignore (이미 docs/backend 가 ignore 됨, ansible/ 도 .gitignore 추가)
+# The encrypted vault.yml is committed to the repo. The plaintext password
+# that decrypts it lives in $ANSIBLE_VAULT_PASSWORD_FILE locally and in the
+# ANSIBLE_VAULT_PASSWORD GitHub Secret in CI.
 
 # PostgreSQL
 vault_postgres_password: "REPLACE_WITH_RANDOM_32_CHAR"
@@ -14,7 +18,7 @@ vault_postgres_replication_password: "REPLACE_WITH_RANDOM_32_CHAR"
 
 # Spring Boot
 vault_jwt_secret: "REPLACE_WITH_HMAC_HS256_KEY_32_BYTES_BASE64"
-vault_jwt_collab_secret: "REPLACE_WITH_DIFFERENT_HS256_KEY"  # collab token 별도 (ADR 0002 v1.1)
+vault_jwt_collab_secret: "REPLACE_WITH_DIFFERENT_HS256_KEY"  # separate collab token, see ADR 0002 v1.1
 
 # OAuth (GitHub + Google)
 vault_github_oauth_client_id: ""
@@ -36,7 +40,7 @@ vault_cloudflare_tunnel_token: "REPLACE_WITH_TUNNEL_TOKEN"
 vault_cloudflare_access_allowed_emails:
   - "REPLACE_WITH_OPERATOR_EMAIL"
 
-# Cloudflare API (DNS 자동 갱신용, 선택)
+# Cloudflare API (optional — used for DNS automation only)
 vault_cloudflare_api_token: "REPLACE_IF_USING_DDNS_OR_AUTO_DNS"
 
 # OCI CLI (Object Storage upload daemon)
@@ -45,11 +49,11 @@ vault_oci_tenancy_ocid: "ocid1.tenancy.oc1..."
 vault_oci_fingerprint: "aa:bb:cc:dd:..."
 vault_oci_private_key_path: "~/.oci/oci_api_key.pem"
 
-# Uptime Kuma admin (첫 셋업 시 web UI 에서 직접 생성, vault 보관)
+# Uptime Kuma admin (created via web UI on first run, then stored here)
 vault_uptime_kuma_admin_password: "REPLACE_WITH_RANDOM_32_CHAR"
 
-# Sentry (frontend 와 같은 DSN 또는 별도)
+# Sentry (same DSN as frontend or a separate one)
 vault_sentry_dsn_backend: ""
 
-# Anthropic (AI 프록시, FR-AI v1)
+# Anthropic API (FR-AI v1 — used by the in-app AI proxy)
 vault_anthropic_api_key: ""
