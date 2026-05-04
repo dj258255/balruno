@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# {{ ansible_managed }}
+# Balruno PostgreSQL backup — dump + push.
+# Runs as the postgres user nightly via cron. Streams pg_dump | gzip into a
+# dated file under {{ backup_dir }}, then rsyncs it to the backup host.
+
+set -euo pipefail
+
+DUMP_DIR="{{ backup_dir }}"
+DB="{{ backup_db_name }}"
+TARGET="{{ backup_target_user }}@{{ backup_target_host }}:{{ backup_dir }}/"
+TODAY="$(date -u +%Y-%m-%d)"
+DUMP_FILE="$DUMP_DIR/balruno-$TODAY.sql.gz"
+LOG_PREFIX="[$(date -u +%FT%TZ) balruno-backup-push]"
+
+log()  { echo "$LOG_PREFIX $*"; }
+fail() { log "ERROR: $*"; exit 1; }
+
+log "starting backup for $TODAY"
+
+mkdir -p "$DUMP_DIR"
+
+# 1. pg_dump → gzip → file. Custom format would be richer (parallel restore)
+#    but plain SQL + gzip is the simplest restore path for a small DB.
+/usr/pgsql-{{ postgres_version }}/bin/pg_dump \
+  --username={{ backup_db_user }} \
+  --no-owner \
+  --no-privileges \
+  --clean --if-exists \
+  "$DB" \
+  | gzip -9 > "$DUMP_FILE.tmp" \
+  || fail "pg_dump failed"
+
+mv "$DUMP_FILE.tmp" "$DUMP_FILE"
+
+SIZE_HUMAN=$(du -h "$DUMP_FILE" | cut -f1)
+log "dump done: $(basename "$DUMP_FILE") ($SIZE_HUMAN)"
+
+# 2. rsync push. accept-new on first connect pins the host key; subsequent
+#    runs stay strict.
+rsync -az --partial \
+  -e 'ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /var/lib/pgsql/.ssh/id_ed25519' \
+  "$DUMP_FILE" "$TARGET" \
+  || fail "rsync push to backup host failed"
+
+log "pushed -> $TARGET"
+
+# 3. Local retention. We keep the last 2 days locally for ad-hoc psql restore;
+#    backup host owns the 7-day rolling window.
+find "$DUMP_DIR" -type f -name '*.sql.gz' -mtime +2 -delete
+
+log "done"

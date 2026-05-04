@@ -1,0 +1,30 @@
+# Defaults for the backup role.
+# This role applies to TWO hosts with different responsibilities:
+#   - monitor (source): runs pg_dump nightly, rsync pushes to backup host
+#   - backup  (target): receives the dumps, keeps a 7-day rolling window
+
+# Directory layout — same path on both hosts so rsync is a straight mirror.
+backup_dir: /var/backups/postgres
+
+# Source side (monitor) — dump runs as the postgres OS user (peer auth, no password).
+backup_source_user: postgres
+backup_source_script: /usr/local/bin/balruno-backup-push.sh
+
+# Target side (backup) — receives over SSH+rsync into rocky's home perms; we
+# mkdir explicitly with rocky:rocky so the user can drop files in.
+backup_target_user: rocky
+backup_target_host: "{{ backup_private_ip }}"
+
+# Retention on the backup host's local disk. Object Storage offsite (status
+# host's role) does its own 30-day retention via R2 lifecycle.
+backup_retention_days: "{{ backup_retention_days }}"
+
+# Cron — 03:00 UTC = 12:00 KST. Status host's R2 upload cron is 05:00 UTC,
+# leaves a 2h window for the rsync to land before the offsite push runs.
+backup_cron_hour: "{{ backup_cron_hour }}"
+backup_cron_minute: 0
+
+# pg_dump options. --format=custom would be richer (parallel restore, selective)
+# but plain text + gzip is simpler for a small DB and easier for ad-hoc inspection.
+backup_db_name: balruno
+backup_db_user: postgres

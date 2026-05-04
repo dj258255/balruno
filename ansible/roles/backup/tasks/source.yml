@@ -1,0 +1,63 @@
+# Source side (monitor host) — pg_dump + rsync push to backup.
+# Runs as the postgres OS user, which already has peer auth into the DB.
+
+- name: Ensure local staging dir exists (monitor)
+  ansible.builtin.file:
+    path: "{{ backup_dir }}"
+    state: directory
+    owner: "{{ backup_source_user }}"
+    group: "{{ backup_source_user }}"
+    mode: '0750'
+
+- name: Ensure log directory exists
+  ansible.builtin.file:
+    path: /var/log/balruno
+    state: directory
+    owner: "{{ backup_source_user }}"
+    group: "{{ backup_source_user }}"
+    mode: '0750'
+
+- name: Ensure postgres user has a shell + .ssh dir
+  ansible.builtin.file:
+    path: "/var/lib/pgsql/.ssh"
+    state: directory
+    owner: "{{ backup_source_user }}"
+    group: "{{ backup_source_user }}"
+    mode: '0700'
+
+- name: Generate SSH key for the dump-push job
+  community.crypto.openssh_keypair:
+    path: "/var/lib/pgsql/.ssh/id_ed25519"
+    type: ed25519
+    owner: "{{ backup_source_user }}"
+    group: "{{ backup_source_user }}"
+    mode: '0600'
+    state: present
+  register: backup_source_keypair
+
+- name: Authorize postgres@monitor pubkey on the backup host (rocky user)
+  delegate_to: backup
+  ansible.posix.authorized_key:
+    user: "{{ backup_target_user }}"
+    state: present
+    key: "{{ backup_source_keypair.public_key }}"
+    comment: "balruno pg_dump push (monitor host)"
+    key_options: 'no-agent-forwarding,no-port-forwarding,no-pty,no-X11-forwarding,no-user-rc'
+
+- name: Render dump+push script
+  ansible.builtin.template:
+    src: balruno-backup-push.sh.j2
+    dest: "{{ backup_source_script }}"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Schedule daily pg_dump+push cron (monitor)
+  ansible.builtin.cron:
+    name: balruno-pg-backup-push
+    user: "{{ backup_source_user }}"
+    minute: "{{ backup_cron_minute }}"
+    hour: "{{ backup_cron_hour }}"
+    job: "{{ backup_source_script }} >> /var/log/balruno/backup-push.log 2>&1"
+    cron_file: balruno-pg-backup-push
+    state: present

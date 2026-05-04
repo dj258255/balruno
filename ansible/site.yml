@@ -43,7 +43,7 @@
 # ───────────────────────────────────────────────────────────────────
 # 3. monitor — PostgreSQL + Grafana stack + InfluxDB  (Phase B-6 follow-up).
 # ───────────────────────────────────────────────────────────────────
-- name: Deploy monitor (monitoring stack + Postgres)
+- name: Deploy monitor (monitoring stack + Postgres + backup source)
   hosts: monitor
   become: true
   tags: [monitor]
@@ -52,23 +52,20 @@
       tags: [monitoring]
     - role: postgres
       tags: [postgres]
+    - role: backup
+      tags: [backup]
 
 # ───────────────────────────────────────────────────────────────────
-# 4. backup — pg_dump rsync receiver + cloudflared (monitor.balruno.com tunnel).
+# 4. backup — pg_dump rsync receiver (+ cloudflared next commit).
 # ───────────────────────────────────────────────────────────────────
-# - name: Deploy backup
-#   hosts: backup
-#   become: true
-#   tags: [backup]
-#   roles:
-#     - role: backup
-#       tags: [backup]
-#     - role: cloudflared
-#       tags: [cloudflared]
-#       vars:
-#         cloudflared_target_host: "{{ monitor_private_ip }}"
-#         cloudflared_target_port: 3000  # Grafana
-#         cloudflared_hostname: "{{ monitor_domain }}"
+- name: Deploy backup (rsync receiver + retention)
+  hosts: backup
+  become: true
+  tags: [backup]
+  roles:
+    - role: backup
+      tags: [backup]
+    # cloudflared role enabled in a follow-up commit (monitor.balruno.com Tunnel).
 
 # ───────────────────────────────────────────────────────────────────
 # 5. status — Object Storage upload daemon (3-2-1 offsite).

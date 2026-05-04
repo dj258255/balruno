@@ -1,0 +1,19 @@
+# Target side (backup host) — receive dumps + 7-day rolling cleanup.
+
+- name: Ensure receiver dir exists
+  ansible.builtin.file:
+    path: "{{ backup_dir }}"
+    state: directory
+    owner: "{{ backup_target_user }}"
+    group: "{{ backup_target_user }}"
+    mode: '0750'
+
+- name: Schedule cleanup cron (delete dumps older than retention)
+  ansible.builtin.cron:
+    name: balruno-pg-backup-cleanup
+    user: root
+    minute: 30
+    hour: 4   # after monitor's 03:00 push, before status's 05:00 R2 upload
+    job: "find {{ backup_dir }} -type f -name '*.sql.gz' -mtime +{{ backup_retention_days }} -delete"
+    cron_file: balruno-pg-backup-cleanup
+    state: present

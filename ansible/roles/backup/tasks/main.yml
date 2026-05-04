@@ -1,0 +1,11 @@
+# backup role — runs on both monitor (source) and backup (target).
+# Branches by inventory_hostname so the two halves stay in one role + one
+# code path; the source/target ordering is controlled in site.yml.
+
+- import_tasks: source.yml
+  when: inventory_hostname == 'monitor'
+  tags: [backup, source]
+
+- import_tasks: target.yml
+  when: inventory_hostname == 'backup'
+  tags: [backup, target]
