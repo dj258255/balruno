@@ -58,14 +58,15 @@
 # ───────────────────────────────────────────────────────────────────
 # 4. backup — pg_dump rsync receiver (+ cloudflared next commit).
 # ───────────────────────────────────────────────────────────────────
-- name: Deploy backup (rsync receiver + retention)
+- name: Deploy backup (rsync receiver + retention + cloudflared)
   hosts: backup
   become: true
   tags: [backup]
   roles:
     - role: backup
       tags: [backup]
-    # cloudflared role enabled in a follow-up commit (monitor.balruno.com Tunnel).
+    - role: cloudflared
+      tags: [cloudflared]
 
 # ───────────────────────────────────────────────────────────────────
 # 5. status — Object Storage upload daemon (3-2-1 offsite).

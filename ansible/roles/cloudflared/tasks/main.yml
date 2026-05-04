@@ -1,0 +1,29 @@
+# cloudflared role — Cloudflare Tunnel daemon on the backup host.
+# Provides public access to monitor.balruno.com → Grafana on monitor:3000
+# without opening any inbound port (tunnel is outbound-only).
+
+- name: Install cloudflared (RPM from GitHub releases)
+  ansible.builtin.dnf:
+    name: "{{ cloudflared_rpm_url }}"
+    state: present
+    disable_gpg_check: true   # GitHub-hosted RPM isn't signed with PGDG-style keys
+  register: cloudflared_install
+
+- name: Check if cloudflared service is already configured
+  ansible.builtin.stat:
+    path: /etc/systemd/system/cloudflared.service
+  register: cloudflared_unit
+
+- name: Install cloudflared service (one-time, runs the connector with the tunnel token)
+  ansible.builtin.command:
+    cmd: "cloudflared service install {{ cloudflared_tunnel_token }}"
+  when: not cloudflared_unit.stat.exists
+  no_log: true   # tunnel token is a vault secret — never echo to apply log
+  changed_when: true
+
+- name: Ensure cloudflared service is enabled + running
+  ansible.builtin.systemd:
+    name: "{{ cloudflared_service }}"
+    enabled: true
+    state: started
+    daemon_reload: true
