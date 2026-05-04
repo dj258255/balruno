@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTour } from '@/hooks/useTour';

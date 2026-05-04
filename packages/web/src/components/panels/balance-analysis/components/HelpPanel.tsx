@@ -1,9 +1,6 @@
 /**
  * HelpPanel - 밸런스 분석 도움말 패널
  */
-
-'use client';
-
 import { GitBranch, TrendingUp, BarChart2, AlertTriangle, Target } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

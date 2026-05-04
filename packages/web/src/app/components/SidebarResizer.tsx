@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Sidebar 좌측 폭 리사이저. DockedToolbox 우측 리사이저와 일관된 스타일.
  *

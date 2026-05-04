@@ -1,5 +1,3 @@
-'use client';
-
 import { useTranslations } from 'next-intl';
 import type { Sheet } from '@/types';
 import { resolveSheetKind } from '@/lib/sheetKind';

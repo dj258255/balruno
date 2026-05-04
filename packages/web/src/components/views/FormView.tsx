@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Form 뷰 (Airtable 스타일 수집 폼).
  *

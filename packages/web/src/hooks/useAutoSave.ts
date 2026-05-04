@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Auto save + auto backup 부트스트랩.
  * page.tsx 의 god component 분해 (Track D-1).

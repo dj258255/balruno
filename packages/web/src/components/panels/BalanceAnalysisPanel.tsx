@@ -1,5 +1,3 @@
-'use client';
-
 import { useState } from 'react';
 import { GitBranch, TrendingUp, BarChart2, AlertTriangle, Target, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';

@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Global custom event listeners for modal opens (WelcomeScreen / Sidebar 등에서 dispatch).
  * page.tsx 의 god component 분해 (Track D-1).

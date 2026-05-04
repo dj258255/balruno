@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 활성 자동화의 cell-changed / row-added trigger 를 Y.Doc observer 로 발동.
  *

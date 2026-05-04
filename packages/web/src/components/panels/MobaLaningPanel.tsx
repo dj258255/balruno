@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * MOBA 라인전 시뮬 패널 — LoL/Dota 2 laning phase 분석.
  *

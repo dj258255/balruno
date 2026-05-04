@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 공용 커스텀 Select — 네이티브 <select> 의 운영체제별 투박함을 제거하고
  * Tailwind + CSS vars 기반 일관 스타일.

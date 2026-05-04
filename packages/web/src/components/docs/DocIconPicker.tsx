@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 문서 아이콘 (이모지) 피커 — emoji-mart 기반.
  *

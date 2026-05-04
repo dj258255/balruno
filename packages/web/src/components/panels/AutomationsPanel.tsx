@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Automations 패널.
  *

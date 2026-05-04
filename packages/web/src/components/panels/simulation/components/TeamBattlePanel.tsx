@@ -1,9 +1,6 @@
 /**
  * TeamBattlePanel - 팀 전투 모드 UI 컴포넌트
  */
-
-'use client';
-
 import { useState } from 'react';
 import { X, Play, RefreshCw, User, Sparkles, Target, Zap, Clock, BarChart3, Trophy, Skull, ChevronDown, ChevronUp, TrendingUp, Swords, Crosshair, Brain, Gauge, ArrowLeftRight } from 'lucide-react';
 import type { UnitStats, TeamBattleConfig, Skill } from '@/lib/simulation/types';

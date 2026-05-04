@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 진행률 표시 컴포넌트. 0~1 사이 value 또는 indeterminate.
  * AutoBalancer, LootSimulator, 추후 Monte Carlo 시뮬 등에 공통 사용.

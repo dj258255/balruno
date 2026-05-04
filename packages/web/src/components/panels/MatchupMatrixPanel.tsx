@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 범용 밸런스 매트릭스 패널 — Unit / FPS Weapon / Deck 도메인 매치업 heatmap.
  *

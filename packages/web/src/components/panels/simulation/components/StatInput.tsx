@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { Grid3X3 } from 'lucide-react';
 import { useTranslations } from 'next-intl';

@@ -1,5 +1,3 @@
-'use client';
-
 import { TrendingUp, FileSpreadsheet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { TodaysWork } from '@/hooks/useTodaysWork';

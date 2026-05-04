@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Loot/Gacha Simulator 패널 — 드롭 테이블 + 천장 시스템 시뮬.
  *

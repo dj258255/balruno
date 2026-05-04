@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * FormulaBar - 수식 입력 바 컴포넌트 (Slack 스타일)
  *

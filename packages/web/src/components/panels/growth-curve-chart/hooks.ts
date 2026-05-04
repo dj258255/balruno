@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * GrowthCurveChart 의 scenarios / segments 관리 로직을 훅으로 분리.
  * 1,662줄 god component 분해 (Track D-2 2차).

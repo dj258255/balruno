@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Current User 표시 — Stage 3 "Airtable current user 필터" 가시화.
  *

@@ -1,5 +1,3 @@
-'use client';
-
 import { useState } from 'react';
 import { X, Download, Code, FileCode, Copy, Check, FileJson, FileType, FileText, Database, FolderOpen, Square, CheckSquare, ChevronRight, Maximize2, Minimize2, Settings2, ChevronDown } from 'lucide-react';
 import type { Sheet } from '@/types';

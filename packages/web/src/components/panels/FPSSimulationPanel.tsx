@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * FPS TTK 시뮬레이션 패널 — Destiny / Valorant / CoD 밸런싱 방식.
  *

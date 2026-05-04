@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Comments / Mentions 패널 — 활성 시트의 모든 셀 코멘트 + 스레드 표시.
  *

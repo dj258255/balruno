@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Kanban 뷰.
  * select 타입 컬럼 기준 그룹핑. 드래그로 카드 이동 (updateCell 로 status 전환).

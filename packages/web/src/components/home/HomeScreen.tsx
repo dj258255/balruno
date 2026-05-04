@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Home 페이지 — Stage 1+2+3 통합.
  *

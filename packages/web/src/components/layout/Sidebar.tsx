@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useRef, useEffect } from 'react';
 import { FolderPlus, LayoutTemplate } from 'lucide-react';
 import { useTranslations } from 'next-intl';

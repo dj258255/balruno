@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Trash2, MousePointer, PenTool, Copy, Check, Download, RotateCcw, TrendingUp, Maximize2, X, History, ChevronDown, Settings } from 'lucide-react';

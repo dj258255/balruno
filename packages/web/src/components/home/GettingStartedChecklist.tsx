@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Home 상단 Getting-started 체크리스트.
  *

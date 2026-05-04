@@ -1,9 +1,6 @@
 /**
  * ProjectList - 프로젝트/폴더/시트 목록 컴포넌트
  */
-
-'use client';
-
 import { useState } from 'react';
 import { useEffect } from 'react';
 import { FileSpreadsheet, ChevronRight, ChevronDown, FolderPlus, LayoutTemplate, Tags as TagsIcon, X as XIcon } from 'lucide-react';

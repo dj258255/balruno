@@ -1,9 +1,6 @@
 /**
  * SidebarContextMenus - 컨텍스트 메뉴 컴포넌트들
  */
-
-'use client';
-
 import { useState, useRef } from 'react';
 import { Edit2, Trash2, Copy, Plus, Code, FolderPlus, Folder, Tag, Tags, Check, ChevronRight, Pin, PinOff, Users, Lock, AlertTriangle, X as XIcon } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui';

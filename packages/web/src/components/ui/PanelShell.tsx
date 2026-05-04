@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * PanelShell — 모든 도구 패널의 표준 컨테이너.
  *

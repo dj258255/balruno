@@ -1,5 +1,3 @@
-'use client';
-
 import type { Sheet } from '@/types';
 
 interface SheetTagChipsProps {

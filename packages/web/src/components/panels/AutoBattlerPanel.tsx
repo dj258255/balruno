@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Auto Battler 시뮬 패널 — TFT / HS Battlegrounds 경제 vs 템포 trade-off.
  */

@@ -6,9 +6,6 @@
  * - 휴식 포인트 표시
  * - DDA 조정 표시
  */
-
-'use client';
-
 import { TrendingUp, Maximize2, Coffee } from 'lucide-react';
 import {
   LineChart,

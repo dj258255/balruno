@@ -1,9 +1,6 @@
 /**
  * FullscreenChart - 전체화면 차트 모달
  */
-
-'use client';
-
 import { TrendingUp, X, ZoomIn, ZoomOut, RotateCcw, Move, Coffee, Activity } from 'lucide-react';
 import {
   LineChart,

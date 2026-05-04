@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * ProductIntro 모달 — 5 슬라이드로 "왜 Balruno / 언제 / 하루 흐름 / 데이터 / 시각화".
  *

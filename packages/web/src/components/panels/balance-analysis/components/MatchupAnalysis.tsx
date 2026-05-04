@@ -1,9 +1,6 @@
 /**
  * MatchupAnalysis - 상성 분석 컴포넌트
  */
-
-'use client';
-
 import { X, TrendingUp, GitBranch, AlertTriangle, Maximize2 } from 'lucide-react';
 import type { PerfectImbalanceResult } from '@/lib/balanceAnalysis';
 import type { Column } from '@/types';

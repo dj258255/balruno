@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Settings, BarChart3, Wrench, ChevronDown, TrendingUp, Zap, Sliders, Users, PlayCircle, AlertTriangle } from 'lucide-react';

@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 현재 Cycle 위젯 — Linear 의 Active Cycle · Jira 의 Active Sprint 대응.
  *

@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useRef } from 'react';
 import { useHistoryStore } from '@/stores/historyStore';
 import type { Project } from '@/types';

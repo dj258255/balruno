@@ -3,9 +3,6 @@
  *
  * 밸런스 분석에 사용할 컬럼을 드롭다운으로 선택
  */
-
-'use client';
-
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check, X } from 'lucide-react';

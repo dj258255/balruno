@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useCallback } from 'react';
 import { Play, RefreshCw, User, Grid3X3, Swords } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';

@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect, useRef } from 'react';
 import { X, MessageSquare } from 'lucide-react';
 import { useTranslations } from 'next-intl';

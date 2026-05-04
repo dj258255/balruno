@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Slash Command 확장 — M1-3.
  *

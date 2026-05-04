@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Plus, Trash2, Zap, Heart, Shield, RotateCcw, Target, Users, Grid3X3 } from 'lucide-react';

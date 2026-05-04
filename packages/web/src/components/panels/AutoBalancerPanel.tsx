@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * AI Auto-Balancer 패널 — 두 유닛 + 목표 승률 입력 → 추천 파라미터 출력.
  *

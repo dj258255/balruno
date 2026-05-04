@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Power Curve Compare 패널 — 여러 시트의 (X, Y) 곡선을 한 화면에 오버레이.
  *

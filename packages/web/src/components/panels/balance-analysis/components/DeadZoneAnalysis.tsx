@@ -1,9 +1,6 @@
 /**
  * DeadZoneAnalysis - 데드존 탐지 컴포넌트
  */
-
-'use client';
-
 import { AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { UnitStats } from '@/lib/simulation/types';

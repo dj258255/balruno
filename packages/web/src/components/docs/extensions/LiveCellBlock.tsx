@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * LiveCell Block — M2-1.
  *

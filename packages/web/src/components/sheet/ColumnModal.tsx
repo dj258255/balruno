@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useRef, useEffect } from 'react';
 import { X, Check, HelpCircle, Lock, Globe, Plus, Trash2, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';

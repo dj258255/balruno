@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * GrowthCurveChart 보조 컴포넌트 — god component 분해 (Track D-2).
  *

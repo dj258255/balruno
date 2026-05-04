@@ -1,9 +1,6 @@
 /**
  * BattleSettings - 전투 설정 패널 컴포넌트
  */
-
-'use client';
-
 import type { Sheet } from '@/types';
 import type { BattleConfig, DefenseFormulaType, ArmorPenetrationConfig } from '@/lib/simulation/types';
 import type { ColumnMapping } from '../hooks';

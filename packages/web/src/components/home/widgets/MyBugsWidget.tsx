@@ -1,5 +1,3 @@
-'use client';
-
 import { Bug } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { TodaysWork, RowWithContext } from '@/hooks/useTodaysWork';

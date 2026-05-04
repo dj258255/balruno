@@ -1,5 +1,3 @@
-'use client';
-
 import { useState } from 'react';
 import { X, Search, FileSpreadsheet, Check, Filter, Link2 } from 'lucide-react';
 import {

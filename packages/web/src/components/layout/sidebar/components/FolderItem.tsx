@@ -1,9 +1,6 @@
 /**
  * FolderItem - 폴더 아이템 컴포넌트
  */
-
-'use client';
-
 import { useState } from 'react';
 import { Folder, ChevronRight, ChevronDown, FileSpreadsheet } from 'lucide-react';
 import { useTranslations } from 'next-intl';

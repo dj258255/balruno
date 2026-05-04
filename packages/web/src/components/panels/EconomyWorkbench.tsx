@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * EconomyWorkbench — 경제 설계 통합 패널.
  *

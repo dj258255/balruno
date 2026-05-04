@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 프로젝트 공유 / WebRTC P2P 협업.
  *

@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * @Mention 확장 — M1-4.
  *

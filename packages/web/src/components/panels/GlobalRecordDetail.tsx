@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * GlobalRecordDetail — 어느 뷰에서든 열 수 있는 전역 레코드 상세 슬라이드 패널.
  *

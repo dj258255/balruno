@@ -1,5 +1,3 @@
-'use client';
-
 import { useTranslations } from 'next-intl';
 /**
  * stat-snapshot 셀 인라인.

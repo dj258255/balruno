@@ -1,9 +1,6 @@
 /**
  * NewProjectForm - 새 프로젝트 생성 폼 컴포넌트
  */
-
-'use client';
-
 import { useEffect, useState, useRef } from 'react';
 import { FolderPlus, Check, X, LayoutTemplate, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';

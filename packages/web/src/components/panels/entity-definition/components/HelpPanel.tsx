@@ -1,9 +1,6 @@
 /**
  * HelpPanel - 엔티티 정의 도움말 패널
  */
-
-'use client';
-
 import { Users, TrendingUp, Settings, Table2, Database, Sliders, FileJson } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

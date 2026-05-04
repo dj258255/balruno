@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { FileSpreadsheet, FolderOpen, ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';

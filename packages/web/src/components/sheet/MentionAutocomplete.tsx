@@ -1,5 +1,3 @@
-'use client';
-
 import { useTranslations } from 'next-intl';
 /**
  * @mention autocomplete — 코멘트/답글 textarea 옆 dropdown.

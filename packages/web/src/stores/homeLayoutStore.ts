@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Home Layout Store — Stage 2+3.
  *

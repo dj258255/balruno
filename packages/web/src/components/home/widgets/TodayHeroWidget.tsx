@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Today Hero — Home 의 주인공 위젯.
  *

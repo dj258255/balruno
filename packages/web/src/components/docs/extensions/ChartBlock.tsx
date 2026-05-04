@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Chart Block — M2-2.
  *

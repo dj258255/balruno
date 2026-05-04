@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Gallery 뷰.
  * 각 행을 카드 그리드로 표시. 첫 url 컬럼 값이 있으면 이미지로 렌더(attachment 는 다음 세션).

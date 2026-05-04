@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 시뮬 스냅샷 비교 패널 — rebalance 전후 / A/B 테스트 diff view.
  *

@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';

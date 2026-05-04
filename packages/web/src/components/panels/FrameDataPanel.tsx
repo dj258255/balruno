@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 격투 프레임 데이터 패널 — Street Fighter / Tekken / Guilty Gear 밸런싱.
  * 기술 분석 + 콤보 라우트 검증.

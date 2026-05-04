@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { X, Upload, FileJson, AlertCircle, CheckCircle, Loader2, FolderOpen, Sparkles } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';

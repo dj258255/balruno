@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Simulation Block — M2-4.
  *

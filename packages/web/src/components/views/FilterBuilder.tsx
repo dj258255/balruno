@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * FilterBuilder — SavedView.filterGroup 편집 UI. Linear Triage / Jira JQL 대응.
  *

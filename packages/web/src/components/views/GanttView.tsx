@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Gantt 뷰. start+end range + 의존성 화살표 + 드래그 재스케줄.
  *

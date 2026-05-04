@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';

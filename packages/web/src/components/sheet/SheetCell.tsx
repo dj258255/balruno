@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * SheetCell - 메모이제이션된 셀 컴포넌트
  *

@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * InboxPanel — 전역 알림 집약 (MVP).
  *

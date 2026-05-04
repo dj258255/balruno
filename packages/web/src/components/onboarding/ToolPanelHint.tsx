@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * ToolPanelHint — 각 도구 패널 첫 사용 시 1회 안내.
  *

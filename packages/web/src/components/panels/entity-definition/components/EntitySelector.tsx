@@ -1,5 +1,3 @@
-'use client';
-
 import { Users, Skull, Bot, Package } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { EntityDefinition } from '@/types';

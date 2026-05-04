@@ -1,5 +1,3 @@
-'use client';
-
 import { useTranslations } from 'next-intl';
 import { useState, useRef, useEffect } from 'react';
 import { X, GripHorizontal, Palette, Minus, Plus } from 'lucide-react';

@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Kanban / Calendar / Gallery / Gantt 뷰에서 카드 우클릭 시 표시되는 공통 메뉴.
  * 편집 / 복제 / 삭제 + (옵션) 위/아래 추가.

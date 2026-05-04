@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 빈 상태 공통 컴포넌트 — 데이터 없을 때 일관된 안내 + CTA.
  * Grid/Kanban/Calendar/Gallery/Gantt/Form/Dashboard 전부에서 재사용.

@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 21개 툴 패널의 show/setShow 상태를 단일 hook 으로 통합.
  * page.tsx 의 god component 분해 (Track D-1).

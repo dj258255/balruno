@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 덱빌더 확률 시뮬 패널 — Slay the Spire / Monster Train 계열.
  *

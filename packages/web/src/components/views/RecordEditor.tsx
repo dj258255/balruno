@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 공용 레코드 편집 패널 — Kanban 카드 / Calendar 이벤트 / Gallery / Gantt 에서 재사용.
  *

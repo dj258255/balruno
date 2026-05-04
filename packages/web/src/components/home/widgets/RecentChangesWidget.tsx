@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 최근 변경 위젯 — 전체 프로젝트 changelog aggregation.
  * 북극성 루프 가시화: "뭐가 언제 바뀌었는지" 첫 화면 노출.

@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * StarterCoachmark — 활성 프로젝트의 starter 종류에 맞춘 단계별 가이드.
  *

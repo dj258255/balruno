@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * ReplayTimeline — 전투 로그 timeline 재생기 (1v1 + 다대다 통합).
  *

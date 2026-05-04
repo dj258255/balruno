@@ -1,9 +1,6 @@
 /**
  * UnitStatsPanel - 1v1 유닛 스탯 입력 패널
  */
-
-'use client';
-
 import { useState, useEffect } from 'react';
 import { Heart, Swords, Shield, Zap, ChevronDown, ChevronUp, Target, Sparkles, Wind, Crosshair, Brain, Gauge } from 'lucide-react';
 import type { UnitStats, Skill } from '@/lib/simulation/types';

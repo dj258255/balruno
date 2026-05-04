@@ -1,5 +1,3 @@
-'use client';
-
 import { useTranslations } from 'next-intl';
 /**
  * AI 수식 생성 버튼 — FormulaBar 에 인라인.

@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useRef, useMemo } from 'react';
 import { Maximize2, X, ZoomIn, ZoomOut, Skull, Sword, Heart, Shield, RotateCcw } from 'lucide-react';
 import { useTranslations } from 'next-intl';

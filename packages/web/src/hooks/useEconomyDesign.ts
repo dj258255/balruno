@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * useEconomyDesign — 시트당 단일 economy automation 의 read/write 훅.
  *

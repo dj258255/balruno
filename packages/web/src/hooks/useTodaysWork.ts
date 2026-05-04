@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Home 페이지 aggregation 훅 — 전체 프로젝트 가로질러 오늘의 작업 모음.
  *

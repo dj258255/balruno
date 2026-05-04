@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * AI Behavior Tree 룰 에디터 패널.
  * 조건 → 액션 규칙 체인. 미리 정의된 preset 로드 + 커스텀 규칙.

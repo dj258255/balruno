@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * CellEditor - 인라인 셀 에디터 (Google Sheets 스타일)
  *

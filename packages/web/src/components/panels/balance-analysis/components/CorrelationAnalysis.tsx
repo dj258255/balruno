@@ -1,9 +1,6 @@
 /**
  * CorrelationAnalysis - 상관관계 분석 컴포넌트
  */
-
-'use client';
-
 import { BarChart2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { CorrelationResult } from '@/lib/balanceAnalysis';

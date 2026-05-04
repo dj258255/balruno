@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 민감도 분석 패널 — Tornado + Spider 차트로 수식 인풋의 영향도를 시각화.
  *

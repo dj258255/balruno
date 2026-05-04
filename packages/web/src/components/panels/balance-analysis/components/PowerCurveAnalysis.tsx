@@ -1,9 +1,6 @@
 /**
  * PowerCurveAnalysis - 파워 커브 분석 컴포넌트
  */
-
-'use client';
-
 import { TrendingUp, AlertTriangle } from 'lucide-react';
 import type { PowerCurveAnalysis as PowerCurveResult } from '@/lib/balanceAnalysis';
 import type { Column } from '@/types';

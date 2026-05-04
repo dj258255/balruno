@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * ⌘K Command Palette — cmdk 라이브러리 기반 전역 명령 팔레트.
  *

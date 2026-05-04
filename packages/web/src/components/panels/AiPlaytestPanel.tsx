@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * AI Playtest 패널 — 배치 시뮬 + imbalance 자동 탐지 리포트.
  */

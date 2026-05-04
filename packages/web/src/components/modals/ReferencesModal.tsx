@@ -1,5 +1,3 @@
-'use client';
-
 import { X, BookOpen, ExternalLink, Lightbulb, Calculator, TrendingUp, Coins, Sparkles, Gamepad2, AlertTriangle, CheckCircle, Swords, RotateCcw } from 'lucide-react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { useTranslations } from 'next-intl';

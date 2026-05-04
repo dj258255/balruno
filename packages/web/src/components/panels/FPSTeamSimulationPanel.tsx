@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * FPS 팀 전투 시뮬 — 3v3 / 5v5 Valorant/CS2/Apex 스타일.
  * trade-kill · first blood · clutch · 개별 K/D 분석.

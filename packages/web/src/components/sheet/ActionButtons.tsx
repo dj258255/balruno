@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * ActionButtons - 하단 액션 버튼 컴포넌트
  *

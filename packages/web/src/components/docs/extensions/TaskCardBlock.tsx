@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Task Card Block — M2-3.
  *

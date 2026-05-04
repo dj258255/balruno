@@ -1,9 +1,6 @@
 /**
  * SettingsEditors - 프리셋, 플레이타임, 벽 스테이지, 마일스톤, 곡선타입, 플로우존, DDA 설정 컴포넌트들
  */
-
-'use client';
-
 import { useState } from 'react';
 import { Layers, Clock, Wand2, AlertTriangle, Zap, TrendingUp, Activity, Coffee, Sliders, BarChart3, Target, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';

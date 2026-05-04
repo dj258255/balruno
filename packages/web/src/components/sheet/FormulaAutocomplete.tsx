@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { availableFunctions } from '@/lib/formulaEngine';

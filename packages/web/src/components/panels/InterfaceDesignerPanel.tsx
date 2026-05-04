@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Interface Designer 패널.
  *

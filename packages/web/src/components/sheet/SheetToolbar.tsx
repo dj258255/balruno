@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useState, useRef, useEffect, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';

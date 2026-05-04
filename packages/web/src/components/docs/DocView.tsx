@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * DocView — Milestone 1: tiptap WYSIWYG 에디터.
  *

@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * AI Copilot Panel — M3-1.
  *

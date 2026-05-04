@@ -1,9 +1,6 @@
 /**
  * CurveGenerator - 밸런스 커브 생성기 컴포넌트
  */
-
-'use client';
-
 import { useState, useEffect } from 'react';
 import { Target, Grid3X3 } from 'lucide-react';
 import { useTranslations } from 'next-intl';

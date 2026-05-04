@@ -1,5 +1,3 @@
-'use client';
-
 import { useTranslations } from 'next-intl';
 /**
  * 셀 display 모드에서 직접 조작하는 인라인 컨트롤.

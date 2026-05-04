@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * TrackPresence — y-webrtc awareness API 기반 다중 사용자 표시.
  *

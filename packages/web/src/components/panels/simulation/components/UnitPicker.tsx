@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useRef, useEffect } from 'react';
 import { FileSpreadsheet, ChevronDown, Heart, Swords, Shield } from 'lucide-react';
 import type { UnitStats } from '@/lib/simulation/types';

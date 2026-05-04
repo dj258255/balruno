@@ -1,9 +1,6 @@
 /**
  * HelpPanel - 난이도 커브 도움말 패널
  */
-
-'use client';
-
 import { TrendingUp, AlertTriangle, Target, Activity, Coffee, Sliders } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

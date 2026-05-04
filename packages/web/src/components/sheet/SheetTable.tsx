@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * SheetTable - 메인 스프레드시트 컴포넌트 (리팩토링 버전)
  *

@@ -1,5 +1,3 @@
-'use client';
-
 import { useTranslations } from 'next-intl';
 /**
  * PM Badge Strip — SheetKind='pm' (또는 자동 감지) 시트 상단에 고정되는 배지 띠.

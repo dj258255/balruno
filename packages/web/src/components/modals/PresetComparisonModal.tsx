@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useMemo } from 'react';
 import { X, GitCompare, ArrowRight, Plus, Minus, Edit3, ChevronDown, ChevronUp, Download, Camera, HelpCircle } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';

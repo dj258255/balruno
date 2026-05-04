@@ -1,5 +1,3 @@
-'use client';
-
 import { Sidebar } from '@/components/layout';
 
 interface SidebarCallbacks {

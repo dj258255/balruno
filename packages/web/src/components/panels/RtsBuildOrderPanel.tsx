@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * RTS Build Order 시뮬 패널 — SC2/AoE4 경제·병력 타이밍 분석.
  */

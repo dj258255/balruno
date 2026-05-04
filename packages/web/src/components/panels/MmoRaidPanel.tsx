@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * MMO Raid DPS Race 패널 — WoW/FFXIV/Lost Ark 레이드 밸런싱.
  */

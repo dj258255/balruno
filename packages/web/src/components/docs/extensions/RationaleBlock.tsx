@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Rationale Block — M2-5. "왜 이 값?" 자동 근거 블록.
  *

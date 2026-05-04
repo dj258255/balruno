@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * TiptapDocEditor — Milestone 1: Notion-class 블록 에디터.
  *

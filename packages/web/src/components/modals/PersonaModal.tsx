@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 페르소나 선택 모달 — 첫 진입 1 회. hasChosen=false 일 때만 노출.
  *

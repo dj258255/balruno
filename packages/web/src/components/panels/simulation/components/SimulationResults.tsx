@@ -1,9 +1,6 @@
 /**
  * SimulationResults - 1v1 시뮬레이션 결과 표시 컴포넌트
  */
-
-'use client';
-
 import { BarChart3, Clock, Zap, TrendingUp, ChevronDown, ChevronUp, Download, Heart, Shield, RotateCcw, Sparkles, Activity, Swords, FileSpreadsheet } from 'lucide-react';
 import type { UnitStats, SimulationResult } from '@/lib/simulation/types';
 import { Histogram } from './Histogram';

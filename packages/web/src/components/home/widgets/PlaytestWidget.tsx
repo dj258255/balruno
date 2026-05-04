@@ -1,5 +1,3 @@
-'use client';
-
 import { Gamepad2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { TodaysWork } from '@/hooks/useTodaysWork';

@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useMemo, useEffect } from 'react';
 import { BarChart2, Play, RefreshCw, Info, TrendingUp, TrendingDown, Minus, Sword, Shield as ShieldIcon, Maximize2, X, Grid3X3, Settings, Target } from 'lucide-react';
 import { useTranslations } from 'next-intl';

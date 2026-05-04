@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Track UX — 키보드 단축키 치트시트.
  * Cmd+/ 또는 Ctrl+/ 로 토글. CommandPalette 옆에 배치되는 빠른 참고서.

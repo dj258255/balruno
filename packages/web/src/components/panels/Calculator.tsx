@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { X, Calculator as CalcIcon, Crosshair, Zap, Shield, TrendingUp, Download, ChevronDown, Grid3X3, Sliders, BarChart3 } from 'lucide-react';
 import { useTranslations } from 'next-intl';

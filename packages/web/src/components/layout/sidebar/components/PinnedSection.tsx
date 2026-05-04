@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * PinnedSection — 사용자가 핀한 시트 목록을 평탄하게 보여주는 섹션.
  *

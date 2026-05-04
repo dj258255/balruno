@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 사이드바 상단 Quick Access — Linear 식 "개인 작업 우선" 패턴.
  *

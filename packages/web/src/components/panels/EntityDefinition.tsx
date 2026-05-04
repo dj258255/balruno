@@ -1,5 +1,3 @@
-'use client';
-
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Users, TrendingUp, Settings, Table2, Sliders, Check } from 'lucide-react';

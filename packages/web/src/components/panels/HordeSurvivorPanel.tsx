@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Horde/Survivor 시뮬 패널 — Vampire Survivors 스타일 빌드 최적화.
  */
