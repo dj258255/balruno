@@ -6,6 +6,9 @@
 
 set -euo pipefail
 
+# cron's spawned shell may inherit a cwd this user cannot read (e.g. /root).
+cd "{{ osu_home }}"
+
 STAGING="{{ osu_staging_dir }}"
 REMOTE="{{ osu_remote_user }}@{{ osu_remote_host }}:{{ osu_remote_dir }}/"
 BUCKET="{{ osu_r2_bucket }}"
@@ -35,16 +38,16 @@ log "latest dump: $(basename "$LATEST") ($(du -h "$LATEST" | cut -f1))"
 # 2. Upload to R2. Path-style + auto region — R2's S3 API quirks are handled
 #    via ~/.aws/config (addressing_style=virtual, region=auto).
 KEY="$PREFIX/$TODAY/$(basename "$LATEST")"
-aws s3 cp "$LATEST" "s3://$BUCKET/$KEY" \
+/usr/local/bin/aws s3 cp "$LATEST" "s3://$BUCKET/$KEY" \
   --endpoint-url "$ENDPOINT" \
   --no-progress \
-  || fail "aws s3 cp failed"
+  || fail "/usr/local/bin/aws s3 cp failed"
 
 log "uploaded -> s3://$BUCKET/$KEY"
 
 # 3. Verify the object actually exists on R2 (defence in depth — cp can return 0
 #    even when the SDK retries silently in some failure modes).
-aws s3api head-object --bucket "$BUCKET" --key "$KEY" --endpoint-url "$ENDPOINT" \
+/usr/local/bin/aws s3api head-object --bucket "$BUCKET" --key "$KEY" --endpoint-url "$ENDPOINT" \
   > /dev/null 2>&1 \
   || fail "head-object verification failed for $KEY"
 

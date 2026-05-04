@@ -6,6 +6,11 @@
 
 set -euo pipefail
 
+# cron's spawned shell may have inherited a cwd the postgres user cannot read
+# (cron runs commands without changing dir to user $HOME). cd somewhere safe
+# so subprocesses (find, rsync) don't blow up on getcwd().
+cd /var/lib/pgsql
+
 DUMP_DIR="{{ backup_dir }}"
 DB="{{ backup_db_name }}"
 TARGET="{{ backup_target_user }}@{{ backup_target_host }}:{{ backup_dir }}/"
