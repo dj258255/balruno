@@ -66,7 +66,9 @@ jobs:
         working-directory: ansible
         run: |
           ansible-inventory -i inventory.yml --graph
-          ansible-playbook -i inventory.yml site.yml --syntax-check
+          ansible-playbook -i inventory.yml site.yml \
+            --vault-password-file "$ANSIBLE_VAULT_PASSWORD_FILE" \
+            --syntax-check
 
       - name: Ping all hosts
         working-directory: ansible
@@ -74,4 +76,7 @@ jobs:
 
       - name: Dry run
         working-directory: ansible
-        run: ansible-playbook -i inventory.yml site.yml --check --diff
+        run: |
+          ansible-playbook -i inventory.yml site.yml \
+            --vault-password-file "$ANSIBLE_VAULT_PASSWORD_FILE" \
+            --check --diff

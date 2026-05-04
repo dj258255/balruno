@@ -84,18 +84,6 @@ jobs:
           chmod 600 "$RUNNER_TEMP/.vault_pass"
           echo "ANSIBLE_VAULT_PASSWORD_FILE=$RUNNER_TEMP/.vault_pass" >> "$GITHUB_ENV"
 
-      - name: Diagnose vault decryption
-        working-directory: ansible
-        run: |
-          echo "Vault password file: $ANSIBLE_VAULT_PASSWORD_FILE"
-          ls -la "$ANSIBLE_VAULT_PASSWORD_FILE"
-          wc -c "$ANSIBLE_VAULT_PASSWORD_FILE"
-          # Show first 8 chars of SHA-256 so we can compare with local without leaking the password.
-          sha256sum "$ANSIBLE_VAULT_PASSWORD_FILE" | cut -c1-8
-          echo "--- Trying ansible-vault view ---"
-          ansible-vault view group_vars/vault.yml | grep "^vault_grafana_admin_password" || \
-            (echo "DECRYPT FAILED — dumping verbose"; ansible-vault view group_vars/vault.yml -vvv 2>&1 | tail -20; exit 1)
-
       - name: Ping all hosts
         working-directory: ansible
         run: ansible -i inventory.yml all -m ping
@@ -106,6 +94,10 @@ jobs:
           extra=()
           [ "$CHECK_ONLY" = "true" ] && extra+=(--check --diff)
           [ -n "$TAGS" ] && extra+=(--tags "$TAGS")
+          # Pass --vault-password-file explicitly. ansible-core 2.20 picks it
+          # up via ANSIBLE_VAULT_PASSWORD_FILE for ansible-vault CLI but not
+          # consistently for ansible-playbook auto-loaded group_vars/vault.yml.
           ansible-playbook -i inventory.yml site.yml \
+            --vault-password-file "$ANSIBLE_VAULT_PASSWORD_FILE" \
             --limit "$LIMIT" \
             "${extra[@]}"
