@@ -6,7 +6,7 @@
  * `set()` 을 호출하지 않는다 (UI state 만 필요하면 예외).
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { newId } from '@/lib/uuid';
 import type { StoreApi } from 'zustand';
 import type { Column, Row, CellValue, CellStyle, Sticker, ChangeEntry } from '@/types';
 import type { ProjectState } from '../projectStore';
@@ -66,7 +66,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
   // ==== 컬럼 ====
 
   addColumn: (projectId: string, sheetId: string, column: Omit<Column, 'id'>): string => {
-    const id = uuidv4();
+    const id = newId();
     const doc = getProjectDoc(projectId);
 
     // link/lookup/rollup 사이클 사전 검사. 생성 차단.
@@ -89,7 +89,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
       const sourceSheet = project?.sheets.find((s) => s.id === sheetId);
       const targetSheet = project?.sheets.find((s) => s.id === column.linkedSheetId);
       if (sourceSheet && targetSheet) {
-        const reverseId = uuidv4();
+        const reverseId = newId();
         // 한 transaction 에 양쪽 컬럼 생성
         doc.transact(() => {
           addColumnInDoc(doc, sheetId, {
@@ -144,7 +144,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     column: Omit<Column, 'id'>,
     atIndex: number
   ): string => {
-    const id = uuidv4();
+    const id = newId();
     insertColumnInDoc(getProjectDoc(projectId), sheetId, { ...column, id }, atIndex);
     return id;
   },
@@ -208,7 +208,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     sheetId: string,
     cells: Record<string, CellValue> = {}
   ): string => {
-    const id = uuidv4();
+    const id = newId();
     const sheet = get().getSheet(projectId, sheetId);
 
     // 수식 컬럼의 formula 를 새 행에 자동 prefill
@@ -232,7 +232,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     atIndex: number,
     cells: Record<string, CellValue> = {}
   ): string => {
-    const id = uuidv4();
+    const id = newId();
     const sheet = get().getSheet(projectId, sheetId);
 
     const formulaCells: Record<string, CellValue> = {};
@@ -300,7 +300,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
 
       // 수식 입력 (`=...`) 은 엔진 결과가 아니라 원본 수식이 바뀌어도 의미 있음 — 기록
       const entry: ChangeEntry = {
-        id: uuidv4(),
+        id: newId(),
         timestamp: Date.now(),
         userId: getCurrentUserName(),
         userName: getCurrentUserName(),
@@ -426,7 +426,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     });
 
     const newRows: Row[] = Array.from({ length: count }, () => ({
-      id: uuidv4(),
+      id: newId(),
       cells: { ...formulaCells },
     }));
 
@@ -440,7 +440,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     sheetId: string,
     sticker: Omit<Sticker, 'id' | 'createdAt'>
   ): string => {
-    const id = uuidv4();
+    const id = newId();
     addStickerInDoc(getProjectDoc(projectId), sheetId, {
       ...sticker,
       id,

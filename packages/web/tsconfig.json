@@ -34,6 +34,7 @@
       "@/lib/gameEngineExport": ["../shared/src/lib/gameEngineExport.ts"],
       "@/lib/gameEngineImport": ["../shared/src/lib/gameEngineImport.ts"],
       "@/lib/aiBehavior": ["../shared/src/lib/aiBehavior.ts"],
+      "@/lib/uuid": ["../shared/src/lib/uuid.ts"],
       "@/lib/formulas": ["../shared/src/lib/formulas/index.ts"],
       "@/lib/formulas/*": ["../shared/src/lib/formulas/*"],
       "@/lib/simulation/*": ["../shared/src/lib/simulation/*"],

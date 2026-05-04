@@ -62,16 +62,16 @@ async function initDB(): Promise<IDBPDatabase<BalrunoDB>> {
  * project.id 자체 중복은 다른 프로젝트이므로 그쪽 id 만 재발급.
  */
 function migrateDuplicateIds(projects: Project[]): { projects: Project[]; changed: boolean } {
-  // uuid v4 dynamic import — 초기 로드 경로에 무거운 import 회피
+  // dynamic import — 초기 로드 경로에 무거운 import 회피
   // (storage.ts 는 이미 uuid 사용 가능)
-  const { v4: uuidv4 } = require('uuid') as typeof import('uuid');
+  const { newId: genId } = require('@balruno/shared/lib/uuid') as typeof import('@balruno/shared/lib/uuid');
   let changed = false;
 
   const seenProjectIds = new Set<string>();
   const normalizedProjects = projects.map((project) => {
     let nextProject = project;
     if (seenProjectIds.has(project.id)) {
-      nextProject = { ...project, id: uuidv4() };
+      nextProject = { ...project, id: genId() };
       changed = true;
     }
     seenProjectIds.add(nextProject.id);
@@ -94,7 +94,7 @@ function migrateDuplicateIds(projects: Project[]): { projects: Project[]; change
       const seenColIds = new Set<string>();
       const columnsFixed = sheet.columns.map((col) => {
         if (seenColIds.has(col.id)) {
-          const newId = uuidv4();
+          const newId = genId();
           colIdMap[col.id] = newId;
           changed = true;
           seenColIds.add(newId);

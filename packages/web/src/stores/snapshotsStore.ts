@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { v4 as uuid } from 'uuid';
+import { newId } from '@/lib/uuid';
 import type { NamedSnapshot } from '@/types/snapshots';
 
 const MAX_PER_PROJECT = 50;
@@ -27,7 +27,7 @@ export const useSnapshotsStore = create<SnapshotsState>()(
       byProject: {},
 
       add: (projectId, args) => {
-        const id = uuid();
+        const id = newId();
         const snap: NamedSnapshot = {
           id,
           projectId,

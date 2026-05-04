@@ -5,11 +5,11 @@
  * 각 프로젝트는 3-5개 시트로 구성되어 해당 장르의 밸런싱 핵심 개념을 커버한다.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { newId } from '@/lib/uuid';
 import type { Project } from '@/types';
 
 type TranslateFunction = (key: string) => string;
-const id = () => uuidv4();
+const id = () => newId();
 
 // ============================================
 // 1. FPS — 무기/적/매치 밸런싱

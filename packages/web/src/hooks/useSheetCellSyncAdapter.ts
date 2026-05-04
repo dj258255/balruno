@@ -15,7 +15,7 @@
 
 import { useEffect, useRef } from 'react';
 import * as Y from 'yjs';
-import { v4 as uuid } from 'uuid';
+import { newId } from '@/lib/uuid';
 import {
   useSheetCellSync,
   type ClientCellOp,
@@ -102,7 +102,7 @@ function mapYEventToCellOp(
     columnId,
     value,
     baseVersion,
-    clientMsgId: uuid(),
+    clientMsgId: newId(),
   };
 }
 

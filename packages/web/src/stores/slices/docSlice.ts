@@ -5,7 +5,7 @@
  * 통합 탭 배열 (openTabs: TabEntry[]) 에 문서 entry 를 추가/제거한다.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { newId } from '@/lib/uuid';
 import type { StoreApi } from 'zustand';
 import type { Doc } from '@/types';
 import type { ProjectState, TabEntry } from '../projectStore';
@@ -63,7 +63,7 @@ export const createDocActions = (set: SetFn) => ({
     content?: string,
     options?: { parentId?: string },
   ): string => {
-    const id = uuidv4();
+    const id = newId();
     const now = Date.now();
     const newDoc: Doc = {
       id,

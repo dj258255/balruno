@@ -7,7 +7,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { v4 as uuid } from 'uuid';
+import { newId } from '@/lib/uuid';
 import type { Branch, BranchStatus } from '@/types/branches';
 
 interface BranchesState {
@@ -33,7 +33,7 @@ export const useBranchesStore = create<BranchesState>()(
       branchesByProject: {},
 
       forkProject: (parentProjectId, branchProjectId, args) => {
-        const id = uuid();
+        const id = newId();
         const branch: Branch = {
           id,
           parentProjectId,

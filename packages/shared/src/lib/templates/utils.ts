@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { newId } from '../uuid';
 import type { Sheet, Column, Row } from '../../types';
 import type { SheetTemplate } from './types';
 
@@ -25,7 +25,7 @@ export function createSheetFromTemplate(template: SheetTemplate): Sheet {
   // Create columns with IDs (수식 열에 formula 속성 자동 설정)
   const columns: Column[] = template.columns.map((col, index) => ({
     ...col,
-    id: uuidv4(),
+    id: newId(),
     // 수식 열이면서 formula가 없으면 sampleRow에서 추출한 수식 사용
     formula: col.type === 'formula' ? (col.formula || formulaMap[index]) : undefined,
   }));
@@ -43,13 +43,13 @@ export function createSheetFromTemplate(template: SheetTemplate): Sheet {
     });
 
     return {
-      id: uuidv4(),
+      id: newId(),
       cells,
     };
   });
 
   return {
-    id: uuidv4(),
+    id: newId(),
     name: template.name,
     columns,
     rows,

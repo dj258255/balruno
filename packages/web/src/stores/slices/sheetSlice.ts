@@ -5,7 +5,7 @@
  * 는 Zustand 에 유지.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { newId } from '@/lib/uuid';
 import type { StoreApi } from 'zustand';
 import type { Sheet, SheetKind, Column, Row, CellValue } from '@/types';
 import type { ProjectState, TabEntry } from '../projectStore';
@@ -43,11 +43,11 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     exportClassName?: string,
     kind?: SheetKind,
   ): string => {
-    const id = uuidv4();
+    const id = newId();
     const now = Date.now();
 
-    const col1 = uuidv4();
-    const col2 = uuidv4();
+    const col1 = newId();
+    const col2 = newId();
     const newSheet: Sheet = {
       id,
       name,
@@ -57,8 +57,8 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
         { id: col2, name: 'Column2', type: 'general', width: 120 },
       ],
       rows: [
-        { id: uuidv4(), cells: { [col1]: '', [col2]: '' } },
-        { id: uuidv4(), cells: { [col1]: '', [col2]: '' } },
+        { id: newId(), cells: { [col1]: '', [col2]: '' } },
+        { id: newId(), cells: { [col1]: '', [col2]: '' } },
       ],
       exportClassName: exportClassName || undefined,
       createdAt: now,
@@ -170,13 +170,13 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     const sheet = project?.sheets.find((s) => s.id === sheetId);
     if (!sheet) return '';
 
-    const newId = uuidv4();
+    const newSheetId = newId();
     const now = Date.now();
 
     // 컬럼 ID 재생성 + cells 매핑 갱신
     const columnIdMap: Record<string, string> = {};
     const newColumns: Column[] = sheet.columns.map((col) => {
-      const newColId = uuidv4();
+      const newColId = newId();
       columnIdMap[col.id] = newColId;
       return { ...col, id: newColId };
     });
@@ -187,16 +187,16 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
         const newColId = columnIdMap[oldColId];
         if (newColId) newCells[newColId] = value;
       });
-      return { ...row, id: uuidv4(), cells: newCells };
+      return { ...row, id: newId(), cells: newCells };
     });
 
     const newSheet: Sheet = {
       ...sheet,
-      id: newId,
+      id: newSheetId,
       name: `${sheet.name} (복사본)`,
       columns: newColumns,
       rows: newRows,
-      stickers: sheet.stickers?.map((st) => ({ ...st, id: uuidv4(), createdAt: now })),
+      stickers: sheet.stickers?.map((st) => ({ ...st, id: newId(), createdAt: now })),
       createdAt: now,
       updatedAt: now,
     };
@@ -204,12 +204,12 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     duplicateSheetInDoc(getProjectDoc(projectId), newSheet);
 
     set((state) => ({
-      openTabs: withTab(state.openTabs, 'sheet', newId),
-      currentSheetId: newId,
+      openTabs: withTab(state.openTabs, 'sheet', newSheetId),
+      currentSheetId: newSheetId,
       currentDocId: null,
     }));
 
-    return newId;
+    return newSheetId;
   },
 
   reorderSheets: (projectId: string, fromIndex: number, toIndex: number) => {

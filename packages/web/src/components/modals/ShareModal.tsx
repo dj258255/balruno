@@ -14,7 +14,7 @@
 
 import { useEffect, useState } from 'react';
 import { X, Copy, Users, Check, Wifi, WifiOff, User } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
+import { randomId } from '@/lib/uuid';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
 import { attachWebrtc, detachWebrtc } from '@/lib/ydoc';
@@ -85,7 +85,7 @@ export default function ShareModal({ onClose }: ShareModalProps) {
     if (!project) return;
     updateProject(project.id, {
       syncMode: 'cloud',
-      syncRoomId: uuidv4(),
+      syncRoomId: randomId(),
     });
   };
 

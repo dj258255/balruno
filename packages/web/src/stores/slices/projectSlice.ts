@@ -6,7 +6,7 @@
  * Zustand 로 반사.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { newId } from '@/lib/uuid';
 import type { StoreApi } from 'zustand';
 import type { Project, Sheet, Folder, CellValue, CellStyle } from '@/types';
 import { getSampleById } from '@/data/sampleProjects';
@@ -31,7 +31,7 @@ type GetFn = StoreApi<ProjectState>['getState'];
 
 export const createProjectActions = (set: SetFn, get: GetFn) => ({
   createProject: (name: string, description?: string, options?: { seedStarter?: boolean; seedStarterId?: string }): string => {
-    const id = uuidv4();
+    const id = newId();
     const now = Date.now();
     let newProject: Project;
     if (options?.seedStarterId) {
@@ -140,16 +140,16 @@ export const createProjectActions = (set: SetFn, get: GetFn) => ({
     const project = get().projects.find((p) => p.id === id);
     if (!project) return '';
 
-    const newProjectId = uuidv4();
+    const newProjectId = newId();
     const now = Date.now();
 
     // 시트 복제: column/row ID 재생성, cells/cellStyles/cellMemos 매핑 갱신
     const newSheets: Sheet[] = project.sheets.map((sheet) => {
-      const newSheetId = uuidv4();
+      const newSheetId = newId();
 
       const columnIdMap: Record<string, string> = {};
       const newColumns = sheet.columns.map((col) => {
-        const newColId = uuidv4();
+        const newColId = newId();
         columnIdMap[col.id] = newColId;
         return { ...col, id: newColId };
       });
@@ -180,7 +180,7 @@ export const createProjectActions = (set: SetFn, get: GetFn) => ({
 
         return {
           ...row,
-          id: uuidv4(),
+          id: newId(),
           cells: newCells,
           cellStyles: Object.keys(newCellStyles).length > 0 ? newCellStyles : undefined,
           cellMemos: Object.keys(newCellMemos).length > 0 ? newCellMemos : undefined,
@@ -189,7 +189,7 @@ export const createProjectActions = (set: SetFn, get: GetFn) => ({
 
       const newStickers = (sheet.stickers || []).map((sticker) => ({
         ...sticker,
-        id: uuidv4(),
+        id: newId(),
         createdAt: now,
       }));
 
@@ -256,7 +256,7 @@ export const createProjectActions = (set: SetFn, get: GetFn) => ({
   // ==== 폴더 ====
 
   createFolder: (projectId: string, name: string, parentId?: string): string => {
-    const id = uuidv4();
+    const id = newId();
     const now = Date.now();
     const newFolder: Folder = {
       id,

@@ -88,7 +88,7 @@ export default function TemplateSelector({ projectId, onClose, onSelect }: Templ
   // 빈 시트 생성
   const handleCreateEmptySheet = async () => {
     const now = Date.now();
-    const { v4: generateId } = await import('uuid');
+    const { newId: generateId } = await import('@/lib/uuid');
 
     const newSheet = {
       id: generateId(),

@@ -19,7 +19,7 @@
  *  - blank       — 빈 프로젝트
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { newId } from '@/lib/uuid';
 import {
   Sparkles,
   Swords,
@@ -40,10 +40,10 @@ import type { Project, Sheet, Column, Row, Doc } from '@/types';
 const now = () => Date.now();
 
 function makeColumn(partial: Pick<Column, 'name' | 'type'> & Partial<Column>): Column {
-  return { id: uuidv4(), width: 130, ...partial } as Column;
+  return { id: newId(), width: 130, ...partial } as Column;
 }
 function makeRow(cells: Record<string, unknown>): Row {
-  return { id: uuidv4(), cells: cells as Row['cells'] };
+  return { id: newId(), cells: cells as Row['cells'] };
 }
 function selectCol(name: string, options: Array<{ id: string; label: string; color?: string }>): Column {
   return makeColumn({ name, type: 'select', selectOptions: options, width: 110 });
@@ -63,7 +63,7 @@ function characterSheet(): Sheet {
     note: makeColumn({ name: '메모', type: 'general', width: 200 }),
   };
   return {
-    id: uuidv4(),
+    id: newId(),
     name: '캐릭터',
     columns: [c.name, c.hp, c.atk, c.def, c.speed, c.note],
     rows: [
@@ -92,7 +92,7 @@ function weaponSheet(): Sheet {
     rarity: makeColumn({ name: '등급', type: 'rating', width: 100, ratingMax: 5 }),
   };
   return {
-    id: uuidv4(),
+    id: newId(),
     name: '무기',
     columns: [c.name, c.type, c.dmg, c.range, c.cd, c.rarity],
     rows: [
@@ -124,7 +124,7 @@ function expCurveSheet(): Sheet {
     }));
   }
   return {
-    id: uuidv4(), name: 'EXP 곡선',
+    id: newId(), name: 'EXP 곡선',
     columns: [c.level, c.expRequired, c.cumulative, c.reward],
     rows, createdAt: now(), updatedAt: now(), kind: 'game-data',
   };
@@ -138,7 +138,7 @@ function gachaSheet(): Sheet {
     sample: makeColumn({ name: '대표 아이템', type: 'general', width: 160 }),
   };
   return {
-    id: uuidv4(), name: '가챠 확률',
+    id: newId(), name: '가챠 확률',
     columns: [c.rarity, c.rate, c.pity, c.sample],
     rows: [
       makeRow({ [c.rarity.id]: 'SSR', [c.rate.id]: 0.6, [c.pity.id]: 80, [c.sample.id]: '전설 무기' }),
@@ -166,7 +166,7 @@ function fpsWeaponSheet(): Sheet {
     ttk: makeColumn({ name: 'TTK (ms)', type: 'general', width: 100 }),
   };
   return {
-    id: uuidv4(), name: 'FPS 무기',
+    id: newId(), name: 'FPS 무기',
     columns: [c.name, c.type, c.dmg, c.rpm, c.range, c.recoil, c.ttk],
     rows: [
       makeRow({ [c.name.id]: 'M4A1', [c.type.id]: 'ar', [c.dmg.id]: 30, [c.rpm.id]: 700, [c.range.id]: 50, [c.recoil.id]: 2, [c.ttk.id]: 257 }),
@@ -196,7 +196,7 @@ function mobaChampionSheet(): Sheet {
     diff: makeColumn({ name: '난이도', type: 'rating', width: 100, ratingMax: 5 }),
   };
   return {
-    id: uuidv4(), name: '챔피언',
+    id: newId(), name: '챔피언',
     columns: [c.name, c.role, c.hp, c.ad, c.ap, c.armor, c.mr, c.diff],
     rows: [
       makeRow({ [c.name.id]: 'Garen', [c.role.id]: 'top', [c.hp.id]: 690, [c.ad.id]: 66, [c.ap.id]: 0, [c.armor.id]: 36, [c.mr.id]: 32, [c.diff.id]: 1 }),
@@ -220,7 +220,7 @@ function rtsUnitSheet(): Sheet {
     counter: makeColumn({ name: '카운터', type: 'general', width: 130 }),
   };
   return {
-    id: uuidv4(), name: 'RTS 유닛',
+    id: newId(), name: 'RTS 유닛',
     columns: [c.name, c.food, c.gold, c.buildTime, c.hp, c.dmg, c.counter],
     rows: [
       makeRow({ [c.name.id]: '보병', [c.food.id]: 50, [c.gold.id]: 0, [c.buildTime.id]: 17, [c.hp.id]: 60, [c.dmg.id]: 8, [c.counter.id]: '기병' }),
@@ -251,7 +251,7 @@ function idleUpgradeSheet(): Sheet {
     }));
   }
   return {
-    id: uuidv4(), name: 'Idle 업그레이드',
+    id: newId(), name: 'Idle 업그레이드',
     columns: [c.level, c.cost, c.income, c.paybackSec],
     rows, createdAt: now(), updatedAt: now(), kind: 'game-data',
   };
@@ -275,7 +275,7 @@ function roguelikeDeckSheet(): Sheet {
     ]),
   };
   return {
-    id: uuidv4(), name: '카드 덱',
+    id: newId(), name: '카드 덱',
     columns: [c.card, c.type, c.cost, c.effect, c.rarity],
     rows: [
       makeRow({ [c.card.id]: 'Strike', [c.type.id]: 'attack', [c.cost.id]: 1, [c.effect.id]: '6 데미지', [c.rarity.id]: 'starter' }),
@@ -312,7 +312,7 @@ function sprintBacklogSheet(): Sheet {
     due: makeColumn({ name: '마감', type: 'date', width: 120 }),
   };
   return {
-    id: uuidv4(), name: '스프린트',
+    id: newId(), name: '스프린트',
     columns: [c.title, c.status, c.priority, c.effort, c.type, c.assignee, c.due],
     rows: [
       makeRow({ [c.title.id]: '캐릭터 1차 밸런스', [c.status.id]: 'doing', [c.priority.id]: 'p0', [c.effort.id]: 5, [c.type.id]: 'design', [c.assignee.id]: '나' }),
@@ -350,7 +350,7 @@ function bugTrackerSheet(): Sheet {
     submittedAt: makeColumn({ name: '등록일', type: 'date', width: 120 }),
   };
   return {
-    id: uuidv4(), name: '버그 트래커',
+    id: newId(), name: '버그 트래커',
     columns: [c.title, c.severity, c.priority, c.status, c.description, c.repro, c.screenshot, c.reporter, c.assignee, c.submittedAt],
     rows: [
       makeRow({
@@ -399,7 +399,7 @@ function epicRoadmapSheet(): Sheet {
     impact: makeColumn({ name: '임팩트', type: 'rating', width: 100, ratingMax: 5 }),
   };
   return {
-    id: uuidv4(), name: '에픽 로드맵',
+    id: newId(), name: '에픽 로드맵',
     columns: [c.epic, c.quarter, c.status, c.startDate, c.endDate, c.progress, c.owner, c.impact],
     rows: [
       makeRow({ [c.epic.id]: '경제 시스템 v2', [c.quarter.id]: 'q2', [c.status.id]: 'building', [c.startDate.id]: '2026-04-01', [c.endDate.id]: '2026-06-30', [c.progress.id]: 45, [c.owner.id]: '나', [c.impact.id]: 5 }),
@@ -428,7 +428,7 @@ function playtestSheet(): Sheet {
     ]),
   };
   return {
-    id: uuidv4(), name: '플레이테스트',
+    id: newId(), name: '플레이테스트',
     columns: [c.session, c.date, c.version, c.tester, c.facilitator, c.rating, c.pros, c.cons, c.actionTaken],
     rows: [
       makeRow({
@@ -464,7 +464,7 @@ function welcomeDoc(genreLabel: string, sheetNames: string[], extraTip?: string)
   const tips = sheetNames.map((n) => `<li><strong>${n}</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li>`).join('');
   const extra = extraTip ? `<p>${extraTip}</p>` : '';
   return {
-    id: uuidv4(),
+    id: newId(),
     name: 'Welcome',
     content: `<h1>${genreLabel} 시작 팩</h1>
 <p>${genreLabel} 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>
@@ -672,7 +672,7 @@ export const STARTER_CATALOG: StarterEntry[] = [
 
 function buildProject(name: string, description: string, sheets: Sheet[], doc?: Doc, starterId?: string): Project {
   return {
-    id: uuidv4(),
+    id: newId(),
     name,
     description,
     createdAt: now(),

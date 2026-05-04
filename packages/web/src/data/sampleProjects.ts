@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { newId } from '@/lib/uuid';
 import type { Project } from '@/types';
 import { GENRE_SAMPLES } from './genreSamples';
 
@@ -28,7 +28,7 @@ export interface SampleProject extends SampleProjectMeta {
 }
 
 // 유틸: 고유 ID 생성 — uuid v4 사용 (이전 9자 랜덤은 collision 가능성이 있었음)
-const generateId = () => uuidv4();
+const generateId = () => newId();
 
 // ============================================
 // 1. RPG 캐릭터 스탯 샘플

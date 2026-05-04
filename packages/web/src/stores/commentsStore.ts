@@ -8,7 +8,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { v4 as uuid } from 'uuid';
+import { newId } from '@/lib/uuid';
 import type { Comment, CommentTarget, CommentThread } from '@/types/comments';
 import { targetKey } from '@/types/comments';
 
@@ -43,14 +43,14 @@ export const useCommentsStore = create<CommentsState>()(
       },
 
       startThread: (projectId, target, firstComment) => {
-        const id = uuid();
+        const id = newId();
         const now = Date.now();
         const thread: CommentThread = {
           id,
           target,
           resolved: false,
           createdAt: now,
-          comments: [{ ...firstComment, id: uuid(), createdAt: now }],
+          comments: [{ ...firstComment, id: newId(), createdAt: now }],
         };
         set((state) => ({
           threadsByProject: {
@@ -67,7 +67,7 @@ export const useCommentsStore = create<CommentsState>()(
             ...state.threadsByProject,
             [projectId]: (state.threadsByProject[projectId] ?? []).map((th) =>
               th.id === threadId
-                ? { ...th, comments: [...th.comments, { ...comment, id: uuid(), createdAt: Date.now() }] }
+                ? { ...th, comments: [...th.comments, { ...comment, id: newId(), createdAt: Date.now() }] }
                 : th,
             ),
           },

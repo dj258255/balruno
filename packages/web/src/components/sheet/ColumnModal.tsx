@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Check, HelpCircle, Lock, Globe, Plus, Trash2, Sparkles } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
+import { newId } from '@/lib/uuid';
 import { useTranslations } from 'next-intl';
 import { useEscapeKey } from '@/hooks';
 import FormulaAutocomplete from './FormulaAutocomplete';
@@ -540,7 +540,7 @@ export default function ColumnModal({
                 onClick={() =>
                   setSelectOptions([
                     ...selectOptions,
-                    { id: uuidv4(), label: '', color: '#94a3b8' },
+                    { id: newId(), label: '', color: '#94a3b8' },
                   ])
                 }
                 className="flex items-center gap-1.5 text-xs px-2 py-1 rounded hover:bg-black/5 dark:hover:bg-white/5"

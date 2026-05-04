@@ -4,7 +4,7 @@
  */
 
 import type { Column, Row, CellValue, ColumnType } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { newId } from './uuid';
 
 // Import 형식
 export type ImportFormat =
@@ -67,7 +67,7 @@ function parseJsonArray(content: string): ImportResult {
     // 임시 ID 매핑 (컬럼명 -> ID)
     const columnIdMap = new Map<string, string>();
     columns.forEach(col => {
-      columnIdMap.set(col.name, uuidv4());
+      columnIdMap.set(col.name, newId());
     });
 
     // 행 생성
@@ -127,7 +127,7 @@ function parseCsv(content: string, isUnreal = false): ImportResult {
 
     // 컬럼 생성
     const columns: (Omit<Column, 'id'> & { id: string })[] = headers.map(header => ({
-      id: uuidv4(),
+      id: newId(),
       name: header,
       type: 'general' as ColumnType,
       width: header.length > 10 ? 150 : 100,
@@ -223,7 +223,7 @@ function parseCSharp(content: string): ImportResult {
       { name: '기본값', type: 'general', width: 100 },
     ];
 
-    const columnIds = columns.map(() => uuidv4());
+    const columnIds = columns.map(() => newId());
 
     // 행 생성
     const rows = fields.map(field => ({
@@ -303,7 +303,7 @@ function parseGDScript(content: string): ImportResult {
       { name: 'Export', type: 'general', width: 70 },
     ];
 
-    const columnIds = columns.map(() => uuidv4());
+    const columnIds = columns.map(() => newId());
 
     // 행 생성
     const rows = fields.map(field => ({
@@ -388,7 +388,7 @@ function parseUnrealHeader(content: string): ImportResult {
       { name: '기본값', type: 'general', width: 100 },
     ];
 
-    const columnIds = columns.map(() => uuidv4());
+    const columnIds = columns.map(() => newId());
 
     // 행 생성
     const rows = fields.map(field => ({

@@ -15,7 +15,7 @@
  */
 
 import { openDB, type IDBPDatabase } from 'idb';
-import { v4 as uuidv4 } from 'uuid';
+import { newId } from '@/lib/uuid';
 
 const DB_NAME = 'balruno-blobs';
 const DB_VERSION = 1;
@@ -39,7 +39,7 @@ function getDb(): Promise<IDBPDatabase> {
 /** Blob 저장 → `indb:<id>` 참조 반환 */
 export async function storeBlob(blob: Blob): Promise<string> {
   const db = await getDb();
-  const id = uuidv4();
+  const id = newId();
   await db.put(STORE, blob, id);
   return `indb:${id}`;
 }
