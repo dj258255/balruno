@@ -4,7 +4,7 @@
 # copy keys by hand.
 
 - name: Generate SSH key pair for the upload daemon (status side)
-  ansible.builtin.openssh_keypair:
+  community.crypto.openssh_keypair:
     path: "{{ osu_home }}/.ssh/id_ed25519"
     type: ed25519
     owner: "{{ osu_user }}"

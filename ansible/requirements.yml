@@ -11,3 +11,5 @@ collections:
     version: ">=4.0.0"
   - name: community.postgresql # postgresql_db / postgresql_user / postgresql_ext
     version: ">=3.0.0"
+  - name: community.crypto    # openssh_keypair — used by object-storage-upload role
+    version: ">=2.0.0"
