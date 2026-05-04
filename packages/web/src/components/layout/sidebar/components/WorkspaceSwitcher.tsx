@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * WorkspaceSwitcher — 사이드바 최상단. Notion / Linear / Airtable 공통 패턴.
  *
@@ -11,18 +9,21 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { ChevronDown, Plus, Settings, Edit2, Sparkles } from 'lucide-react';
+import { ChevronDown, Plus, Settings, Edit2, Sparkles, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ui';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 import { useProductIntro } from '@/stores/productIntroStore';
+import { MemberManagementModal } from '@/components/workspace/MemberManagementModal';
 
 interface WorkspaceSwitcherProps {
   onOpenSettings?: () => void;
 }
 
 export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
+  const tMembers = useTranslations('members');
+  const [showMembers, setShowMembers] = useState(false);
   const t = useTranslations();
   const { theme } = useTheme();
   const { workspaces, activeWorkspaceId, renameWorkspace } = useSidebarPrefs();
@@ -170,6 +171,20 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
               <span>{t('sidebar.appIntroAgain')}</span>
             </button>
 
+            {/* 멤버 관리 */}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setShowMembers(true);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              <Users className="w-4 h-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
+              <span>{tMembers('title')}</span>
+            </button>
+
             {/* 워크스페이스 설정 */}
             {onOpenSettings && (
               <button
@@ -187,6 +202,13 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
             )}
           </div>
         </div>
+      )}
+
+      {showMembers && activeWorkspaceId && (
+        <MemberManagementModal
+          workspaceId={activeWorkspaceId}
+          onClose={() => setShowMembers(false)}
+        />
       )}
 
       {ctxMenu && (

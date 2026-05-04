@@ -1,12 +1,10 @@
 /**
  * SidebarFooter - 사이드바 하단 컴포넌트
  */
-
-'use client';
-
 import { Globe, MessageSquare } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { formatRelativeTime } from '@/lib/utils';
+import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 
 interface SidebarFooterProps {
   selectedRowsCount: number;
@@ -82,14 +80,15 @@ export function SaveStatus({ lastSaved, onShowSettings }: SaveStatusProps) {
       borderColor: 'var(--border-primary)',
       color: 'var(--text-tertiary)'
     }}>
-      {lastSaved ? (
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-          {t('sidebar.savedAt')} · {formatRelativeTime(lastSaved)}
-        </div>
-      ) : (
-        <div />
-      )}
+      <div className="flex items-center gap-3 min-w-0">
+        {lastSaved ? (
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            {t('sidebar.savedAt')} · {formatRelativeTime(lastSaved)}
+          </div>
+        ) : null}
+        <ConnectionStatus compact />
+      </div>
       <div className="flex items-center gap-1.5">
         <a
           href={FEEDBACK_FORM_URL}

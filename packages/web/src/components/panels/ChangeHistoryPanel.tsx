@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * ChangeHistoryPanel — 
  *
@@ -43,6 +41,8 @@ function formatValue(t: ReturnType<typeof useTranslations>, v: CellValue): strin
   return String(v);
 }
 
+import { NamedSnapshotPanel } from '@/components/changelog/NamedSnapshotPanel';
+
 export default function ChangeHistoryPanel({ onClose }: Props) {
   const t = useTranslations();
   const projects = useProjectStore((s) => s.projects);
@@ -53,6 +53,8 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
   const [filterUser, setFilterUser] = useState<string>('all');
   const [editingReasonId, setEditingReasonId] = useState<string | null>(null);
   const [reasonDraft, setReasonDraft] = useState('');
+  const [tab, setTab] = useState<'changes' | 'snapshots'>('changes');
+  const currentProjectId = useProjectStore((s) => s.currentProjectId);
 
   // 모든 프로젝트의 changelog 를 한 배열로 (enriched)
   const allEntries: EnrichedEntry[] = useMemo(() => {
@@ -138,6 +140,42 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div
+        className="flex items-center gap-1 px-3 pt-2 border-b shrink-0"
+        style={{ borderColor: 'var(--border-primary)' }}
+      >
+        {(['changes', 'snapshots'] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className="px-3 py-1.5 text-xs rounded-t-md font-medium border-b-2 transition-colors"
+            style={{
+              color: tab === id ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderColor: tab === id ? 'var(--accent)' : 'transparent',
+            }}
+          >
+            {id === 'changes' ? t('changeHistory.tabChanges') : t('changeHistory.tabSnapshots')}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'snapshots' && currentProjectId ? (
+        <NamedSnapshotPanel
+          projectId={currentProjectId}
+          capturePayload={() => projects.find((p) => p.id === currentProjectId) ?? null}
+          onRestore={(payload) => {
+            // eslint-disable-next-line no-console
+            console.warn('[snapshots] restore not yet wired into projectStore', payload);
+          }}
+        />
+      ) : tab === 'snapshots' ? (
+        <div className="flex-1 flex items-center justify-center p-6 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          {t('changeHistory.noProjectForSnapshot')}
+        </div>
+      ) : (
+      <>
       {/* Filters */}
       <div
         className="flex items-center gap-2 px-5 py-2 border-b shrink-0"
@@ -303,6 +341,8 @@ export default function ChangeHistoryPanel({ onClose }: Props) {
           </ul>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

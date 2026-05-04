@@ -29,6 +29,16 @@ interface AuthState {
   logout: () => void;
 }
 
+/** Lightweight cookie used by middleware.ts to gate routes. Bool flag only — no secret. */
+function writeAuthCookie(authed: boolean) {
+  if (typeof document === 'undefined') return;
+  if (authed) {
+    document.cookie = 'balruno-authed=1; Path=/; Max-Age=2592000; SameSite=Lax';
+  } else {
+    document.cookie = 'balruno-authed=; Path=/; Max-Age=0; SameSite=Lax';
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -40,31 +50,63 @@ export const useAuthStore = create<AuthState>()(
       serverUrl: null,
 
       // 액션
-      setUser: (user) =>
+      setUser: (user) => {
+        writeAuthCookie(!!user);
         set({
           user,
           isAuthenticated: !!user,
-        }),
+        });
+      },
 
-      setTokens: (accessToken, refreshToken) =>
+      setTokens: (accessToken, refreshToken) => {
+        writeAuthCookie(!!accessToken);
         set({
           accessToken,
           refreshToken: refreshToken ?? null,
           isAuthenticated: !!accessToken,
-        }),
+        });
+      },
 
       setServerUrl: (url) =>
         set({
           serverUrl: url,
         }),
 
-      logout: () =>
+      logout: () => {
+        writeAuthCookie(false);
+        // Linear model: server is canonical, client is cache. Drop all cached data on logout
+        // so the next user on the same device can't see the previous user's projects.
+        if (typeof window !== 'undefined') {
+          // Wipe Y.Doc IndexedDB stores (project Y.Docs persisted by y-indexeddb).
+          if (window.indexedDB) {
+            void window.indexedDB.databases?.().then((dbs) => {
+              for (const db of dbs) {
+                if (db.name && db.name.startsWith('balruno-ydoc-')) {
+                  window.indexedDB.deleteDatabase(db.name);
+                }
+              }
+            });
+          }
+          // Wipe persistent zustand stores keyed under balruno-* (project state, sidebar prefs, etc.)
+          // except the auth key, which we reset below.
+          try {
+            for (let i = window.localStorage.length - 1; i >= 0; i--) {
+              const key = window.localStorage.key(i);
+              if (key && key.startsWith('balruno-') && key !== 'balruno-auth') {
+                window.localStorage.removeItem(key);
+              }
+            }
+          } catch {
+            // localStorage unavailable (private mode) — ignore.
+          }
+        }
         set({
           user: null,
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
-        }),
+        });
+      },
     }),
     {
       name: 'balruno-auth',

@@ -15,7 +15,7 @@ import { createProjectActions } from './slices/projectSlice';
 import { createSheetActions } from './slices/sheetSlice';
 import { createCellActions } from './slices/cellSlice';
 import { createSelectionActions } from './slices/selectionSlice';
-import { createDocActions } from './slices/docSlice';
+import { createDocActions, bindDocSliceGetters } from './slices/docSlice';
 
 // ==== 보조 타입 ====
 
@@ -200,15 +200,24 @@ export interface ProjectState {
   completeCellSelection: (value: number, rowId?: string, columnId?: string) => void;
   cancelCellSelection: () => void;
 
-  // 문서 액션 (Phase A — Doc 계층)
+  // 문서 액션 (Phase A — Doc 계층, Notion 식 nested 트리)
   currentDocId: string | null;
-  createDoc: (projectId: string, name: string, content?: string) => string;
+  createDoc: (
+    projectId: string,
+    name: string,
+    content?: string,
+    options?: { parentId?: string },
+  ) => string;
   updateDoc: (
     projectId: string,
     docId: string,
-    updates: Partial<Pick<Doc, 'name' | 'content' | 'icon'>>
+    updates: Partial<Pick<Doc, 'name' | 'content' | 'icon' | 'parentId' | 'isExpanded' | 'position'>>
   ) => void;
   deleteDoc: (projectId: string, docId: string) => void;
+  /** 부모 변경 — Notion 식 트리에서 다른 위치로 이동. parentId === undefined 면 루트로. */
+  moveDoc: (projectId: string, docId: string, parentId: string | undefined, position?: number) => void;
+  /** 사이드바 펼침/접힘 토글. */
+  toggleDocExpanded: (projectId: string, docId: string) => void;
   setCurrentDoc: (docId: string | null) => void;
   openDocTab: (docId: string) => void;
   closeDocTab: (docId: string) => void;
@@ -253,6 +262,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   ...createSelectionActions(set, get),
   ...createDocActions(set),
 }));
+
+// Wire docSlice getters now that the store is created (avoids circular import).
+bindDocSliceGetters((projectId) =>
+  useProjectStore.getState().projects.find((p) => p.id === projectId),
+);
 
 // dev 모드에서만 콘솔 디버깅용으로 window 에 노출. 데이터 무결성 점검·일회성
 // 쿼리 등에 활용. 프로덕션 빌드에선 NODE_ENV 가 'production' 이라 미노출.

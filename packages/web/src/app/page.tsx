@@ -33,6 +33,14 @@ import KanbanView from '@/components/views/KanbanView';
 import CalendarView from '@/components/views/CalendarView';
 import GalleryView from '@/components/views/GalleryView';
 import GanttView from '@/components/views/GanttView';
+import { BalanceHeatmap } from '@/components/views/BalanceHeatmap';
+import { CurveOverlay } from '@/components/views/CurveOverlay';
+import { ProbabilityTree } from '@/components/views/ProbabilityTree';
+import { SheetDiffView } from '@/components/views/SheetDiffView';
+import { BranchSwitcher } from '@/components/branching/BranchSwitcher';
+import { UserAvatarStack } from '@/components/presence/UserAvatarStack';
+import { CommentSidePanel } from '@/components/comments/CommentSidePanel';
+import { MessageCircle } from 'lucide-react';
 import type { ViewType } from '@/types';
 
 // Modal components - Dynamic imports for code splitting
@@ -144,6 +152,7 @@ export default function Home() {
   const [showAISetup, setShowAISetup] = useState(false);
   const [showAICopilot, setShowAICopilot] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [showDedupeModal, setShowDedupeModal] = useState(false);
@@ -538,6 +547,21 @@ export default function Home() {
                 <SheetTabs project={currentProject} />
               </div>
               <div className="flex-shrink-0 hidden md:flex items-center gap-1 px-3">
+                <UserAvatarStack
+                  scope={currentSheet ? { kind: 'sheet', sheetId: currentSheet.id } : currentDoc ? { kind: 'doc', docId: currentDoc.id } : null}
+                  max={4}
+                  size={24}
+                />
+                <BranchSwitcher projectId={currentProject.id} />
+                <button
+                  onClick={() => setShowComments((v) => !v)}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md border hover:bg-[var(--bg-hover)]"
+                  style={{ borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}
+                  title={t('comments.panelTitle', { count: 0 })}
+                  aria-label={t('comments.panelTitle', { count: 0 })}
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                </button>
                 <PresenceIndicator projectId={currentProject.id} />
                 <button
                   onClick={() => setShowShare(true)}
@@ -596,6 +620,14 @@ export default function Home() {
                         case 'diagram':
                           // legacy: 경제 워크벤치로 이관된 뷰. 기존 데이터 보존 위해 조용히 grid 로 폴백.
                           return <SheetTable projectId={currentProject.id} sheet={currentSheet} onAddMemo={handleAddMemo} />;
+                        case 'heatmap':
+                          return <BalanceHeatmap sheetId={currentSheet.id} />;
+                        case 'curve':
+                          return <CurveOverlay sheetId={currentSheet.id} />;
+                        case 'probability':
+                          return <ProbabilityTree sheetId={currentSheet.id} />;
+                        case 'diff':
+                          return <SheetDiffView sheetId={currentSheet.id} before={currentProject} after={currentProject} />;
                       }
                     })()}
                   </div>
@@ -633,6 +665,19 @@ export default function Home() {
       )}
       {showAISetup && <AISetupModal onClose={() => setShowAISetup(false)} />}
       {showShare && <ShareModal onClose={() => setShowShare(false)} />}
+      {showComments && currentProject && (
+        <CommentSidePanel
+          projectId={currentProject.id}
+          filter={
+            currentSheet
+              ? { kind: 'sheet', sheetId: currentSheet.id }
+              : currentDoc
+                ? { kind: 'doc', docId: currentDoc.id }
+                : null
+          }
+          onClose={() => setShowComments(false)}
+        />
+      )}
       {showGallery && <ProjectGalleryModal onClose={() => setShowGallery(false)} />}
 
       {/* Docked Toolbox — 우측 사이드 도킹 + 하단 독바. usePanelStates hook 으로 단일화. */}

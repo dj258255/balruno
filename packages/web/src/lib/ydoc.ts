@@ -188,6 +188,12 @@ export function hydrateDocFromProject(doc: Y.Doc, project: Project): void {
     for (const folder of project.folders ?? []) {
       folders.push([folderToYMap(folder)]);
     }
+
+    const docs = doc.getArray<Y.Map<unknown>>('docs');
+    docs.delete(0, docs.length);
+    for (const d of project.docs ?? []) {
+      docs.push([docToYMap(d)]);
+    }
   });
 }
 
@@ -1304,6 +1310,9 @@ function docToYMap(d: Doc): Y.Map<unknown> {
   map.set('name', d.name);
   if (d.icon) map.set('icon', d.icon);
   map.set('content', d.content);
+  if (d.parentId) map.set('parentId', d.parentId);
+  if (d.isExpanded !== undefined) map.set('isExpanded', d.isExpanded);
+  if (d.position !== undefined) map.set('position', d.position);
   map.set('createdAt', d.createdAt);
   map.set('updatedAt', d.updatedAt);
   return map;
@@ -1315,6 +1324,9 @@ function yMapToDoc(map: Y.Map<unknown>): Doc {
     name: map.get('name') as string,
     icon: map.get('icon') as string | undefined,
     content: (map.get('content') as string) ?? '',
+    parentId: map.get('parentId') as string | undefined,
+    isExpanded: map.get('isExpanded') as boolean | undefined,
+    position: map.get('position') as number | undefined,
     createdAt: map.get('createdAt') as number,
     updatedAt: map.get('updatedAt') as number,
   };
@@ -1330,7 +1342,7 @@ export function addDocInDoc(doc: Y.Doc, newDoc: Doc): void {
 export function updateDocInDoc(
   doc: Y.Doc,
   docId: string,
-  updates: Partial<Pick<Doc, 'name' | 'content' | 'icon'>>
+  updates: Partial<Pick<Doc, 'name' | 'content' | 'icon' | 'parentId' | 'isExpanded' | 'position'>>
 ): void {
   doc.transact(() => {
     const docs = doc.getArray<Y.Map<unknown>>('docs');

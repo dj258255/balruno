@@ -70,3 +70,6 @@ coverage/
 
 # claude
 .claude/
+
+# Playwright MCP browser logs (local debug)
+.playwright-mcp/

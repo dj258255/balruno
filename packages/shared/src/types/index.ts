@@ -34,8 +34,8 @@ export interface Project {
   createdAt: number;
   updatedAt: number;
   sheets: Sheet[];
-  folders?: Folder[];       // 폴더 목록 (navigation only — ACL 없음)
-  docs?: Doc[];             // GDD · 설계안 문서 (Phase A)
+  folders?: Folder[];       // 시트 폴더 (navigation only — ACL 없음)
+  docs?: Doc[];             // GDD · 설계안 문서 (Phase A) — Notion 식 nested 트리 (Doc.parentId)
   changelog?: ChangeEntry[]; // Track변경 이력 (내부 기록)
   // 동기화 설정
   syncMode?: ProjectSyncMode;  // 'local' (기본) | 'cloud'
@@ -56,6 +56,12 @@ export interface Doc {
   /** 사용자 지정 아이콘 — 유니코드 이모지 문자 (예: "📝", "🎮"). 없으면 FileText fallback. */
   icon?: string;
   content: string;  // Tiptap JSON 또는 HTML 직렬화
+  /** 부모 Doc ID — Notion 식 nested page tree. 없으면 루트. */
+  parentId?: string;
+  /** 사이드바에서 자식 펼침 여부. */
+  isExpanded?: boolean;
+  /** 같은 부모 안에서 형제 순서. Y.Array drift 방지용 + 사용자 드래그 정렬. */
+  position?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -130,8 +136,19 @@ export interface Sticker {
   createdAt: number;
 }
 
-// 뷰 타입
-export type ViewType = 'grid' | 'form' | 'kanban' | 'calendar' | 'gallery' | 'gantt' | 'diagram';
+// 뷰 타입 — 'heatmap'/'curve'/'probability'/'diff' 는 game-domain 차별 view (v0.5+)
+export type ViewType =
+  | 'grid'
+  | 'form'
+  | 'kanban'
+  | 'calendar'
+  | 'gallery'
+  | 'gantt'
+  | 'diagram'
+  | 'heatmap'
+  | 'curve'
+  | 'probability'
+  | 'diff';
 
 /** 시트 용도 — export 정책, 사이드바 분류, AI 컨텍스트 가중치 결정 */
 export type SheetKind = 'game-data' | 'pm' | 'analysis' | 'reference';

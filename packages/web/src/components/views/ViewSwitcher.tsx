@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 뷰 스위처. 기본 뷰 6종 + 저장된 뷰 N개 (시트마다).
  *
@@ -10,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Filter } from 'lucide-react';
+import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Filter, Flame, TrendingUp, GitFork, GitCompare } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ViewType, Sheet, SavedView, FilterGroup } from '@/types';
 import { useProjectStore } from '@/stores/projectStore';
@@ -30,11 +28,17 @@ const VIEWS: Array<{ id: ViewType; labelKey: string; icon: typeof Table2 }> = [
   { id: 'calendar', labelKey: 'views.calendar', icon: Calendar },
   { id: 'gallery', labelKey: 'views.gallery', icon: Image },
   { id: 'gantt', labelKey: 'views.gantt', icon: GanttChart },
+  // game-domain views — Balruno 차별점
+  { id: 'heatmap', labelKey: 'views.heatmap.tab', icon: Flame },
+  { id: 'curve', labelKey: 'views.curve.tab', icon: TrendingUp },
+  { id: 'probability', labelKey: 'views.probability.tab', icon: GitFork },
+  { id: 'diff', labelKey: 'views.diff.tab', icon: GitCompare },
 ];
 
 const VIEW_ICON: Record<ViewType, typeof Table2> = {
   grid: Table2, form: FileText, kanban: Columns3, calendar: Calendar, gallery: Image, gantt: GanttChart,
   diagram: Table2,
+  heatmap: Flame, curve: TrendingUp, probability: GitFork, diff: GitCompare,
 };
 
 export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
