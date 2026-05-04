@@ -19,8 +19,6 @@
       --data-checksums
   when: not pg_version_file.stat.exists
 
-- name: Enable + start PostgreSQL
-  ansible.builtin.systemd:
-    name: "{{ postgres_unit }}"
-    enabled: true
-    state: started
+# Enabling + starting PG happens after configure.yml has rendered our tunables,
+# otherwise PG would try to boot on PGDG defaults (io_uring on, etc.) and fail
+# in environments where those are blocked.

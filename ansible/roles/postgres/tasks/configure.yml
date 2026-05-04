@@ -35,3 +35,17 @@
     group: postgres
     mode: '0600'
   notify: reload postgres
+
+- name: Reset failed state if a previous bad config crash-looped systemd
+  ansible.builtin.command: systemctl reset-failed "{{ postgres_unit }}.service"
+  changed_when: false
+  failed_when: false
+
+- name: Enable + start PostgreSQL with rendered config
+  ansible.builtin.systemd:
+    name: "{{ postgres_unit }}"
+    enabled: true
+    state: started
+
+- name: Apply pending config changes (flush handlers before downstream tasks)
+  ansible.builtin.meta: flush_handlers
