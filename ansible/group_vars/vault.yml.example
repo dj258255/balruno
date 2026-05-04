@@ -31,6 +31,7 @@ vault_grafana_admin_password: "REPLACE_WITH_RANDOM_32_CHAR"
 
 # InfluxDB 2.x
 vault_influxdb_admin_token: "REPLACE_WITH_RANDOM_64_CHAR"
+vault_influxdb_admin_password: "REPLACE_WITH_RANDOM_32_CHAR"
 vault_influxdb_org: "balruno"
 vault_influxdb_bucket_k6: "k6"
 
