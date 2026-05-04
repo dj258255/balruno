@@ -1,0 +1,67 @@
+# Balruno OCI 4대 인벤토리
+# 모든 설정값은 group_vars/all.yml + group_vars/vault.yml 에서 관리
+#
+# Host names use underscore (prod_app, not prod-app) so Ansible can expose them
+# as Python identifiers (hostvars.prod_app), and so they don't collide with
+# group names of the same shape.
+#
+# Usage:
+#   all:        ansible-playbook -i inventory.yml site.yml
+#   single:     ansible-playbook site.yml --limit prod_app
+#   group:      ansible-playbook site.yml --limit arm
+#   ping check: ansible -i inventory.yml all -m ping
+#
+# Decision: ADR 0007 v1.1 §3.1 — 4-machine distribution
+
+all:
+  hosts:
+    prod_app:
+      ansible_host: "{{ prod_app_public_ip }}"
+      private_ip: "{{ prod_app_private_ip }}"
+      ansible_user: "{{ ssh_user_arm }}"
+      server_role: prod-app
+      arch: arm64
+      memory_gb: 12
+      ocpu: 2
+
+    monitor:
+      ansible_host: "{{ monitor_public_ip }}"
+      private_ip: "{{ monitor_private_ip }}"
+      ansible_user: "{{ ssh_user_arm }}"
+      server_role: monitor
+      arch: arm64
+      memory_gb: 12
+      ocpu: 2
+
+    backup:
+      ansible_host: "{{ backup_public_ip }}"
+      private_ip: "{{ backup_private_ip }}"
+      ansible_user: "{{ ssh_user_x86 }}"
+      server_role: backup
+      arch: x86_64
+      memory_gb: 1
+      ocpu: 1
+
+    status:
+      ansible_host: "{{ status_public_ip }}"
+      private_ip: "{{ status_private_ip }}"
+      ansible_user: "{{ ssh_user_x86 }}"
+      server_role: status
+      arch: x86_64
+      memory_gb: 1
+      ocpu: 1
+
+  children:
+    arm:
+      hosts:
+        prod_app:
+        monitor:
+
+    x86:
+      hosts:
+        backup:
+        status:
+
+  vars:
+    ansible_ssh_private_key_file: "{{ ssh_key_path }}"
+    ansible_python_interpreter: /usr/bin/python3

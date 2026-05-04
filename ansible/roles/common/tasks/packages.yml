@@ -1,0 +1,18 @@
+# Base packages every host needs. EPEL must come first because fail2ban
+# (and a few utilities) live there on Rocky 9.
+
+- name: Install EPEL release
+  ansible.builtin.dnf:
+    name: epel-release
+    state: present
+
+- name: Install base packages
+  ansible.builtin.dnf:
+    name: "{{ common_base_packages }}"
+    state: present
+
+- name: Enable + start chronyd (time sync)
+  ansible.builtin.systemd:
+    name: chronyd
+    enabled: true
+    state: started

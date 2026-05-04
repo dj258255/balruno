@@ -1,0 +1,5 @@
+# Set the timezone identically on every host so logs/cron correlate cleanly.
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ common_timezone }}"

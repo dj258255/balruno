@@ -1,0 +1,9 @@
+# Ansible Galaxy collection dependencies.
+# Install:  ansible-galaxy collection install -r requirements.yml
+# CI installs these automatically before running playbooks.
+
+collections:
+  - name: ansible.posix       # sysctl, mount, firewalld
+    version: ">=1.5.4"
+  - name: community.general   # timezone, etc.
+    version: ">=9.0.0"

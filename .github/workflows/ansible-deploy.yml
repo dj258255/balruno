@@ -1,0 +1,96 @@
+# Apply Ansible playbook to the 4 OCI machines.
+# Triggers:
+#   - push to main that touches ansible/**  (auto-apply after PR merge)
+#   - workflow_dispatch                     (manual ad-hoc runs with optional limit/tags)
+#
+# Decision: ADR 0007 v1.1 §3.6 — GitOps deploy of infrastructure
+# Secrets required:
+#   ANSIBLE_VAULT_PASSWORD  — contents of ~/.vault_pass
+#   OCI_SSH_PRIVATE_KEY     — contents of ~/.ssh/oci_key
+#
+# Concurrency is serialized so two simultaneous applies cannot race.
+# All workflow_dispatch inputs are routed through env: vars before being
+# used in run: commands, so workflow-injection risk is mitigated.
+
+name: ansible-deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Ansible --limit pattern (e.g. prod_app, monitor, arm)'
+        required: false
+        default: 'all'
+      tags:
+        description: 'Ansible --tags (comma-separated, e.g. nginx,common)'
+        required: false
+        default: ''
+      check_only:
+        description: 'Run with --check (dry run only, no apply)'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: ansible-deploy
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: production
+    env:
+      ANSIBLE_VAULT_PASSWORD_FILE: ${{ runner.temp }}/.vault_pass
+      ANSIBLE_HOST_KEY_CHECKING: 'False'
+      LIMIT: ${{ github.event.inputs.limit || 'all' }}
+      TAGS: ${{ github.event.inputs.tags || '' }}
+      CHECK_ONLY: ${{ github.event.inputs.check_only || 'false' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: pip install --upgrade 'ansible-core>=2.20,<2.21'
+
+      - name: Install Galaxy collections
+        working-directory: ansible
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Configure SSH key
+        env:
+          OCI_SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$OCI_SSH_PRIVATE_KEY" > ~/.ssh/oci_key
+          chmod 600 ~/.ssh/oci_key
+
+      - name: Configure vault password
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          printf '%s' "$ANSIBLE_VAULT_PASSWORD" > "$RUNNER_TEMP/.vault_pass"
+          chmod 600 "$RUNNER_TEMP/.vault_pass"
+
+      - name: Ping all hosts
+        working-directory: ansible
+        run: ansible -i inventory.yml all -m ping
+
+      - name: Apply playbook
+        working-directory: ansible
+        run: |
+          extra=()
+          [ "$CHECK_ONLY" = "true" ] && extra+=(--check --diff)
+          [ -n "$TAGS" ] && extra+=(--tags "$TAGS")
+          ansible-playbook -i inventory.yml site.yml \
+            --limit "$LIMIT" \
+            "${extra[@]}"

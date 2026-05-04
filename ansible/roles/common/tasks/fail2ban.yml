@@ -1,0 +1,33 @@
+# fail2ban: ban an IP after 3 failed SSH auth attempts within 10 minutes,
+# bantime 1 hour. Ships from EPEL on Rocky 9.
+
+- name: Install fail2ban
+  ansible.builtin.dnf:
+    name:
+      - fail2ban
+      - fail2ban-firewalld
+    state: present
+
+- name: Drop in jail.local for sshd
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/sshd.local
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [DEFAULT]
+      banaction = firewallcmd-rich-rules
+      backend = systemd
+      bantime = {{ common_fail2ban_bantime }}
+      findtime = {{ common_fail2ban_findtime }}
+      maxretry = {{ common_fail2ban_maxretry }}
+
+      [sshd]
+      enabled = true
+  notify: restart fail2ban
+
+- name: Enable + start fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started

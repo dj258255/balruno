@@ -1,0 +1,30 @@
+# Docker CE on Rocky 9 — used by monitor (Grafana stack) and status (Uptime Kuma).
+# Skipped on prod-app (Spring Boot + Hocuspocus run as systemd units, no Docker)
+# and on backup (rsync + cloudflared run as systemd units).
+
+- name: Add Docker CE repository
+  ansible.builtin.command:
+    cmd: dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+    creates: /etc/yum.repos.d/docker-ce.repo
+
+- name: Install Docker engine + Compose plugin
+  ansible.builtin.dnf:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+
+- name: Enable + start docker
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Add rocky user to docker group
+  ansible.builtin.user:
+    name: rocky
+    groups: docker
+    append: true

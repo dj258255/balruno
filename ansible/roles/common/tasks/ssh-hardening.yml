@@ -1,0 +1,29 @@
+# SSH hardening per ADR 0007 v1.1 §3.7.
+# - PasswordAuthentication no  (key-only)
+# - PermitRootLogin no
+# - AllowUsers rocky
+# - MaxAuthTries 3
+#
+# We write a drop-in to /etc/ssh/sshd_config.d/ instead of editing the main
+# config — Rocky 9's sshd_config already includes that directory, and a
+# drop-in is easier to reason about and roll back.
+
+- name: Drop in hardened SSH config
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/10-balruno-hardening.conf
+    owner: root
+    group: root
+    mode: '0600'
+    content: |
+      PasswordAuthentication no
+      PermitRootLogin no
+      PubkeyAuthentication yes
+      AllowUsers {{ common_ssh_allow_users }}
+      MaxAuthTries 3
+      ClientAliveInterval 300
+      ClientAliveCountMax 2
+  notify: restart sshd
+
+- name: Validate sshd config
+  ansible.builtin.command: sshd -t
+  changed_when: false

@@ -1,0 +1,80 @@
+# Balruno 전체 통합 playbook
+# 결정: ADR 0007 v1.1 §3.6 Ansible 자동화
+#
+# 사용법:
+#   전체 셋업:        ansible-playbook -i inventory.yml site.yml
+#   특정 머신:        ansible-playbook site.yml --limit prod-app
+#   특정 role 재실행: ansible-playbook site.yml --tags nginx
+#   ping 검증:        ansible -i inventory.yml all -m ping
+
+# ───────────────────────────────────────────────────────────────────
+# 1. 공통 — 4대 모두 (swap / fail2ban / Docker / SSH hardening)
+# ───────────────────────────────────────────────────────────────────
+- name: Common setup (모든 머신)
+  hosts: all
+  become: true
+  tags: [common]
+  roles:
+    - role: common
+      vars:
+        # Docker only on monitor (Grafana stack) and status (Uptime Kuma).
+        # prod-app + backup run their workloads as plain systemd units.
+        common_install_docker: "{{ inventory_hostname in ['monitor', 'status'] }}"
+
+# ───────────────────────────────────────────────────────────────────
+# 2. prod-app: Spring Boot + Hocuspocus + Nginx
+# ───────────────────────────────────────────────────────────────────
+- name: Deploy prod-app
+  hosts: prod_app
+  become: true
+  tags: [prod-app]
+  roles:
+    - role: spring-boot
+      tags: [spring-boot]
+    - role: hocuspocus
+      tags: [hocuspocus]
+    - role: nginx
+      tags: [nginx]
+
+# ───────────────────────────────────────────────────────────────────
+# 3. monitor: PostgreSQL + Grafana stack + InfluxDB
+# ───────────────────────────────────────────────────────────────────
+- name: Deploy monitor (PG + monitoring stack)
+  hosts: monitor
+  become: true
+  tags: [monitor]
+  roles:
+    - role: postgres
+      tags: [postgres]
+    - role: monitoring
+      tags: [monitoring]
+
+# ───────────────────────────────────────────────────────────────────
+# 4. backup: pg_dump rsync 수신 + cloudflared (monitor.balruno.com Tunnel)
+# ───────────────────────────────────────────────────────────────────
+- name: Deploy backup
+  hosts: backup
+  become: true
+  tags: [backup]
+  roles:
+    - role: backup
+      tags: [backup]
+    - role: cloudflared
+      tags: [cloudflared]
+      vars:
+        cloudflared_target_host: "{{ monitor_private_ip }}"
+        cloudflared_target_port: 3000  # Grafana
+        cloudflared_hostname: "{{ monitor_domain }}"
+
+# ───────────────────────────────────────────────────────────────────
+# 5. status: Uptime Kuma + Object Storage upload daemon
+# ───────────────────────────────────────────────────────────────────
+- name: Deploy status
+  hosts: status
+  become: true
+  tags: [status]
+  roles:
+    - role: uptime-kuma
+      tags: [uptime-kuma]
+    - role: object-storage-upload
+      tags: [object-storage]

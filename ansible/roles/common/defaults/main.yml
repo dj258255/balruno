@@ -1,0 +1,43 @@
+# Defaults for the common role.
+# Override per-host in inventory or via group_vars.
+
+# Swap sizing per host. ARM 12GB → 4G; x86 1GB → 2G (per ADR 0007 v1.1 §3.7).
+common_swap_size: "{{ '4G' if memory_gb | int >= 8 else '2G' }}"
+common_swap_path: /swapfile
+common_swappiness: 10
+
+# Packages to install on every host.
+common_base_packages:
+  - bash-completion
+  - bind-utils
+  - ca-certificates
+  - chrony
+  - curl
+  - dnf-plugins-core
+  - firewalld
+  - git
+  - htop
+  - jq
+  - lsof
+  - net-tools
+  - python3-firewall
+  - rsync
+  - tar
+  - tmux
+  - unzip
+  - vim
+  - wget
+
+# fail2ban: 3 strikes within 10 min → 1 hour ban.
+common_fail2ban_bantime: 3600
+common_fail2ban_findtime: 600
+common_fail2ban_maxretry: 3
+
+# Allow login only as the rocky user (OCI default).
+common_ssh_allow_users: rocky
+
+# Install Docker only on hosts that need it (monitor + status run docker, others don't).
+common_install_docker: false
+
+# Timezone — UTC keeps log timestamps consistent across hosts.
+common_timezone: UTC

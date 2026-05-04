@@ -1,0 +1,51 @@
+# Swap file. OCI Always Free images ship without swap, which is dangerous for
+# a 1GB host (OOM kills postgres/spring) and even for the 12GB hosts under
+# Loki/Prometheus WAL spikes.
+#
+# We allocate via fallocate (fast, no zero-fill) and persist in /etc/fstab.
+# Idempotency: 'creates: {{ common_swap_path }}' so re-runs are no-ops.
+
+- name: Check whether swap is already active
+  ansible.builtin.command: swapon --show=NAME --noheadings
+  register: common_swap_active
+  changed_when: false
+
+- name: Allocate swap file
+  ansible.builtin.command: "fallocate -l {{ common_swap_size }} {{ common_swap_path }}"
+  args:
+    creates: "{{ common_swap_path }}"
+
+- name: Restrict swap file permissions
+  ansible.builtin.file:
+    path: "{{ common_swap_path }}"
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: Format swap area
+  ansible.builtin.command: "mkswap {{ common_swap_path }}"
+  when: common_swap_path not in common_swap_active.stdout
+  register: common_swap_format
+  changed_when: common_swap_format.rc == 0
+
+- name: Enable swap
+  ansible.builtin.command: "swapon {{ common_swap_path }}"
+  when: common_swap_path not in common_swap_active.stdout
+  register: common_swap_enable
+  changed_when: common_swap_enable.rc == 0
+
+- name: Persist swap entry in /etc/fstab
+  ansible.posix.mount:
+    path: none
+    src: "{{ common_swap_path }}"
+    fstype: swap
+    opts: sw
+    state: present
+
+- name: Set vm.swappiness
+  ansible.posix.sysctl:
+    name: vm.swappiness
+    value: "{{ common_swappiness }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/99-balruno.conf
+    reload: true

@@ -1,0 +1,20 @@
+# OS-level firewall (firewalld) — defense in depth on top of OCI Security List.
+# OCI VCN already drops everything not in the Security List, but layering at
+# the host means a misconfigured Security List won't expose new ports until we
+# also open them here.
+#
+# Note: per-role (nginx, postgres, monitoring) tasks open their own ports.
+# This common pass only ensures firewalld is running and SSH stays open.
+
+- name: Ensure firewalld is enabled + started
+  ansible.builtin.systemd:
+    name: firewalld
+    enabled: true
+    state: started
+
+- name: Allow SSH through firewalld
+  ansible.posix.firewalld:
+    service: ssh
+    permanent: true
+    immediate: true
+    state: enabled

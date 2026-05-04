@@ -1,0 +1,11 @@
+# Ansible vault — 시크릿
+group_vars/vault.yml
+
+# Ansible 임시 파일
+*.retry
+.vault_pass
+.ansible/
+
+# 로컬 override
+group_vars/local.yml
+inventory.local.yml
