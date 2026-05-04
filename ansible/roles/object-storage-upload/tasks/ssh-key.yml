@@ -3,6 +3,14 @@
 # authorized_keys via Ansible's delegate_to, so the operator doesn't need to
 # copy keys by hand.
 
+- name: Ensure .ssh dir exists (must precede openssh_keypair, which doesn't create parents)
+  ansible.builtin.file:
+    path: "{{ osu_home }}/.ssh"
+    state: directory
+    owner: "{{ osu_user }}"
+    group: "{{ osu_user }}"
+    mode: '0700'
+
 - name: Generate SSH key pair for the upload daemon (status side)
   community.crypto.openssh_keypair:
     path: "{{ osu_home }}/.ssh/id_ed25519"
@@ -12,14 +20,6 @@
     mode: '0600'
     state: present
   register: osu_keypair
-
-- name: Ensure .ssh dir mode
-  ansible.builtin.file:
-    path: "{{ osu_home }}/.ssh"
-    state: directory
-    owner: "{{ osu_user }}"
-    group: "{{ osu_user }}"
-    mode: '0700'
 
 - name: Pre-seed backup host fingerprint into known_hosts
   ansible.builtin.known_hosts:
