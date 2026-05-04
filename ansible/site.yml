@@ -21,9 +21,9 @@
   roles:
     - role: common
       vars:
-        # Docker is needed on monitor (Grafana stack) and status (Uptime Kuma).
-        # prod-app + backup run their workloads as plain systemd units.
-        common_install_docker: "{{ inventory_hostname in ['monitor', 'status'] }}"
+        # Docker only on monitor (Grafana stack). Other hosts run their
+        # workloads as plain systemd units after v1.2 (Uptime Kuma drop).
+        common_install_docker: "{{ inventory_hostname == 'monitor' }}"
 
 # ───────────────────────────────────────────────────────────────────
 # 2. prod-app — Spring Boot + Hocuspocus + Nginx  (Phase B-7).
@@ -71,13 +71,18 @@
 #         cloudflared_hostname: "{{ monitor_domain }}"
 
 # ───────────────────────────────────────────────────────────────────
-# 5. status — Uptime Kuma + Object Storage upload daemon.
+# 5. status — Object Storage upload daemon (3-2-1 offsite).
+#
+# Earlier draft also ran Uptime Kuma here. We dropped that — the Grafana
+# stack on monitor (with blackbox_exporter) already covers HTTP/SSL/ping
+# probing, Alertmanager handles Discord/Slack, and Grafana 12 Public
+# Dashboards covers public status pages. Cloudflare Workers cron handles
+# the truly external vantage point. See ADR 0007 v1.2.
 # ───────────────────────────────────────────────────────────────────
-- name: Deploy status (Uptime Kuma + Object Storage upload)
-  hosts: status
-  become: true
-  tags: [status]
-  roles:
-    - role: uptime-kuma
-      tags: [uptime-kuma]
-    # object-storage-upload role enabled in a follow-up commit.
+# - name: Deploy status (Object Storage upload daemon)
+#   hosts: status
+#   become: true
+#   tags: [status]
+#   roles:
+#     - role: object-storage-upload
+#       tags: [object-storage]

@@ -40,3 +40,24 @@ scrape_configs:
       - targets: ["{{ monitor_private_ip }}:9187"]
         labels:
           db: balruno
+
+  # blackbox_exporter — replaces Uptime Kuma's role.
+  # Prometheus instructs blackbox_exporter to probe each target via the
+  # `module` query param. The 'up' metric goes 0/1 per target, plus
+  # probe_duration_seconds, probe_ssl_earliest_cert_expiry, etc.
+  - job_name: blackbox_http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+{% for target in monitoring_blackbox_targets %}
+          - "{{ target }}"
+{% endfor %}
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: "blackbox-exporter:9115"

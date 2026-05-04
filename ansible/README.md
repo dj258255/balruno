@@ -13,7 +13,7 @@
 | **prod-app** | 168.107.47.33 | ARM 12GB | Spring Boot 4.1 + Java 25 + Hocuspocus + Nginx |
 | **monitor** | 168.107.10.100 | ARM 12GB | PostgreSQL 17 + Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB |
 | **backup** | 134.185.108.159 | x86 1GB | pg_dump rsync 수신 + cloudflared (monitor.balruno.com Tunnel) + node_exporter |
-| **status** | 158.179.162.44 | x86 1GB | Uptime Kuma (status.balruno.com) + Object Storage upload daemon + node_exporter |
+| **status** | 158.179.162.44 | x86 1GB | Object Storage upload daemon (3-2-1 offsite) + node_exporter |
 
 **OS**: Rocky Linux 9, **SSH user**: rocky, **SSH key**: `~/.ssh/oci_key`
 **같은 VCN** (10.0.0.0/24) — internal 통신 1ms
@@ -35,11 +35,10 @@ ansible/
 ├── roles/
 │   ├── common                     swap / fail2ban / Docker / SSH hardening
 │   ├── nginx                      Nginx + Cloudflare Origin Cert + reverse proxy
-│   ├── postgres                   PostgreSQL 17 + tuning + pg_hba
+│   ├── postgres                   PostgreSQL 18 + tuning + pg_hba
 │   ├── spring-boot                Spring Boot 4.1 + Java 25 systemd unit
 │   ├── hocuspocus                 Hocuspocus Node 22 systemd unit
-│   ├── monitoring                 Docker Compose: Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB
-│   ├── uptime-kuma                Docker Uptime Kuma (status.balruno.com)
+│   ├── monitoring                 Docker Compose: Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB + blackbox_exporter
 │   ├── cloudflared                Cloudflare Tunnel daemon (backup 머신)
 │   ├── backup                     pg_dump cron + rsync 수신
 │   └── object-storage-upload      OCI CLI + cron (status 머신)
@@ -136,7 +135,7 @@ Step 2: ansible-playbook site.yml --tags common --limit all   ← swap/fail2ban/
 Step 3: ansible-playbook site.yml --limit monitor        ← PG + Grafana stack 먼저
 Step 4: ansible-playbook site.yml --limit prod_app       ← Spring + Hocuspocus + Nginx
 Step 5: ansible-playbook site.yml --limit backup         ← pg_dump + cloudflared
-Step 6: ansible-playbook site.yml --limit status         ← Uptime Kuma + Object Storage
+Step 6: ansible-playbook site.yml --limit status         ← Object Storage upload daemon + node_exporter
 Step 7: 검증 + 스크린샷 (블로그 2편/5편 자료)
 ```
 

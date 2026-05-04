@@ -39,7 +39,7 @@ alloy_version: "1.5.0"
 prometheus_version: "3.0.0"
 alertmanager_version: "0.27.0"
 influxdb_version: "2.7.10"
-uptime_kuma_version: "1.23.16"
+blackbox_exporter_version: "0.27.0"   # Replaces Uptime Kuma — Prom-native, fits Grafana stack.
 cloudflared_version: "latest"
 
 # ─── Backup (3-2-1 rule, ADR 0007 v1.1 §3.5) ─────────────────────────────

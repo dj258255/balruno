@@ -13,6 +13,7 @@ monitoring_image_prometheus: "prom/prometheus:v3.0.0"
 monitoring_image_alertmanager: "prom/alertmanager:v0.27.0"
 monitoring_image_influxdb: "influxdb:2.7.10"
 monitoring_image_node_exporter: "prom/node-exporter:v1.9.0"
+monitoring_image_blackbox_exporter: "prom/blackbox-exporter:v{{ blackbox_exporter_version }}"
 
 # Ports exposed to host (loopback or VCN-only — Cloudflare Tunnel routes externally).
 monitoring_port_grafana: 3000
@@ -22,6 +23,7 @@ monitoring_port_prometheus: 9090
 monitoring_port_alertmanager: 9093
 monitoring_port_influxdb: 8086
 monitoring_port_node_exporter: 9100
+monitoring_port_blackbox_exporter: 9115
 
 # Bind to private VCN IP only — the Cloudflare Tunnel daemon (on backup host)
 # proxies Grafana to the public internet via monitor.balruno.com.
@@ -41,6 +43,17 @@ monitoring_mem_prometheus: "1g"
 monitoring_mem_alertmanager: "128m"
 monitoring_mem_influxdb: "1g"
 monitoring_mem_node_exporter: "64m"
+monitoring_mem_blackbox_exporter: "64m"
+
+# blackbox_exporter probe targets — Uptime Kuma replacement. Prometheus scrapes
+# blackbox_exporter, which actually fires the HTTP/SSL/TCP probes against these
+# URLs and reports up=1/0 + latency.
+monitoring_blackbox_targets:
+  - https://api.balruno.com/actuator/health
+  - https://collab.balruno.com
+  - https://monitor.balruno.com
+  - https://status.balruno.com
+  - https://balruno.com
 
 # Hosts that Prometheus scrapes via node_exporter (each runs its own exporter).
 # Filled at apply time — see prometheus.yml.j2.

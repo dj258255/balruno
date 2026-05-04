@@ -32,6 +32,7 @@
     - "{{ monitoring_root }}/alloy"
     - "{{ monitoring_root }}/prometheus"
     - "{{ monitoring_root }}/alertmanager"
+    - "{{ monitoring_root }}/blackbox"
 
 - name: Render docker-compose.yml
   ansible.builtin.template:
@@ -87,6 +88,15 @@
     mode: '0644'
   notify: restart monitoring stack
 
+- name: Render blackbox_exporter config
+  ansible.builtin.template:
+    src: blackbox-config.yml.j2
+    dest: "{{ monitoring_root }}/blackbox/blackbox.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart monitoring stack
+
 - name: Allow monitoring ports from VCN private range
   ansible.posix.firewalld:
     rich_rule: 'rule family="ipv4" source address="10.0.0.0/24" port port="{{ item }}" protocol="tcp" accept'
@@ -100,6 +110,7 @@
     - "{{ monitoring_port_alertmanager }}"
     - "{{ monitoring_port_influxdb }}"
     - "{{ monitoring_port_node_exporter }}"
+    - "{{ monitoring_port_blackbox_exporter }}"
 
 - name: Pull container images
   community.docker.docker_compose_v2_pull:

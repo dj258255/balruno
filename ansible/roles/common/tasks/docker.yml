@@ -1,4 +1,4 @@
-# Docker CE on Rocky 9 — used by monitor (Grafana stack) and status (Uptime Kuma).
+# Docker CE on Rocky 9 — used by monitor (Grafana stack) only.
 # Skipped on prod-app (Spring Boot + Hocuspocus run as systemd units, no Docker)
 # and on backup (rsync + cloudflared run as systemd units).
 

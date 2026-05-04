@@ -130,3 +130,16 @@ services:
     volumes:
       - /:/host:ro,rslave
     mem_limit: {{ monitoring_mem_node_exporter }}
+
+  blackbox-exporter:
+    image: {{ monitoring_image_blackbox_exporter }}
+    container_name: blackbox-exporter
+    restart: unless-stopped
+    networks: [monitoring]
+    ports:
+      - "{{ monitoring_bind_address }}:{{ monitoring_port_blackbox_exporter }}:9115"
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - {{ monitoring_root }}/blackbox/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    mem_limit: {{ monitoring_mem_blackbox_exporter }}
