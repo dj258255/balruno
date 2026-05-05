@@ -21,15 +21,16 @@
     mode: '0775'
 
 - name: Render .env (POSTGRES_*, OAuth, JWT secrets)
-  # 0600 root:root — only the docker daemon (running as root) reads this.
-  # Decrypted from vault on the Ansible controller and shipped over SSH;
-  # never written to disk in plaintext on the controller.
+  # 0640 root:docker — docker compose is invoked by 'rocky' (in docker
+  # group) and the compose CLI itself parses env_file, so docker group
+  # members need read access. Others 0 — sshd-allowed users not in the
+  # docker group still can't see secrets.
   ansible.builtin.template:
     src: .env.j2
     dest: "{{ backend_env_file }}"
     owner: root
-    group: root
-    mode: '0600'
+    group: docker
+    mode: '0640'
   no_log: true   # don't echo secret-laced template diff to the run log
   notify: restart backend stack
 
