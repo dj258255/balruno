@@ -1,26 +1,24 @@
 /**
  * Login guard — Linear-style "server is canonical" mode.
  *
- * If the backend is configured (NEXT_PUBLIC_API_URL is set) we redirect
- * unauthenticated visits to /login. Public auth-related pages stay open.
+ * Redirects unauthenticated visits to /login when the backend is wired
+ * up (NEXT_PUBLIC_API_URL or NEXT_PUBLIC_BALRUNO_API_URL set). Without
+ * a backend the app still works offline so the middleware is a no-op.
  *
- * Detection: a non-empty `balruno-auth` cookie or LocalStorage value is
- * surfaced via the lightweight `auth-state` cookie that the client writes
- * on login (see authStore — written from a useEffect bridge in layout).
- *
- * If the backend is NOT configured (local-only dev, no NEXT_PUBLIC_API_URL),
- * the middleware is a no-op so the app still works offline.
+ * Auth signal: the backend's httpOnly `balruno_session` cookie (a JWT)
+ * is sent by the browser to *.balruno.com automatically. The middleware
+ * reads its presence — never the value — to decide whether to allow the
+ * route. Real authn / authz happens at the backend on each /api/v1/**
+ * request.
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
 
 const PUBLIC_PATHS = [
   '/login',
-  '/signup',
-  '/forgot-password',
-  '/reset-password',
-  '/verify-email',
-  '/invite',
+  '/auth/callback',
+  '/i',         // /i/{token} invite links
+  '/invite',    // legacy invite page (still rendered until C-3 migration)
   '/terms',
   '/privacy',
 ];
@@ -32,15 +30,20 @@ function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+function backendConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_BALRUNO_API_URL ?? process.env.NEXT_PUBLIC_API_URL,
+  );
+}
+
 export function middleware(req: NextRequest) {
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!backendUrl) return NextResponse.next();
+  if (!backendConfigured()) return NextResponse.next();
 
   const { pathname, search } = req.nextUrl;
   if (isPublicPath(pathname)) return NextResponse.next();
 
-  const authCookie = req.cookies.get('balruno-authed')?.value;
-  if (authCookie === '1') return NextResponse.next();
+  const sessionCookie = req.cookies.get('balruno_session')?.value;
+  if (sessionCookie) return NextResponse.next();
 
   const url = req.nextUrl.clone();
   url.pathname = '/login';
