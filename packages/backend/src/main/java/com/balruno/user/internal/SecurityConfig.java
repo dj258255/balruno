@@ -17,7 +17,9 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -44,7 +46,9 @@ class SecurityConfig {
             HttpSecurity http,
             OAuth2UserService<OAuth2UserRequest, OAuth2User> oauth2UserService,
             AuthenticationSuccessHandler oauth2LoginSuccessHandler,
-            BearerTokenResolver bearerTokenResolver) throws Exception {
+            BearerTokenResolver bearerTokenResolver,
+            AuthenticationEntryPoint jsonAuthenticationEntryPoint,
+            AccessDeniedHandler jsonAccessDeniedHandler) throws Exception {
         return http
                 // Stateless API — JWT in cookie does the session work, so
                 // we don't want HttpSession or CSRF tokens.
@@ -64,7 +68,13 @@ class SecurityConfig {
                         .successHandler(oauth2LoginSuccessHandler))
                 .oauth2ResourceServer(o -> o
                         .bearerTokenResolver(bearerTokenResolver)
+                        .authenticationEntryPoint(jsonAuthenticationEntryPoint)
+                        .accessDeniedHandler(jsonAccessDeniedHandler)
                         .jwt(jwt -> {}))
+                // 일반 filter chain (OAuth login redirect 등 non-API 경로) 의 fallback.
+                .exceptionHandling(eh -> eh
+                        .authenticationEntryPoint(jsonAuthenticationEntryPoint)
+                        .accessDeniedHandler(jsonAccessDeniedHandler))
                 .build();
     }
 
