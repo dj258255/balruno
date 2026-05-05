@@ -7,7 +7,7 @@
   ansible.builtin.yum_repository:
     name: adoptium
     description: Adoptium (Eclipse Temurin) RPM repo
-    baseurl: "https://packages.adoptium.net/artifactory/rpm/rocky/$releasever/$basearch"
+    baseurl: "https://packages.adoptium.net/artifactory/rpm/rhel/$releasever/$basearch"
     gpgcheck: true
     gpgkey: https://packages.adoptium.net/artifactory/api/gpg/key/public
     enabled: true
