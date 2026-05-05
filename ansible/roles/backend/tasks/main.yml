@@ -2,6 +2,16 @@
 # Docker engine itself is installed by the common role when
 # common_install_docker is true (set on prod_app in site.yml).
 
+- name: Ensure /opt/balruno parent dir is traversable
+  # Parent was left at balruno:balruno 0750 by the previous spring-boot role.
+  # rocky needs +x on every ancestor to cd into the backend dir for `docker compose`.
+  ansible.builtin.file:
+    path: /opt/balruno
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
 - name: Ensure backend install dir exists
   ansible.builtin.file:
     path: "{{ backend_install_dir }}"
