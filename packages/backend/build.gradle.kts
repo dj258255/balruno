@@ -37,6 +37,10 @@ dependencyManagement {
 dependencies {
     // Web stack — embedded Tomcat + Spring MVC + Jackson
     implementation("org.springframework.boot:spring-boot-starter-web")
+    // Spring Boot 4 split JacksonAutoConfiguration into its own starter;
+    // pulling it explicitly registers the ObjectMapper bean that
+    // shared.api's JSON entry point and access-denied handler need.
+    implementation("org.springframework.boot:spring-boot-starter-json")
 
     // Actuator — /actuator/health for nginx-side liveness probe + Prometheus scrape (B-3)
     implementation("org.springframework.boot:spring-boot-starter-actuator")
