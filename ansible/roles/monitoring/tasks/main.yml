@@ -118,8 +118,8 @@
     dest: "{{ monitoring_root }}/grafana/provisioning/alerting/contact-points.yml"
     owner: root
     group: root
-    mode: '0600'
-  no_log: true   # contains Discord webhook URL
+    mode: '0644'   # grafana container user (uid 472) reads it; dir is root-only on host
+  no_log: true   # never echo Discord webhook URL even with --diff
   notify: restart monitoring stack
 
 - name: Render Grafana alerting — notification policies
