@@ -20,7 +20,7 @@ import java.util.UUID;
  * filter chain, no extra wiring needed.
  */
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api")
 @Tag(name = "User")
 @SecurityRequirement(name = "bearerAuth")
 class MeController {
@@ -31,7 +31,7 @@ class MeController {
         this.userAuthService = userAuthService;
     }
 
-    @GetMapping("/me")
+    @GetMapping(path = "/me", version = "1")
     AuthenticatedUser me(@AuthenticationPrincipal Jwt jwt) {
         var userId = UUID.fromString(jwt.getSubject());
         return userAuthService.findById(userId);
