@@ -9,6 +9,8 @@ import com.balruno.user.UserAuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -37,6 +39,8 @@ import java.util.Locale;
 @Component
 class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(OAuth2LoginSuccessHandler.class);
+
     private final UserAuthService userAuthService;
     private final JwtIssuer jwtIssuer;
     private final JwtProperties props;
@@ -51,6 +55,8 @@ class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
         if (!(authentication instanceof OAuth2AuthenticationToken oauth)) {
+            log.warn("OAuth success handler invoked with non-OAuth2 authentication: {}",
+                    authentication == null ? "null" : authentication.getClass().getName());
             redirectWithError(request, response, "invalid_authentication");
             return;
         }
@@ -60,10 +66,19 @@ class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
             AuthenticatedUser user = userAuthService.findOrCreateOnOAuth(login);
             var token = jwtIssuer.issueAccessToken(user);
             response.addCookie(buildSessionCookie(token));
+            log.info("OAuth login ok: provider={} userId={}", login.provider(), user.id());
             redirectToFrontend(request, response, "ok");
         } catch (UserAuthException e) {
+            log.warn("OAuth login refused: provider={} reason={}",
+                    oauth.getAuthorizedClientRegistrationId(), e.reason(), e);
             redirectWithError(request, response, e.reason().name().toLowerCase(Locale.ROOT));
         } catch (RuntimeException e) {
+            // No PII in the error code we send to the browser, but the full
+            // stack belongs in our log so we can debug live OAuth failures.
+            log.error("OAuth login failed: provider={} principal={}",
+                    oauth.getAuthorizedClientRegistrationId(),
+                    oauth.getPrincipal() != null ? oauth.getPrincipal().getName() : "null",
+                    e);
             redirectWithError(request, response, "login_failed");
         }
     }
