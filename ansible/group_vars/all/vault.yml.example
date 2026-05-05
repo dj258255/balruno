@@ -53,5 +53,9 @@ vault_r2_secret_access_key: "REPLACE_WITH_R2_SECRET_ACCESS_KEY"
 # Sentry (same DSN as frontend or a separate one)
 vault_sentry_dsn_backend: ""
 
+# Discord webhook for Grafana Alertmanager — #alerts channel.
+# Generate via: Discord channel → Edit channel → Integrations → Webhooks.
+vault_discord_webhook_url: "REPLACE_WITH_DISCORD_WEBHOOK_URL"
+
 # Anthropic API (FR-AI v1 — used by the in-app AI proxy)
 vault_anthropic_api_key: ""

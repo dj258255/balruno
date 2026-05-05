@@ -1,0 +1,21 @@
+# {{ ansible_managed }}
+# Grafana provisioning provider for dashboards. On Grafana startup, it walks
+# /etc/grafana/provisioning/dashboards/json/ and auto-imports every .json
+# file. Files dropped/changed at apply time are picked up on the next
+# updateIntervalSeconds.
+
+apiVersion: 1
+
+providers:
+  - name: balruno-default
+    orgId: 1
+    folder: Balruno
+    folderUid: balruno
+    type: file
+    disableDeletion: true
+    editable: true
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json
+      foldersFromFilesStructure: false

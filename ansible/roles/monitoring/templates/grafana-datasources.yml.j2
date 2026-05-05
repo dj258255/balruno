@@ -7,6 +7,7 @@ apiVersion: 1
 
 datasources:
   - name: Prometheus
+    uid: prometheus      # stable UID — referenced by alert rules + dashboards
     type: prometheus
     access: proxy
     url: http://prometheus:9090
@@ -14,12 +15,14 @@ datasources:
     editable: false
 
   - name: Loki
+    uid: loki
     type: loki
     access: proxy
     url: http://loki:3100
     editable: false
 
   - name: InfluxDB
+    uid: influxdb
     type: influxdb
     access: proxy
     url: http://influxdb:8086

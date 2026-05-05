@@ -1,0 +1,21 @@
+# {{ ansible_managed }}
+# Grafana alerting contact points. Discord webhook is the only channel for
+# Stage 0; Slack/email/PagerDuty added at later stages per ADR 0010 §5.
+
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: discord-balruno
+    receivers:
+      - uid: discord-balruno-webhook
+        type: discord
+        settings:
+          url: "{{ vault_discord_webhook_url }}"
+          # Title + message templates use Grafana's built-in alert template
+          # vars; override later if we want richer formatting.
+          title: '{% raw %}{{ template "default.title" . }}{% endraw %}'
+          message: '{% raw %}{{ template "default.message" . }}{% endraw %}'
+          avatar_url: ''
+          use_discord_username: false
+        disableResolveMessage: false

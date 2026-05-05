@@ -28,6 +28,8 @@
     - "{{ monitoring_root }}"
     - "{{ monitoring_root }}/grafana/provisioning/datasources"
     - "{{ monitoring_root }}/grafana/provisioning/dashboards"
+    - "{{ monitoring_root }}/grafana/provisioning/dashboards/json"
+    - "{{ monitoring_root }}/grafana/provisioning/alerting"
     - "{{ monitoring_root }}/loki"
     - "{{ monitoring_root }}/alloy"
     - "{{ monitoring_root }}/prometheus"
@@ -83,6 +85,56 @@
   ansible.builtin.template:
     src: grafana-datasources.yml.j2
     dest: "{{ monitoring_root }}/grafana/provisioning/datasources/datasources.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart monitoring stack
+
+- name: Render Grafana dashboards provider
+  ansible.builtin.template:
+    src: grafana-dashboards-provider.yml.j2
+    dest: "{{ monitoring_root }}/grafana/provisioning/dashboards/provider.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart monitoring stack
+
+- name: Copy vendored dashboard JSONs
+  ansible.builtin.copy:
+    src: "dashboards/{{ item }}"
+    dest: "{{ monitoring_root }}/grafana/provisioning/dashboards/json/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - node-exporter-full.json
+    - postgresql-database.json
+    - loki-logs.json
+    - blackbox-exporter.json
+
+- name: Render Grafana alerting — contact points
+  ansible.builtin.template:
+    src: grafana-contact-points.yml.j2
+    dest: "{{ monitoring_root }}/grafana/provisioning/alerting/contact-points.yml"
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true   # contains Discord webhook URL
+  notify: restart monitoring stack
+
+- name: Render Grafana alerting — notification policies
+  ansible.builtin.template:
+    src: grafana-notification-policies.yml.j2
+    dest: "{{ monitoring_root }}/grafana/provisioning/alerting/policies.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart monitoring stack
+
+- name: Render Grafana alerting — alert rules
+  ansible.builtin.template:
+    src: grafana-alert-rules.yml.j2
+    dest: "{{ monitoring_root }}/grafana/provisioning/alerting/rules.yml"
     owner: root
     group: root
     mode: '0644'

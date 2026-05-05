@@ -1,0 +1,139 @@
+# {{ ansible_managed }}
+# Stage 0 alert rules. Conservative — 4 rules covering the 'paying user just
+# noticed' tier of incidents:
+#   1. Postgres down
+#   2. blackbox probe to api/collab failing
+#   3. TLS cert expires within 14 days
+#   4. host CPU pegged > 90% for 15 minutes
+#
+# Each rule queries Prometheus via the provisioned datasource (UID derived
+# from the name 'Prometheus' — Grafana resolves at evaluation time).
+
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: balruno-stage0
+    folder: Balruno
+    interval: 1m
+    rules:
+      # ─── Postgres availability ─────────────────────────────────────
+      - uid: bal-pg-down
+        title: Postgres down
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: 'up{job="postgres"}'
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+              refId: B
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          summary: 'Postgres scrape returned up=0 for 5m'
+          runbook_url: ''
+        labels:
+          severity: critical
+          service: postgres
+
+      # ─── Public endpoints (api/collab) ─────────────────────────────
+      - uid: bal-blackbox-down
+        title: Public endpoint probe failing
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: 'probe_success{instance=~"https://(api|collab)\\\\..+"}'
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+              refId: B
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          summary: 'blackbox HTTP probe failing for api or collab'
+        labels:
+          severity: critical
+          service: public-api
+
+      # ─── TLS cert expiry (14 day warn) ─────────────────────────────
+      - uid: bal-cert-expiry
+        title: TLS cert expires within 14 days
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: '(probe_ssl_earliest_cert_expiry - time()) / 86400'
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [14] }
+              refId: B
+        noDataState: NoData
+        execErrState: Alerting
+        for: 30m
+        annotations:
+          summary: 'TLS certificate expires in <14 days for {{ '{{' }} $labels.instance {{ '}}' }}'
+        labels:
+          severity: warning
+          service: tls
+
+      # ─── Host CPU pegged ───────────────────────────────────────────
+      - uid: bal-host-cpu
+        title: Host CPU > 90% for 15m
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: '100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])))'
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [90] }
+              refId: B
+        noDataState: NoData
+        execErrState: Alerting
+        for: 15m
+        annotations:
+          summary: 'Host CPU > 90% sustained 15m on {{ '{{' }} $labels.instance {{ '}}' }}'
+        labels:
+          severity: warning
+          service: host
