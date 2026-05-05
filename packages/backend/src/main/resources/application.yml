@@ -94,7 +94,11 @@ balruno.jwt:
   access-token-ttl: PT15M
   refresh-token-ttl: P7D
   cookie-name: balruno_session
-  cookie-domain: .balruno.com
+  # No leading dot — RFC 6265 (2011) deprecated the historical leading-dot
+  # form, and Tomcat 11's Rfc6265CookieProcessor rejects it outright. The
+  # browser still sends the cookie to api.* and app.* alike when Domain is
+  # the apex domain.
+  cookie-domain: balruno.com
   frontend-redirect-base: https://app.balruno.com
 
 # ─── springdoc / OpenAPI ─────────────────────────────────────────────────
