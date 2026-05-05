@@ -1,0 +1,100 @@
+# Build the Spring Boot JAR and deploy it to prod_app.
+# Triggers:
+#   - push to main that touches packages/backend/**
+#   - workflow_dispatch (manual rollback / retry)
+#
+# Decision: ADR 0006 (monorepo + Java 25 + SB 4) + ADR 0007 v1.3 §3.6 (GitOps).
+# Secrets required:
+#   OCI_SSH_PRIVATE_KEY  — same key the Ansible workflow already uses
+#
+# Workflow injection: this file does not consume any untrusted github.event.*
+# input in run: blocks, so no escaping concerns.
+
+name: backend-deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/backend/**'
+      - '.github/workflows/backend-deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: backend-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PROD_HOST: 168.107.47.33
+      PROD_USER: rocky
+      INSTALL_DIR: /opt/balruno/backend
+      SERVICE_NAME: balruno-backend
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 25 (Eclipse Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('packages/backend/**/*.gradle*', 'packages/backend/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build bootJar + run tests
+        working-directory: packages/backend
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon test bootJar
+
+      - name: Configure SSH key
+        env:
+          OCI_SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$OCI_SSH_PRIVATE_KEY" > ~/.ssh/oci_key
+          chmod 600 ~/.ssh/oci_key
+
+      - name: Upload JAR to prod_app
+        run: |
+          scp -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+            -i ~/.ssh/oci_key \
+            packages/backend/build/libs/balruno-backend.jar \
+            "${PROD_USER}@${PROD_HOST}:${INSTALL_DIR}/app.jar.new"
+
+      - name: Atomic swap + restart service
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+            -i ~/.ssh/oci_key \
+            "${PROD_USER}@${PROD_HOST}" \
+            "sudo install -o balruno -g balruno -m 0640 ${INSTALL_DIR}/app.jar.new ${INSTALL_DIR}/app.jar \
+             && sudo rm -f ${INSTALL_DIR}/app.jar.new \
+             && sudo systemctl daemon-reload \
+             && sudo systemctl restart ${SERVICE_NAME} \
+             && sleep 5 \
+             && sudo systemctl is-active ${SERVICE_NAME}"
+
+      - name: Smoke-test via Cloudflare
+        run: |
+          for i in $(seq 1 12); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://api.balruno.com/actuator/health || true)
+            if [ "$code" = "200" ]; then
+              echo "api.balruno.com -> 200 OK after ${i} retries"
+              exit 0
+            fi
+            echo "  retry ${i}/12 — got '${code}', waiting 5s"
+            sleep 5
+          done
+          echo "ERROR: api.balruno.com never returned 200"
+          exit 1

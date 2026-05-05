@@ -31,11 +31,14 @@
 # server are produced. nginx will return 502 Bad Gateway until then —
 # that's expected, the gate stays on.
 # ───────────────────────────────────────────────────────────────────
-- name: Deploy prod-app (nginx)
+- name: Deploy prod-app (Spring Boot runtime + nginx)
   hosts: prod_app
   become: true
   tags: [prod-app]
   roles:
+    - role: spring-boot
+      tags: [spring-boot]
+    # hocuspocus role enabled in Phase B-5 once the Node sidecar code lives.
     - role: nginx
       tags: [nginx]
 

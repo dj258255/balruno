@@ -1,0 +1,60 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Balruno backend — Gradle Kotlin DSL build script.
+//
+// Stack: Java 25 (LTS) + Spring Boot 4.1 + virtual threads. ADR 0006 v1.2.
+// Phase B-1 = bootstrap only — DB / Hibernate / Spring Security come in B-2.
+
+plugins {
+    java
+    id("org.springframework.boot") version "4.0.6"
+    id("io.spring.dependency-management") version "1.1.6"
+}
+
+group = "com.balruno"
+version = "0.0.1-SNAPSHOT"
+description = "Balruno backend (AGPL-3.0-or-later)"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        // Spring Modulith BOM (ADR 0014). Pins all spring-modulith-* artifacts.
+        mavenBom("org.springframework.modulith:spring-modulith-bom:1.4.0")
+    }
+}
+
+dependencies {
+    // Web stack — embedded Tomcat + Spring MVC + Jackson
+    implementation("org.springframework.boot:spring-boot-starter-web")
+
+    // Actuator — /actuator/health for nginx-side liveness probe + Prometheus scrape (B-3)
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+
+    // Spring Modulith — modular monolith with compile-time module boundaries (ADR 0014)
+    implementation("org.springframework.modulith:spring-modulith-starter-core")
+    testImplementation("org.springframework.modulith:spring-modulith-starter-test")
+
+    // ArchUnit override — Modulith 1.4 BOM pins an older ArchUnit that can't
+    // read Java 25 (class file major 69) bytecode. 1.4.2 fixes this.
+    testImplementation("com.tngtech.archunit:archunit:1.4.2")
+
+    // Test
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+
+tasks.bootJar {
+    archiveFileName.set("balruno-backend.jar")
+}

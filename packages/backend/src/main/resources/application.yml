@@ -1,0 +1,36 @@
+# Balruno backend default config.
+# Profile-specific overrides live in application-<profile>.yml.
+
+spring:
+  application:
+    name: balruno-backend
+  threads:
+    virtual:
+      enabled: true   # Java 25 virtual threads — ADR 0006 v1.2
+
+server:
+  port: 8080
+  # Loopback only — Cloudflare → nginx → 127.0.0.1:8080. ADR 0007 §3.2.
+  address: 127.0.0.1
+  # Honour X-Forwarded-* set by nginx so HTTP and remote addr match origin.
+  forward-headers-strategy: native
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: Balruno Backend
+    license: AGPL-3.0-or-later
+    repo: https://github.com/dj258255/balruno
