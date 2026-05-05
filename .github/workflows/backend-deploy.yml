@@ -36,6 +36,31 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Wait for ansible-deploy on the same commit
+        # Same-commit ordering: ansible-deploy provisions JDK, balruno user,
+        # /opt/balruno/backend, and the systemd unit on prod_app. backend-deploy
+        # delivers the JAR and restarts the unit. Poll the ansible-deploy run
+        # for THIS commit and bail if it didn't succeed — race condition fix.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for i in $(seq 1 60); do
+            run=$(gh api "/repos/${{ github.repository }}/actions/workflows/ansible-deploy.yml/runs?head_sha=${{ github.sha }}&per_page=1" --jq '.workflow_runs[0] // {}')
+            status=$(echo "$run" | jq -r '.status // "missing"')
+            concl=$(echo "$run" | jq -r '.conclusion // "null"')
+            echo "ansible-deploy on ${{ github.sha }}: status=$status conclusion=$concl"
+            if [ "$status" = "completed" ]; then
+              if [ "$concl" = "success" ]; then
+                exit 0
+              fi
+              echo "ansible-deploy ended with $concl — abort backend-deploy"
+              exit 1
+            fi
+            sleep 20
+          done
+          echo "ansible-deploy did not finish in 20 minutes — abort"
+          exit 1
+
       - name: Set up JDK 25 (Eclipse Temurin)
         uses: actions/setup-java@v5
         with:
