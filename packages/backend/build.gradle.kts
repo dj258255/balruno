@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Balruno backend — Gradle Kotlin DSL build script.
 //
-// Stack: Java 25 (LTS) + Spring Boot 4.1 + virtual threads. ADR 0006 v1.2.
-// Phase B-1 = bootstrap only — DB / Hibernate / Spring Security come in B-2.
+// Stack: Java 25 (LTS) + Spring Boot 4.0 + virtual threads. ADR 0006 v1.2.
+// Phase B-2.1 adds the persistence layer (PG 18 + Flyway + JPA).
 
 plugins {
     java
@@ -38,6 +38,15 @@ dependencies {
     // Actuator — /actuator/health for nginx-side liveness probe + Prometheus scrape (B-3)
     implementation("org.springframework.boot:spring-boot-starter-actuator")
 
+    // Persistence — JPA over Hibernate 7 + Hikari pool. Schema is owned by
+    // Flyway; JPA is set to ddl-auto=validate so mappings can never silently
+    // drift from the DDL. ADR 0001 (PG 18) + ADR 0012 (UUIDv7).
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
+    runtimeOnly("org.postgresql:postgresql")
+
     // Spring Modulith — modular monolith with compile-time module boundaries (ADR 0014)
     implementation("org.springframework.modulith:spring-modulith-starter-core")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
@@ -48,6 +57,9 @@ dependencies {
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

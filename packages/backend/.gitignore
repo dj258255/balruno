@@ -22,6 +22,10 @@ logs/
 application-local.yml
 application-local.properties
 
+# Local secrets (real values; .env.example is the committed template)
+.env
+.env.local
+
 # Build artifacts that ship via CI, not commit
 *.jar
 !gradle/wrapper/gradle-wrapper.jar

@@ -20,6 +20,19 @@
     group: docker      # so 'docker compose ...' commands run by rocky (in docker grp) work
     mode: '0775'
 
+- name: Render .env (POSTGRES_*, OAuth, JWT secrets)
+  # 0600 root:root — only the docker daemon (running as root) reads this.
+  # Decrypted from vault on the Ansible controller and shipped over SSH;
+  # never written to disk in plaintext on the controller.
+  ansible.builtin.template:
+    src: .env.j2
+    dest: "{{ backend_env_file }}"
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true   # don't echo secret-laced template diff to the run log
+  notify: restart backend stack
+
 - name: Render docker-compose.yml
   ansible.builtin.template:
     src: docker-compose.yml.j2

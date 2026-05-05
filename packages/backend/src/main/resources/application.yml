@@ -8,6 +8,36 @@ spring:
     virtual:
       enabled: true   # Java 25 virtual threads — ADR 0006 v1.2
 
+  # ─── Datasource ────────────────────────────────────────────────────────
+  # All values come from environment variables so the same image works in
+  # local-dev, prod, and CI without any application-<profile>.yml secret
+  # leaks. .env files (rendered by Ansible in prod, .env locally) are the
+  # only place credentials live as plaintext. POSTGRES_* names match the
+  # official postgres docker image so a single .env feeds both the DB
+  # container and the Spring datasource.
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 5000
+      max-lifetime: 1800000   # 30 min — under PG's idle_in_transaction limits
+  jpa:
+    hibernate:
+      # Flyway owns DDL. JPA validates that entity mappings match the
+      # schema, but is forbidden from creating/altering tables.
+      ddl-auto: validate
+    open-in-view: false       # avoid the OSIV antipattern from day 1
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+
 server:
   port: 8080
   # Bind to 0.0.0.0 inside the container — docker-compose publishes the port

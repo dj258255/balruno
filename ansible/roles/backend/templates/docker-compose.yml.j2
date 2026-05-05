@@ -12,6 +12,11 @@ services:
     # Loopback bind — Cloudflare → nginx :443 → 127.0.0.1:8080 → here.
     ports:
       - "127.0.0.1:8080:8080"
+    # POSTGRES_*, OAuth, JWT secrets all flow through this file. It is
+    # rendered with mode 0600 root:root so the on-disk plaintext is only
+    # readable by the docker daemon.
+    env_file:
+      - {{ backend_env_file }}
     environment:
       SPRING_PROFILES_ACTIVE: "{{ backend_active_profile }}"
     mem_limit: {{ backend_mem_limit }}

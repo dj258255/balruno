@@ -1,19 +1,65 @@
 # Local dev compose — `cd packages/backend && docker compose up`.
 # Production compose is rendered by Ansible at /opt/balruno/backend/docker-compose.yml
 # on prod_app. Keep both in sync at the structural level (image, ports,
-# env, mem_limit). Differences live in .env / SPRING_PROFILES_ACTIVE.
+# env wiring, mem_limit). Differences live in .env / SPRING_PROFILES_ACTIVE.
+#
+# First-time setup:
+#   cp .env.example .env       # then edit values you care about
+#   docker compose up --build
+#
+# .env feeds both the postgres container and Spring's datasource so a single
+# source of truth governs credentials. POSTGRES_* names match the official
+# postgres image conventions.
 
 name: balruno-backend-dev
 
 services:
+  postgres:
+    image: postgres:18
+    container_name: balruno-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-balruno_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-balruno}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_change_me}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - balruno-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-balruno} -d ${POSTGRES_DB:-balruno_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: balruno-backend
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: local
+      # Spring datasource — composed from POSTGRES_* so the postgres
+      # container and Spring share one source of truth for credentials.
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-balruno_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-balruno}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_change_me}
+      # OAuth — same client_id/secret registered with GitHub/Google.
+      # Both providers accept multiple callback URLs so prod creds work
+      # locally too. Empty defaults disable the provider for early dev.
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
+      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
     mem_limit: 2g
+
+volumes:
+  balruno-pg-data:

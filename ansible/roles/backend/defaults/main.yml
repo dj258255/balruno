@@ -5,6 +5,15 @@
 
 backend_install_dir: /opt/balruno/backend
 backend_compose_file: "{{ backend_install_dir }}/docker-compose.yml"
+backend_env_file: "{{ backend_install_dir }}/.env"
+
+# DB connection — Spring on prod_app talks to PG 18 on monitor across the
+# OCI VCN private range. The credential itself comes from vault.yml
+# (vault_postgres_password) — this file only declares non-secret routing.
+backend_postgres_host: "{{ monitor_private_ip }}"
+backend_postgres_port: "{{ postgres_port | default(5432) }}"
+backend_postgres_db: "{{ postgres_db_name | default('balruno') }}"
+backend_postgres_user: "{{ postgres_db_user | default('balruno') }}"
 
 # Image lives at ghcr.io/<owner>/balruno-backend.
 # Push tags both 'latest' (rolling) and the commit SHA (rollback target);
