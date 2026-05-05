@@ -3,20 +3,29 @@ package com.balruno.shared.api;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.accept.ApiVersionParser;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.config.annotation.ApiVersionConfigurer;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Wires Spring Framework 7's declarative API versioning. The version
- * lives in the URL path segment immediately after {@code /api}; the
- * leading {@code v} is stripped before matching, so that
- * {@code /api/v1/me} routes to a handler annotated with
- * {@code @GetMapping(path = "/me", version = "1")}.
+ * Spring Framework 7's declarative API versioning, path-segment style.
  *
- * Adding a v2 later means a new method on the same controller (or a
- * separate controller) annotated with {@code version = "2"} and
- * extending {@link #addSupportedVersionsList} below — no changes to URL
- * patterns or per-controller {@code @RequestMapping} prefixes.
+ * Two pieces are required:
+ *   1. {@link #configurePathMatch} auto-prefixes every {@link RestController}
+ *      with {@code /api/{version}}, turning the URL segment into a path
+ *      variable so Spring's PathPatternParser strips it from the route
+ *      match. Without this, the URL {@code /api/v1/me} fails to match
+ *      {@code @GetMapping("/me")} because the literal {@code /api/v1/...}
+ *      remains in the request path.
+ *   2. {@link #configureApiVersioning} reads segment 1 of the URL as the
+ *      version, strips a leading "v" via the custom parser, and rejects
+ *      anything outside the supported list.
+ *
+ * Controllers therefore declare just the resource path on their methods
+ * (e.g. {@code @GetMapping(path = "/me", version = "1")}) and adding
+ * v2 is a one-line addition to {@link #addSupportedVersionsList} plus
+ * a sibling method annotated {@code version = "2"}.
  */
 @Configuration
 class WebConfig implements WebMvcConfigurer {
@@ -27,6 +36,13 @@ class WebConfig implements WebMvcConfigurer {
                 .usePathSegment(1)
                 .setVersionParser(new StripVPrefixParser())
                 .addSupportedVersions(addSupportedVersionsList());
+    }
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        configurer.addPathPrefix(
+                "/api/{version}",
+                clazz -> clazz.isAnnotationPresent(RestController.class));
     }
 
     /** Currently supported major versions. New versions append here. */
