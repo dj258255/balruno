@@ -5,6 +5,7 @@ import com.balruno.user.AuthenticatedUser;
 import com.balruno.user.OAuthLogin;
 import com.balruno.user.UserAuthException;
 import com.balruno.user.UserAuthService;
+import com.balruno.workspace.WorkspaceService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,10 +24,13 @@ class UserAuthServiceImpl implements UserAuthService {
 
     private final UserRepository userRepo;
     private final OAuthAccountRepository oauthRepo;
+    private final WorkspaceService workspaceService;
 
-    UserAuthServiceImpl(UserRepository userRepo, OAuthAccountRepository oauthRepo) {
+    UserAuthServiceImpl(UserRepository userRepo, OAuthAccountRepository oauthRepo,
+                        WorkspaceService workspaceService) {
         this.userRepo = userRepo;
         this.oauthRepo = oauthRepo;
+        this.workspaceService = workspaceService;
     }
 
     @Override
@@ -74,6 +78,21 @@ class UserAuthServiceImpl implements UserAuthService {
                         login.email(),
                         login.emailVerified()));
                 u.recordLogin();
+
+                // Auto-create a default workspace so the SPA never lands
+                // the user on an empty home (Notion / Linear / Vercel
+                // pattern, ADR 0015 §3.7). Slug derives from the email
+                // local-part with numeric-suffix fallback on collision;
+                // name takes the user's display name when available.
+                var slugBase = localPartOf(login.email());
+                var displayName = login.name() != null && !login.name().isBlank()
+                        ? login.name()
+                        : (slugBase != null ? slugBase : "Your");
+                workspaceService.createDefaultFor(
+                        u.getId(),
+                        slugBase,
+                        displayName + "'s Workspace");
+
                 yield u;
             }
             case OAuthLinkRule.Decision.RejectUnverifiedEmail r -> throw new UserAuthException(
@@ -90,6 +109,13 @@ class UserAuthServiceImpl implements UserAuthService {
     @Transactional(readOnly = true)
     public AuthenticatedUser findById(UUID userId) {
         return toDto(loadUser(userId));
+    }
+
+    /** Pulls the local-part out of an email, or returns null when absent. */
+    private static String localPartOf(String email) {
+        if (email == null) return null;
+        var at = email.indexOf('@');
+        return at > 0 ? email.substring(0, at) : null;
     }
 
     private UserEntity loadUser(UUID id) {
