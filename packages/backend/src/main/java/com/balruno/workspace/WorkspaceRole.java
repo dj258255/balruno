@@ -10,11 +10,9 @@ package com.balruno.workspace;
  * Ordered strongest → weakest. {@code permits(target)} answers "does
  * this role carry at least the responsibilities of {@code target}?".
  *
- * The string values mirror the {@code workspace_role} PG ENUM declared
- * in V2 — adding a tier requires both a Flyway ENUM ADD VALUE migration
- * and a new constant here.
- *
- * Full matrix + rejected alternatives: ADR 0015 §3.2.
+ * The string values mirror the {@code workspace_role} PG ENUM. Adding a
+ * tier requires both a Flyway ENUM ADD VALUE migration and a new
+ * constant here.
  */
 public enum WorkspaceRole {
     OWNER,

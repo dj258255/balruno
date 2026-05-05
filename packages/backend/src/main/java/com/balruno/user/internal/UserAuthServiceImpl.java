@@ -81,9 +81,9 @@ class UserAuthServiceImpl implements UserAuthService {
 
                 // Auto-create a default workspace so the SPA never lands
                 // the user on an empty home (Notion / Linear / Vercel
-                // pattern, ADR 0015 §3.7). Slug derives from the email
-                // local-part with numeric-suffix fallback on collision;
-                // name takes the user's display name when available.
+                // pattern). Slug derives from the email local-part with
+                // numeric-suffix fallback on collision; name takes the
+                // user's display name when available.
                 var slugBase = localPartOf(login.email());
                 var displayName = login.name() != null && !login.name().isBlank()
                         ? login.name()

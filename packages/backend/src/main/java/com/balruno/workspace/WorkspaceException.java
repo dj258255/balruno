@@ -4,8 +4,7 @@ package com.balruno.workspace;
 /**
  * Domain-level exception for the workspace module. The shared
  * ApiExceptionHandler maps each {@link Reason} onto the right HTTP
- * status (400 / 403 / 404 / 409 / 410) — see ADR 0015 for the full
- * mapping.
+ * status (400 / 403 / 404 / 409 / 410).
  */
 public class WorkspaceException extends RuntimeException {
 

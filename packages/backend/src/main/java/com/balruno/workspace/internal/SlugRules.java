@@ -7,9 +7,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Slug policy (ADR 0015 §3.6) — input format + reserved words in a
- * single place. Workspace / project / future namespace slugs all share
- * this rule set.
+ * Slug policy — input format + reserved words in a single place.
+ * Workspace / project / future namespace slugs all share this rule set.
  */
 final class SlugRules {
 

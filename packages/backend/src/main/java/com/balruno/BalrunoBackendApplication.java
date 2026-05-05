@@ -7,12 +7,11 @@ import org.springframework.modulith.Modulithic;
 
 /**
  * Balruno backend entry point. Domain modules (user, workspace, project,
- * sync, document, ai) live as sub-packages of {@code com.balruno} per
- * ADR 0014 (Spring Modulith).
+ * sync, document, ai) live as sub-packages of {@code com.balruno}.
  *
  * {@code @Modulithic} enables compile-time module boundary enforcement:
- * any cross-module access to internal packages becomes a build failure
- * via the ArchitectureTest in src/test/java.
+ * any cross-module access to a sibling's {@code internal} package becomes
+ * a build failure via the ArchitectureTest in src/test/java.
  */
 @Modulithic
 @SpringBootApplication

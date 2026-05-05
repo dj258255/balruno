@@ -6,7 +6,7 @@ spring:
     name: balruno-backend
   threads:
     virtual:
-      enabled: true   # Java 25 virtual threads — ADR 0006 v1.2
+      enabled: true   # Java 25 virtual threads — Loom-backed scheduler.
 
   # ─── Datasource ────────────────────────────────────────────────────────
   # All values come from environment variables so the same image works in

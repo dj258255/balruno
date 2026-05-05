@@ -21,10 +21,11 @@ import java.util.UUID;
  * separately — the encoder + decoder share the same key bytes via
  * {@link JwtProperties#secret()}.
  *
- * Algorithm choice (ADR 0002 + readme):
+ * Algorithm choice:
  *   - HS256 today, single-instance Spring app. Simpler key management.
- *   - RS256 + JWKS endpoint planned when Hocuspocus sidecar (B-5) needs
- *     to verify our tokens — separate verifier mustn't share the secret.
+ *   - RS256 + JWKS endpoint planned for when a separate verifier joins
+ *     (e.g. a Hocuspocus sidecar). HMAC requires sharing the secret with
+ *     every verifier, which compromises issuer/verifier separation.
  */
 @Component
 class JwtIssuer {

@@ -19,10 +19,10 @@ import java.util.UUID;
  * {@code internal}) — only the user module touches the JPA layer; the rest
  * of the codebase consumes user data via {@link com.balruno.user.UserAuthService}.
  *
- * ID generation: PG 18 native {@code uuidv7()} via column DEFAULT, NOT
- * Hibernate-side. Hibernate's {@code @UuidGenerator(style=TIME)} emits
- * RFC 4122 v1 (despite the name), which violates ADR 0012 §3.3. We let
- * Hibernate omit the column on INSERT ({@code insertable=false}) and read
+ * ID generation lives on the database side: the PG column DEFAULT is
+ * {@code uuidv7()} (RFC 9562 v7). Hibernate's {@code @UuidGenerator(
+ * style=TIME)} would emit RFC 4122 v1 instead despite the name, so the
+ * mapping omits the column on INSERT ({@code insertable=false}) and reads
  * the generated value back via the RETURNING clause ({@code @Generated}).
  */
 @Entity
