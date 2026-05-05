@@ -94,19 +94,21 @@ jobs:
           chmod 600 ~/.ssh/oci_key
 
       - name: Upload JAR to prod_app
+        # /opt/balruno/backend is balruno:balruno 0750 — rocky cannot scp into it
+        # directly. Stage in /tmp (rocky-writable) and sudo install across.
         run: |
           scp -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
             -i ~/.ssh/oci_key \
             packages/backend/build/libs/balruno-backend.jar \
-            "${PROD_USER}@${PROD_HOST}:${INSTALL_DIR}/app.jar.new"
+            "${PROD_USER}@${PROD_HOST}:/tmp/balruno-backend.jar.new"
 
-      - name: Atomic swap + restart service
+      - name: Atomic install + restart service
         run: |
           ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
             -i ~/.ssh/oci_key \
             "${PROD_USER}@${PROD_HOST}" \
-            "sudo install -o balruno -g balruno -m 0640 ${INSTALL_DIR}/app.jar.new ${INSTALL_DIR}/app.jar \
-             && sudo rm -f ${INSTALL_DIR}/app.jar.new \
+            "sudo install -o balruno -g balruno -m 0640 /tmp/balruno-backend.jar.new ${INSTALL_DIR}/app.jar \
+             && rm -f /tmp/balruno-backend.jar.new \
              && sudo systemctl daemon-reload \
              && sudo systemctl restart ${SERVICE_NAME} \
              && sleep 5 \
