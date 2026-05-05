@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+# Top-level (http context) maps shared by all server{} blocks. Loaded first
+# because the file is named with a "00-" prefix at the destination.
+
+# WebSocket upgrade helper — used by api + collab vhosts when proxying WS.
+map $http_upgrade $connection_upgrade {
+  default upgrade;
+  ''      close;
+}

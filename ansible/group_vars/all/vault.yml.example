@@ -50,6 +50,18 @@ vault_cloudflare_api_token: "REPLACE_IF_USING_DDNS_OR_AUTO_DNS"
 vault_r2_access_key_id: "REPLACE_WITH_R2_ACCESS_KEY_ID"
 vault_r2_secret_access_key: "REPLACE_WITH_R2_SECRET_ACCESS_KEY"
 
+# Cloudflare Origin Certificate (15-year, *.balruno.com + balruno.com).
+# Generate via: Cloudflare → SSL/TLS → Origin Server → Create Certificate.
+# Used by nginx role on prod_app for Full (Strict) TLS with Cloudflare edge.
+vault_cloudflare_origin_cert: |
+  -----BEGIN CERTIFICATE-----
+  REPLACE_WITH_CLOUDFLARE_ORIGIN_CERT_CONTENT
+  -----END CERTIFICATE-----
+vault_cloudflare_origin_key: |
+  -----BEGIN PRIVATE KEY-----
+  REPLACE_WITH_CLOUDFLARE_ORIGIN_KEY_CONTENT
+  -----END PRIVATE KEY-----
+
 # Sentry (same DSN as frontend or a separate one)
 vault_sentry_dsn_backend: ""
 

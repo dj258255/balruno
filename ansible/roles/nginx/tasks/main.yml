@@ -1,0 +1,102 @@
+# nginx role — TLS terminator + reverse proxy on prod_app host.
+# Cert from Cloudflare Origin CA (15-year validity, no Let's Encrypt cron).
+
+- name: Install nginx
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+
+- name: Ensure SELinux can let nginx connect to backend ports
+  ansible.posix.seboolean:
+    name: httpd_can_network_connect
+    state: true
+    persistent: true
+
+- name: Create cert directory
+  ansible.builtin.file:
+    path: "{{ nginx_cert_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Deploy Cloudflare Origin Certificate
+  ansible.builtin.copy:
+    content: "{{ vault_cloudflare_origin_cert }}"
+    dest: "{{ nginx_origin_cert_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload nginx
+
+- name: Deploy Cloudflare Origin Private Key
+  ansible.builtin.copy:
+    content: "{{ vault_cloudflare_origin_key }}"
+    dest: "{{ nginx_origin_key_path }}"
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+  notify: reload nginx
+
+- name: Render top-level maps (loaded first via 00- prefix)
+  ansible.builtin.template:
+    src: maps.conf.j2
+    dest: /etc/nginx/conf.d/00-maps.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload nginx
+
+- name: Render Cloudflare real_ip include
+  ansible.builtin.template:
+    src: cloudflare-real-ip.conf.j2
+    dest: /etc/nginx/conf.d/01-cloudflare-real-ip.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload nginx
+
+- name: Render api.balruno.com vhost
+  ansible.builtin.template:
+    src: api.conf.j2
+    dest: /etc/nginx/conf.d/api.balruno.com.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload nginx
+
+- name: Render collab.balruno.com vhost
+  ansible.builtin.template:
+    src: collab.conf.j2
+    dest: /etc/nginx/conf.d/collab.balruno.com.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload nginx
+
+- name: Disable default nginx welcome vhost
+  ansible.builtin.file:
+    path: /etc/nginx/conf.d/default.conf
+    state: absent
+  notify: reload nginx
+
+- name: Allow http + https in firewalld
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop:
+    - http
+    - https
+
+- name: Validate nginx config
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+- name: Enable + start nginx
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started

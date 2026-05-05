@@ -1,0 +1,55 @@
+# {{ ansible_managed }}
+# collab.balruno.com — Hocuspocus (yjs WebSocket) reverse proxy.
+# Hocuspocus connections are long-lived (idle keepalive), so the read
+# timeout is bumped from the default 60s to 1h.
+
+server {
+  listen 80;
+  listen [::]:80;
+  server_name {{ collab_domain }};
+  return 301 https://$host$request_uri;
+}
+
+server {
+  listen 443 ssl http2;
+  listen [::]:443 ssl http2;
+  server_name {{ collab_domain }};
+
+  ssl_certificate     {{ nginx_origin_cert_path }};
+  ssl_certificate_key {{ nginx_origin_key_path }};
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+  ssl_session_timeout 1d;
+  ssl_session_cache shared:SSL:10m;
+
+  client_max_body_size {{ nginx_client_max_body_size }};
+  keepalive_timeout    {{ nginx_keepalive_timeout }};
+
+  # Reject anything not coming through Cloudflare.
+  if ($http_cf_connecting_ip = "") {
+    return 403;
+  }
+
+  location / {
+    proxy_pass http://{{ nginx_backend_hocuspocus_host }}:{{ nginx_backend_hocuspocus_port }};
+    proxy_http_version 1.1;
+
+    # WS upgrade headers — Hocuspocus is purely WebSocket.
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header CF-Connecting-IP  $http_cf_connecting_ip;
+    proxy_set_header CF-Ray            $http_cf_ray;
+
+    proxy_connect_timeout {{ nginx_proxy_connect_timeout }};
+    proxy_send_timeout    {{ nginx_proxy_read_timeout_ws }};
+    proxy_read_timeout    {{ nginx_proxy_read_timeout_ws }};
+
+    # Disable buffering so WS messages flow through immediately.
+    proxy_buffering off;
+  }
+}
