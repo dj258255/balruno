@@ -39,3 +39,34 @@ jobs:
       - name: Build desktop main process
         working-directory: packages/desktop
         run: npm run build
+
+  backend-test:
+    # Runs `./gradlew test`: ArchitectureTest (Modulith boundaries),
+    # OAuthLinkRuleTest (pure-function suite), and BalrunoBackendApplicationTests
+    # (full SpringBootTest that boots Flyway + Hibernate against an
+    # ephemeral PG 18 via Testcontainers). The runner ships Docker so
+    # @ServiceConnection-driven containers come up natively.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Setup Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run backend tests
+        working-directory: packages/backend
+        run: ./gradlew --no-daemon test
+
+      - name: Upload test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report
+          path: packages/backend/build/reports/tests/test/
