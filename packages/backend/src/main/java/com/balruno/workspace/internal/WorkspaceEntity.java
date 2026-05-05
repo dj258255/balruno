@@ -1,0 +1,85 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+package com.balruno.workspace.internal;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.UUID;
+
+/**
+ * Workspace 의 JPA 표현. ID 는 PG default {@code uuidv7()} 가 발급하고
+ * Hibernate 는 RETURNING 으로 받음 — Phase B-2.4 에서 ADR 0012 v1.1 기준
+ * 정정한 패턴과 동일.
+ */
+@Entity
+@Table(name = "workspaces")
+class WorkspaceEntity {
+
+    @Id
+    @Generated(event = EventType.INSERT)
+    @Column(name = "id", nullable = false, updatable = false, insertable = false)
+    private UUID id;
+
+    @Column(name = "slug", nullable = false, length = 30)
+    private String slug;
+
+    @Column(name = "name", nullable = false, length = 120)
+    private String name;
+
+    @Column(name = "created_by", nullable = false, updatable = false)
+    private UUID createdBy;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
+
+    protected WorkspaceEntity() {}
+
+    WorkspaceEntity(String slug, String name, UUID createdBy) {
+        this.slug = slug;
+        this.name = name;
+        this.createdBy = createdBy;
+    }
+
+    @PrePersist
+    void onCreate() {
+        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    public UUID getId() { return id; }
+    public String getSlug() { return slug; }
+    public String getName() { return name; }
+    public UUID getCreatedBy() { return createdBy; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public OffsetDateTime getUpdatedAt() { return updatedAt; }
+    public OffsetDateTime getDeletedAt() { return deletedAt; }
+    public boolean isDeleted() { return deletedAt != null; }
+
+    void rename(String newName) { this.name = newName; }
+    void changeSlug(String newSlug) { this.slug = newSlug; }
+    void softDelete() {
+        if (this.deletedAt == null) {
+            this.deletedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        }
+    }
+}
