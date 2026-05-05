@@ -17,16 +17,17 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
- * springdoc OpenAPI 메타데이터.
+ * springdoc OpenAPI metadata.
  *
  * - title / version / license
  * - servers (production + local dev)
  * - bearer JWT security scheme
- * - {@code ProblemDetail} (RFC 7807) 공통 schema 노출 — 모든 4xx/5xx 응답이
- *   같은 shape 라는 걸 OpenAPI 클라이언트 generator 에 알림
+ * - shared {@code ProblemDetail} (RFC 7807) schema so OpenAPI clients see
+ *   that every 4xx/5xx response shares the same shape
  *
- * prod profile 은 application-prod.yml 에서 api-docs / swagger-ui 둘 다
- * disable — 이 bean 자체는 부팅하지만 endpoint 노출 X.
+ * The prod profile disables api-docs and swagger-ui via
+ * application-prod.yml, so this bean still loads but no endpoint exposes
+ * the schema externally.
  */
 @Configuration
 class OpenApiConfig {
@@ -42,18 +43,19 @@ class OpenApiConfig {
                                 Game balancing workspace — backend API.
 
                                 ## Authentication
-                                JWT 를 둘 중 한 곳으로 전송:
-                                - `Authorization: Bearer <jwt>` header (Electron / API client / CLI)
-                                - `balruno_session` cookie (브라우저, OAuth login 후 자동 set)
+                                Send the JWT in either:
+                                - `Authorization: Bearer <jwt>` header (Electron / API client / CLI), or
+                                - `balruno_session` cookie (browser, set automatically after OAuth login).
 
                                 ## Errors
-                                모든 4xx/5xx 응답은 RFC 7807 `application/problem+json`.
-                                custom extension: `code` (앱 레벨 코드), `traceId` (X-Request-Id),
-                                `errors` (validation 실패 시 field 목록).
+                                Every 4xx/5xx response is `application/problem+json` (RFC 7807).
+                                Custom extensions: `code` (app-level error code), `traceId` (echoes
+                                X-Request-Id), and `errors` (field-level array on validation failure).
 
                                 ## Versioning
-                                URL prefix `/api/v{N}` 의 N 은 **major 버전**. minor / patch 변경
-                                (필드 추가, 새 endpoint) 은 v1 유지. breaking change 시 v2 신규 prefix.
+                                The `N` in URL prefix `/api/v{N}` is the **major** version. Minor /
+                                patch changes (added fields, new endpoints) keep v1. Breaking changes
+                                introduce a new /api/v2 prefix.
                                 """)
                         .license(new License()
                                 .name("AGPL-3.0-or-later")

@@ -15,12 +15,15 @@ import java.io.IOException;
 import java.util.UUID;
 
 /**
- * 모든 요청에 고유 ID 부여. 들어오는 X-Request-Id 헤더가 있으면 신뢰하고
- * (예: nginx / Cloudflare / 클라이언트 측 propagation), 없으면 UUIDv4 새로
- * 발급. MDC 의 {@code traceId} 키로 모든 log line 에 자동 박힘 (logback-spring.xml
- * 의 LogstashEncoder includeMdcKeyName 설정 활성).
+ * Tags every request with a unique id. Trusts an inbound X-Request-Id
+ * header when present (e.g. propagated from nginx / Cloudflare / a client
+ * SDK), otherwise mints a fresh UUIDv4. The id lands in the SLF4J MDC
+ * under {@code traceId} so every log line carries it (the LogstashEncoder
+ * in logback-spring.xml has {@code includeMdcKeyName traceId}), and is
+ * echoed back to the client in the same header.
  *
- * SecurityFilterChain 보다 먼저 실행되어야 인증 실패 응답에도 traceId 포함됨.
+ * Runs at HIGHEST_PRECEDENCE so the SecurityFilterChain — and its
+ * authentication-failure responses — can already see the trace id.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)

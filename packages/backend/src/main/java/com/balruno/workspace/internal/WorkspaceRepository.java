@@ -8,7 +8,7 @@ import java.util.UUID;
 
 interface WorkspaceRepository extends JpaRepository<WorkspaceEntity, UUID> {
 
-    /** Active (soft-delete 제외) slug 조회 — V2 의 partial unique index 와 정합. */
+    /** Active (non-soft-deleted) slug lookup — matches V2's partial unique index. */
     Optional<WorkspaceEntity> findBySlugAndDeletedAtIsNull(String slug);
 
     boolean existsBySlugAndDeletedAtIsNull(String slug);

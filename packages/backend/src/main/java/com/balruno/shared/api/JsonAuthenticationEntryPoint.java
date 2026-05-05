@@ -14,8 +14,10 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * Filter chain 에서 인증 실패 시 (Spring Security 의 default 는 빈 body)
- * 우리는 RFC 7807 ProblemDetail JSON 으로 응답. Stripe / Linear 패턴과 정합.
+ * Replaces Spring Security's default empty-body 401 with an RFC 7807
+ * application/problem+json body (Stripe / Linear pattern). The empty
+ * default is fine for browser-driven flows but unhelpful for our /api/**
+ * clients (Electron, CLI, future mobile) which expect JSON.
  */
 @Component
 class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {

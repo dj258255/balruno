@@ -5,8 +5,9 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
- * Workspace 의 공개 read model. WorkspaceService 가 반환하는 DTO — JPA
- * entity 는 internal 패키지에 격리.
+ * Public read model returned by {@link WorkspaceService}. The JPA entity
+ * stays inside the {@code internal} package so callers never touch
+ * persistence types.
  */
 public record Workspace(
         UUID id,

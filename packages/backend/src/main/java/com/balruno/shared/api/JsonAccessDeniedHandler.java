@@ -13,8 +13,10 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * 인증은 됐지만 권한 부족 시 (Spring Security 의 default 는 403 빈 body)
- * 역시 ProblemDetail JSON 으로 응답.
+ * Same idea as {@link JsonAuthenticationEntryPoint} but for the
+ * authenticated-but-forbidden case (Spring Security raises this when an
+ * access decision rejects an authenticated principal). Emits an RFC 7807
+ * 403 instead of the default empty body.
  */
 @Component
 class JsonAccessDeniedHandler implements AccessDeniedHandler {

@@ -6,8 +6,10 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 
 /**
- * Common ProblemDetail builder — title / code / traceId 표준 채움.
- * RFC 7807 §3 의 extension 필드 (code / traceId / errors) 우리 도메인 컨벤션.
+ * Common ProblemDetail builder — fills in title / code / traceId in the
+ * shape every Balruno error response should have. The {@code code} and
+ * {@code traceId} fields are RFC 7807 §3 extensions (free-form), used as
+ * the project-wide convention for app-level error code + request trace.
  */
 final class ProblemDetails {
 

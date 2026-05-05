@@ -40,7 +40,8 @@ class WorkspaceServiceImpl implements WorkspaceService {
     @Override
     public Workspace createDefaultFor(UUID userId, String preferredSlugBase, String name) {
         var slug = pickAvailableSlug(preferredSlugBase);
-        // SlugRules.validate 는 pickAvailableSlug 내부에서 reserved 체크 수행.
+        // pickAvailableSlug runs SlugRules.validate internally, so the
+        // resulting candidate is guaranteed to be format-valid + non-reserved.
         var entity = saveOrThrow(new WorkspaceEntity(slug, name, userId));
         memberRepo.save(new WorkspaceMemberEntity(entity.getId(), userId, WorkspaceRole.OWNER));
         return toDto(entity);
@@ -98,7 +99,8 @@ class WorkspaceServiceImpl implements WorkspaceService {
         try {
             return workspaceRepo.saveAndFlush(entity);
         } catch (DataIntegrityViolationException e) {
-            // Active slug 의 partial unique index 충돌. 동시 생성 race 의 fallback.
+            // Race fallback — a concurrent insert won the slug's partial
+            // unique index. Surface the same SLUG_TAKEN response.
             throw new WorkspaceException(
                     WorkspaceException.Reason.SLUG_TAKEN,
                     "A workspace with that slug already exists.");
@@ -106,8 +108,9 @@ class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     /**
-     * Default workspace 의 slug 자동 결정. preferred → 충돌 시 -2, -3, ... 재시도.
-     * preferred 가 reserved / format 위반이면 fallback 'workspace'.
+     * Picks the slug for a default workspace: try the preferred base, then
+     * append numeric suffixes on collision. Falls back to "workspace" when
+     * the preferred input is reserved or fails the format check.
      */
     private String pickAvailableSlug(String preferred) {
         var base = sanitize(preferred);
@@ -124,12 +127,17 @@ class WorkspaceServiceImpl implements WorkspaceService {
                 return candidate;
             }
         }
-        // 100 충돌은 사실상 발생 X. 발생하면 random suffix.
+        // 100 collisions is essentially impossible; fall back to a random suffix.
         return (base + "-" + UUID.randomUUID().toString().substring(0, 8))
                 .substring(0, Math.min(30, base.length() + 9));
     }
 
-    /** preferred 입력을 slug 형식으로 정제 — 소문자화 + alnum/hyphen 외 제거 + 길이 클램프. */
+    /**
+     * Normalises a free-form preferred string into a slug-shaped value:
+     * lowercase, strip non-alnum/hyphen, drop leading hyphens, clamp to 30
+     * chars, and run the regex + reserved-word check. Returns null when
+     * the input cannot be salvaged.
+     */
     private static String sanitize(String preferred) {
         if (preferred == null) return null;
         var lower = preferred.toLowerCase();

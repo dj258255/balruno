@@ -20,8 +20,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * (workspace_id, user_id) composite key. 한 user 의 한 workspace 에 대한
- * role 한 row.
+ * Composite-key (workspace_id, user_id) row representing a user's role
+ * within a workspace.
  */
 @Entity
 @Table(name = "workspace_members")

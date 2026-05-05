@@ -71,7 +71,7 @@ class SecurityConfig {
                         .authenticationEntryPoint(jsonAuthenticationEntryPoint)
                         .accessDeniedHandler(jsonAccessDeniedHandler)
                         .jwt(jwt -> {}))
-                // 일반 filter chain (OAuth login redirect 등 non-API 경로) 의 fallback.
+                // Fallback for non-API paths (OAuth login redirect, etc.).
                 .exceptionHandling(eh -> eh
                         .authenticationEntryPoint(jsonAuthenticationEntryPoint)
                         .accessDeniedHandler(jsonAccessDeniedHandler))

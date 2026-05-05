@@ -32,7 +32,7 @@ class WorkspaceRoleTest {
 
     @Test
     void editor_does_not_permit_builder_actions() {
-        // ADR 0015 §3.2 — Builder = 구조 변경, Editor = 내용만.
+        // ADR 0015 §3.2 — Builder = structural changes, Editor = content only.
         assertThat(WorkspaceRole.EDITOR.permits(WorkspaceRole.BUILDER)).isFalse();
     }
 }

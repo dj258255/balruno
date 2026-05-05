@@ -2,17 +2,20 @@
 -- V2 — workspaces + members + invites.
 --
 -- Owner module: com.balruno.workspace (ADR 0015).
--- 5-tier role per ADR 0015 §3.2 — Owner/Admin/Builder/Editor/Viewer.
--- "Builder = 구조 변경 (시트 schema / 시트 트리 / 문서 트리 / project)" 정의.
--- "Editor = 내용 편집 (시트 셀 / 문서 본문)" 정의.
+-- Roles follow the 5-tier model from ADR 0015 §3.2 — Owner / Admin /
+-- Builder / Editor / Viewer. Builder owns structural changes (sheet
+-- schema, sheet tree, doc tree, project), Editor owns content edits
+-- (sheet cells, doc body).
 
 -- ─── workspace_role ENUM ───────────────────────────────────────────────
--- 5 values 모두 박음. 추후 ENUM ADD VALUE 가능 (REMOVE 불가, 처음에 다 박는 게 안전).
+-- All five values are declared up front. PG allows ENUM ADD VALUE later
+-- but never REMOVE — adding upfront is the safe choice.
 CREATE TYPE workspace_role AS ENUM ('OWNER', 'ADMIN', 'BUILDER', 'EDITOR', 'VIEWER');
 
 -- ─── workspaces ────────────────────────────────────────────────────────
--- slug = 사용자 입력 (3-30 char, lowercase + alphanum + hyphen). 변경 가능.
--- soft delete (30일 hard delete cron 추후, ADR 0015 §6 Q4).
+-- slug = user-supplied (3-30 chars, [a-z0-9][a-z0-9-]+), mutable.
+-- soft delete via deleted_at; a hard-delete cron after 30 days is a
+-- follow-up (ADR 0015 §6 Q4).
 CREATE TABLE workspaces (
     id          UUID         PRIMARY KEY DEFAULT uuidv7(),
     slug        VARCHAR(30)  NOT NULL,
@@ -23,12 +26,14 @@ CREATE TABLE workspaces (
     deleted_at  TIMESTAMPTZ
 );
 
--- Active workspaces 의 slug UNIQUE (soft-deleted 는 제외 — 삭제된 slug 재사용 가능).
+-- Slug uniqueness scoped to active rows — a soft-deleted workspace's
+-- slug becomes available again.
 CREATE UNIQUE INDEX workspaces_slug_active_uk
     ON workspaces (slug) WHERE deleted_at IS NULL;
 
 -- ─── workspace_members ─────────────────────────────────────────────────
--- 1 user 가 N workspace 에 각각 다른 role 로 참여 가능 (multi-workspace).
+-- One user can join many workspaces with different roles (multi-workspace
+-- per user is the standard, per ADR 0015 §3.4).
 CREATE TABLE workspace_members (
     workspace_id  UUID            NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     user_id       UUID            NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -40,8 +45,9 @@ CREATE TABLE workspace_members (
 CREATE INDEX workspace_members_user_idx ON workspace_members (user_id);
 
 -- ─── workspace_invites ─────────────────────────────────────────────────
--- Share link only (ADR 0015 §3.5, ADR 0002 의 SMTP 0 방침).
--- token_hash = SHA-256(opaque 32-byte secret). raw token 은 응답 1회만 노출.
+-- Share-link only flow (ADR 0015 §3.5, ADR 0002 SMTP-free policy).
+-- token_hash stores SHA-256 of an opaque 32-byte secret. The raw token
+-- is returned to the inviter exactly once.
 CREATE TABLE workspace_invites (
     id              UUID            PRIMARY KEY DEFAULT uuidv7(),
     workspace_id    UUID            NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
@@ -54,14 +60,15 @@ CREATE TABLE workspace_invites (
     revoked_at      TIMESTAMPTZ
 );
 
--- "이 workspace 의 아직 사용/만료/취소되지 않은 invite" 가 hot path.
+-- Hot path: "the still-pending invites of this workspace".
 CREATE INDEX workspace_invites_active_idx
     ON workspace_invites (workspace_id, expires_at)
     WHERE accepted_at IS NULL AND revoked_at IS NULL;
 
 -- ─── workspace_slug_redirects ──────────────────────────────────────────
--- Linear 패턴: slug 변경 후 30일 동안 옛 slug → 새 workspace_id 매핑.
--- frontend 가 옛 slug URL 받으면 이 테이블 조회 → 새 slug 로 redirect.
+-- After a slug change we keep the old slug → workspace_id mapping for
+-- 30 days (Linear pattern, ADR 0015 §3.6). The frontend looks up the
+-- mapping here on a 404 and issues a redirect to the new slug.
 CREATE TABLE workspace_slug_redirects (
     old_slug       VARCHAR(30)  PRIMARY KEY,
     workspace_id   UUID         NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,

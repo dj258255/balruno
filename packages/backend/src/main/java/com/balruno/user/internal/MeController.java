@@ -15,8 +15,9 @@ import java.util.UUID;
 
 /**
  * The {@code /api/v1/me} endpoint — returns the user described by the
- * caller's JWT. Acts as the Phase B-2 completion gate: it should answer
- * 200 for a valid token and 401 otherwise without any test scaffolding.
+ * caller's JWT. Answers 200 for a valid token and 401 otherwise; the
+ * controller reads the principal directly from the resource-server
+ * filter chain, no extra wiring needed.
  */
 @RestController
 @RequestMapping("/api/v1")

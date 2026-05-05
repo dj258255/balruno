@@ -6,15 +6,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.modulith.Modulithic;
 
 /**
- * Balruno backend entry point.
+ * Balruno backend entry point. Domain modules (user, workspace, project,
+ * sync, document, ai) live as sub-packages of {@code com.balruno} per
+ * ADR 0014 (Spring Modulith).
  *
- * Phase B-1 boots the bare app — actuator + a single root controller.
- * Domain modules (user, workspace, project, sync, document, ai) land in
- * B-2 onward per ADR 0014 (Spring Modulith).
- *
- * @Modulithic enables compile-time module boundary enforcement: any
- * cross-module access to internal packages becomes a build failure via
- * the ArchitectureTest in src/test/java.
+ * {@code @Modulithic} enables compile-time module boundary enforcement:
+ * any cross-module access to internal packages becomes a build failure
+ * via the ArchitectureTest in src/test/java.
  */
 @Modulithic
 @SpringBootApplication

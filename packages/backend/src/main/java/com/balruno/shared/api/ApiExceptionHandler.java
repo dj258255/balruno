@@ -14,28 +14,27 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
- * App-level RFC 7807 exception → ProblemDetail mapper. 모든 도메인 예외 +
- * Spring 의 표준 web 예외 (Validation / NotReadable / AccessDenied / 기본
- * Exception fallback) 를 한 곳에서 응답 형태 통일.
+ * App-wide RFC 7807 exception → ProblemDetail mapper. Handles both
+ * domain exceptions (UserAuthException / WorkspaceException) and the
+ * standard Spring Web ones (validation, malformed body, missing params,
+ * access denied) plus the catch-all fallback. Each handler decides the
+ * HTTP status; domain modules just throw and stay agnostic of the HTTP
+ * surface.
  *
- * 모듈별 exception (UserAuthException / WorkspaceException) 도 여기서 함께
- * 처리 — 도메인 모듈은 *던지기* 만 하고 HTTP status 매핑은 shared 책임.
- *
- * Logging 정책:
- *   - 4xx : WARN (사용자 입력 / 권한 문제, 운영자 조치 불필요)
- *   - 5xx : ERROR + full stack (운영자 조치 필요)
+ * Logging policy:
+ *   - 4xx : WARN (caller-side fault, no operator action needed)
+ *   - 5xx : ERROR with full stack (operator action needed)
  */
 @RestControllerAdvice
 class ApiExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
-    // ── 도메인 예외 ────────────────────────────────────────────────────
+    // ── Domain exceptions ──────────────────────────────────────────────
 
     @ExceptionHandler(UserAuthException.class)
     ProblemDetail handleUserAuth(UserAuthException e) {
@@ -66,7 +65,7 @@ class ApiExceptionHandler {
         };
     }
 
-    // ── Spring web 표준 ────────────────────────────────────────────────
+    // ── Spring Web standard exceptions ─────────────────────────────────
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ProblemDetail handleValidation(MethodArgumentNotValidException e) {
@@ -135,8 +134,4 @@ class ApiExceptionHandler {
                 "INTERNAL_ERROR",
                 "An unexpected error occurred. Use the X-Request-Id / traceId to report this.");
     }
-
-    /** Helper preserved for tests / future reflection. */
-    @SuppressWarnings("unused")
-    private static List<String> ___unused() { return List.of(); }
 }
