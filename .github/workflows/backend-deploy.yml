@@ -36,25 +36,44 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Wait for ansible-deploy on the same commit
-        # Same-commit ordering: ansible-deploy provisions JDK, balruno user,
-        # /opt/balruno/backend, and the systemd unit on prod_app. backend-deploy
-        # delivers the JAR and restarts the unit. Poll the ansible-deploy run
-        # for THIS commit and bail if it didn't succeed — race condition fix.
+      - name: Wait for ansible-deploy
+        # ansible-deploy provisions JDK, balruno user, /opt/balruno/backend,
+        # and the systemd unit on prod_app. backend-deploy delivers the JAR
+        # and restarts the unit. Two cases:
+        #   1) this commit also triggered ansible-deploy (changed ansible/**)
+        #      → wait for THAT run to finish
+        #   2) this commit only changed packages/backend/**
+        #      → just confirm the latest main ansible-deploy ran successfully
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
         run: |
-          for i in $(seq 1 60); do
-            run=$(gh api "/repos/${{ github.repository }}/actions/workflows/ansible-deploy.yml/runs?head_sha=${{ github.sha }}&per_page=1" --jq '.workflow_runs[0] // {}')
-            status=$(echo "$run" | jq -r '.status // "missing"')
-            concl=$(echo "$run" | jq -r '.conclusion // "null"')
-            echo "ansible-deploy on ${{ github.sha }}: status=$status conclusion=$concl"
-            if [ "$status" = "completed" ]; then
-              if [ "$concl" = "success" ]; then
-                exit 0
-              fi
-              echo "ansible-deploy ended with $concl — abort backend-deploy"
+          run=$(gh api "/repos/${REPO}/actions/workflows/ansible-deploy.yml/runs?head_sha=${SHA}&per_page=1" --jq '.workflow_runs[0] // empty')
+          if [ -z "$run" ]; then
+            echo "No ansible-deploy run for this commit — checking latest main run"
+            latest=$(gh api "/repos/${REPO}/actions/workflows/ansible-deploy.yml/runs?branch=main&per_page=1" --jq '.workflow_runs[0] // empty')
+            if [ -z "$latest" ]; then
+              echo "No prior ansible-deploy on main — abort"
               exit 1
+            fi
+            concl=$(echo "$latest" | jq -r '.conclusion // ""')
+            status=$(echo "$latest" | jq -r '.status // ""')
+            echo "Latest ansible-deploy on main: status=$status conclusion=$concl"
+            if [ "$status" != "completed" ] || [ "$concl" != "success" ]; then
+              echo "Latest ansible-deploy is not a clean success — abort"
+              exit 1
+            fi
+            echo "prod_app already provisioned by previous successful run — proceeding"
+            exit 0
+          fi
+          for i in $(seq 1 60); do
+            run=$(gh api "/repos/${REPO}/actions/workflows/ansible-deploy.yml/runs?head_sha=${SHA}&per_page=1" --jq '.workflow_runs[0]')
+            status=$(echo "$run" | jq -r '.status')
+            concl=$(echo "$run" | jq -r '.conclusion // "null"')
+            echo "ansible-deploy on ${SHA}: status=$status conclusion=$concl"
+            if [ "$status" = "completed" ]; then
+              [ "$concl" = "success" ] && exit 0 || exit 1
             fi
             sleep 20
           done
