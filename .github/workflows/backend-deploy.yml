@@ -37,47 +37,30 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Wait for ansible-deploy
-        # ansible-deploy provisions JDK, balruno user, /opt/balruno/backend,
-        # and the systemd unit on prod_app. backend-deploy delivers the JAR
-        # and restarts the unit. Two cases:
-        #   1) this commit also triggered ansible-deploy (changed ansible/**)
-        #      → wait for THAT run to finish
-        #   2) this commit only changed packages/backend/**
-        #      → just confirm the latest main ansible-deploy ran successfully
+        # ansible-deploy provisions prod_app (JDK, balruno user,
+        # /opt/balruno/backend, systemd unit). backend-deploy must not start
+        # until *some* ansible-deploy run has succeeded. Wait for the latest
+        # main run to reach a terminal state and require success.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SHA: ${{ github.sha }}
           REPO: ${{ github.repository }}
         run: |
-          run=$(gh api "/repos/${REPO}/actions/workflows/ansible-deploy.yml/runs?head_sha=${SHA}&per_page=1" --jq '.workflow_runs[0] // empty')
-          if [ -z "$run" ]; then
-            echo "No ansible-deploy run for this commit — checking latest main run"
-            latest=$(gh api "/repos/${REPO}/actions/workflows/ansible-deploy.yml/runs?branch=main&per_page=1" --jq '.workflow_runs[0] // empty')
-            if [ -z "$latest" ]; then
-              echo "No prior ansible-deploy on main — abort"
-              exit 1
-            fi
-            concl=$(echo "$latest" | jq -r '.conclusion // ""')
-            status=$(echo "$latest" | jq -r '.status // ""')
-            echo "Latest ansible-deploy on main: status=$status conclusion=$concl"
-            if [ "$status" != "completed" ] || [ "$concl" != "success" ]; then
-              echo "Latest ansible-deploy is not a clean success — abort"
-              exit 1
-            fi
-            echo "prod_app already provisioned by previous successful run — proceeding"
-            exit 0
-          fi
           for i in $(seq 1 60); do
-            run=$(gh api "/repos/${REPO}/actions/workflows/ansible-deploy.yml/runs?head_sha=${SHA}&per_page=1" --jq '.workflow_runs[0]')
+            run=$(gh api "/repos/${REPO}/actions/workflows/ansible-deploy.yml/runs?branch=main&per_page=1" --jq '.workflow_runs[0] // empty')
+            if [ -z "$run" ]; then
+              echo "No ansible-deploy run on main yet — abort"
+              exit 1
+            fi
             status=$(echo "$run" | jq -r '.status')
             concl=$(echo "$run" | jq -r '.conclusion // "null"')
-            echo "ansible-deploy on ${SHA}: status=$status conclusion=$concl"
+            sha=$(echo "$run" | jq -r '.head_sha')
+            echo "[try ${i}/60] latest ansible-deploy on main: sha=${sha:0:7} status=$status conclusion=$concl"
             if [ "$status" = "completed" ]; then
-              [ "$concl" = "success" ] && exit 0 || exit 1
+              [ "$concl" = "success" ] && exit 0 || { echo "abort: ansible-deploy ${concl}"; exit 1; }
             fi
             sleep 20
           done
-          echo "ansible-deploy did not finish in 20 minutes — abort"
+          echo "ansible-deploy did not reach a terminal state in 20 minutes — abort"
           exit 1
 
       - name: Set up JDK 25 (Eclipse Temurin)
