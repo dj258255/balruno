@@ -10,9 +10,11 @@ spring:
 
 server:
   port: 8080
-  # Loopback only — Cloudflare → nginx → 127.0.0.1:8080. ADR 0007 §3.2.
-  address: 127.0.0.1
-  # Honour X-Forwarded-* set by nginx so HTTP and remote addr match origin.
+  # Bind to 0.0.0.0 inside the container — docker-compose publishes the port
+  # as `127.0.0.1:8080:8080`, so external exposure is gated by the host port
+  # mapping (Cloudflare → nginx → host 127.0.0.1:8080 → container eth0:8080).
+  # Binding to loopback inside the container would only listen on the
+  # container's own lo, unreachable from docker-proxy.
   forward-headers-strategy: native
 
 management:

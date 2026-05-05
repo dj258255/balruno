@@ -19,6 +19,12 @@ RUN ./gradlew --no-daemon bootJar
 FROM eclipse-temurin:25-jre AS runtime
 WORKDIR /app
 
+# curl for the docker HEALTHCHECK below — eclipse-temurin:25-jre is a
+# minimal Ubuntu image without wget/curl. ~5 MB after cleanup.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
 # Non-root user (uid 1001 — same convention across our self-host stack).
 RUN groupadd --system --gid 1001 spring \
  && useradd --system --uid 1001 --gid spring --shell /sbin/nologin spring \
@@ -34,9 +40,8 @@ EXPOSE 8080
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp -Dfile.encoding=UTF-8"
 
 # A docker-native HEALTHCHECK so 'docker ps' shows healthy/unhealthy and
-# docker compose can gate dependents on it. wget is in eclipse-temurin
-# base image; falling back to a Java one-liner if it ever isn't.
+# docker compose can gate dependents on it.
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=60s \
-  CMD wget -qO- --spider http://localhost:8080/actuator/health || exit 1
+  CMD curl -fsS http://localhost:8080/actuator/health || exit 1
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
