@@ -2,8 +2,30 @@
 # real values from the .env / vault rendering on prod_app; tests need
 # benign defaults so the Spring context can boot under @SpringBootTest.
 #
-# Datasource is left to Testcontainers' @ServiceConnection — those props
-# get injected dynamically and don't appear here.
+# Datasource defaults below point at an unreachable host, so a test that
+# forgets @Import(TestcontainersConfig.class) fails fast with a
+# connection error instead of accidentally reading the developer's
+# POSTGRES_HOST env (which might be production). When TestcontainersConfig
+# IS applied, Spring Boot's @ServiceConnection registers a
+# JdbcConnectionDetails bean that overrides these values.
+
+spring:
+  datasource:
+    url: jdbc:postgresql://test-db-must-be-overridden-by-testcontainers:5432/balruno
+    username: test
+    password: test-fail-fast
+  # OAuth2 client registrations: SecurityFilterChain needs them resolvable
+  # at boot even when no real provider creds are present.
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: test-github-client-id
+            client-secret: test-github-client-secret
+          google:
+            client-id: test-google-client-id
+            client-secret: test-google-client-secret
 
 balruno:
   jwt:
@@ -16,17 +38,3 @@ balruno:
     cookie-name: balruno_session
     cookie-domain: balruno.test
     frontend-redirect-base: "https://app.balruno.test"
-
-# Make the OAuth2 client registrations resolvable so SecurityFilterChain
-# can wire up the login flow even when no real provider creds are set.
-spring:
-  security:
-    oauth2:
-      client:
-        registration:
-          github:
-            client-id: test-github-client-id
-            client-secret: test-github-client-secret
-          google:
-            client-id: test-google-client-id
-            client-secret: test-google-client-secret
