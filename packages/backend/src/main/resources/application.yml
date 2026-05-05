@@ -66,3 +66,39 @@ info:
     name: Balruno Backend
     license: AGPL-3.0-or-later
     repo: https://github.com/dj258255/balruno
+
+# ─── Spring Security OAuth2 client ───────────────────────────────────────
+# We are simultaneously a CLIENT (offering "Sign in with GitHub/Google")
+# and an ISSUER of our own JWTs to our own frontend / desktop. Spring
+# handles the inbound OAuth flow; our JwtIssuer handles outbound tokens.
+spring.security.oauth2.client.registration.github:
+  client-id: ${GITHUB_OAUTH_CLIENT_ID}
+  client-secret: ${GITHUB_OAUTH_CLIENT_SECRET}
+  scope:
+    - read:user
+    - user:email
+spring.security.oauth2.client.registration.google:
+  client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+  client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
+  scope:
+    - openid
+    - profile
+    - email
+
+# ─── Self-issued JWT settings ────────────────────────────────────────────
+# HS256 today; RS256 + JWKS endpoint planned once we have multiple
+# verifying parties (Hocuspocus sidecar in B-5).
+balruno.jwt:
+  secret: ${JWT_SECRET}
+  issuer: https://api.balruno.com
+  access-token-ttl: PT15M
+  refresh-token-ttl: P7D
+  cookie-name: balruno_session
+  cookie-domain: .balruno.com
+  frontend-redirect-base: https://app.balruno.com
+
+# ─── springdoc / OpenAPI ─────────────────────────────────────────────────
+springdoc:
+  api-docs.path: /v3/api-docs
+  swagger-ui.path: /swagger-ui.html
+  show-actuator: false

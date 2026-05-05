@@ -1,0 +1,15 @@
+# Active when SPRING_PROFILES_ACTIVE=prod (set on prod_app via ansible).
+# Tightens what the dev defaults expose.
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# Hide internal stack traces from prod responses — Spring's default for
+# prod profile is already on, but be explicit.
+server:
+  error:
+    include-stacktrace: never
+    include-message: never

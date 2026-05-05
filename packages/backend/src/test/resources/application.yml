@@ -1,0 +1,32 @@
+# Test-classpath overrides. The src/main/resources/application.yml expects
+# real values from the .env / vault rendering on prod_app; tests need
+# benign defaults so the Spring context can boot under @SpringBootTest.
+#
+# Datasource is left to Testcontainers' @ServiceConnection — those props
+# get injected dynamically and don't appear here.
+
+balruno:
+  jwt:
+    # 32 bytes of zeros, base64-encoded — only used to satisfy the encoder's
+    # key-length check. Tests don't validate cryptographic strength.
+    secret: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+    issuer: "https://api.balruno.test"
+    access-token-ttl: PT15M
+    refresh-token-ttl: P7D
+    cookie-name: balruno_session
+    cookie-domain: balruno.test
+    frontend-redirect-base: "https://app.balruno.test"
+
+# Make the OAuth2 client registrations resolvable so SecurityFilterChain
+# can wire up the login flow even when no real provider creds are set.
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: test-github-client-id
+            client-secret: test-github-client-secret
+          google:
+            client-id: test-google-client-id
+            client-secret: test-google-client-secret

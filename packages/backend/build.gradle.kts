@@ -55,6 +55,21 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     runtimeOnly("org.postgresql:postgresql")
 
+    // Auth — Spring Security 7 + OAuth2 client (GitHub + Google) + resource
+    // server (Bearer JWT validation). starter-security pulls in the
+    // SecurityFilterChain autoconfig; oauth2-client adds the login redirect
+    // + callback flow; oauth2-resource-server brings nimbus-jose-jwt for
+    // self-issued JWT validation. ADR 0002 + 0014.
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    testImplementation("org.springframework.security:spring-security-test")
+
+    // OpenAPI / Swagger UI — springdoc 2.8+ supports Spring Boot 4. Enabled
+    // in dev/local profile only; prod disables both api-docs and swagger-ui
+    // via application-prod.yml so the schema isn't an attack surface.
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+
     // Spring Modulith — modular monolith with compile-time module boundaries (ADR 0014)
     implementation("org.springframework.modulith:spring-modulith-starter-core")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
