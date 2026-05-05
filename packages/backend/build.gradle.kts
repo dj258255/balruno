@@ -28,6 +28,9 @@ dependencyManagement {
     imports {
         // Spring Modulith BOM (ADR 0014). Pins all spring-modulith-* artifacts.
         mavenBom("org.springframework.modulith:spring-modulith-bom:1.4.0")
+        // Testcontainers BOM — Spring Boot 4 BOM dropped the testcontainers
+        // entries that 3.x carried, so we pin the family ourselves.
+        mavenBom("org.testcontainers:testcontainers-bom:1.21.3")
     }
 }
 
