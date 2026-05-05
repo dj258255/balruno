@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.shared.api;
 
+import com.balruno.project.ProjectException;
 import com.balruno.user.UserAuthException;
 import com.balruno.workspace.WorkspaceException;
 import org.slf4j.Logger;
@@ -63,6 +64,20 @@ class ApiExceptionHandler {
             case NOT_A_MEMBER, INSUFFICIENT_ROLE, OWNER_REQUIRED -> HttpStatus.FORBIDDEN;
             case INVITE_EXPIRED, INVITE_REVOKED -> HttpStatus.GONE;
         };
+    }
+
+    @ExceptionHandler(ProjectException.class)
+    ProblemDetail handleProject(ProjectException e) {
+        log.warn("project_error reason={} msg={}", e.reason(), e.getMessage());
+        var status = switch (e.reason()) {
+            case PROJECT_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case SLUG_TAKEN -> HttpStatus.CONFLICT;
+            case SLUG_INVALID -> HttpStatus.BAD_REQUEST;
+        };
+        return ProblemDetails.of(status,
+                "Project request failed",
+                e.reason().name(),
+                e.getMessage());
     }
 
     // ── Spring Web standard exceptions ─────────────────────────────────
