@@ -41,9 +41,14 @@ dependencies {
     // Persistence — JPA over Hibernate 7 + Hikari pool. Schema is owned by
     // Flyway; JPA is set to ddl-auto=validate so mappings can never silently
     // drift from the DDL. ADR 0001 (PG 18) + ADR 0012 (UUIDv7).
+    //
+    // Spring Boot 4 split autoconfig into per-feature modules. JPA / Hikari /
+    // Hibernate autoconfig comes via starter-data-jpa transitively, but
+    // Flyway autoconfig now lives in its own starter — without this starter,
+    // flyway-core sits on the classpath but is never invoked at boot.
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.flywaydb:flyway-core")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
     runtimeOnly("org.postgresql:postgresql")
 
