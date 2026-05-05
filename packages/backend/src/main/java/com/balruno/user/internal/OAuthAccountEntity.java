@@ -9,8 +9,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.generator.EventType;
 import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
@@ -27,8 +28,8 @@ import java.util.UUID;
 class OAuthAccountEntity {
 
     @Id
-    @UuidGenerator(style = UuidGenerator.Style.TIME)
-    @Column(name = "id", nullable = false, updatable = false)
+    @Generated(event = EventType.INSERT)
+    @Column(name = "id", nullable = false, updatable = false, insertable = false)
     private UUID id;
 
     @Column(name = "user_id", nullable = false)

@@ -7,7 +7,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -18,17 +19,19 @@ import java.util.UUID;
  * {@code internal}) — only the user module touches the JPA layer; the rest
  * of the codebase consumes user data via {@link com.balruno.user.UserAuthService}.
  *
- * UUIDv7 is generated client-side by Hibernate ({@link UuidGenerator.Style#TIME}
- * = RFC 9562 v7 in Hibernate 7+). The matching column DEFAULT in V1 stays as a
- * safety net for direct-SQL inserts (DBA scripts, future seed data).
+ * ID generation: PG 18 native {@code uuidv7()} via column DEFAULT, NOT
+ * Hibernate-side. Hibernate's {@code @UuidGenerator(style=TIME)} emits
+ * RFC 4122 v1 (despite the name), which violates ADR 0012 §3.3. We let
+ * Hibernate omit the column on INSERT ({@code insertable=false}) and read
+ * the generated value back via the RETURNING clause ({@code @Generated}).
  */
 @Entity
 @Table(name = "users")
 class UserEntity {
 
     @Id
-    @UuidGenerator(style = UuidGenerator.Style.TIME)
-    @Column(name = "id", nullable = false, updatable = false)
+    @Generated(event = EventType.INSERT)
+    @Column(name = "id", nullable = false, updatable = false, insertable = false)
     private UUID id;
 
     @Column(name = "email", nullable = false, length = 254)

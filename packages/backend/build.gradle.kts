@@ -70,6 +70,10 @@ dependencies {
     // via application-prod.yml so the schema isn't an attack surface.
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
 
+    // Structured (JSON) logging in prod profile so Loki on the monitor host
+    // can index by field instead of regex-parsing free-form lines.
+    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+
     // Spring Modulith — modular monolith with compile-time module boundaries (ADR 0014)
     implementation("org.springframework.modulith:spring-modulith-starter-core")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
