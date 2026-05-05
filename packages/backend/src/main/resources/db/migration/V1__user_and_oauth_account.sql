@@ -2,14 +2,15 @@
 -- V1 — user + oauth + refresh_token + audit_log.
 --
 -- Owner module: com.balruno.user (ADR 0014).
--- All PKs use PG 18 native gen_random_uuidv7() per ADR 0012 §3.3.
+-- All PKs use PG 18 native uuidv7() per ADR 0012 §3.3. Note: an early ADR
+-- draft cited gen_random_uuidv7(); the function shipped in PG 18 is uuidv7().
 -- All timestamps are TIMESTAMPTZ in UTC; client renders to user locale.
 
 -- ─── users ─────────────────────────────────────────────────────────────
 -- 254 = max email length per RFC 5321. We do NOT store passwords — auth is
 -- OAuth-only (GitHub + Google) per project_backend_choice memory.
 CREATE TABLE users (
-    id              UUID         PRIMARY KEY DEFAULT gen_random_uuidv7(),
+    id              UUID         PRIMARY KEY DEFAULT uuidv7(),
     email           VARCHAR(254) NOT NULL,
     email_verified  BOOLEAN      NOT NULL DEFAULT FALSE,
     name            VARCHAR(120),
@@ -30,7 +31,7 @@ CREATE UNIQUE INDEX users_email_lower_uk ON users (lower(email));
 CREATE TYPE oauth_provider AS ENUM ('GITHUB', 'GOOGLE');
 
 CREATE TABLE oauth_accounts (
-    id                       UUID            PRIMARY KEY DEFAULT gen_random_uuidv7(),
+    id                       UUID            PRIMARY KEY DEFAULT uuidv7(),
     user_id                  UUID            NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     provider                 oauth_provider  NOT NULL,
     provider_user_id         VARCHAR(120)    NOT NULL,
@@ -48,7 +49,7 @@ CREATE INDEX oauth_accounts_user_id_idx ON oauth_accounts (user_id);
 -- revoked token is a sign of theft and triggers wholesale revocation of
 -- the user's session chain (handled in the user module's service layer).
 CREATE TABLE refresh_tokens (
-    id           UUID         PRIMARY KEY DEFAULT gen_random_uuidv7(),
+    id           UUID         PRIMARY KEY DEFAULT uuidv7(),
     user_id      UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token_hash   BYTEA        NOT NULL UNIQUE,
     issued_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
@@ -69,7 +70,7 @@ CREATE INDEX refresh_tokens_user_active_idx
 -- Examples: oauth.link, oauth.unlink, login.success, refresh.rotate,
 -- refresh.theft_detected.
 CREATE TABLE audit_log (
-    id              UUID         PRIMARY KEY DEFAULT gen_random_uuidv7(),
+    id              UUID         PRIMARY KEY DEFAULT uuidv7(),
     occurred_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
     actor_user_id   UUID         REFERENCES users(id) ON DELETE SET NULL,
     event_type      VARCHAR(80)  NOT NULL,
