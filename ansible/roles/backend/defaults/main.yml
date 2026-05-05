@@ -1,0 +1,19 @@
+# Defaults for the backend role (prod_app host).
+# Provisions Docker + a docker-compose.yml. The image itself is built and
+# pushed to GHCR by .github/workflows/backend-deploy.yml; Ansible just owns
+# the host config so 'docker compose pull && up -d' works.
+
+backend_install_dir: /opt/balruno/backend
+backend_compose_file: "{{ backend_install_dir }}/docker-compose.yml"
+
+# Image lives at ghcr.io/<owner>/balruno-backend.
+# Push tags both 'latest' (rolling) and the commit SHA (rollback target);
+# prod pulls 'latest' by default.
+backend_image_repo: "ghcr.io/dj258255/balruno-backend"
+backend_image_tag: latest
+
+# Container resource ceiling. ARM 12GB host — Spring Boot baseline ~190MB,
+# 2GB ceiling gives headroom for WS connections + Hocuspocus extension once
+# they land in B-4/B-5.
+backend_mem_limit: "2g"
+backend_active_profile: prod

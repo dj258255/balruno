@@ -24,15 +24,24 @@ com.balruno
 
 Module 간 통신 = Spring `ApplicationEvent` (loose coupling).
 
-## 빌드
+## 빌드 / 로컬 실행
+
+### Docker (권장)
+
+```bash
+cd packages/backend
+docker compose up --build       # localhost:8080 으로 노출, build → 즉시 실행
+docker compose down             # 종료
+```
+
+### Gradle 직접 (개발 디버깅)
 
 JDK 25 가 설치되어 있지 않아도 OK — Gradle toolchain 이 자동 다운로드.
 
 ```bash
-cd packages/backend
-./gradlew bootRun           # 로컬 실행 (localhost:8080)
-./gradlew bootJar           # build/libs/balruno-backend.jar 생성
-./gradlew test              # JUnit + ArchitectureTest
+./gradlew bootRun               # 로컬 실행 (localhost:8080)
+./gradlew bootJar               # build/libs/balruno-backend.jar 생성
+./gradlew test                  # JUnit + ArchitectureTest
 ```
 
 ## endpoint (Phase B-1 시점)
@@ -47,10 +56,12 @@ cd packages/backend
 
 GitHub Actions `backend-deploy.yml` (paths: `packages/backend/**`):
 
-1. setup-java 25 (Eclipse Temurin)
-2. `./gradlew bootJar` → `build/libs/balruno-backend.jar`
-3. SCP 로 prod_app 머신 (`168.107.47.33`) `/opt/balruno/backend/app.jar.new` 전송
-4. SSH `sudo mv app.jar.new app.jar && sudo systemctl restart balruno-backend`
+1. ansible-deploy 가 prod_app 에 Docker engine + `/opt/balruno/backend/docker-compose.yml` 깔린 상태인지 wait
+2. Buildx + QEMU (linux/arm64 cross build) → `ghcr.io/dj258255/balruno-backend:latest` + `:<commit-sha>` push
+3. SSH prod_app: `docker login ghcr.io && docker compose pull && docker compose up -d`
+4. Smoke test `https://api.balruno.com/actuator/health → 200`
+
+배포 단위 = OCI image (multi-stage Dockerfile). Stage 4+ K8s/ECS 마이그레이션 시 같은 image 재사용.
 
 ## 라이센스
 

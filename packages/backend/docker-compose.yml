@@ -1,0 +1,19 @@
+# Local dev compose — `cd packages/backend && docker compose up`.
+# Production compose is rendered by Ansible at /opt/balruno/backend/docker-compose.yml
+# on prod_app. Keep both in sync at the structural level (image, ports,
+# env, mem_limit). Differences live in .env / SPRING_PROFILES_ACTIVE.
+
+name: balruno-backend-dev
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: balruno-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    mem_limit: 2g

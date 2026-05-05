@@ -1,0 +1,28 @@
+# Keep the build context small so docker build is fast and cache-friendly.
+
+# Gradle local state (huge, machine-specific)
+.gradle/
+build/
+out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+
+# git tooling (we don't need history inside the image)
+.git/
+.gitignore
+
+# Logs and dumps
+*.log
+*.hprof
+
+# Spring Modulith generated docs (rebuilt every CI run from source)
+target/
+
+# Local override config
+application-local.*

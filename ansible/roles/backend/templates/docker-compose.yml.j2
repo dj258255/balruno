@@ -1,0 +1,26 @@
+# {{ ansible_managed }}
+# Production compose for the Balruno backend on prod_app.
+# Image is built + pushed to GHCR by .github/workflows/backend-deploy.yml.
+
+name: balruno-prod
+
+services:
+  backend:
+    image: {{ backend_image_repo }}:{{ backend_image_tag }}
+    container_name: balruno-backend
+    restart: unless-stopped
+    # Loopback bind — Cloudflare → nginx :443 → 127.0.0.1:8080 → here.
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: "{{ backend_active_profile }}"
+    mem_limit: {{ backend_mem_limit }}
+    # Container HEALTHCHECK already lives in the Dockerfile; this stanza
+    # makes the docker-compose-level dependency graph aware of it for
+    # future services that may depend on backend (Hocuspocus in B-5).
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

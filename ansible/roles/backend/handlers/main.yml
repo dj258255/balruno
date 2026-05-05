@@ -1,0 +1,12 @@
+# Restart trigger when docker-compose.yml changes. The deploy workflow's
+# `docker compose up -d` call covers normal redeploys; this handler is
+# only for Ansible-side changes (e.g. tag bump, mem_limit tweak).
+
+- name: restart backend stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ backend_install_dir }}"
+    state: restarted
+  # If the image hasn't been pushed yet (first apply) the docker-compose
+  # call would fail. Skip when no image is locally cached *and* not yet
+  # pulled — first deploy is the workflow's responsibility.
+  failed_when: false
