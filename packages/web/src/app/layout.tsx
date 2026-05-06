@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { Analytics } from "@vercel/analytics/next";
 import { DesktopBootstrap } from "./components/DesktopBootstrap";
+import { BackendAuthBootstrap } from "./components/BackendAuthBootstrap";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -59,6 +60,7 @@ export default async function RootLayout({
     <html lang={locale} suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <DesktopBootstrap />
+        <BackendAuthBootstrap />
         <ThemeProvider>
           <NextIntlClientProvider messages={messages}>
             {children}
