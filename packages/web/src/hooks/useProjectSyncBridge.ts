@@ -119,17 +119,44 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       columnId?: string;
       value?: CellValue;
     } | null;
-    // eslint-disable-next-line no-console
-    console.info('[balruno] broadcast cell.update received', { msg, op });
     if (op?.sheetId && op.rowId && op.columnId) {
-      store.updateCell(
-        projectId,
-        op.sheetId,
-        op.rowId,
-        op.columnId,
-        op.value as CellValue,
-        { origin: 'remote' },
-      );
+      // Apply directly via setState rather than store.updateCell —
+      // the cellSlice action goes through updateCellInDoc(Y.Doc),
+      // and the Y.Doc observer that propagates back to projectStore
+      // state lives in useYDocSync, which the server-canonical
+      // project page does NOT mount. The Y.Doc changes silently and
+      // store.projects[].sheets[].rows[].cells never updates.
+      // Direct setState mirrors hydrateProjectFromSyncFull's
+      // pattern (Stage E.1) and keeps the round-trip visible to the
+      // controlled <input value={cellValue}>.
+      const targetSheetId = op.sheetId;
+      const targetRowId = op.rowId;
+      const targetColumnId = op.columnId;
+      const targetValue = op.value as CellValue;
+      useProjectStore.setState((state) => ({
+        projects: state.projects.map((p) =>
+          p.id !== projectId
+            ? p
+            : {
+                ...p,
+                sheets: p.sheets.map((s) =>
+                  s.id !== targetSheetId
+                    ? s
+                    : {
+                        ...s,
+                        rows: s.rows.map((r) =>
+                          r.id !== targetRowId
+                            ? r
+                            : {
+                                ...r,
+                                cells: { ...r.cells, [targetColumnId]: targetValue },
+                              },
+                        ),
+                      },
+                ),
+              },
+        ),
+      }));
     }
   } else if (msg.type === 'row.add') {
     const op = msg.op as {
