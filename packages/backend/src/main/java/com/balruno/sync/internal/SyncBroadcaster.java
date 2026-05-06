@@ -92,7 +92,12 @@ class SyncBroadcaster {
 
     private void broadcastQuietly(UUID projectId, String payload) {
         var msg = new TextMessage(payload);
-        for (var session : sessions.sessionsFor(projectId)) {
+        var recipients = sessions.sessionsFor(projectId);
+        // TEMP debug — recipient count + payload preview
+        log.info("ws_broadcast projectId={} recipients={} preview={}",
+                projectId, recipients.size(),
+                payload.substring(0, Math.min(200, payload.length())));
+        for (var session : recipients) {
             try {
                 if (session.isOpen()) session.sendMessage(msg);
             } catch (Exception e) {

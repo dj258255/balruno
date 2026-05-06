@@ -119,6 +119,8 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       columnId?: string;
       value?: CellValue;
     } | null;
+    // eslint-disable-next-line no-console
+    console.info('[balruno] broadcast cell.update received', { msg, op });
     if (op?.sheetId && op.rowId && op.columnId) {
       store.updateCell(
         projectId,
