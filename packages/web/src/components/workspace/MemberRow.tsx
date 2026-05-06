@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 
 import {
   changeMemberRole,
@@ -39,6 +40,8 @@ export function MemberRow({ workspaceId, member, viewerRole, onChanged }: Member
     try {
       await changeMemberRole(workspaceId, member.userId, next);
       onChanged?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'role change failed');
     } finally {
       setBusy(false);
     }
@@ -50,6 +53,8 @@ export function MemberRow({ workspaceId, member, viewerRole, onChanged }: Member
     try {
       await removeMember(workspaceId, member.userId);
       onChanged?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'remove failed');
     } finally {
       setBusy(false);
     }

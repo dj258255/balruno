@@ -15,6 +15,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Users, Plus, ArrowLeft, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import {
   BackendError,
@@ -90,7 +91,9 @@ export default function WorkspaceDetailPage() {
       setNewSlug('');
       setNewName('');
     } catch (e) {
-      setError(e instanceof Error ? e.message : '프로젝트를 만들지 못했습니다.');
+      const msg = e instanceof Error ? e.message : '프로젝트를 만들지 못했습니다.';
+      toast.error(msg);
+      setError(msg);
     } finally {
       setCreating(false);
     }

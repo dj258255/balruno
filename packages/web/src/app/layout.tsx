@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { Analytics } from "@vercel/analytics/next";
+import { Toaster } from "sonner";
 import { DesktopBootstrap } from "./components/DesktopBootstrap";
 import { BackendAuthBootstrap } from "./components/BackendAuthBootstrap";
 import "./globals.css";
@@ -66,6 +67,10 @@ export default async function RootLayout({
             {children}
           </NextIntlClientProvider>
         </ThemeProvider>
+        {/* Toast surface — sonner picks up the system theme via CSS vars
+            on <html>; one mount at the body root drives every toast call
+            in the app. Position right-bottom matches Vercel/Linear UX. */}
+        <Toaster richColors position="bottom-right" />
         <Analytics />
       </body>
     </html>

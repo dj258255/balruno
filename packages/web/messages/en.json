@@ -167,6 +167,7 @@
     "appIntroAgain": "Show app intro again",
     "workspaceRenamePrompt": "Workspace name",
     "workspaceRename": "Rename",
+    "workspaceRenamed": "Workspace renamed",
     "workspaceSettings": "Workspace settings",
     "newProjectShort": "New game",
     "fromTemplateGallery": "Start from template gallery",

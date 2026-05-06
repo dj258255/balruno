@@ -12,6 +12,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import {
   BackendError,
@@ -69,7 +70,9 @@ export default function WorkspacesPage() {
       setSlug('');
       setName('');
     } catch (e) {
-      setError(e instanceof Error ? e.message : '워크스페이스를 만들지 못했습니다.');
+      const msg = e instanceof Error ? e.message : '워크스페이스를 만들지 못했습니다.';
+      toast.error(msg);
+      setError(msg);
     } finally {
       setCreating(false);
     }

@@ -3,13 +3,17 @@
  *
  * Redirects unauthenticated visits to /login when the backend is wired
  * up (NEXT_PUBLIC_API_URL or NEXT_PUBLIC_BALRUNO_API_URL set). Without
- * a backend the app still works offline so the middleware is a no-op.
+ * a backend the app still works offline so the proxy is a no-op.
  *
  * Auth signal: the backend's httpOnly `balruno_session` cookie (a JWT)
- * is sent by the browser to *.balruno.com automatically. The middleware
+ * is sent by the browser to *.balruno.com automatically. The proxy
  * reads its presence — never the value — to decide whether to allow the
  * route. Real authn / authz happens at the backend on each /api/v1/**
  * request.
+ *
+ * File convention: Next.js 16 deprecated the `middleware.ts` filename
+ * in favour of `proxy.ts` (same matcher syntax, named export renamed).
+ * The proxy runtime is `nodejs` — there is no edge-runtime variant.
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
@@ -39,7 +43,7 @@ function backendConfigured(): boolean {
   );
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   if (!backendConfigured()) return NextResponse.next();
 
   const { pathname, search } = req.nextUrl;

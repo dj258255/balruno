@@ -17,6 +17,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Plus, Settings, Edit2, Sparkles, Users, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ui';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
@@ -260,16 +261,13 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
               }
               const next = window.prompt(t('sidebar.workspaceRenamePrompt'), active.name);
               setCtxMenu(null);
-              if (next && next.trim()) {
+              if (next && next.trim() && next.trim() !== active.name) {
                 // Backend mutation; the store refresh re-syncs the cache so
                 // the dropdown reflects the new name on next open.
-                void renameRemote(active.id, next).catch((e) => {
-                  // No toast surface yet — surface as a window.alert so the
-                  // user sees the failure inline instead of staring at the
-                  // un-changed name. Toast infrastructure lands when the
-                  // workspace settings UI does (Step B follow-up).
-                  const msg = e instanceof Error ? e.message : 'rename failed';
-                  window.alert(msg);
+                void renameRemote(active.id, next).then(() => {
+                  toast.success(t('sidebar.workspaceRenamed'));
+                }).catch((e: unknown) => {
+                  toast.error(e instanceof Error ? e.message : 'rename failed');
                 });
               }
             }}

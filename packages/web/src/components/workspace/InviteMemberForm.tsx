@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link2, Copy, Check, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 
 import {
   createInvite,
@@ -51,12 +52,15 @@ export function InviteMemberForm({ workspaceId, onInvited }: InviteMemberFormPro
       try {
         await navigator.clipboard.writeText(url);
         setCopied(true);
+        toast.success(t('inviteCopied'));
         setTimeout(() => setCopied(false), 1500);
       } catch {
         /* user can still click the manual copy button */
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'failed');
+      const msg = e instanceof Error ? e.message : 'failed';
+      toast.error(msg);
+      setError(msg);
     } finally {
       setGenerating(false);
     }
@@ -67,11 +71,10 @@ export function InviteMemberForm({ workspaceId, onInvited }: InviteMemberFormPro
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
+      toast.success(t('inviteCopied'));
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Some browsers refuse clipboard access without explicit gesture
-      // or in insecure contexts — surface as an error rather than silent.
-      setError('clipboard unavailable');
+      toast.error('clipboard unavailable');
     }
   };
 
