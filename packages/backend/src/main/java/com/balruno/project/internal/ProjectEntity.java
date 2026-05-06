@@ -63,7 +63,14 @@ class ProjectEntity {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data", nullable = false, columnDefinition = "jsonb")
-    private String data = "{}";
+    // Default mirrors the V8 column default ('[]'::jsonb). The schema
+    // contract is "data is a Sheet[]" — SheetCellOpService walks the
+    // array with sheets[?id].rows[?id].cells[?columnId]. ProjectService
+    // overwrites this default with seedInitialData() at create time so
+    // a freshly minted project lands with one starter sheet ready for
+    // cell.update; the empty-array fallback is the defensive floor if
+    // a future code path forgets to seed.
+    private String data = "[]";
 
     @Column(name = "data_version", nullable = false)
     private long dataVersion = 1L;
@@ -90,6 +97,19 @@ class ProjectEntity {
         this.name = name;
         this.description = description;
         this.createdBy = createdBy;
+    }
+
+    /**
+     * Replace the data JSONB before the entity is persisted. Used by
+     * ProjectService to inject the default starter sheet on create.
+     * Package-private + applied only when the existing data is the
+     * default empty array, so a re-call (e.g. an accidental double
+     * seeding path) never clobbers user content.
+     */
+    void seedInitialData(String json) {
+        if (json == null) return;
+        if (!"[]".equals(this.data)) return;
+        this.data = json;
     }
 
     @PrePersist

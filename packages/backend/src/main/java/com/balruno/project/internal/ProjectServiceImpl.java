@@ -46,8 +46,35 @@ class ProjectServiceImpl implements ProjectService {
         var current = projects.countByWorkspaceIdAndDeletedAtIsNull(workspaceId);
         limitGuard.requireBelow(plan, "projectsPerWorkspace", current, limit);
 
-        var entity = saveOrThrow(new ProjectEntity(workspaceId, slug, name, description, callerUserId));
+        var fresh = new ProjectEntity(workspaceId, slug, name, description, callerUserId);
+        fresh.seedInitialData(buildDefaultSheetJson());
+        var entity = saveOrThrow(fresh);
         return toDto(entity);
+    }
+
+    /**
+     * Seed JSON for a fresh project's data column — exactly one
+     * starter sheet with one starter column, no rows. The shape
+     * matches shared.Sheet (frontend's Sheet[] type) so SheetTable
+     * can render the seed without conditional empty-state rendering,
+     * and SheetCellOpService can apply cell.update against the
+     * sheetId / columnId on first keystroke.
+     *
+     * UUIDs use UUID.randomUUID() (v4). Column / row / sheet ids
+     * inside the JSON tree are not database PKs (the project's id
+     * is the only column with that role here), so the project's
+     * UUIDv7 PK policy doesn't apply — v4 is fine for nested ids
+     * and is the easiest source of randomness from Java.
+     */
+    private static String buildDefaultSheetJson() {
+        var now = System.currentTimeMillis();
+        var sheetId = UUID.randomUUID().toString();
+        var columnId = UUID.randomUUID().toString();
+        return """
+                [{"id":"%s","name":"Sheet 1","columns":[{"id":"%s","name":"Column 1","type":"general"}],"rows":[],"createdAt":%d,"updatedAt":%d}]
+                """
+                .formatted(sheetId, columnId, now, now)
+                .stripTrailing();
     }
 
     @Override
