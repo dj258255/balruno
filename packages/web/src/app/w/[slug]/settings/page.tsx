@@ -203,7 +203,7 @@ export default function WorkspaceSettingsPage() {
             value={slugInput}
             onChange={(e) => setSlugInput(e.target.value.toLowerCase())}
             required
-            pattern="[a-z0-9][a-z0-9-]{2,29}"
+            pattern="[a-z0-9][-a-z0-9]{2,29}"
             disabled={saving}
             className="w-full rounded-md border px-3 py-2 text-sm font-mono disabled:opacity-50"
             style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}

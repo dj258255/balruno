@@ -247,7 +247,7 @@ export default function WorkspaceDetailPage() {
             onChange={(e) => setNewSlug(e.target.value.toLowerCase())}
             placeholder="slug (a-z, 0-9, -)"
             required
-            pattern="[a-z0-9][a-z0-9-]{2,29}"
+            pattern="[a-z0-9][-a-z0-9]{2,29}"
             disabled={creating}
             className="w-full rounded-md border px-3 py-2 text-sm font-mono disabled:opacity-50"
             style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}
