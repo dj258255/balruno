@@ -14,8 +14,9 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Users, Plus, ArrowLeft, Loader2 } from 'lucide-react';
+import { Users, Plus, ArrowLeft, Loader2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 import {
   BackendError,
@@ -32,6 +33,7 @@ import { MemberManagementModal } from '@/components/workspace/MemberManagementMo
 export default function WorkspaceDetailPage() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
+  const t = useTranslations('sidebar');
   const slug = params?.slug;
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -149,14 +151,24 @@ export default function WorkspaceDetailPage() {
             /{workspace.slug}
           </p>
         </div>
-        <button
-          onClick={() => setMembersOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-[var(--bg-hover)]"
-          style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
-        >
-          <Users className="w-3.5 h-3.5" />
-          멤버
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMembersOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-[var(--bg-hover)]"
+            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+          >
+            <Users className="w-3.5 h-3.5" />
+            멤버
+          </button>
+          <button
+            onClick={() => router.push(`/w/${workspace.slug}/settings`)}
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-[var(--bg-hover)]"
+            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            {t('workspaceSettings')}
+          </button>
+        </div>
       </header>
 
       {error && error !== 'not-found' && (
