@@ -41,8 +41,20 @@ export function InviteMemberForm({ workspaceId, onInvited }: InviteMemberFormPro
         role,
         expiresIn: `P${INVITE_TTL_DAYS}D`,
       });
-      setShareUrl(inviteShareUrl(created.rawToken));
+      const url = inviteShareUrl(created.rawToken);
+      setShareUrl(url);
       onInvited?.();
+      // Auto-copy on success — the button click is still the originating
+      // gesture, so most browsers permit clipboard.writeText even after
+      // an awaited fetch. If it fails (insecure context, denied
+      // permission), the manual "복사" button remains as a fallback.
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      } catch {
+        /* user can still click the manual copy button */
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'failed');
     } finally {

@@ -263,10 +263,13 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
               if (next && next.trim()) {
                 // Backend mutation; the store refresh re-syncs the cache so
                 // the dropdown reflects the new name on next open.
-                void renameRemote(active.id, next).catch(() => {
-                  // Surface a toast via console for now — a proper toast
-                  // surface lives in Step B (4) workspace settings UI.
-                  console.error('Failed to rename workspace');
+                void renameRemote(active.id, next).catch((e) => {
+                  // No toast surface yet — surface as a window.alert so the
+                  // user sees the failure inline instead of staring at the
+                  // un-changed name. Toast infrastructure lands when the
+                  // workspace settings UI does (Step B follow-up).
+                  const msg = e instanceof Error ? e.message : 'rename failed';
+                  window.alert(msg);
                 });
               }
             }}
