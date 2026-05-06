@@ -194,10 +194,43 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       }
       break;
     }
+    case 'tree.rename': {
+      const op = msg.op as {
+        treeKind?: 'SHEET' | 'DOC';
+        nodeId?: string;
+        newName?: string;
+      } | null;
+      if (op?.nodeId && op.newName && op.treeKind === 'SHEET') {
+        useProjectStore.setState((state) => ({
+          projects: state.projects.map((p) =>
+            p.id !== projectId
+              ? p
+              : { ...p, sheetTree: renameNodeInTreeBroadcast(p.sheetTree ?? [], op.nodeId!, op.newName!) },
+          ),
+        }));
+      }
+      // doc tree rename apply lands with Stage G.
+      break;
+    }
     default:
-      // tree.* — apply path lands with Stage G.
+      // tree.add / tree.move / tree.delete — apply path is later sub-stage.
       break;
   }
+}
+
+function renameNodeInTreeBroadcast(
+  tree: TreeNode[],
+  nodeId: string,
+  newName: string,
+): TreeNode[] {
+  return tree.map((node) => {
+    if (node.id === nodeId) return { ...node, name: newName };
+    if (node.children && node.children.length > 0) {
+      const renamed = renameNodeInTreeBroadcast(node.children, nodeId, newName);
+      if (renamed !== node.children) return { ...node, children: renamed };
+    }
+    return node;
+  });
 }
 
 /**

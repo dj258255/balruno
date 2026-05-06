@@ -22,12 +22,15 @@ interface ServerSheetTreeProps {
   tree: TreeNode[];
   selectedSheetId: string | null;
   onSelectSheet: (sheetId: string) => void;
+  /** Double-click on a node enters rename mode; commit via Enter or blur. */
+  onRenameNode?: (nodeId: string, newName: string) => void;
 }
 
 export function ServerSheetTree({
   tree,
   selectedSheetId,
   onSelectSheet,
+  onRenameNode,
 }: ServerSheetTreeProps) {
   if (tree.length === 0) {
     return (
@@ -45,6 +48,7 @@ export function ServerSheetTree({
           depth={0}
           selectedSheetId={selectedSheetId}
           onSelectSheet={onSelectSheet}
+          onRenameNode={onRenameNode}
         />
       ))}
     </ul>
@@ -56,49 +60,101 @@ interface TreeNodeRowProps {
   depth: number;
   selectedSheetId: string | null;
   onSelectSheet: (sheetId: string) => void;
+  onRenameNode?: (nodeId: string, newName: string) => void;
 }
 
-function TreeNodeRow({ node, depth, selectedSheetId, onSelectSheet }: TreeNodeRowProps) {
-  const [expanded, setExpanded] = useState(depth === 0); // root folders open by default
+function TreeNodeRow({
+  node,
+  depth,
+  selectedSheetId,
+  onSelectSheet,
+  onRenameNode,
+}: TreeNodeRowProps) {
+  const [expanded, setExpanded] = useState(depth === 0);
+  const [renaming, setRenaming] = useState(false);
+  const [draftName, setDraftName] = useState(node.name);
   const isFolder = node.type === 'folder';
   const isSheet = node.type === 'sheet';
   const isSelected = isSheet && node.id === selectedSheetId;
   const indent = depth * 12;
 
   const toggle = () => {
+    if (renaming) return;
     if (isFolder) setExpanded((v) => !v);
     else if (isSheet) onSelectSheet(node.id);
   };
 
+  const startRename = () => {
+    if (!onRenameNode) return;
+    setDraftName(node.name);
+    setRenaming(true);
+  };
+
+  const commitRename = () => {
+    setRenaming(false);
+    const next = draftName.trim();
+    if (!next || next === node.name) return;
+    onRenameNode?.(node.id, next);
+  };
+
+  const cancelRename = () => {
+    setRenaming(false);
+    setDraftName(node.name);
+  };
+
   return (
     <li>
-      <button
-        type="button"
-        onClick={toggle}
-        className="flex w-full items-center gap-1 rounded px-2 py-1 text-left hover:bg-[var(--bg-hover)]"
+      <div
+        onDoubleClick={startRename}
+        className="flex w-full items-center gap-1 rounded px-2 py-1 hover:bg-[var(--bg-hover)]"
         style={{
           paddingLeft: `${8 + indent}px`,
           background: isSelected ? 'var(--bg-selected, var(--bg-hover))' : undefined,
           color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
         }}
       >
-        {isFolder ? (
-          <>
-            {expanded ? (
-              <ChevronDown className="h-3.5 w-3.5 shrink-0" />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5 shrink-0" />
-            )}
-            <Folder className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
-          </>
-        ) : (
-          <FileSpreadsheet
-            className="h-3.5 w-3.5 shrink-0"
-            style={{ color: 'var(--text-tertiary)', marginLeft: 14 /* align under chevron */ }}
-          />
-        )}
-        <span className="truncate">{node.name}</span>
-      </button>
+        <button
+          type="button"
+          onClick={toggle}
+          className="flex flex-1 items-center gap-1 text-left"
+        >
+          {isFolder ? (
+            <>
+              {expanded ? (
+                <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+              )}
+              <Folder className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+            </>
+          ) : (
+            <FileSpreadsheet
+              className="h-3.5 w-3.5 shrink-0"
+              style={{ color: 'var(--text-tertiary)', marginLeft: 14 }}
+            />
+          )}
+          {renaming ? (
+            <input
+              autoFocus
+              value={draftName}
+              onChange={(e) => setDraftName(e.target.value)}
+              onBlur={commitRename}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitRename();
+                else if (e.key === 'Escape') cancelRename();
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 rounded border bg-[var(--bg-secondary)] px-1 text-sm"
+              style={{
+                borderColor: 'var(--border-primary)',
+                color: 'var(--text-primary)',
+              }}
+            />
+          ) : (
+            <span className="truncate">{node.name}</span>
+          )}
+        </button>
+      </div>
 
       {isFolder && expanded && node.children && node.children.length > 0 && (
         <ul className="space-y-0.5">
@@ -109,6 +165,7 @@ function TreeNodeRow({ node, depth, selectedSheetId, onSelectSheet }: TreeNodeRo
               depth={depth + 1}
               selectedSheetId={selectedSheetId}
               onSelectSheet={onSelectSheet}
+              onRenameNode={onRenameNode}
             />
           ))}
         </ul>

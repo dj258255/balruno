@@ -40,6 +40,27 @@ import { useProjectStore } from '@/stores/projectStore';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
+import { emitOp } from '@/lib/sync/writeQueue';
+import type { TreeNode } from '@balruno/shared';
+
+/**
+ * Walk the sheet_tree (recursive folder/sheet structure) and rename
+ * the node with the matching id. Returns a new array (immutable
+ * setState semantics); unaffected branches keep the same reference
+ * so React subtrees don't churn.
+ */
+function renameNodeInTree(tree: TreeNode[], nodeId: string, newName: string): TreeNode[] {
+  return tree.map((node) => {
+    if (node.id === nodeId) return { ...node, name: newName };
+    if (node.children && node.children.length > 0) {
+      const renamedChildren = renameNodeInTree(node.children, nodeId, newName);
+      if (renamedChildren !== node.children) {
+        return { ...node, children: renamedChildren };
+      }
+    }
+    return node;
+  });
+}
 
 export default function ProjectDetailPage() {
   const params = useParams<{ slug: string; projectSlug: string }>();
@@ -173,6 +194,28 @@ export default function ProjectDetailPage() {
     }
   }, [cellValue]);
 
+  // Inline rename — sheet_tree node (folder OR sheet leaf). Direct
+  // setState on the store (Y.Doc bypass; same pattern as the
+  // broadcast cell.update apply path) + writeQueue.emitOp so peers
+  // pick up the rename via tree.rename broadcast. ADR 0018 paired
+  // pattern, sheet_tree region.
+  const handleRenameNode = (nodeId: string, newName: string) => {
+    if (!project) return;
+    useProjectStore.setState((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== project.id
+          ? p
+          : { ...p, sheetTree: renameNodeInTree(p.sheetTree ?? [], nodeId, newName) },
+      ),
+    }));
+    emitOp({
+      kind: 'tree.rename',
+      treeKind: 'SHEET',
+      nodeId,
+      newName,
+    });
+  };
+
   if (loading) {
     return (
       <main className="flex items-center justify-center py-20">
@@ -258,6 +301,7 @@ export default function ProjectDetailPage() {
               tree={sheetTree}
               selectedSheetId={selectedSheetId}
               onSelectSheet={setSelectedSheetId}
+              onRenameNode={handleRenameNode}
             />
           </aside>
 
