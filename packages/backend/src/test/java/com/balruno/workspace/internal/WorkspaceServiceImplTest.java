@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.workspace.internal;
 
+import com.balruno.workspace.LimitGuard;
 import com.balruno.workspace.WorkspaceException;
+import com.balruno.workspace.WorkspacePlan;
 import com.balruno.workspace.WorkspaceRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -45,6 +47,7 @@ class WorkspaceServiceImplTest {
     @Mock WorkspaceRepository workspaces;
     @Mock WorkspaceMemberRepository members;
     @Mock WorkspaceInviteRepository invites;
+    @Mock LimitGuard limitGuard;
     @InjectMocks WorkspaceServiceImpl service;
 
     // Common fixtures.
@@ -72,6 +75,7 @@ class WorkspaceServiceImplTest {
             assertThat(dto.id()).isEqualTo(wsId);
             assertThat(dto.slug()).isEqualTo("studio-x");
             assertThat(dto.name()).isEqualTo("Studio X");
+            assertThat(dto.plan()).isEqualTo(WorkspacePlan.FREE);
             verify(members).save(any(WorkspaceMemberEntity.class));
         }
 

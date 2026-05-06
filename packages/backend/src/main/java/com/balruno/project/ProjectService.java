@@ -30,4 +30,11 @@ public interface ProjectService {
 
     /** Soft-deletes the project. Builder+. */
     void softDelete(UUID projectId, UUID callerUserId);
+
+    /**
+     * Active project count for quota readouts. Operator-internal: callers
+     * are responsible for ensuring the user is allowed to see the
+     * workspace before exposing this number.
+     */
+    long countActiveInWorkspace(UUID workspaceId);
 }

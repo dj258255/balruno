@@ -2,7 +2,11 @@
 package com.balruno.project.internal;
 
 import com.balruno.project.ProjectException;
+import com.balruno.workspace.LimitGuard;
+import com.balruno.workspace.QuotaException;
+import com.balruno.workspace.Workspace;
 import com.balruno.workspace.WorkspaceException;
+import com.balruno.workspace.WorkspacePlan;
 import com.balruno.workspace.WorkspaceRole;
 import com.balruno.workspace.WorkspaceService;
 import org.junit.jupiter.api.DisplayName;
@@ -22,8 +26,11 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,12 +45,19 @@ class ProjectServiceImplTest {
 
     @Mock ProjectRepository projects;
     @Mock WorkspaceService workspaces;
+    @Mock LimitGuard limitGuard;
     @InjectMocks ProjectServiceImpl service;
 
     private final UUID wsId = UUID.randomUUID();
     private final UUID otherWs = UUID.randomUUID();
     private final UUID userId = UUID.randomUUID();
     private final UUID projectId = UUID.randomUUID();
+
+    private Workspace freeWorkspace(UUID id) {
+        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        return new Workspace(id, "ws-" + id.toString().substring(0, 4), "WS",
+                WorkspacePlan.FREE, userId, now, now);
+    }
 
     // ── Happy ──────────────────────────────────────────────────────────
 
@@ -54,6 +68,8 @@ class ProjectServiceImplTest {
         @Test
         void create_inserts_with_valid_inputs() {
             when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(wsId, "main")).thenReturn(false);
+            when(workspaces.findById(wsId)).thenReturn(freeWorkspace(wsId));
+            when(projects.countByWorkspaceIdAndDeletedAtIsNull(wsId)).thenReturn(0L);
             when(projects.saveAndFlush(any(ProjectEntity.class)))
                     .thenAnswer(inv -> stamp(inv.getArgument(0)));
 
@@ -101,6 +117,8 @@ class ProjectServiceImplTest {
         @Test
         void create_with_min_length_slug_is_accepted() {
             when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(wsId, "abc")).thenReturn(false);
+            when(workspaces.findById(wsId)).thenReturn(freeWorkspace(wsId));
+            when(projects.countByWorkspaceIdAndDeletedAtIsNull(wsId)).thenReturn(0L);
             when(projects.saveAndFlush(any(ProjectEntity.class)))
                     .thenAnswer(inv -> stamp(inv.getArgument(0)));
 
@@ -113,6 +131,8 @@ class ProjectServiceImplTest {
         void create_with_max_length_slug_is_accepted() {
             var slug = "a23456789012345678901234567890"; // 30 chars
             when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(wsId, slug)).thenReturn(false);
+            when(workspaces.findById(wsId)).thenReturn(freeWorkspace(wsId));
+            when(projects.countByWorkspaceIdAndDeletedAtIsNull(wsId)).thenReturn(0L);
             when(projects.saveAndFlush(any(ProjectEntity.class)))
                     .thenAnswer(inv -> stamp(inv.getArgument(0)));
 
@@ -201,6 +221,10 @@ class ProjectServiceImplTest {
             // allowed because the existence check is workspace-scoped.
             when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(wsId, "main")).thenReturn(false);
             when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(otherWs, "main")).thenReturn(false);
+            when(workspaces.findById(wsId)).thenReturn(freeWorkspace(wsId));
+            when(workspaces.findById(otherWs)).thenReturn(freeWorkspace(otherWs));
+            when(projects.countByWorkspaceIdAndDeletedAtIsNull(wsId)).thenReturn(0L);
+            when(projects.countByWorkspaceIdAndDeletedAtIsNull(otherWs)).thenReturn(0L);
             when(projects.saveAndFlush(any(ProjectEntity.class)))
                     .thenAnswer(inv -> stamp(inv.getArgument(0)));
 
@@ -208,6 +232,23 @@ class ProjectServiceImplTest {
             service.create(otherWs, userId, "main", "WS B main", null);
 
             verify(projects, org.mockito.Mockito.times(2)).saveAndFlush(any(ProjectEntity.class));
+        }
+
+        @Test
+        void create_at_FREE_project_cap_throws_QUOTA_EXCEEDED() {
+            // FREE limit = 3 projects/workspace; LimitGuard mock simulates the throw.
+            when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(wsId, "fourth")).thenReturn(false);
+            when(workspaces.findById(wsId)).thenReturn(freeWorkspace(wsId));
+            when(projects.countByWorkspaceIdAndDeletedAtIsNull(wsId)).thenReturn(3L);
+            doThrow(new QuotaException("projectsPerWorkspace", 3, 3, WorkspacePlan.FREE, "full"))
+                    .when(limitGuard).requireBelow(eq(WorkspacePlan.FREE), eq("projectsPerWorkspace"), anyLong(), anyLong());
+
+            assertThatThrownBy(() ->
+                    service.create(wsId, userId, "fourth", "Fourth", null))
+                    .isInstanceOfSatisfying(QuotaException.class, e -> {
+                        assertThat(e.quotaKey()).isEqualTo("projectsPerWorkspace");
+                        assertThat(e.plan()).isEqualTo(WorkspacePlan.FREE);
+                    });
         }
 
         @Test

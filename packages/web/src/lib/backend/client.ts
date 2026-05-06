@@ -116,3 +116,12 @@ function safeJson(text: string): unknown {
 export function backendBaseUrl(): string {
   return BASE_URL.replace(/\/$/, '');
 }
+
+/**
+ * Whether a backend URL is configured. Sync hooks + status indicators
+ * use this to silently no-op in offline / preview builds rather than
+ * spamming the network with failed requests.
+ */
+export function isBackendConfigured(): boolean {
+  return Boolean(BASE_URL);
+}

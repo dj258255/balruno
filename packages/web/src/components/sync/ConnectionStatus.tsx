@@ -1,7 +1,7 @@
 import { Cloud, CloudOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useConnectionStore, type ChannelStatus } from '@/stores/connectionStore';
-import { isBackendConfigured } from '@/lib/api/client';
+import { isBackendConfigured } from '@/lib/backend';
 
 interface ConnectionStatusProps {
   /** Compact mode: dot only, no label. */

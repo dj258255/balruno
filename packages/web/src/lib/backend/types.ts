@@ -18,18 +18,70 @@ export const WORKSPACE_ROLES: readonly WorkspaceRole[] = [
   'VIEWER',
 ] as const;
 
+export type WorkspacePlan = 'FREE' | 'PRO' | 'TEAM';
+
+export interface WorkspaceLimits {
+  maxMembersPerWorkspace: number;
+  maxProjectsPerWorkspace: number;
+  maxSheetsPerProject: number;
+  maxRowsPerSheet: number;
+  maxCellsPerProject: number;
+  maxDocumentsPerProject: number;
+  maxAttachmentBytes: number;
+  historyRetentionDays: number;
+  aiRequestsPerMonth: number;
+}
+
 export interface Workspace {
   id: string;
   slug: string;
   name: string;
+  plan: WorkspacePlan;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
 }
 
+export interface WorkspaceQuotaUsage {
+  workspaceId: string;
+  slug: string;
+  name: string;
+  plan: WorkspacePlan;
+  memberCount: number;
+  projectCount: number;
+  limits: WorkspaceLimits;
+}
+
+export interface UserQuota {
+  userId: string;
+  ownedWorkspaces: number;
+  workspaces: WorkspaceQuotaUsage[];
+}
+
+export interface UserBrief {
+  id: string;
+  email: string;
+  name: string | null;
+  avatarUrl: string | null;
+}
+
 export interface WorkspaceMember {
   workspaceId: string;
   userId: string;
+  role: WorkspaceRole;
+  joinedAt: string;
+}
+
+/**
+ * Enriched form returned by `GET /api/v1/workspaces/{id}/members` — the
+ * directory module joins WorkspaceMember with UserDirectoryService so
+ * the member list arrives ready to render. Mutation responses keep the
+ * bare {@link WorkspaceMember} shape; callers reload the list afterwards.
+ */
+export interface WorkspaceMemberView {
+  workspaceId: string;
+  userId: string;
+  user: UserBrief | null;
   role: WorkspaceRole;
   joinedAt: string;
 }

@@ -1,43 +1,54 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+
 import {
-  workspaceApi,
-  type WorkspaceMember,
+  changeMemberRole,
+  removeMember,
+  type WorkspaceMemberView,
   type WorkspaceRole,
-} from '@/lib/api/workspaces';
+} from '@/lib/backend';
 import { UserAvatar } from '@/components/presence/UserAvatar';
 
 interface MemberRowProps {
   workspaceId: string;
-  member: WorkspaceMember;
+  member: WorkspaceMemberView;
   /** Current viewer's role — only owner/admin may mutate. */
   viewerRole: WorkspaceRole;
   onChanged?: () => void;
 }
 
+/**
+ * One row of the members list. The role select offers all five tiers
+ * except OWNER — ownership is transferred via a dedicated flow (not yet
+ * built), never granted casually from a dropdown.
+ */
 export function MemberRow({ workspaceId, member, viewerRole, onChanged }: MemberRowProps) {
   const t = useTranslations('members');
   const [busy, setBusy] = useState(false);
 
-  const canMutate = (viewerRole === 'owner' || viewerRole === 'admin') && member.role !== 'owner';
+  const canMutate =
+    (viewerRole === 'OWNER' || viewerRole === 'ADMIN') && member.role !== 'OWNER';
 
-  const changeRole = async (next: WorkspaceRole) => {
+  const displayName = member.user?.name ?? member.user?.email ?? t('deletedUser');
+  const subText = member.user?.email ?? member.userId;
+
+  const onRoleSelect = async (next: WorkspaceRole) => {
     if (next === member.role) return;
     setBusy(true);
     try {
-      await workspaceApi.changeRole(workspaceId, member.userId, next);
+      await changeMemberRole(workspaceId, member.userId, next);
       onChanged?.();
     } finally {
       setBusy(false);
     }
   };
 
-  const remove = async () => {
-    if (!window.confirm(t('confirmRemove', { name: member.displayName }))) return;
+  const onRemoveClick = async () => {
+    if (!window.confirm(t('confirmRemove', { name: displayName }))) return;
     setBusy(true);
     try {
-      await workspaceApi.removeMember(workspaceId, member.userId);
+      await removeMember(workspaceId, member.userId);
       onChanged?.();
     } finally {
       setBusy(false);
@@ -52,17 +63,17 @@ export function MemberRow({ workspaceId, member, viewerRole, onChanged }: Member
       <UserAvatar
         user={{
           userId: member.userId,
-          displayName: member.displayName,
+          displayName,
           color: hashColor(member.userId),
         }}
         size={32}
       />
       <div className="flex-1 min-w-0">
         <div className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-          {member.displayName}
+          {displayName}
         </div>
         <div className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
-          {member.email}
+          {subText}
         </div>
       </div>
 
@@ -70,7 +81,7 @@ export function MemberRow({ workspaceId, member, viewerRole, onChanged }: Member
         <select
           value={member.role}
           disabled={busy}
-          onChange={(e) => changeRole(e.target.value as WorkspaceRole)}
+          onChange={(e) => onRoleSelect(e.target.value as WorkspaceRole)}
           className="px-2 py-1 text-xs rounded-md border"
           style={{
             background: 'var(--bg-primary)',
@@ -78,22 +89,23 @@ export function MemberRow({ workspaceId, member, viewerRole, onChanged }: Member
             borderColor: 'var(--border-primary)',
           }}
         >
-          <option value="viewer">{t('roleViewer')}</option>
-          <option value="editor">{t('roleEditor')}</option>
-          <option value="admin">{t('roleAdmin')}</option>
+          <option value="VIEWER">{t('roleViewer')}</option>
+          <option value="EDITOR">{t('roleEditor')}</option>
+          <option value="BUILDER">{t('roleBuilder')}</option>
+          <option value="ADMIN">{t('roleAdmin')}</option>
         </select>
       ) : (
         <span
           className="px-2 py-1 text-xs rounded-md"
           style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
         >
-          {member.role === 'owner' ? t('roleOwner') : t(`role${capitalize(member.role)}` as 'roleViewer')}
+          {t(roleI18nKey(member.role))}
         </span>
       )}
 
       {canMutate && (
         <button
-          onClick={remove}
+          onClick={onRemoveClick}
           disabled={busy}
           className="p-1.5 rounded-md hover:bg-[var(--bg-tertiary)]"
           aria-label={t('remove')}
@@ -105,8 +117,14 @@ export function MemberRow({ workspaceId, member, viewerRole, onChanged }: Member
   );
 }
 
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
+function roleI18nKey(role: WorkspaceRole): 'roleOwner' | 'roleAdmin' | 'roleBuilder' | 'roleEditor' | 'roleViewer' {
+  switch (role) {
+    case 'OWNER':   return 'roleOwner';
+    case 'ADMIN':   return 'roleAdmin';
+    case 'BUILDER': return 'roleBuilder';
+    case 'EDITOR':  return 'roleEditor';
+    case 'VIEWER':  return 'roleViewer';
+  }
 }
 
 function hashColor(seed: string): string {

@@ -2,6 +2,7 @@
 package com.balruno.workspace.internal;
 
 import com.balruno.workspace.CreatedInvite;
+import com.balruno.workspace.LimitGuard;
 import com.balruno.workspace.Workspace;
 import com.balruno.workspace.WorkspaceException;
 import com.balruno.workspace.WorkspaceInvite;
@@ -28,13 +29,16 @@ class WorkspaceServiceImpl implements WorkspaceService {
     private final WorkspaceRepository workspaceRepo;
     private final WorkspaceMemberRepository memberRepo;
     private final WorkspaceInviteRepository inviteRepo;
+    private final LimitGuard limitGuard;
 
     WorkspaceServiceImpl(WorkspaceRepository workspaceRepo,
                          WorkspaceMemberRepository memberRepo,
-                         WorkspaceInviteRepository inviteRepo) {
+                         WorkspaceInviteRepository inviteRepo,
+                         LimitGuard limitGuard) {
         this.workspaceRepo = workspaceRepo;
         this.memberRepo = memberRepo;
         this.inviteRepo = inviteRepo;
+        this.limitGuard = limitGuard;
     }
 
     // ── lifecycle ──────────────────────────────────────────────────────
@@ -244,6 +248,22 @@ class WorkspaceServiceImpl implements WorkspaceService {
         return toMemberDto(membership);
     }
 
+    // ── quota readouts ────────────────────────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Workspace> listOwnedFor(UUID userId) {
+        return workspaceRepo.findByCreatedByAndDeletedAtIsNullOrderByCreatedAtAsc(userId).stream()
+                .map(WorkspaceServiceImpl::toDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countMembers(UUID workspaceId) {
+        return memberRepo.countByWorkspaceId(workspaceId);
+    }
+
     // ── permissions ───────────────────────────────────────────────────
 
     @Override
@@ -334,7 +354,7 @@ class WorkspaceServiceImpl implements WorkspaceService {
 
     private static Workspace toDto(WorkspaceEntity e) {
         return new Workspace(
-                e.getId(), e.getSlug(), e.getName(),
+                e.getId(), e.getSlug(), e.getName(), e.getPlan(),
                 e.getCreatedBy(), e.getCreatedAt(), e.getUpdatedAt());
     }
 

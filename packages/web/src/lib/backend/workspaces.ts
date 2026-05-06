@@ -4,6 +4,7 @@ import type {
   Workspace,
   WorkspaceInvite,
   WorkspaceMember,
+  WorkspaceMemberView,
   WorkspaceRole,
 } from './types';
 
@@ -40,8 +41,9 @@ export function deleteWorkspace(id: string): Promise<void> {
 
 // ── members ──────────────────────────────────────────────────────────
 
-export function listWorkspaceMembers(workspaceId: string): Promise<WorkspaceMember[]> {
-  return request<WorkspaceMember[]>(`/api/v1/workspaces/${workspaceId}/members`);
+/** Returns members with user identity inlined. The list endpoint is served by the directory module. */
+export function listWorkspaceMembers(workspaceId: string): Promise<WorkspaceMemberView[]> {
+  return request<WorkspaceMemberView[]>(`/api/v1/workspaces/${workspaceId}/members`);
 }
 
 export function changeMemberRole(

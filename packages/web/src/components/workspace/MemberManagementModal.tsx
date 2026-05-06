@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+
 import {
-  workspaceApi,
-  type WorkspaceMember,
-  type WorkspaceInvitation,
+  BackendError,
+  listInvites,
+  listWorkspaceMembers,
+  revokeInvite,
+  type WorkspaceInvite,
+  type WorkspaceMemberView,
   type WorkspaceRole,
-} from '@/lib/api/workspaces';
-import { useAuthStore } from '@/stores/authStore';
+} from '@/lib/backend';
+import { useBackendAuthStore } from '@/stores/backendAuthStore';
 import { InviteMemberForm } from './InviteMemberForm';
 import { MemberRow } from './MemberRow';
 
@@ -18,10 +22,10 @@ interface MemberManagementModalProps {
 
 export function MemberManagementModal({ workspaceId, onClose }: MemberManagementModalProps) {
   const t = useTranslations('members');
-  const currentUserId = useAuthStore((s) => s.user?.id);
+  const currentUserId = useBackendAuthStore((s) => s.user?.id);
 
-  const [members, setMembers] = useState<WorkspaceMember[]>([]);
-  const [pending, setPending] = useState<WorkspaceInvitation[]>([]);
+  const [members, setMembers] = useState<WorkspaceMemberView[]>([]);
+  const [pending, setPending] = useState<WorkspaceInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,12 +33,16 @@ export function MemberManagementModal({ workspaceId, onClose }: MemberManagement
     setLoading(true);
     setError(null);
     try {
-      const [m, inv] = await Promise.all([
-        workspaceApi.members(workspaceId),
-        workspaceApi.invitations(workspaceId).catch(() => [] as WorkspaceInvitation[]),
-      ]);
+      const m = await listWorkspaceMembers(workspaceId);
+      // Listing invites needs Admin+; non-admin viewers shouldn't see the
+      // pending section at all, so a 403 here is "swallow and skip" rather
+      // than an error.
+      const inv = await listInvites(workspaceId).catch((e) => {
+        if (e instanceof BackendError && e.isForbidden) return [] as WorkspaceInvite[];
+        throw e;
+      });
       setMembers(m);
-      setPending(inv.filter((i) => i.status === 'pending'));
+      setPending(inv.filter((i) => !i.acceptedAt && !i.revokedAt));
     } catch (e) {
       setError(e instanceof Error ? e.message : t('errLoad'));
     } finally {
@@ -48,7 +56,8 @@ export function MemberManagementModal({ workspaceId, onClose }: MemberManagement
   }, [workspaceId]);
 
   const viewerRole: WorkspaceRole =
-    members.find((m) => m.userId === currentUserId)?.role ?? 'viewer';
+    members.find((m) => m.userId === currentUserId)?.role ?? 'VIEWER';
+  const canAdmin = viewerRole === 'OWNER' || viewerRole === 'ADMIN';
 
   return (
     <div
@@ -79,7 +88,7 @@ export function MemberManagementModal({ workspaceId, onClose }: MemberManagement
           </button>
         </div>
 
-        {(viewerRole === 'owner' || viewerRole === 'admin') && (
+        {canAdmin && (
           <div className="p-4 border-b" style={{ borderColor: 'var(--border-primary)' }}>
             <InviteMemberForm workspaceId={workspaceId} onInvited={reload} />
           </div>
@@ -109,14 +118,14 @@ export function MemberManagementModal({ workspaceId, onClose }: MemberManagement
                 />
               ))}
 
-              {pending.length > 0 && (
+              {pending.length > 0 && canAdmin && (
                 <>
                   <SectionLabel>{t('pendingHeading', { count: pending.length })}</SectionLabel>
                   {pending.map((inv) => (
                     <PendingRow
                       key={inv.id}
                       workspaceId={workspaceId}
-                      invitation={inv}
+                      invite={inv}
                       onRevoked={reload}
                     />
                   ))}
@@ -143,11 +152,11 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function PendingRow({
   workspaceId,
-  invitation,
+  invite,
   onRevoked,
 }: {
   workspaceId: string;
-  invitation: WorkspaceInvitation;
+  invite: WorkspaceInvite;
   onRevoked: () => void;
 }) {
   const t = useTranslations('members');
@@ -155,7 +164,7 @@ function PendingRow({
   const revoke = async () => {
     setBusy(true);
     try {
-      await workspaceApi.cancelInvitation(workspaceId, invitation.id);
+      await revokeInvite(workspaceId, invite.id);
       onRevoked();
     } finally {
       setBusy(false);
@@ -165,10 +174,10 @@ function PendingRow({
     <div className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[var(--bg-hover)]">
       <div className="flex-1 min-w-0">
         <div className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-          {invitation.email}
+          {t('invitedAs', { role: t(roleI18nKey(invite.role)) })}
         </div>
-        <div className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
-          {t('invitedAs', { role: invitation.role })}
+        <div className="text-xs truncate font-mono" style={{ color: 'var(--text-tertiary)' }}>
+          {invite.id.slice(0, 8)}…
         </div>
       </div>
       <button
@@ -181,4 +190,14 @@ function PendingRow({
       </button>
     </div>
   );
+}
+
+function roleI18nKey(role: WorkspaceRole): 'roleOwner' | 'roleAdmin' | 'roleBuilder' | 'roleEditor' | 'roleViewer' {
+  switch (role) {
+    case 'OWNER':   return 'roleOwner';
+    case 'ADMIN':   return 'roleAdmin';
+    case 'BUILDER': return 'roleBuilder';
+    case 'EDITOR':  return 'roleEditor';
+    case 'VIEWER':  return 'roleViewer';
+  }
 }

@@ -3,6 +3,7 @@ package com.balruno.shared.api;
 
 import com.balruno.project.ProjectException;
 import com.balruno.user.UserAuthException;
+import com.balruno.workspace.QuotaException;
 import com.balruno.workspace.WorkspaceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,21 @@ class ApiExceptionHandler {
             case NOT_A_MEMBER, INSUFFICIENT_ROLE, OWNER_REQUIRED -> HttpStatus.FORBIDDEN;
             case INVITE_EXPIRED, INVITE_REVOKED -> HttpStatus.GONE;
         };
+    }
+
+    @ExceptionHandler(QuotaException.class)
+    ProblemDetail handleQuota(QuotaException e) {
+        log.warn("quota_exceeded key={} current={} limit={} plan={}",
+                e.quotaKey(), e.current(), e.limit(), e.plan());
+        var pd = ProblemDetails.of(HttpStatus.FORBIDDEN,
+                "Quota exceeded",
+                "QUOTA_EXCEEDED",
+                e.getMessage());
+        pd.setProperty("quotaKey", e.quotaKey());
+        pd.setProperty("current", e.current());
+        pd.setProperty("limit", e.limit());
+        pd.setProperty("plan", e.plan().name());
+        return pd;
     }
 
     @ExceptionHandler(ProjectException.class)

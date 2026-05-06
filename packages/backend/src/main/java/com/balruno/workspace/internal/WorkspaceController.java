@@ -82,11 +82,10 @@ class WorkspaceController {
     }
 
     // ── members ────────────────────────────────────────────────────────
-
-    @GetMapping(path = "/workspaces/{id}/members", version = "1")
-    List<WorkspaceMember> listMembers(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
-        return workspaces.listMembers(id, callerId(jwt));
-    }
+    // The list endpoint lives in com.balruno.directory.internal.MemberController
+    // — that module joins WorkspaceService.listMembers with UserDirectoryService
+    // to inline user identity. Mutations stay here because they operate on the
+    // workspace_members table directly.
 
     @PatchMapping(path = "/workspaces/{id}/members/{userId}", version = "1")
     WorkspaceMember changeRole(@AuthenticationPrincipal Jwt jwt,

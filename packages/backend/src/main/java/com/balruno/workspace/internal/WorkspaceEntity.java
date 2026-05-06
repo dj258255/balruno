@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.workspace.internal;
 
+import com.balruno.workspace.WorkspacePlan;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.generator.EventType;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -48,6 +53,11 @@ class WorkspaceEntity {
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "plan", nullable = false, columnDefinition = "workspace_plan")
+    private WorkspacePlan plan = WorkspacePlan.FREE;
+
     protected WorkspaceEntity() {}
 
     WorkspaceEntity(String slug, String name, UUID createdBy) {
@@ -76,9 +86,11 @@ class WorkspaceEntity {
     public OffsetDateTime getUpdatedAt() { return updatedAt; }
     public OffsetDateTime getDeletedAt() { return deletedAt; }
     public boolean isDeleted() { return deletedAt != null; }
+    public WorkspacePlan getPlan() { return plan; }
 
     void rename(String newName) { this.name = newName; }
     void changeSlug(String newSlug) { this.slug = newSlug; }
+    void changePlan(WorkspacePlan newPlan) { this.plan = newPlan; }
     void softDelete() {
         if (this.deletedAt == null) {
             this.deletedAt = OffsetDateTime.now(ZoneOffset.UTC);

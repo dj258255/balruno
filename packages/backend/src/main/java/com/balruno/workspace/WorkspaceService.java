@@ -95,4 +95,12 @@ public interface WorkspaceService {
      * INSUFFICIENT_ROLE on failure.
      */
     void requireRole(UUID workspaceId, UUID userId, WorkspaceRole minRequired);
+
+    // ── quota readouts ────────────────────────────────────────────────
+
+    /** Active workspaces this user created (proxy for "owned"). */
+    List<Workspace> listOwnedFor(UUID userId);
+
+    /** Member count of a workspace — used by the quota endpoint. */
+    long countMembers(UUID workspaceId);
 }

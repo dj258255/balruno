@@ -12,4 +12,7 @@ interface WorkspaceRepository extends JpaRepository<WorkspaceEntity, UUID> {
     Optional<WorkspaceEntity> findBySlugAndDeletedAtIsNull(String slug);
 
     boolean existsBySlugAndDeletedAtIsNull(String slug);
+
+    /** Active workspaces a user owns — used by the quota endpoint to enumerate per-workspace usage. */
+    java.util.List<WorkspaceEntity> findByCreatedByAndDeletedAtIsNullOrderByCreatedAtAsc(UUID createdBy);
 }

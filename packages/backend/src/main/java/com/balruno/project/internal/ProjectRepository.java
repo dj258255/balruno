@@ -12,4 +12,7 @@ interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
     List<ProjectEntity> findByWorkspaceIdAndDeletedAtIsNullOrderByCreatedAtAsc(UUID workspaceId);
 
     boolean existsByWorkspaceIdAndSlugAndDeletedAtIsNull(UUID workspaceId, String slug);
+
+    /** Active project count for the per-plan {@code maxProjectsPerWorkspace} guard. */
+    long countByWorkspaceIdAndDeletedAtIsNull(UUID workspaceId);
 }

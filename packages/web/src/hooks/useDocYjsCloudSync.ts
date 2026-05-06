@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as Y from 'yjs';
 import { collabApi } from '@/lib/api/collab';
 import { useConnectionStore } from '@/stores/connectionStore';
-import { isBackendConfigured } from '@/lib/api/client';
+import { isBackendConfigured } from '@/lib/backend';
 
 export type SyncStatus = 'idle' | 'connecting' | 'connected' | 'offline' | 'error';
 

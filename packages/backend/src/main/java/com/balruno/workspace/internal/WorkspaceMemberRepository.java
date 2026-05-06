@@ -18,4 +18,6 @@ interface WorkspaceMemberRepository extends JpaRepository<
     List<WorkspaceMemberEntity> findByWorkspaceId(UUID workspaceId);
 
     long countByWorkspaceIdAndRole(UUID workspaceId, WorkspaceRole role);
+
+    long countByWorkspaceId(UUID workspaceId);
 }

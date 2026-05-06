@@ -18,12 +18,15 @@ const PUBLIC_PATHS = [
   '/login',
   '/auth/callback',
   '/i',         // /i/{token} invite links
-  '/invite',    // legacy invite page (still rendered until C-3 migration)
   '/terms',
   '/privacy',
 ];
 
 const STATIC_PREFIXES = ['/_next', '/favicon', '/icon', '/api', '/manifest'];
+
+// /w/[slug] is a private route — gated by the default (auth-required) branch below.
+// No additions needed here; this comment is a marker so future audits don't widen
+// the public list by mistake.
 
 function isPublicPath(pathname: string): boolean {
   if (STATIC_PREFIXES.some((p) => pathname.startsWith(p))) return true;

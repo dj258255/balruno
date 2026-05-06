@@ -13,6 +13,7 @@ public record Workspace(
         UUID id,
         String slug,
         String name,
+        WorkspacePlan plan,
         UUID createdBy,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt

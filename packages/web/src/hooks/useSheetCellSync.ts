@@ -17,7 +17,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useConnectionStore } from '@/stores/connectionStore';
-import { isBackendConfigured } from '@/lib/api/client';
+import { isBackendConfigured } from '@/lib/backend';
 
 export type SheetSyncStatus = 'idle' | 'connecting' | 'connected' | 'offline' | 'error';
 

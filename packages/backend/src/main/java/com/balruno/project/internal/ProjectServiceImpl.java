@@ -4,6 +4,8 @@ package com.balruno.project.internal;
 import com.balruno.project.Project;
 import com.balruno.project.ProjectException;
 import com.balruno.project.ProjectService;
+import com.balruno.workspace.LimitGuard;
+import com.balruno.workspace.WorkspaceLimits;
 import com.balruno.workspace.WorkspaceRole;
 import com.balruno.workspace.WorkspaceService;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,10 +21,14 @@ class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projects;
     private final WorkspaceService workspaces;
+    private final LimitGuard limitGuard;
 
-    ProjectServiceImpl(ProjectRepository projects, WorkspaceService workspaces) {
+    ProjectServiceImpl(ProjectRepository projects,
+                       WorkspaceService workspaces,
+                       LimitGuard limitGuard) {
         this.projects = projects;
         this.workspaces = workspaces;
+        this.limitGuard = limitGuard;
     }
 
     @Override
@@ -33,6 +39,13 @@ class ProjectServiceImpl implements ProjectService {
         if (projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(workspaceId, slug)) {
             throw slugTaken();
         }
+        // The slug check above proves the workspace is reachable; we now
+        // enforce the per-plan project cap before the insert.
+        var plan = workspaces.findById(workspaceId).plan();
+        var limit = WorkspaceLimits.forPlan(plan).maxProjectsPerWorkspace();
+        var current = projects.countByWorkspaceIdAndDeletedAtIsNull(workspaceId);
+        limitGuard.requireBelow(plan, "projectsPerWorkspace", current, limit);
+
         var entity = saveOrThrow(new ProjectEntity(workspaceId, slug, name, description, callerUserId));
         return toDto(entity);
     }
@@ -81,6 +94,12 @@ class ProjectServiceImpl implements ProjectService {
         workspaces.requireRole(entity.getWorkspaceId(), callerUserId, WorkspaceRole.BUILDER);
         entity.softDelete();
         projects.save(entity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countActiveInWorkspace(UUID workspaceId) {
+        return projects.countByWorkspaceIdAndDeletedAtIsNull(workspaceId);
     }
 
     // ── helpers ────────────────────────────────────────────────────────

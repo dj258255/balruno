@@ -7,7 +7,12 @@
  * {@link BackendError} with RFC 7807 fields parsed out.
  */
 
-export { backendBaseUrl, BackendError, request } from './client';
+export {
+  backendBaseUrl,
+  BackendError,
+  isBackendConfigured,
+  request,
+} from './client';
 export type { ProblemDetail, RequestOptions } from './client';
 
 export { fetchCurrentUser } from './me';
@@ -18,12 +23,20 @@ export type {
   AuthenticatedUser,
   CreatedInvite,
   Project,
+  UserBrief,
+  UserQuota,
   Workspace,
   WorkspaceInvite,
+  WorkspaceLimits,
   WorkspaceMember,
+  WorkspaceMemberView,
+  WorkspacePlan,
+  WorkspaceQuotaUsage,
   WorkspaceRole,
 } from './types';
 export { WORKSPACE_ROLES } from './types';
+
+export { fetchUserQuota, isUnlimited } from './quota';
 
 export {
   acceptInvite,
