@@ -38,3 +38,11 @@ balruno:
     cookie-name: balruno_session
     cookie-domain: balruno.test
     frontend-redirect-base: "https://app.balruno.test"
+  collab:
+    token:
+      # Same 32-byte zero-base64 placeholder rationale as balruno.jwt.secret
+      # above — distinct property so the prod COLLAB_TOKEN_SECRET / JWT_SECRET
+      # split is mirrored in tests.
+      secret: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      ttl: PT15M
+      audience: balruno-collab
