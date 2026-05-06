@@ -101,6 +101,18 @@ balruno.jwt:
   cookie-domain: balruno.com
   frontend-redirect-base: https://app.balruno.com
 
+# ─── CORS allowed origins ────────────────────────────────────────────────
+# allowCredentials=true (we send the session cookie) rules out wildcard,
+# so origins are enumerated. Self-host operators override via env:
+#   BALRUNO_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS_0=https://my.example.com
+# or a YAML list in application-<profile>.yml.
+balruno.security.cors:
+  allowed-origin-patterns:
+    - https://*.balruno.com
+    - https://balruno.com
+    - http://localhost:*
+    - http://127.0.0.1:*
+
 # ─── springdoc / OpenAPI ─────────────────────────────────────────────────
 springdoc:
   api-docs.path: /v3/api-docs

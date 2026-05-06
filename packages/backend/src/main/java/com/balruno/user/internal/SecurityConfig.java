@@ -21,9 +21,13 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
+import java.util.List;
 
 /**
  * Spring Security wiring for the user module.
@@ -38,7 +42,7 @@ import java.util.Base64;
  *     the two.
  */
 @Configuration
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class})
 class SecurityConfig {
 
     @Bean
@@ -53,6 +57,8 @@ class SecurityConfig {
                 // Stateless API — JWT in cookie does the session work, so
                 // we don't want HttpSession or CSRF tokens.
                 .csrf(AbstractHttpConfigurer::disable)
+                // CORS bean below; Spring Security picks it up automatically.
+                .cors(c -> {})
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
@@ -76,6 +82,42 @@ class SecurityConfig {
                         .authenticationEntryPoint(jsonAuthenticationEntryPoint)
                         .accessDeniedHandler(jsonAccessDeniedHandler))
                 .build();
+    }
+
+    /**
+     * Cross-origin policy for the API surface. The browser session cookie
+     * is httpOnly + SameSite=None (set in OAuth2LoginSuccessHandler) so
+     * any origin we trust must be explicitly enumerated — wildcard is
+     * incompatible with {@code allowCredentials=true}.
+     *
+     * The patterns themselves come from {@link CorsProperties} (bound to
+     * {@code balruno.security.cors.allowed-origin-patterns}), so a
+     * self-host operator can add their own domain via env without code
+     * changes. The other knobs (methods/headers/credentials/max-age)
+     * stay constants — they almost never change per deployment, and
+     * exposing them as env would be noise.
+     *
+     * X-Request-Id is exposed so the frontend can echo it into bug
+     * reports — RequestIdFilter guarantees one is present on every
+     * response.
+     */
+    @Bean
+    CorsConfigurationSource corsConfigurationSource(CorsProperties props) {
+        var c = new CorsConfiguration();
+        c.setAllowedOriginPatterns(props.allowedOriginPatterns());
+        c.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
+        c.setAllowedHeaders(List.of("*"));
+        c.setExposedHeaders(List.of("X-Request-Id"));
+        c.setAllowCredentials(true);
+        c.setMaxAge(3600L);
+
+        var src = new UrlBasedCorsConfigurationSource();
+        src.registerCorsConfiguration("/api/**", c);
+        // OAuth2 endpoints don't need CORS for the redirect flow itself
+        // (browsers do top-level navigation, not fetch), but registering
+        // them keeps any future SPA-side metadata probes working.
+        src.registerCorsConfiguration("/oauth2/**", c);
+        return src;
     }
 
     @Bean
