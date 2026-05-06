@@ -104,6 +104,15 @@ balruno.jwt:
   # surface separates from the application UI.
   frontend-redirect-base: https://balruno.com
 
+# ─── Collab token (Hocuspocus session) ───────────────────────────────────
+# Distinct HS256 secret from balruno.jwt — the Hocuspocus container
+# verifies these, the API session JWT decoder doesn't even see them.
+# A leak on either surface stays scoped (ADR 0002 v1.1, ADR 0017 §2.6).
+balruno.collab.token:
+  secret: ${COLLAB_TOKEN_SECRET}
+  ttl: PT15M
+  audience: balruno-collab
+
 # ─── CORS allowed origins ────────────────────────────────────────────────
 # allowCredentials=true (we send the session cookie) rules out wildcard,
 # so origins are enumerated. Self-host operators override via env:
