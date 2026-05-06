@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.sync;
 
+// Jackson 3 keeps the annotation artifact under the legacy
+// com.fasterxml.jackson.annotation package — only databind moved to
+// tools.jackson. This is intentional in the Jackson 3 line, not a typo.
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
