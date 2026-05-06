@@ -195,24 +195,25 @@ export default function WorkspaceDetailPage() {
         {projects && projects.length > 0 && (
           <ul>
             {projects.map((p) => (
-              <li
-                key={p.id}
-                className="flex items-center justify-between border-t px-4 py-3"
-                style={{ borderColor: 'var(--border-primary)' }}
-              >
-                <div>
-                  <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    {p.name}
-                  </div>
-                  {p.description && (
-                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      {p.description}
+              <li key={p.id} className="border-t" style={{ borderColor: 'var(--border-primary)' }}>
+                <button
+                  onClick={() => router.push(`/w/${workspace.slug}/p/${p.slug}`)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-[var(--bg-hover)]"
+                >
+                  <div>
+                    <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      {p.name}
                     </div>
-                  )}
-                </div>
-                <span className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
-                  /{p.slug}
-                </span>
+                    {p.description && (
+                      <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {p.description}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
+                    /{p.slug}
+                  </span>
+                </button>
               </li>
             ))}
           </ul>
