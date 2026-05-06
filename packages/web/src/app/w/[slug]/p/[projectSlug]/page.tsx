@@ -41,6 +41,7 @@ import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
 import { emitOp } from '@/lib/sync/writeQueue';
+import { newId } from '@/lib/uuid';
 import type { TreeNode } from '@balruno/shared';
 
 /**
@@ -60,6 +61,29 @@ function renameNodeInTree(tree: TreeNode[], nodeId: string, newName: string): Tr
     }
     return node;
   });
+}
+
+/** Remove the node with the given id and its descendants. Returns a
+ *  new array if anything changed, the same reference otherwise. */
+function removeNodeFromTree(tree: TreeNode[], nodeId: string): TreeNode[] {
+  const next: TreeNode[] = [];
+  let changed = false;
+  for (const node of tree) {
+    if (node.id === nodeId) {
+      changed = true;
+      continue;
+    }
+    if (node.children && node.children.length > 0) {
+      const filtered = removeNodeFromTree(node.children, nodeId);
+      if (filtered !== node.children) {
+        next.push({ ...node, children: filtered });
+        changed = true;
+        continue;
+      }
+    }
+    next.push(node);
+  }
+  return changed ? next : tree;
 }
 
 export default function ProjectDetailPage() {
@@ -216,6 +240,54 @@ export default function ProjectDetailPage() {
     });
   };
 
+  // Add a new root-level folder. Sheet add (sheets[] data array) is
+  // not part of ADR 0008 v2.0's ClientOp surface so this stays
+  // folder-only; user organises existing sheets inside the new folder
+  // (Stage E.2 drag-and-drop, follow-up).
+  const handleAddFolder = () => {
+    if (!project) return;
+    const newFolder: TreeNode = {
+      id: newId(),
+      type: 'folder',
+      name: '새 폴더',
+      children: [],
+    };
+    const position = (localProject?.sheetTree?.length ?? 0);
+    useProjectStore.setState((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== project.id
+          ? p
+          : { ...p, sheetTree: [...(p.sheetTree ?? []), newFolder] },
+      ),
+    }));
+    emitOp({
+      kind: 'tree.add',
+      treeKind: 'SHEET',
+      parentId: null,
+      position,
+      node: newFolder,
+    });
+  };
+
+  // Delete a folder + its descendants (cascade). Backend's
+  // TreeOpService.applyTreeDelete handles the cascade in JSONB; we
+  // mirror by removing the subtree from local state.
+  const handleDeleteFolder = (nodeId: string) => {
+    if (!project) return;
+    useProjectStore.setState((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== project.id
+          ? p
+          : { ...p, sheetTree: removeNodeFromTree(p.sheetTree ?? [], nodeId) },
+      ),
+    }));
+    emitOp({
+      kind: 'tree.delete',
+      treeKind: 'SHEET',
+      nodeId,
+    });
+  };
+
   if (loading) {
     return (
       <main className="flex items-center justify-center py-20">
@@ -302,6 +374,8 @@ export default function ProjectDetailPage() {
               selectedSheetId={selectedSheetId}
               onSelectSheet={setSelectedSheetId}
               onRenameNode={handleRenameNode}
+              onAddFolder={handleAddFolder}
+              onDeleteFolder={handleDeleteFolder}
             />
           </aside>
 

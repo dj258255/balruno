@@ -209,11 +209,48 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
           ),
         }));
       }
-      // doc tree rename apply lands with Stage G.
+      break;
+    }
+    case 'tree.add': {
+      const op = msg.op as {
+        treeKind?: 'SHEET' | 'DOC';
+        parentId?: string | null;
+        position?: number;
+        node?: TreeNode;
+      } | null;
+      if (op?.treeKind === 'SHEET' && op.node?.id) {
+        const newNode = op.node;
+        const parentId = op.parentId ?? null;
+        const position = typeof op.position === 'number' ? op.position : 0;
+        useProjectStore.setState((state) => ({
+          projects: state.projects.map((p) =>
+            p.id !== projectId
+              ? p
+              : { ...p, sheetTree: insertNodeIntoTreeBroadcast(p.sheetTree ?? [], parentId, position, newNode) },
+          ),
+        }));
+      }
+      break;
+    }
+    case 'tree.delete': {
+      const op = msg.op as {
+        treeKind?: 'SHEET' | 'DOC';
+        nodeId?: string;
+      } | null;
+      if (op?.treeKind === 'SHEET' && op.nodeId) {
+        useProjectStore.setState((state) => ({
+          projects: state.projects.map((p) =>
+            p.id !== projectId
+              ? p
+              : { ...p, sheetTree: removeNodeFromTreeBroadcast(p.sheetTree ?? [], op.nodeId!) },
+          ),
+        }));
+      }
       break;
     }
     default:
-      // tree.add / tree.move / tree.delete — apply path is later sub-stage.
+      // tree.move — apply path is the next sub-stage (drag-and-drop).
+      // doc tree branches land with Stage G.
       break;
   }
 }
@@ -231,6 +268,67 @@ function renameNodeInTreeBroadcast(
     }
     return node;
   });
+}
+
+function insertNodeIntoTreeBroadcast(
+  tree: TreeNode[],
+  parentId: string | null,
+  position: number,
+  node: TreeNode,
+): TreeNode[] {
+  // sender's own echo — drop the duplicate to keep idempotency.
+  if (containsNodeId(tree, node.id)) return tree;
+  if (parentId === null) {
+    const next = [...tree];
+    const clamped = Math.max(0, Math.min(next.length, position));
+    next.splice(clamped, 0, node);
+    return next;
+  }
+  return tree.map((n) => {
+    if (n.id === parentId) {
+      const children = n.children ?? [];
+      const clamped = Math.max(0, Math.min(children.length, position));
+      const next = [...children];
+      next.splice(clamped, 0, node);
+      return { ...n, children: next };
+    }
+    if (n.children && n.children.length > 0) {
+      const updated = insertNodeIntoTreeBroadcast(n.children, parentId, position, node);
+      if (updated !== n.children) return { ...n, children: updated };
+    }
+    return n;
+  });
+}
+
+function removeNodeFromTreeBroadcast(tree: TreeNode[], nodeId: string): TreeNode[] {
+  const next: TreeNode[] = [];
+  let changed = false;
+  for (const node of tree) {
+    if (node.id === nodeId) {
+      changed = true;
+      continue;
+    }
+    if (node.children && node.children.length > 0) {
+      const filtered = removeNodeFromTreeBroadcast(node.children, nodeId);
+      if (filtered !== node.children) {
+        next.push({ ...node, children: filtered });
+        changed = true;
+        continue;
+      }
+    }
+    next.push(node);
+  }
+  return changed ? next : tree;
+}
+
+function containsNodeId(tree: TreeNode[], nodeId: string): boolean {
+  for (const node of tree) {
+    if (node.id === nodeId) return true;
+    if (node.children && node.children.length > 0 && containsNodeId(node.children, nodeId)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
