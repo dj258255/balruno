@@ -39,7 +39,6 @@ import { useBackendAuthStore } from '@/stores/backendAuthStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
-import { SheetTable } from '@/components/sheet';
 
 export default function ProjectDetailPage() {
   const params = useParams<{ slug: string; projectSlug: string }>();
@@ -138,7 +137,10 @@ export default function ProjectDetailPage() {
   const localProject = useProjectStore((state) =>
     project ? state.projects.find((p) => p.id === project.id) : undefined,
   );
+  const updateCellAction = useProjectStore((state) => state.updateCell);
   const firstSheet = localProject?.sheets[0];
+  const firstColumn = firstSheet?.columns[0];
+  const firstRow = firstSheet?.rows[0];
 
   if (loading) {
     return (
@@ -201,29 +203,58 @@ export default function ProjectDetailPage() {
         )}
       </header>
 
-      {firstSheet ? (
+      {firstSheet && firstColumn && firstRow ? (
         <section
-          className="rounded-lg border"
+          className="rounded-lg border p-4"
           style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
         >
           {/*
-           * SheetTable from local mode reused as-is. Cell / row /
-           * column store actions are dual-write since ADR 0018
-           * Stage C+D+F so each edit emits to /ws/projects/{id}
-           * and broadcast applies back. Side-affecting hooks
-           * (history pushState, presence cursor publish) operate
-           * against their default zustand stores; tour /
-           * automation observers / global keybinds aren't mounted
-           * here because they're sidebar / shell concerns, and
-           * SheetTable doesn't transitively require them.
+           * Minimal cell editor for now — mounting the local-mode
+           * SheetTable (`useProjectStore()` whole-store subscription
+           * + 7 internal useEffect hooks) caused React error #185
+           * (max update depth) on the freshly-hydrated server-canonical
+           * page. The render-loop diagnosis is its own phase; the
+           * round-trip path (input -> updateCell -> writeQueue ->
+           * /ws/projects/{id} -> backend -> broadcast -> peer apply)
+           * is fully exercised by this single input, so prod e2e
+           * proof doesn't depend on the full grid being mounted yet.
            */}
-          <SheetTable
-            projectId={project.id}
-            sheet={firstSheet}
-            onAddMemo={() => {
-              /* memo modal not wired in server-canonical mode yet — Stage F.3+ */
-            }}
-          />
+          <h2 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            {firstSheet.name}
+          </h2>
+          <label
+            className="flex items-center gap-3 text-sm"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <span className="w-24 truncate" title={firstColumn.name}>
+              {firstColumn.name}:
+            </span>
+            <input
+              type="text"
+              defaultValue={String(firstRow.cells[firstColumn.id] ?? '')}
+              onBlur={(e) => {
+                updateCellAction(
+                  project.id,
+                  firstSheet.id,
+                  firstRow.id,
+                  firstColumn.id,
+                  e.target.value,
+                );
+              }}
+              className="flex-1 rounded-md border px-3 py-2 font-mono text-sm"
+              style={{
+                borderColor: 'var(--border-primary)',
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+              }}
+              placeholder="값 입력 후 다른 곳 클릭하면 동기화"
+            />
+          </label>
+          <p className="mt-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            blur 시 cell.update 가 <code>/ws/projects/{project.id}</code> 로 emit. 다른 사용자가
+            같은 프로젝트를 열고 있으면 broadcast 로 화면 자동 반영. 풀 SheetTable 통합은
+            다음 phase.
+          </p>
         </section>
       ) : (
         <section
