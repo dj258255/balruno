@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.user.internal;
 
+import com.balruno.project.ProjectService;
 import com.balruno.user.AuthenticatedUser;
 import com.balruno.user.OAuthLogin;
 import com.balruno.user.UserAuthException;
@@ -25,12 +26,15 @@ class UserAuthServiceImpl implements UserAuthService {
     private final UserRepository userRepo;
     private final OAuthAccountRepository oauthRepo;
     private final WorkspaceService workspaceService;
+    private final ProjectService projectService;
 
     UserAuthServiceImpl(UserRepository userRepo, OAuthAccountRepository oauthRepo,
-                        WorkspaceService workspaceService) {
+                        WorkspaceService workspaceService,
+                        ProjectService projectService) {
         this.userRepo = userRepo;
         this.oauthRepo = oauthRepo;
         this.workspaceService = workspaceService;
+        this.projectService = projectService;
     }
 
     @Override
@@ -88,10 +92,24 @@ class UserAuthServiceImpl implements UserAuthService {
                 var displayName = login.name() != null && !login.name().isBlank()
                         ? login.name()
                         : (slugBase != null ? slugBase : "Your");
-                workspaceService.createDefaultFor(
+                var workspace = workspaceService.createDefaultFor(
                         u.getId(),
                         slugBase,
                         displayName + "'s Workspace");
+
+                // Auto-create a default project + starter sheet so the
+                // user lands on something usable on first login (rather
+                // than a blank /workspaces/{slug} with zero projects).
+                // Notion / Linear / Vercel pattern. ProjectServiceImpl
+                // .create's seedInitialData path drops the starter
+                // Sheet 1 + Column 1 + Row 1 in projects.data so the
+                // minimal cell editor renders immediately.
+                projectService.create(
+                        workspace.id(),
+                        u.getId(),
+                        "main",
+                        "내 첫 게임",
+                        null);
 
                 yield u;
             }
