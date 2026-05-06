@@ -44,7 +44,29 @@ class UserAuthServiceImplTest {
     @Mock UserRepository userRepo;
     @Mock OAuthAccountRepository oauthRepo;
     @Mock WorkspaceService workspaceService;
+    @Mock com.balruno.project.ProjectService projectService;
     @InjectMocks UserAuthServiceImpl service;
+
+    @org.junit.jupiter.api.BeforeEach
+    void seedDefaultWorkspaceStub() {
+        // CreateNewUser path now follows up createDefaultFor with
+        // projectService.create(workspace.id(), ...). Without a Workspace
+        // return the .id() call NPEs and the test never reaches the
+        // assertion. Lenient — not all happy paths trigger this stub.
+        org.mockito.Mockito.lenient()
+                .when(workspaceService.createDefaultFor(
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> new com.balruno.workspace.Workspace(
+                        UUID.randomUUID(),
+                        inv.getArgument(1),
+                        inv.getArgument(2),
+                        com.balruno.workspace.WorkspacePlan.FREE,
+                        inv.getArgument(0),
+                        java.time.OffsetDateTime.now(),
+                        java.time.OffsetDateTime.now()));
+    }
 
     // ── Happy ──────────────────────────────────────────────────────────
 
