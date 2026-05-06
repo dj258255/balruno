@@ -63,6 +63,137 @@ function renameNodeInTree(tree: TreeNode[], nodeId: string, newName: string): Tr
   });
 }
 
+/**
+ * Find a node in the tree (DFS). Returns null if not found. Used by
+ * moveNodeInTree to extract the dragged subtree before re-insertion,
+ * and by isDescendant to block cycles (folder dropped into itself).
+ */
+function findNodeInTree(tree: TreeNode[], nodeId: string): TreeNode | null {
+  for (const node of tree) {
+    if (node.id === nodeId) return node;
+    if (node.children && node.children.length > 0) {
+      const found = findNodeInTree(node.children, nodeId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * Returns true if `candidateAncestorId` is the ancestor of (or equal
+ * to) `nodeId` in the given tree. Used to block dropping a folder
+ * into its own descendant — that would orphan the dragged subtree
+ * because removing it from its old parent would also remove its new
+ * parent (which is inside it). Standard tree-DnD cycle guard.
+ */
+function isDescendant(tree: TreeNode[], candidateAncestorId: string, nodeId: string): boolean {
+  if (candidateAncestorId === nodeId) return true;
+  const ancestor = findNodeInTree(tree, candidateAncestorId);
+  if (!ancestor) return false;
+  return findNodeInTree(ancestor.children ?? [], nodeId) !== null;
+}
+
+/**
+ * Locate a node's current parent + sibling index. parent === null
+ * means the node lives at root. Returns null when the id is missing
+ * (caller treats as no-op). Used by moveNodeInTree to detect same-
+ * parent reorder + decide off-by-one adjustment.
+ */
+function locateNodeParent(
+  tree: TreeNode[],
+  nodeId: string,
+  parent: string | null = null,
+): { parent: string | null; index: number } | null {
+  for (let i = 0; i < tree.length; i++) {
+    const node = tree[i];
+    if (node.id === nodeId) return { parent, index: i };
+    if (node.children && node.children.length > 0) {
+      const found = locateNodeParent(node.children, nodeId, node.id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * Move a node within the sheet_tree: remove it from its current
+ * parent, then insert it under newParentId at newPosition. Returns
+ * a new array (immutable setState), or the same reference if the
+ * move is a no-op / illegal (cycle).
+ *
+ * Three design points (all applied):
+ *
+ *  1. Cycle guard — drop into self/descendant short-circuits to the
+ *     same reference. Both outbound (handleMoveNode) and inbound
+ *     (broadcast apply) call this helper, so receivers stay safe
+ *     even if their local state momentarily diverges before another
+ *     op lands.
+ *
+ *  2. Off-by-one — when source and target share a parent and source
+ *     index is *less than* the drop position, removing source first
+ *     shifts every later sibling left by 1, so the visual drop slot
+ *     is now at position-1. Without this adjustment the node lands
+ *     one slot past where the user pointed (Notion/VSCode/dnd-kit
+ *     all apply this correction).
+ *
+ *  3. No-op echo — when sender receives its own broadcast, the tree
+ *     is already in the target state. extract+reinsert would yield
+ *     the same content but fresh array references, causing the
+ *     sidebar to re-render. Detect via locateNodeParent and bail.
+ */
+function moveNodeInTree(
+  tree: TreeNode[],
+  nodeId: string,
+  newParentId: string | null,
+  newPosition: number,
+): TreeNode[] {
+  if (newParentId !== null && isDescendant(tree, nodeId, newParentId)) return tree;
+  const subtree = findNodeInTree(tree, nodeId);
+  if (!subtree) return tree;
+
+  const located = locateNodeParent(tree, nodeId);
+  if (!located) return tree;
+  const { parent: currentParent, index: currentIndex } = located;
+
+  if (currentParent === newParentId && currentIndex === newPosition) return tree;
+
+  const without = removeNodeFromTree(tree, nodeId);
+  const adjusted =
+    currentParent === newParentId && currentIndex < newPosition
+      ? newPosition - 1
+      : newPosition;
+  return insertNodeAt(without, newParentId, adjusted, subtree);
+}
+
+/** Insert a subtree into the tree at parentId/position. parentId=null
+ *  means root level. Returns new array. */
+function insertNodeAt(
+  tree: TreeNode[],
+  newParentId: string | null,
+  position: number,
+  subtree: TreeNode,
+): TreeNode[] {
+  if (newParentId === null) {
+    const next = tree.slice();
+    next.splice(Math.max(0, Math.min(position, next.length)), 0, subtree);
+    return next;
+  }
+  return tree.map((node) => {
+    if (node.id === newParentId) {
+      const children = node.children ? node.children.slice() : [];
+      children.splice(Math.max(0, Math.min(position, children.length)), 0, subtree);
+      return { ...node, children };
+    }
+    if (node.children && node.children.length > 0) {
+      const inserted = insertNodeAt(node.children, newParentId, position, subtree);
+      if (inserted !== node.children) {
+        return { ...node, children: inserted };
+      }
+    }
+    return node;
+  });
+}
+
 /** Remove the node with the given id and its descendants. Returns a
  *  new array if anything changed, the same reference otherwise. */
 function removeNodeFromTree(tree: TreeNode[], nodeId: string): TreeNode[] {
@@ -269,6 +400,36 @@ export default function ProjectDetailPage() {
     });
   };
 
+  // Drag-and-drop reorder. Local mutation via moveNodeInTree (cycle
+  // guard + same-parent off-by-one inside the helper); emit tree.move
+  // for the server to canonicalise + broadcast to peers.
+  const handleMoveNode = (
+    nodeId: string,
+    newParentId: string | null,
+    newPosition: number,
+  ) => {
+    if (!project) return;
+    const current = localProject?.sheetTree ?? [];
+    // Cycle guard: dropping a folder *into itself or its descendant*
+    // would orphan the dragged subtree. Root drop (newParentId=null)
+    // can never form a cycle.
+    if (newParentId !== null && isDescendant(current, nodeId, newParentId)) return;
+    useProjectStore.setState((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== project.id
+          ? p
+          : { ...p, sheetTree: moveNodeInTree(p.sheetTree ?? [], nodeId, newParentId, newPosition) },
+      ),
+    }));
+    emitOp({
+      kind: 'tree.move',
+      treeKind: 'SHEET',
+      nodeId,
+      newParentId,
+      newPosition,
+    });
+  };
+
   // Delete a folder + its descendants (cascade). Backend's
   // TreeOpService.applyTreeDelete handles the cascade in JSONB; we
   // mirror by removing the subtree from local state.
@@ -376,6 +537,7 @@ export default function ProjectDetailPage() {
               onRenameNode={handleRenameNode}
               onAddFolder={handleAddFolder}
               onDeleteFolder={handleDeleteFolder}
+              onMoveNode={handleMoveNode}
             />
           </aside>
 

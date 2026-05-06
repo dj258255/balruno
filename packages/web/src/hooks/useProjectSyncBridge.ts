@@ -248,8 +248,35 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       }
       break;
     }
+    case 'tree.move': {
+      const op = msg.op as {
+        treeKind?: 'SHEET' | 'DOC';
+        nodeId?: string;
+        newParentId?: string | null;
+        newPosition?: number;
+      } | null;
+      if (op?.treeKind === 'SHEET' && op.nodeId) {
+        const newParentId = op.newParentId ?? null;
+        const newPosition = typeof op.newPosition === 'number' ? op.newPosition : 0;
+        useProjectStore.setState((state) => ({
+          projects: state.projects.map((p) =>
+            p.id !== projectId
+              ? p
+              : {
+                  ...p,
+                  sheetTree: moveNodeInTreeBroadcast(
+                    p.sheetTree ?? [],
+                    op.nodeId!,
+                    newParentId,
+                    newPosition,
+                  ),
+                },
+          ),
+        }));
+      }
+      break;
+    }
     default:
-      // tree.move — apply path is the next sub-stage (drag-and-drop).
       // doc tree branches land with Stage G.
       break;
   }
@@ -319,6 +346,73 @@ function removeNodeFromTreeBroadcast(tree: TreeNode[], nodeId: string): TreeNode
     next.push(node);
   }
   return changed ? next : tree;
+}
+
+/**
+ * Apply a tree.move broadcast: extract the subtree by nodeId, then
+ * insert under newParentId at newPosition. Naturally idempotent for
+ * the sender's own echo (the subtree is already at the target slot,
+ * so extract+insert lands in the same place). Cycle guard for safety
+ * even though the server has already validated.
+ */
+function moveNodeInTreeBroadcast(
+  tree: TreeNode[],
+  nodeId: string,
+  newParentId: string | null,
+  newPosition: number,
+): TreeNode[] {
+  const subtree = findTreeNode(tree, nodeId);
+  if (!subtree) return tree;
+  if (newParentId !== null && (newParentId === nodeId || containsNodeId(subtree.children ?? [], newParentId))) {
+    return tree;
+  }
+  const without = removeNodeFromTreeBroadcast(tree, nodeId);
+  return insertNodeRawIntoTree(without, newParentId, newPosition, subtree);
+}
+
+function findTreeNode(tree: TreeNode[], nodeId: string): TreeNode | null {
+  for (const node of tree) {
+    if (node.id === nodeId) return node;
+    if (node.children && node.children.length > 0) {
+      const found = findTreeNode(node.children, nodeId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * Insert a subtree at parentId/position without the echo-dedup that
+ * insertNodeIntoTreeBroadcast does — used by the tree.move path
+ * where the subtree was just removed by removeNodeFromTreeBroadcast,
+ * so containsNodeId would falsely block re-insertion.
+ */
+function insertNodeRawIntoTree(
+  tree: TreeNode[],
+  parentId: string | null,
+  position: number,
+  node: TreeNode,
+): TreeNode[] {
+  if (parentId === null) {
+    const next = [...tree];
+    const clamped = Math.max(0, Math.min(next.length, position));
+    next.splice(clamped, 0, node);
+    return next;
+  }
+  return tree.map((n) => {
+    if (n.id === parentId) {
+      const children = n.children ?? [];
+      const clamped = Math.max(0, Math.min(children.length, position));
+      const next = [...children];
+      next.splice(clamped, 0, node);
+      return { ...n, children: next };
+    }
+    if (n.children && n.children.length > 0) {
+      const updated = insertNodeRawIntoTree(n.children, parentId, position, node);
+      if (updated !== n.children) return { ...n, children: updated };
+    }
+    return n;
+  });
 }
 
 function containsNodeId(tree: TreeNode[], nodeId: string): boolean {

@@ -28,7 +28,18 @@ interface ServerSheetTreeProps {
   onAddFolder?: () => void;
   /** Click trash icon on a folder row to delete it (cascade descendants). */
   onDeleteFolder?: (nodeId: string) => void;
+  /**
+   * Drag the node and drop on a folder (append to its children) or
+   * a sibling (insert before/after based on mouse Y). Native HTML5
+   * drag-and-drop — desktop-first, no lib dependency. Touch / mobile
+   * upgrade lands when react-arborist or dnd-kit is brought in.
+   */
+  onMoveNode?: (nodeId: string, newParentId: string | null, newPosition: number) => void;
 }
+
+// Native HTML5 dataTransfer mime — chosen specific so we don't grab
+// drags from outside the tree.
+const DRAG_MIME = 'application/x-balruno-treenode';
 
 export function ServerSheetTree({
   tree,
@@ -37,6 +48,7 @@ export function ServerSheetTree({
   onRenameNode,
   onAddFolder,
   onDeleteFolder,
+  onMoveNode,
 }: ServerSheetTreeProps) {
   return (
     <div>
@@ -60,15 +72,18 @@ export function ServerSheetTree({
         </p>
       ) : (
         <ul className="space-y-0.5 text-sm">
-          {tree.map((node) => (
+          {tree.map((node, idx) => (
             <TreeNodeRow
               key={node.id}
               node={node}
               depth={0}
+              parentId={null}
+              indexInParent={idx}
               selectedSheetId={selectedSheetId}
               onSelectSheet={onSelectSheet}
               onRenameNode={onRenameNode}
               onDeleteFolder={onDeleteFolder}
+              onMoveNode={onMoveNode}
             />
           ))}
         </ul>
@@ -80,23 +95,32 @@ export function ServerSheetTree({
 interface TreeNodeRowProps {
   node: TreeNode;
   depth: number;
+  parentId: string | null;
+  indexInParent: number;
   selectedSheetId: string | null;
   onSelectSheet: (sheetId: string) => void;
   onRenameNode?: (nodeId: string, newName: string) => void;
   onDeleteFolder?: (nodeId: string) => void;
+  onMoveNode?: (nodeId: string, newParentId: string | null, newPosition: number) => void;
 }
+
+type DragHover = 'none' | 'before' | 'after' | 'inside';
 
 function TreeNodeRow({
   node,
   depth,
+  parentId,
+  indexInParent,
   selectedSheetId,
   onSelectSheet,
   onRenameNode,
   onDeleteFolder,
+  onMoveNode,
 }: TreeNodeRowProps) {
   const [expanded, setExpanded] = useState(depth === 0);
   const [renaming, setRenaming] = useState(false);
   const [draftName, setDraftName] = useState(node.name);
+  const [dragHover, setDragHover] = useState<DragHover>('none');
   const isFolder = node.type === 'folder';
   const isSheet = node.type === 'sheet';
   const isSelected = isSheet && node.id === selectedSheetId;
@@ -126,15 +150,72 @@ function TreeNodeRow({
     setDraftName(node.name);
   };
 
+  // Native HTML5 drag wiring. dragstart on the row stamps a custom
+  // mime + nodeId; dragover decides the hover region (before /
+  // after / inside-folder) by mouse Y; drop emits the move op.
+  const handleDragStart = (e: React.DragEvent) => {
+    if (!onMoveNode || renaming) return;
+    e.dataTransfer.setData(DRAG_MIME, node.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!onMoveNode) return;
+    if (!e.dataTransfer.types.includes(DRAG_MIME)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const h = rect.height;
+    if (isFolder && y > h * 0.25 && y < h * 0.75) {
+      setDragHover('inside');
+    } else if (y < h / 2) {
+      setDragHover('before');
+    } else {
+      setDragHover('after');
+    }
+  };
+
+  const handleDragLeave = () => setDragHover('none');
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!onMoveNode) return;
+    const draggedId = e.dataTransfer.getData(DRAG_MIME);
+    if (!draggedId || draggedId === node.id) {
+      setDragHover('none');
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    const where = dragHover;
+    setDragHover('none');
+    if (where === 'inside' && isFolder) {
+      const childCount = node.children?.length ?? 0;
+      onMoveNode(draggedId, node.id, childCount);
+    } else if (where === 'before') {
+      onMoveNode(draggedId, parentId, indexInParent);
+    } else if (where === 'after') {
+      onMoveNode(draggedId, parentId, indexInParent + 1);
+    }
+  };
+
   return (
     <li>
       <div
+        draggable={!!onMoveNode && !renaming}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         onDoubleClick={startRename}
         className="group flex w-full items-center gap-1 rounded px-2 py-1 hover:bg-[var(--bg-hover)]"
         style={{
           paddingLeft: `${8 + indent}px`,
           background: isSelected ? 'var(--bg-selected, var(--bg-hover))' : undefined,
           color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+          borderTop: dragHover === 'before' ? '2px solid var(--accent, #3b82f6)' : '2px solid transparent',
+          borderBottom: dragHover === 'after' ? '2px solid var(--accent, #3b82f6)' : '2px solid transparent',
+          outline: dragHover === 'inside' ? '2px solid var(--accent, #3b82f6)' : undefined,
         }}
       >
         <button
@@ -198,15 +279,18 @@ function TreeNodeRow({
 
       {isFolder && expanded && node.children && node.children.length > 0 && (
         <ul className="space-y-0.5">
-          {node.children.map((child) => (
+          {node.children.map((child, idx) => (
             <TreeNodeRow
               key={child.id}
               node={child}
               depth={depth + 1}
+              parentId={node.id}
+              indexInParent={idx}
               selectedSheetId={selectedSheetId}
               onSelectSheet={onSelectSheet}
               onRenameNode={onRenameNode}
               onDeleteFolder={onDeleteFolder}
+              onMoveNode={onMoveNode}
             />
           ))}
         </ul>
