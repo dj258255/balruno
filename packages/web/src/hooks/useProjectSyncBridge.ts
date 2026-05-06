@@ -106,12 +106,12 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
     else if (treeKind === 'DOC') bumpVersion('docTree', msg.version);
   }
 
-  // Store apply — only cell.update is wired so far (Stage D first
-  // cut matches Stage C's outbound surface). The sender's own ops
-  // come back as broadcasts too (ADR 0008 v2.0 Q7); applying them
-  // again with origin='remote' is idempotent because cellSlice's
-  // recordChange uses an isSameValue guard and updateCell's set
-  // is a no-op when prev === next.
+  // Store apply — cell.update + row.{add,delete,move} so far. The
+  // sender's own ops come back as broadcasts too (ADR 0008 v2.0 Q7);
+  // re-applying them with origin='remote' is idempotent thanks to
+  // the duplicate-id drop in addRowInDoc / deleteRowInDoc / the
+  // isSameValue guard in updateCell.
+  const store = useProjectStore.getState();
   if (msg.type === 'cell.update') {
     const op = msg.op as {
       sheetId?: string;
@@ -120,7 +120,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       value?: CellValue;
     } | null;
     if (op?.sheetId && op.rowId && op.columnId) {
-      useProjectStore.getState().updateCell(
+      store.updateCell(
         projectId,
         op.sheetId,
         op.rowId,
@@ -128,6 +128,29 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
         op.value as CellValue,
         { origin: 'remote' },
       );
+    }
+  } else if (msg.type === 'row.add') {
+    const op = msg.op as {
+      sheetId?: string;
+      row?: { id?: string; cells?: Record<string, CellValue> };
+    } | null;
+    if (op?.sheetId && op.row?.id) {
+      store.addRow(projectId, op.sheetId, op.row.cells ?? {}, {
+        origin: 'remote',
+        rowId: op.row.id,
+      });
+    }
+  } else if (msg.type === 'row.delete') {
+    const op = msg.op as { sheetId?: string; rowId?: string } | null;
+    if (op?.sheetId && op.rowId) {
+      store.deleteRow(projectId, op.sheetId, op.rowId, { origin: 'remote' });
+    }
+  } else if (msg.type === 'row.move') {
+    const op = msg.op as { sheetId?: string; rowId?: string; toIndex?: number } | null;
+    if (op?.sheetId && op.rowId && typeof op.toIndex === 'number') {
+      store.reorderRow(projectId, op.sheetId, op.rowId, op.toIndex, {
+        origin: 'remote',
+      });
     }
   }
 }

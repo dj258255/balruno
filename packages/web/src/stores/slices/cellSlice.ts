@@ -207,9 +207,11 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
   addRow: (
     projectId: string,
     sheetId: string,
-    cells: Record<string, CellValue> = {}
+    cells: Record<string, CellValue> = {},
+    options?: { origin?: 'local' | 'remote'; rowId?: string }
   ): string => {
-    const id = newId();
+    const isRemote = options?.origin === 'remote';
+    const id = options?.rowId ?? newId();
     const sheet = get().getSheet(projectId, sheetId);
 
     // 수식 컬럼의 formula 를 새 행에 자동 prefill
@@ -220,10 +222,9 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
       }
     });
 
-    addRowInDoc(getProjectDoc(projectId), sheetId, {
-      id,
-      cells: { ...formulaCells, ...cells },
-    });
+    const row = { id, cells: { ...formulaCells, ...cells } };
+    addRowInDoc(getProjectDoc(projectId), sheetId, row);
+    if (!isRemote) emitOp({ kind: 'row.add', sheetId, row });
     return id;
   },
 
@@ -231,9 +232,11 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     projectId: string,
     sheetId: string,
     atIndex: number,
-    cells: Record<string, CellValue> = {}
+    cells: Record<string, CellValue> = {},
+    options?: { origin?: 'local' | 'remote'; rowId?: string }
   ): string => {
-    const id = newId();
+    const isRemote = options?.origin === 'remote';
+    const id = options?.rowId ?? newId();
     const sheet = get().getSheet(projectId, sheetId);
 
     const formulaCells: Record<string, CellValue> = {};
@@ -243,12 +246,17 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
       }
     });
 
-    insertRowInDoc(
-      getProjectDoc(projectId),
-      sheetId,
-      { id, cells: { ...formulaCells, ...cells } },
-      atIndex
-    );
+    const row = { id, cells: { ...formulaCells, ...cells } };
+    insertRowInDoc(getProjectDoc(projectId), sheetId, row, atIndex);
+    if (!isRemote) {
+      // backend RowAdd is append-only — emit row.add then row.move to
+      // reach the requested atIndex. Two ops, not atomic on the wire,
+      // so peers may briefly see the row at the end before the move
+      // lands. Acceptable v1 trade-off (insertRow is rare; full atomic
+      // insert needs ADR 0008 v2.1 with a position field on row.add).
+      emitOp({ kind: 'row.add', sheetId, row });
+      emitOp({ kind: 'row.move', sheetId, rowId: id, toIndex: atIndex });
+    }
     return id;
   },
 
@@ -434,12 +442,27 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     return row?.cellStyles?.[columnId];
   },
 
-  deleteRow: (projectId: string, sheetId: string, rowId: string) => {
+  deleteRow: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    options?: { origin?: 'local' | 'remote' }
+  ) => {
     deleteRowInDoc(getProjectDoc(projectId), sheetId, rowId);
+    if (options?.origin !== 'remote') emitOp({ kind: 'row.delete', sheetId, rowId });
   },
 
-  reorderRow: (projectId: string, sheetId: string, rowId: string, targetIndex: number) => {
+  reorderRow: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    targetIndex: number,
+    options?: { origin?: 'local' | 'remote' }
+  ) => {
     reorderRowInDoc(getProjectDoc(projectId), sheetId, rowId, targetIndex);
+    if (options?.origin !== 'remote') {
+      emitOp({ kind: 'row.move', sheetId, rowId, toIndex: targetIndex });
+    }
   },
 
   addMultipleRows: (projectId: string, sheetId: string, count: number) => {
@@ -457,6 +480,12 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     }));
 
     addMultipleRowsInDoc(getProjectDoc(projectId), sheetId, newRows);
+    // emit one row.add per new row — addMultipleRows has no remote
+    // origin path (peers receive individual row.add broadcasts that
+    // the inbound handler dispatches one by one).
+    for (const row of newRows) {
+      emitOp({ kind: 'row.add', sheetId, row });
+    }
   },
 
   // ==== 스티커 ====

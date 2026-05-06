@@ -127,12 +127,18 @@ export interface ProjectState {
   reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => void;
 
   // 행 액션
-  addRow: (projectId: string, sheetId: string, cells?: Record<string, CellValue>) => string;
+  addRow: (
+    projectId: string,
+    sheetId: string,
+    cells?: Record<string, CellValue>,
+    options?: { origin?: 'local' | 'remote'; rowId?: string }
+  ) => string;
   insertRow: (
     projectId: string,
     sheetId: string,
     atIndex: number,
-    cells?: Record<string, CellValue>
+    cells?: Record<string, CellValue>,
+    options?: { origin?: 'local' | 'remote'; rowId?: string }
   ) => string;
   updateRow: (projectId: string, sheetId: string, rowId: string, updates: Partial<Row>) => void;
   updateCell: (
@@ -162,9 +168,20 @@ export interface ProjectState {
     rowId: string,
     columnId: string
   ) => CellStyle | undefined;
-  deleteRow: (projectId: string, sheetId: string, rowId: string) => void;
+  deleteRow: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    options?: { origin?: 'local' | 'remote' }
+  ) => void;
   /** 단일 row 를 sheet.rows 안의 새 위치(targetIndex) 로 이동. Kanban 컬럼 내 정렬용. */
-  reorderRow: (projectId: string, sheetId: string, rowId: string, targetIndex: number) => void;
+  reorderRow: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    targetIndex: number,
+    options?: { origin?: 'local' | 'remote' }
+  ) => void;
   addMultipleRows: (projectId: string, sheetId: string, count: number) => void;
 
   // 유틸리티
