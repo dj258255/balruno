@@ -26,10 +26,10 @@
 
 import { useEffect } from 'react';
 
-import { useProjectSync, type ServerMsg } from './useProjectSync';
+import { useProjectSync, type ServerMsg, type SyncFullPayload } from './useProjectSync';
 import { setSyncSender, setVersions, bumpVersion } from '@/lib/sync/writeQueue';
 import { useProjectStore } from '@/stores/projectStore';
-import type { CellValue } from '@balruno/shared';
+import type { CellValue, Sheet } from '@balruno/shared';
 
 interface UseProjectSyncBridgeOptions {
   projectId: string | null;
@@ -71,9 +71,7 @@ function handleServerMsg(msg: ServerMsg, projectId: string): void {
   switch (msg.type) {
     case 'sync.full':
       setVersions(msg.versions);
-      // sync.full's full state hydrate — store rehydrate is Stage E.
-      // The version bookkeeping above is enough for outbound ops to
-      // ride the right baseVersion until then.
+      hydrateProjectFromSyncFull(projectId, msg);
       break;
     case 'op.acked':
       // op.acked carries only clientMsgId + version. Without a
@@ -132,4 +130,48 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       );
     }
   }
+}
+
+/**
+ * Hydrate the project store from a sync.full envelope (ADR 0018
+ * Stage E.1). The backend's projects.data JSONB is a Sheet[] (the
+ * shape SheetCellOpService mutates with `sheets[?id].rows[?id]
+ * .cells[?columnId]`), which is wire-compatible with the local
+ * Project.sheets type, so the cast is intentional and not lossy.
+ *
+ * If the project already exists in the store (e.g. the page's
+ * resolve effect seeded metadata first), only sheets are replaced.
+ * If it does not exist, a minimal Project is inserted — the page's
+ * effect will fill name / description on its own pass; if the
+ * effect ran first it wins, and this branch becomes the no-op
+ * "sheets-only" update on the next sync.full.
+ *
+ * Doc tree / doc bodies are NOT hydrated here — those land in Stage
+ * G alongside the Hocuspocus wiring. This commit's scope is the
+ * sheets surface that Stage C / D already reach.
+ *
+ * Exported for unit testing — the function is pure with respect to
+ * its inputs (msg + projectId) and the side-effect channel
+ * (useProjectStore.setState).
+ */
+export function hydrateProjectFromSyncFull(
+  projectId: string,
+  msg: SyncFullPayload,
+): void {
+  const sheets: Sheet[] = Array.isArray(msg.data) ? (msg.data as Sheet[]) : [];
+  useProjectStore.setState((state) => {
+    const idx = state.projects.findIndex((p) => p.id === projectId);
+    if (idx >= 0) {
+      const next = [...state.projects];
+      next[idx] = { ...next[idx], sheets };
+      return { projects: next };
+    }
+    const now = Date.now();
+    return {
+      projects: [
+        ...state.projects,
+        { id: projectId, name: '', sheets, createdAt: now, updatedAt: now },
+      ],
+    };
+  });
 }
