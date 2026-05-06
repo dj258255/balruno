@@ -37,7 +37,10 @@ export function fetchCollabToken(documentId: string): Promise<CollabTokenRespons
  * forks of this repo never silently connect to balruno.com.
  */
 export function collabBaseUrl(): string {
-  if (typeof process === 'undefined') return '';
+  // Direct access — Next.js inlines NEXT_PUBLIC_* at build time. A
+  // `typeof process !== 'undefined'` guard would evaluate to false
+  // on turbopack's client bundle (process module's default export
+  // is undefined), silently nulling the URL.
   return process.env.NEXT_PUBLIC_BALRUNO_COLLAB_URL ?? '';
 }
 

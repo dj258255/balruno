@@ -20,8 +20,15 @@
 // {@link isBackendConfigured} returns false — sync hooks and the
 // workspace-list bootstrap silently no-op so a self-host operator who
 // forgot to set the env at least gets a working local-only build.
-const BASE_URL =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BALRUNO_API_URL) || '';
+// Next.js inlines NEXT_PUBLIC_* at build time; no `typeof process`
+// guard needed (turbopack's client bundle imports process from a
+// separate module whose default export is undefined, so a guard like
+// `typeof process !== 'undefined' && ...` evaluates to false on the
+// browser even though the literal substitution did happen — the
+// resulting BASE_URL silently falls through to '' and every backend
+// call hits the frontend domain as a relative path. Direct access
+// is the supported pattern).
+const BASE_URL = process.env.NEXT_PUBLIC_BALRUNO_API_URL ?? '';
 
 export interface ProblemDetail {
   type?: string;
