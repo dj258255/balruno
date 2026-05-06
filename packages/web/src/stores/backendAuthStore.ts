@@ -16,7 +16,7 @@
 import { create } from 'zustand';
 
 import type { AuthenticatedUser } from '@/lib/backend';
-import { backendBaseUrl, fetchCurrentUser } from '@/lib/backend';
+import { fetchCurrentUser } from '@/lib/backend';
 
 export type BackendAuthStatus = 'idle' | 'loading' | 'authenticated' | 'anonymous';
 
@@ -34,32 +34,41 @@ interface BackendAuthState {
   setUser: (user: AuthenticatedUser | null) => void;
 }
 
-export const useBackendAuthStore = create<BackendAuthState>((set, get) => ({
+// In-flight bootstrap promise — module-level so concurrent callers
+// (root-layout BackendAuthBootstrap + /auth/callback page useEffect)
+// share the same /api/v1/me request and the same final status. The
+// previous implementation only had `if (status === 'loading') return`,
+// which let the second caller proceed immediately and read status
+// while the first call's fetch was still in flight, observing
+// 'loading' instead of the eventual 'authenticated' and redirecting
+// to /login?status=error.
+let inflight: Promise<void> | null = null;
+
+export const useBackendAuthStore = create<BackendAuthState>((set) => ({
   user: null,
   status: 'idle',
   error: null,
 
   bootstrap: async () => {
-    if (get().status === 'loading') return;
-    set({ status: 'loading', error: null });
-    try {
-      // eslint-disable-next-line no-console
-      console.info('[balruno] bootstrap start, BASE_URL=', backendBaseUrl());
-      const user = await fetchCurrentUser();
-      // eslint-disable-next-line no-console
-      console.info('[balruno] fetchCurrentUser ->', user);
-      set({
-        user,
-        status: user ? 'authenticated' : 'anonymous',
-      });
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('[balruno] bootstrap caught', e);
-      set({
-        status: 'anonymous',
-        error: e instanceof Error ? e.message : 'Failed to load session.',
-      });
-    }
+    if (inflight) return inflight;
+    inflight = (async () => {
+      set({ status: 'loading', error: null });
+      try {
+        const user = await fetchCurrentUser();
+        set({
+          user,
+          status: user ? 'authenticated' : 'anonymous',
+        });
+      } catch (e) {
+        set({
+          status: 'anonymous',
+          error: e instanceof Error ? e.message : 'Failed to load session.',
+        });
+      } finally {
+        inflight = null;
+      }
+    })();
+    return inflight;
   },
 
   clear: () => set({ user: null, status: 'anonymous', error: null }),
