@@ -66,3 +66,6 @@ export {
   updateProject,
 } from './projects';
 export type { CreateProjectInput } from './projects';
+
+export { listCatalog, importTemplate } from './catalog';
+export type { CatalogGroupSummary } from './catalog';

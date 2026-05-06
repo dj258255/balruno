@@ -30,8 +30,10 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 
 import {
   BackendError,
+  importTemplate,
   listProjects,
   listWorkspaces,
+  type CatalogGroupSummary,
   type Project,
   type Workspace,
 } from '@/lib/backend';
@@ -40,6 +42,7 @@ import { useProjectStore } from '@/stores/projectStore';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
+import { TemplateImportModal } from '@/components/sheet/TemplateImportModal';
 import { emitOp } from '@/lib/sync/writeQueue';
 import { newId } from '@/lib/uuid';
 import type { TreeNode } from '@balruno/shared';
@@ -429,6 +432,16 @@ export default function ProjectDetailPage() {
     });
   };
 
+  // Stage F — "Add from template" modal state. Backend mutates +
+  // broadcasts sync.full so we don't predict / mutate the local
+  // store here; just hand off to importTemplate and the bridge
+  // handles the re-hydrate.
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const handlePickTemplate = async (group: CatalogGroupSummary) => {
+    if (!project) return;
+    await importTemplate(project.id, group.id);
+  };
+
   // Drag-and-drop reorder. Local mutation via moveNodeInTree (cycle
   // guard + same-parent off-by-one inside the helper); emit tree.move
   // for the server to canonicalise + broadcast to peers.
@@ -566,6 +579,7 @@ export default function ProjectDetailPage() {
               onRenameNode={handleRenameNode}
               onAddFolder={handleAddFolder}
               onAddSheet={handleAddSheet}
+              onAddFromTemplate={() => setTemplateModalOpen(true)}
               onDeleteFolder={handleDeleteFolder}
               onMoveNode={handleMoveNode}
             />
@@ -636,6 +650,12 @@ export default function ProjectDetailPage() {
           </p>
         </section>
       )}
+
+      <TemplateImportModal
+        open={templateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+        onPick={handlePickTemplate}
+      />
     </main>
   );
 }

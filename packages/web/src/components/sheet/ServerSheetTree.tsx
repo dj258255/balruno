@@ -15,7 +15,7 @@
  */
 
 import { useState } from 'react';
-import { ChevronRight, ChevronDown, FilePlus, FileSpreadsheet, Folder, FolderPlus, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, FilePlus, FileSpreadsheet, Folder, FolderPlus, LayoutTemplate, Trash2 } from 'lucide-react';
 import type { TreeNode } from '@balruno/shared';
 
 interface ServerSheetTreeProps {
@@ -30,6 +30,10 @@ interface ServerSheetTreeProps {
    *  Backend's tree.add(type=sheet) creates the matching empty
    *  Sheet body in the same transaction (ADR 0008 v2.1). */
   onAddSheet?: () => void;
+  /** Click "+ 템플릿" header button to open the starter pack picker.
+   *  Backend mutates atomically + broadcasts sync.full, so the bridge
+   *  handles the re-hydrate (ADR 0020 Stage F). */
+  onAddFromTemplate?: () => void;
   /** Click trash icon on a folder row to delete it (cascade descendants). */
   onDeleteFolder?: (nodeId: string) => void;
   /**
@@ -52,14 +56,27 @@ export function ServerSheetTree({
   onRenameNode,
   onAddFolder,
   onAddSheet,
+  onAddFromTemplate,
   onDeleteFolder,
   onMoveNode,
 }: ServerSheetTreeProps) {
-  const showHeader = onAddFolder || onAddSheet;
+  const showHeader = onAddFolder || onAddSheet || onAddFromTemplate;
   return (
     <div>
       {showHeader && (
         <div className="mb-1 flex justify-end gap-1 px-2">
+          {onAddFromTemplate && (
+            <button
+              type="button"
+              onClick={onAddFromTemplate}
+              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-[var(--bg-hover)]"
+              style={{ color: 'var(--text-tertiary)' }}
+              title="템플릿에서 가져오기"
+            >
+              <LayoutTemplate className="h-3 w-3" />
+              템플릿
+            </button>
+          )}
           {onAddSheet && (
             <button
               type="button"
