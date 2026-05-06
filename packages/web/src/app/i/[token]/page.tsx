@@ -31,21 +31,23 @@ export default function InviteAcceptPage() {
 
   const [state, setState] = useState<State>('pending');
   const [message, setMessage] = useState('초대 링크 처리 중...');
+  const authStatus = useBackendAuthStore((s) => s.status);
 
   useEffect(() => {
     if (!token) return;
+    // Single-entry-point invariant: BackendAuthBootstrap (root layout)
+    // is the only caller of bootstrap(). Wait for its result by
+    // watching authStatus rather than calling bootstrap() ourselves.
+    if (authStatus === 'idle' || authStatus === 'loading') return;
+
+    if (authStatus !== 'authenticated') {
+      setState('unauth');
+      setMessage('초대를 수락하려면 먼저 로그인하세요.');
+      return;
+    }
 
     let cancelled = false;
     void (async () => {
-      await useBackendAuthStore.getState().bootstrap();
-      if (cancelled) return;
-
-      const auth = useBackendAuthStore.getState();
-      if (auth.status !== 'authenticated') {
-        setState('unauth');
-        setMessage('초대를 수락하려면 먼저 로그인하세요.');
-        return;
-      }
 
       try {
         const member = await acceptInvite(token);
@@ -69,7 +71,7 @@ export default function InviteAcceptPage() {
     return () => {
       cancelled = true;
     };
-  }, [token, router]);
+  }, [token, router, authStatus]);
 
   const goLogin = () => {
     if (typeof window !== 'undefined' && token) {

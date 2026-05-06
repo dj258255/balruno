@@ -11,6 +11,15 @@
  *
  * The cookie itself is httpOnly and not visible from JavaScript — this
  * store only mirrors the result of /api/v1/me.
+ *
+ * Single-entry-point invariant: bootstrap() is only called from
+ * {@code BackendAuthBootstrap} mounted at the root layout. Pages that
+ * need the auth status (auth/callback, invite token) subscribe to
+ * `status` and react to its transition rather than calling bootstrap()
+ * themselves. The simple `status !== 'idle'` guard below is enough
+ * with that invariant — Strict Mode's double mount on the root
+ * BackendAuthBootstrap component is the only concurrent caller and
+ * its second pass exits immediately.
  */
 
 import { create } from 'zustand';
@@ -34,41 +43,26 @@ interface BackendAuthState {
   setUser: (user: AuthenticatedUser | null) => void;
 }
 
-// In-flight bootstrap promise — module-level so concurrent callers
-// (root-layout BackendAuthBootstrap + /auth/callback page useEffect)
-// share the same /api/v1/me request and the same final status. The
-// previous implementation only had `if (status === 'loading') return`,
-// which let the second caller proceed immediately and read status
-// while the first call's fetch was still in flight, observing
-// 'loading' instead of the eventual 'authenticated' and redirecting
-// to /login?status=error.
-let inflight: Promise<void> | null = null;
-
-export const useBackendAuthStore = create<BackendAuthState>((set) => ({
+export const useBackendAuthStore = create<BackendAuthState>((set, get) => ({
   user: null,
   status: 'idle',
   error: null,
 
   bootstrap: async () => {
-    if (inflight) return inflight;
-    inflight = (async () => {
-      set({ status: 'loading', error: null });
-      try {
-        const user = await fetchCurrentUser();
-        set({
-          user,
-          status: user ? 'authenticated' : 'anonymous',
-        });
-      } catch (e) {
-        set({
-          status: 'anonymous',
-          error: e instanceof Error ? e.message : 'Failed to load session.',
-        });
-      } finally {
-        inflight = null;
-      }
-    })();
-    return inflight;
+    if (get().status !== 'idle') return;
+    set({ status: 'loading', error: null });
+    try {
+      const user = await fetchCurrentUser();
+      set({
+        user,
+        status: user ? 'authenticated' : 'anonymous',
+      });
+    } catch (e) {
+      set({
+        status: 'anonymous',
+        error: e instanceof Error ? e.message : 'Failed to load session.',
+      });
+    }
   },
 
   clear: () => set({ user: null, status: 'anonymous', error: null }),

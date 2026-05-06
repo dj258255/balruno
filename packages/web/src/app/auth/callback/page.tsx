@@ -13,7 +13,7 @@
  * banner — the login page already knows how to render it.
  */
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useBackendAuthStore } from '@/stores/backendAuthStore';
@@ -27,38 +27,36 @@ export const POST_LOGIN_REDIRECT_KEY = 'balruno.postLoginRedirect';
 function CallbackInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const status = params.get('status');
-  const error = params.get('error');
-  const [message, setMessage] = useState('로그인 확인 중...');
+  const queryStatus = params.get('status');
+  const queryError = params.get('error');
+  const authStatus = useBackendAuthStore((s) => s.status);
 
   useEffect(() => {
-    if (status === 'error' || error) {
+    // Backend explicitly told us the OAuth flow failed (provider error,
+    // unverified email, etc.) — bypass the auth probe and propagate.
+    if (queryStatus === 'error' || queryError) {
       const qs = new URLSearchParams();
       qs.set('status', 'error');
-      if (error) qs.set('error', error);
+      if (queryError) qs.set('error', queryError);
       router.replace(`/login?${qs.toString()}`);
       return;
     }
 
-    let cancelled = false;
-    void (async () => {
-      await useBackendAuthStore.getState().bootstrap();
-      if (cancelled) return;
+    // Don't call bootstrap() here — the root-layout BackendAuthBootstrap
+    // is the single entry point. Wait for its result by watching
+    // `authStatus`. 'idle' / 'loading' = still in flight.
+    if (authStatus === 'authenticated') {
+      const next = readPostLoginRedirect();
+      router.replace(next ?? '/workspaces');
+    } else if (authStatus === 'anonymous') {
+      router.replace('/login?status=error');
+    }
+  }, [router, queryStatus, queryError, authStatus]);
 
-      const auth = useBackendAuthStore.getState();
-      if (auth.status === 'authenticated') {
-        const next = readPostLoginRedirect();
-        router.replace(next ?? '/workspaces');
-      } else {
-        setMessage('세션 확인에 실패했습니다. 다시 로그인하세요.');
-        router.replace('/login?status=error');
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router, status, error]);
+  const message =
+    authStatus === 'anonymous'
+      ? '세션 확인에 실패했습니다. 다시 로그인하세요.'
+      : '로그인 확인 중...';
 
   return (
     <AuthShell title="로그인 처리 중">
