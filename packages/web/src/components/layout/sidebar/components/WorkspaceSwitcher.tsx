@@ -1,19 +1,26 @@
 /**
  * WorkspaceSwitcher — 사이드바 최상단. Notion / Linear / Airtable 공통 패턴.
  *
- * 현재 단계:
- *  - 워크스페이스는 단일 'default' 만 존재 (멀티는 백엔드 + Team 플랜에서)
- *  - 드롭다운은 현재 이름 표시 + "새 워크스페이스 (Team 플랜)" 비활성 힌트
- *  - 설정 링크는 기존 Settings 모달로 연결
+ * 데이터 모델 (점진 마이그레이션, 2026-05-06):
+ *  - 워크스페이스 목록 = useWorkspaceListStore (server-canonical, Linear 모델)
+ *  - 활성 워크스페이스 ID = useSidebarPrefs.activeWorkspaceId (UI 선호, persist)
+ *  - 이름 변경 = updateWorkspace REST API + 캐시 refresh
+ *  - 새 워크스페이스 = /workspaces 페이지로 navigate (전용 생성 폼)
+ *
+ * 본격 multi-ws 전환 (ws 변경 시 사이드바 리로드, projectStore ws-aware) 은
+ * sync phase 와 함께. 현재는 활성 ID 표시 + 다른 ws 클릭 시 detail 페이지로
+ * 이동하는 정도.
  */
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { ChevronDown, Plus, Settings, Edit2, Sparkles, Users } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ChevronDown, Plus, Settings, Edit2, Sparkles, Users, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ui';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
+import { useWorkspaceListStore } from '@/stores/workspaceListStore';
 import { useProductIntro } from '@/stores/productIntroStore';
 import { MemberManagementModal } from '@/components/workspace/MemberManagementModal';
 
@@ -26,7 +33,21 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
   const [showMembers, setShowMembers] = useState(false);
   const t = useTranslations();
   const { theme } = useTheme();
-  const { workspaces, activeWorkspaceId, renameWorkspace } = useSidebarPrefs();
+  const router = useRouter();
+
+  const activeWorkspaceId = useSidebarPrefs((s) => s.activeWorkspaceId);
+  const setActiveWorkspace = useSidebarPrefs((s) => s.setActiveWorkspace);
+
+  const workspaces = useWorkspaceListStore((s) => s.workspaces);
+  const status = useWorkspaceListStore((s) => s.status);
+  const bootstrap = useWorkspaceListStore((s) => s.bootstrap);
+  const renameRemote = useWorkspaceListStore((s) => s.rename);
+
+  // First-render fetch — store handles dedup so re-mounts are free.
+  useEffect(() => {
+    void bootstrap();
+  }, [bootstrap]);
+
   const openProductIntro = useProductIntro((s) => s.openIntro);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -46,7 +67,9 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
   }, [ctxMenu]);
 
   const active = workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces[0];
-  const displayName = active?.name ?? t('sidebar.workspaceSwitcher.defaultName');
+  const displayName =
+    active?.name
+    ?? (status === 'loading' ? '...' : t('sidebar.workspaceSwitcher.defaultName'));
 
   useEffect(() => {
     if (!open) return;
@@ -105,10 +128,20 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
         >
           {/* 현재 워크스페이스 목록 */}
           <div className="py-1">
+            {status === 'loading' && workspaces.length === 0 && (
+              <div className="px-3 py-2 flex items-center gap-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>...</span>
+              </div>
+            )}
             {workspaces.map((w) => (
               <button
                 key={w.id}
                 type="button"
+                onClick={() => {
+                  setActiveWorkspace(w.id);
+                  setOpen(false);
+                }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors"
                 style={{
                   color: 'var(--text-primary)',
@@ -138,22 +171,18 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
           </div>
 
           <div className="border-t" style={{ borderColor: 'var(--border-primary)' }}>
-            {/* 새 워크스페이스 — Team 플랜 힌트 (비활성) */}
+            {/* 새 워크스페이스 — 전용 페이지로 이동 */}
             <button
               type="button"
-              disabled
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left cursor-not-allowed opacity-60"
-              title={t('sidebar.workspaceSwitcher.newWorkspaceHint')}
+              onClick={() => {
+                setOpen(false);
+                router.push('/workspaces');
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
             >
               <Plus className="w-4 h-4 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
-              <span className="flex-1" style={{ color: 'var(--text-secondary)' }}>
+              <span className="flex-1" style={{ color: 'var(--text-primary)' }}>
                 {t('sidebar.workspaceSwitcher.newWorkspace')}
-              </span>
-              <span
-                className="text-caption px-1.5 py-0.5 rounded-full shrink-0"
-                style={{ background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }}
-              >
-                Team
               </span>
             </button>
 
@@ -230,10 +259,16 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
                 return;
               }
               const next = window.prompt(t('sidebar.workspaceRenamePrompt'), active.name);
-              if (next && next.trim()) {
-                renameWorkspace(active.id, next);
-              }
               setCtxMenu(null);
+              if (next && next.trim()) {
+                // Backend mutation; the store refresh re-syncs the cache so
+                // the dropdown reflects the new name on next open.
+                void renameRemote(active.id, next).catch(() => {
+                  // Surface a toast via console for now — a proper toast
+                  // surface lives in Step B (4) workspace settings UI.
+                  console.error('Failed to rename workspace');
+                });
+              }
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
             style={{ color: 'var(--text-primary)' }}
