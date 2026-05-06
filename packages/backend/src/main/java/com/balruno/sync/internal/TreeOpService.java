@@ -23,6 +23,9 @@ class TreeOpService {
 
     @Transactional
     SyncResult apply(UUID projectId, UUID userId, SyncMessage op) {
-        return SyncResult.acked(0L);
+        // Stage B.5 placeholder — ack with version 0 + empty broadcast so
+        // handler stays compilable. Real implementation in B.5 mirrors
+        // SheetCellOpService's pattern but on sheet_tree / doc_tree.
+        return new SyncResult.Acked(0L, "{}");
     }
 }

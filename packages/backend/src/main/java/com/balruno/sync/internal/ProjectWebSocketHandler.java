@@ -36,15 +36,18 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper json;
     private final SheetCellOpService sheetCellOps;
     private final TreeOpService treeOps;
+    private final SyncBroadcaster broadcaster;
 
     ProjectWebSocketHandler(SessionRegistry sessions,
                             ObjectMapper json,
                             SheetCellOpService sheetCellOps,
-                            TreeOpService treeOps) {
+                            TreeOpService treeOps,
+                            SyncBroadcaster broadcaster) {
         this.sessions = sessions;
         this.json = json;
         this.sheetCellOps = sheetCellOps;
         this.treeOps = treeOps;
+        this.broadcaster = broadcaster;
     }
 
     @Override
@@ -99,7 +102,7 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
             case SyncMessage.TreeMove      msg -> treeOps.apply(projectId, userId, msg);
             case SyncMessage.TreeDelete    msg -> treeOps.apply(projectId, userId, msg);
             case SyncMessage.TreeRename    msg -> treeOps.apply(projectId, userId, msg);
-            case SyncMessage.Presence      msg -> SyncResult.acked(0L); // TODO B.5 broadcast
+            case SyncMessage.Presence      msg -> new SyncResult.Acked(0L, "{}"); // TODO B.5 broadcast
             // Server → client variants — clients should never send these,
             // but the compiler forces us to enumerate them.
             case SyncMessage.SyncFull      ignored -> rejectClientMessage(session, "sync.full");
@@ -107,19 +110,42 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
             case SyncMessage.OpAcked       ignored -> rejectClientMessage(session, "op.acked");
         };
 
-        // Stage B.4-B.5 follow-up: serialise result + write to sender +
-        // broadcast op-shape echo to other sessions in the project. The
-        // wiring lives here; the SQL inside the services is what the next
-        // commits actually fill in.
+        broadcaster.dispatch(projectId, session, opClientMsgId(op), result);
+
         if (log.isDebugEnabled()) {
             log.debug("ws_op sessionId={} type={} result={}",
                     session.getId(), op.getClass().getSimpleName(), result);
         }
     }
 
+    private static UUID opClientMsgId(SyncMessage op) {
+        // Mirrors SheetCellOpService.clientMsgIdOf — the broadcaster
+        // needs the same value to write into the op.acked envelope so
+        // the originating client can match the reply to its in-flight
+        // request. Presence carries no clientMsgId; we synthesise a
+        // throwaway uuid so the switch stays exhaustive.
+        return switch (op) {
+            case SyncMessage.CellUpdate u    -> u.clientMsgId();
+            case SyncMessage.RowAdd u        -> u.clientMsgId();
+            case SyncMessage.RowDelete u     -> u.clientMsgId();
+            case SyncMessage.RowMove u       -> u.clientMsgId();
+            case SyncMessage.ColumnAdd u     -> u.clientMsgId();
+            case SyncMessage.ColumnUpdate u  -> u.clientMsgId();
+            case SyncMessage.ColumnDelete u  -> u.clientMsgId();
+            case SyncMessage.TreeAdd u       -> u.clientMsgId();
+            case SyncMessage.TreeMove u      -> u.clientMsgId();
+            case SyncMessage.TreeDelete u    -> u.clientMsgId();
+            case SyncMessage.TreeRename u    -> u.clientMsgId();
+            case SyncMessage.Presence ignored -> new UUID(0L, 0L);
+            case SyncMessage.SyncFull ignored -> new UUID(0L, 0L);
+            case SyncMessage.Conflict ignored -> new UUID(0L, 0L);
+            case SyncMessage.OpAcked ignored  -> new UUID(0L, 0L);
+        };
+    }
+
     private SyncResult rejectClientMessage(WebSocketSession session, String type) {
         log.warn("ws_unexpected_server_type sessionId={} type={}", session.getId(), type);
-        return SyncResult.acked(0L);
+        return new SyncResult.Acked(0L, "{}");
     }
 
     /**
