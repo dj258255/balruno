@@ -22,6 +22,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { HocuspocusProvider, WebSocketStatus } from '@hocuspocus/provider';
+import { IndexeddbPersistence } from 'y-indexeddb';
 import * as Y from 'yjs';
 
 import { collabBaseUrl, fetchCollabToken, isBackendConfigured, isCollabConfigured } from '@/lib/backend';
@@ -46,6 +47,7 @@ export function useDocYjsCloudSync({
 } {
   const [status, setStatus] = useState<SyncStatus>('idle');
   const providerRef = useRef<HocuspocusProvider | null>(null);
+  const idbProviderRef = useRef<IndexeddbPersistence | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reportToStore = useConnectionStore((s) => s.setDocStatus);
@@ -73,7 +75,22 @@ export function useDocYjsCloudSync({
         providerRef.current.destroy();
         providerRef.current = null;
       }
+      // IndexeddbPersistence stays alive across reconnects within the
+      // same documentId — it's keyed on a stable doc handle and the
+      // local cache survives token refresh. Destroyed only when the
+      // hook unmounts (return cleanup below) or documentId changes.
     };
+
+    // y-indexeddb persistence — set up once per documentId. The
+    // provider re-uses this same idb store across reconnects /
+    // token refreshes, so an offline edit survives a network blip
+    // or a tab close. y-indexeddb merges back into the doc on next
+    // load via yjs CRDT semantics (Outline / AFFiNE pattern). Set
+    // up before the WS provider so initial state is hydrated from
+    // local cache before the server's sync.full lands.
+    if (!idbProviderRef.current) {
+      idbProviderRef.current = new IndexeddbPersistence(`balruno-doc-${documentId}`, doc);
+    }
 
     const connect = async () => {
       try {
@@ -130,6 +147,14 @@ export function useDocYjsCloudSync({
       cancelled = true;
       cleanupTimer();
       cleanupProvider();
+      if (idbProviderRef.current) {
+        // Destroy the IndexedDB persistence on hook unmount or
+        // documentId change. Browser's IndexedDB still holds the
+        // bytes — next mount re-attaches. destroy() only releases
+        // the in-memory yjs binding.
+        idbProviderRef.current.destroy();
+        idbProviderRef.current = null;
+      }
     };
   }, [documentId, doc, enabled, reportToStore]);
 
