@@ -26,19 +26,20 @@
         common_install_docker: "{{ inventory_hostname in ['monitor', 'prod_app'] }}"
 
 # ───────────────────────────────────────────────────────────────────
-# 2. prod-app — Nginx (TLS terminator + reverse proxy).
-# spring-boot + hocuspocus roles enabled in Phase B-7 once the JAR + Node
-# server are produced. nginx will return 502 Bad Gateway until then —
-# that's expected, the gate stays on.
+# 2. prod-app — backend (Spring) + hocuspocus (collab) Docker compose +
+#    Nginx (TLS terminator + reverse proxy). The Node collab sidecar
+#    landed with ADR 0017 Stage A.3 — vault_jwt_collab_secret must be
+#    populated in group_vars/all/vault.yml before the first apply.
 # ───────────────────────────────────────────────────────────────────
-- name: Deploy prod-app (backend Docker compose + nginx)
+- name: Deploy prod-app (backend + collab Docker compose + nginx)
   hosts: prod_app
   become: true
   tags: [prod-app]
   roles:
     - role: backend
       tags: [backend]
-    # hocuspocus role enabled in Phase B-5 once the Node sidecar code lives.
+    - role: hocuspocus
+      tags: [hocuspocus, collab]
     - role: nginx
       tags: [nginx]
 

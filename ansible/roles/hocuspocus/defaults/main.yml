@@ -1,0 +1,33 @@
+# Defaults for the hocuspocus role (prod_app host).
+# Provisions a docker-compose.yml + .env for the Balruno collab server
+# (packages/collab in the monorepo). The image itself is built and pushed
+# to GHCR by .github/workflows/collab-deploy.yml; Ansible just owns the
+# host config so 'docker compose pull && up -d' works.
+
+hocuspocus_install_dir: /opt/balruno/collab
+hocuspocus_compose_file: "{{ hocuspocus_install_dir }}/docker-compose.yml"
+hocuspocus_env_file: "{{ hocuspocus_install_dir }}/.env"
+
+# DB connection — the collab container talks to the same Postgres that
+# the backend uses (documents.ydoc_state read/write). Credential comes
+# from vault.yml (vault_postgres_password); this file declares the
+# non-secret routing only.
+hocuspocus_postgres_host: "{{ monitor_private_ip }}"
+hocuspocus_postgres_port: "{{ postgres_port | default(5432) }}"
+hocuspocus_postgres_db: "{{ postgres_db_name | default('balruno') }}"
+hocuspocus_postgres_user: "{{ postgres_db_user | default('balruno') }}"
+
+# Image lives at ghcr.io/<owner>/balruno-collab.
+# Push tags both 'latest' (rolling) and the commit SHA (rollback target);
+# prod pulls 'latest' by default.
+hocuspocus_image_repo: "ghcr.io/dj258255/balruno-collab"
+hocuspocus_image_tag: latest
+
+# Listen port — nginx reverse-proxies collab.balruno.com to this on
+# 127.0.0.1. The vhost (collab.balruno.com.conf) already points at 1234.
+hocuspocus_collab_port: 1234
+
+# Memory ceiling defaults to the value declared in group_vars/all/vars.yml
+# (hocuspocus_mem_limit: "512m"); kept here so the role stays
+# overridable per-host without editing the group var.
+hocuspocus_container_mem_limit: "{{ hocuspocus_mem_limit | default('512m') }}"

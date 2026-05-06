@@ -1,0 +1,29 @@
+# {{ ansible_managed }}
+# Production compose for the Balruno collab (Hocuspocus) server on prod_app.
+# Image is built + pushed to GHCR by .github/workflows/collab-deploy.yml.
+
+name: balruno-collab
+
+services:
+  collab:
+    image: {{ hocuspocus_image_repo }}:{{ hocuspocus_image_tag }}
+    container_name: balruno-collab
+    restart: unless-stopped
+    # Loopback bind — Cloudflare → nginx :443 (collab.balruno.com) →
+    # 127.0.0.1:1234 → here. The vhost is already in nginx's conf.d.
+    ports:
+      - "127.0.0.1:{{ hocuspocus_collab_port }}:{{ hocuspocus_collab_port }}"
+    # POSTGRES_* + COLLAB_TOKEN_SECRET flow through this file.
+    env_file:
+      - {{ hocuspocus_env_file }}
+    mem_limit: {{ hocuspocus_container_mem_limit }}
+    # Container HEALTHCHECK already lives in the Dockerfile — Hocuspocus
+    # replies HTTP 426 Upgrade Required on a plain GET, which the script
+    # there treats as alive. Mirroring it here lets docker-compose's
+    # depends_on graph reason about it once a future stanza needs it.
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:{{ hocuspocus_collab_port }}/', r => process.exit([200, 426].includes(r.statusCode) ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
