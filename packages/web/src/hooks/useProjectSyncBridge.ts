@@ -217,17 +217,39 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
         parentId?: string | null;
         position?: number;
         node?: TreeNode;
+        // Cross-region cargo (ADR 0008 v2.1): when node.type === 'sheet'
+        // backend appends an empty Sheet shell to projects.data and
+        // ships it inline so peers can grow sheets[] in the same
+        // setState as the leaf insertion.
+        sheetShell?: Sheet;
+        newDataVersion?: number;
       } | null;
       if (op?.treeKind === 'SHEET' && op.node?.id) {
         const newNode = op.node;
         const parentId = op.parentId ?? null;
         const position = typeof op.position === 'number' ? op.position : 0;
+        const sheetShell = op.sheetShell ?? null;
         useProjectStore.setState((state) => ({
-          projects: state.projects.map((p) =>
-            p.id !== projectId
-              ? p
-              : { ...p, sheetTree: insertNodeIntoTreeBroadcast(p.sheetTree ?? [], parentId, position, newNode) },
-          ),
+          projects: state.projects.map((p) => {
+            if (p.id !== projectId) return p;
+            const nextTree = insertNodeIntoTreeBroadcast(
+              p.sheetTree ?? [],
+              parentId,
+              position,
+              newNode,
+            );
+            // Echo dedup: if the sender's own broadcast comes back,
+            // p.sheets[] already has the shell. Skip the duplicate
+            // append so list ordering and reference identity stay
+            // stable.
+            const sheetAlreadyPresent =
+              !!sheetShell && p.sheets.some((s) => s.id === sheetShell.id);
+            const nextSheets =
+              sheetShell && !sheetAlreadyPresent
+                ? [...p.sheets, sheetShell]
+                : p.sheets;
+            return { ...p, sheetTree: nextTree, sheets: nextSheets };
+          }),
         }));
       }
       break;

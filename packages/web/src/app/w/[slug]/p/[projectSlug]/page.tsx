@@ -371,10 +371,39 @@ export default function ProjectDetailPage() {
     });
   };
 
-  // Add a new root-level folder. Sheet add (sheets[] data array) is
-  // not part of ADR 0008 v2.0's ClientOp surface so this stays
-  // folder-only; user organises existing sheets inside the new folder
-  // (Stage E.2 drag-and-drop, follow-up).
+  // Add a new root-level sheet leaf. Backend's applyTreeAdd recognises
+  // node.type === 'sheet' and atomically appends an empty Sheet shell
+  // to projects.data in the same transaction (ADR 0008 v2.1). The
+  // broadcast handler then materialises the shell into our local
+  // sheets[]; we don't predict it here so the source of truth stays
+  // server-side.
+  const handleAddSheet = () => {
+    if (!project) return;
+    const sheetId = newId();
+    const newLeaf: TreeNode = {
+      id: sheetId,
+      type: 'sheet',
+      name: '새 시트',
+    };
+    const position = (localProject?.sheetTree?.length ?? 0);
+    useProjectStore.setState((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== project.id
+          ? p
+          : { ...p, sheetTree: [...(p.sheetTree ?? []), newLeaf] },
+      ),
+    }));
+    emitOp({
+      kind: 'tree.add',
+      treeKind: 'SHEET',
+      parentId: null,
+      position,
+      node: newLeaf,
+    });
+    setSelectedSheetId(sheetId);
+  };
+
+  // Add a new root-level folder.
   const handleAddFolder = () => {
     if (!project) return;
     const newFolder: TreeNode = {
@@ -536,6 +565,7 @@ export default function ProjectDetailPage() {
               onSelectSheet={setSelectedSheetId}
               onRenameNode={handleRenameNode}
               onAddFolder={handleAddFolder}
+              onAddSheet={handleAddSheet}
               onDeleteFolder={handleDeleteFolder}
               onMoveNode={handleMoveNode}
             />

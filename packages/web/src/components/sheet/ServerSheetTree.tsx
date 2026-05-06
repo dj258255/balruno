@@ -15,7 +15,7 @@
  */
 
 import { useState } from 'react';
-import { ChevronRight, ChevronDown, FileSpreadsheet, Folder, FolderPlus, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, FilePlus, FileSpreadsheet, Folder, FolderPlus, Trash2 } from 'lucide-react';
 import type { TreeNode } from '@balruno/shared';
 
 interface ServerSheetTreeProps {
@@ -26,6 +26,10 @@ interface ServerSheetTreeProps {
   onRenameNode?: (nodeId: string, newName: string) => void;
   /** Click "+ 폴더" header button to add a root-level folder. */
   onAddFolder?: () => void;
+  /** Click "+ 시트" header button to add a root-level sheet leaf.
+   *  Backend's tree.add(type=sheet) creates the matching empty
+   *  Sheet body in the same transaction (ADR 0008 v2.1). */
+  onAddSheet?: () => void;
   /** Click trash icon on a folder row to delete it (cascade descendants). */
   onDeleteFolder?: (nodeId: string) => void;
   /**
@@ -47,23 +51,39 @@ export function ServerSheetTree({
   onSelectSheet,
   onRenameNode,
   onAddFolder,
+  onAddSheet,
   onDeleteFolder,
   onMoveNode,
 }: ServerSheetTreeProps) {
+  const showHeader = onAddFolder || onAddSheet;
   return (
     <div>
-      {onAddFolder && (
-        <div className="mb-1 flex justify-end px-2">
-          <button
-            type="button"
-            onClick={onAddFolder}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-[var(--bg-hover)]"
-            style={{ color: 'var(--text-tertiary)' }}
-            title="새 폴더"
-          >
-            <FolderPlus className="h-3 w-3" />
-            폴더
-          </button>
+      {showHeader && (
+        <div className="mb-1 flex justify-end gap-1 px-2">
+          {onAddSheet && (
+            <button
+              type="button"
+              onClick={onAddSheet}
+              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-[var(--bg-hover)]"
+              style={{ color: 'var(--text-tertiary)' }}
+              title="새 시트"
+            >
+              <FilePlus className="h-3 w-3" />
+              시트
+            </button>
+          )}
+          {onAddFolder && (
+            <button
+              type="button"
+              onClick={onAddFolder}
+              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-[var(--bg-hover)]"
+              style={{ color: 'var(--text-tertiary)' }}
+              title="새 폴더"
+            >
+              <FolderPlus className="h-3 w-3" />
+              폴더
+            </button>
+          )}
         </div>
       )}
       {tree.length === 0 ? (
