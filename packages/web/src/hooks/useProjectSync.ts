@@ -122,61 +122,91 @@ export function useProjectSync({
     }
 
     let cancelled = false;
-    setStatus('connecting');
-    reportToStore(projectId, 'connecting');
+    let retryAttempt = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let manualClose = false;
 
-    // Build the WS URL — flip http(s) → ws(s) to keep the same host.
-    // Browser sends balruno_session cookie automatically (apex domain).
     const apiUrl = backendBaseUrl();
     const wsUrl = apiUrl.replace(/^http/, 'ws') + `/ws/projects/${encodeURIComponent(projectId)}`;
 
-    let ws: WebSocket;
-    try {
-      ws = new WebSocket(wsUrl);
-    } catch (e) {
-      setStatus('error');
-      reportToStore(projectId, 'error');
-      // eslint-disable-next-line no-console
-      console.warn('[useProjectSync] WebSocket constructor failed', e);
-      return;
-    }
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      if (cancelled) return;
-      setStatus('connected');
-      reportToStore(projectId, 'connected');
-      // Backend sends sync.full as the first frame automatically (Stage B.6).
+    // Reconnect with exponential backoff: 1s, 2s, 4s, ..., capped at
+    // 60s. Resets to 1s on successful onopen so a healthy session
+    // doesn't carry over its retry counter into the next disconnect.
+    // The `manualClose` flag suppresses retry on component unmount;
+    // server-initiated close (1006/1001/1011/idle timeout) re-arms.
+    const scheduleRetry = () => {
+      if (cancelled || retryTimer !== null) return;
+      const delay = Math.min(60_000, 1_000 * Math.pow(2, retryAttempt));
+      retryAttempt += 1;
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
+        manualClose = false;
+        connect();
+      }, delay);
     };
 
-    ws.onmessage = (event) => {
+    const connect = () => {
       if (cancelled) return;
-      const data = event.data;
-      if (typeof data !== 'string') return;
-      let msg: ServerMsg;
+      setStatus('connecting');
+      reportToStore(projectId, 'connecting');
+
+      let ws: WebSocket;
       try {
-        msg = JSON.parse(data) as ServerMsg;
-      } catch {
-        return; // drop malformed
+        ws = new WebSocket(wsUrl);
+      } catch (e) {
+        setStatus('error');
+        reportToStore(projectId, 'error');
+        // eslint-disable-next-line no-console
+        console.warn('[useProjectSync] WebSocket constructor failed', e);
+        scheduleRetry();
+        return;
       }
-      onMessageRef.current?.(msg);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        if (cancelled) return;
+        retryAttempt = 0;
+        setStatus('connected');
+        reportToStore(projectId, 'connected');
+      };
+
+      ws.onmessage = (event) => {
+        if (cancelled) return;
+        const data = event.data;
+        if (typeof data !== 'string') return;
+        let msg: ServerMsg;
+        try {
+          msg = JSON.parse(data) as ServerMsg;
+        } catch {
+          return;
+        }
+        onMessageRef.current?.(msg);
+      };
+
+      ws.onerror = () => {
+        if (cancelled) return;
+        setStatus('error');
+        reportToStore(projectId, 'error');
+      };
+
+      ws.onclose = () => {
+        if (cancelled) return;
+        setStatus('offline');
+        reportToStore(projectId, 'offline');
+        if (!manualClose) scheduleRetry();
+      };
     };
 
-    ws.onerror = () => {
-      if (cancelled) return;
-      setStatus('error');
-      reportToStore(projectId, 'error');
-    };
-
-    ws.onclose = () => {
-      if (cancelled) return;
-      setStatus('offline');
-      reportToStore(projectId, 'offline');
-    };
+    connect();
 
     return () => {
       cancelled = true;
-      ws.close();
+      manualClose = true;
+      if (retryTimer !== null) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+      wsRef.current?.close();
       wsRef.current = null;
     };
   }, [projectId, enabled, reportToStore]);
@@ -188,6 +218,10 @@ export function useProjectSync({
     return true;
   }, []);
 
+  // Manual reconnect — closes the current socket; the onclose handler's
+  // scheduleRetry path picks it up and reconnects with the active
+  // backoff sequence. If the caller is rage-clicking a retry button
+  // it's the right shape: each click resets the cycle by closing.
   const reconnect = useCallback(() => {
     wsRef.current?.close();
   }, []);
