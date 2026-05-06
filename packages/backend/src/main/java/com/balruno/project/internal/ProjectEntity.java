@@ -8,7 +8,9 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.generator.EventType;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -53,6 +55,33 @@ class ProjectEntity {
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 
+    // ── sync phase columns (V8) ───────────────────────────────────────
+    // 3 영역 (시트 셀 / 시트 트리 / 문서 트리) 의 JSONB blob + version.
+    // ADR 0008 v2.0 그대로. JSON 직렬화는 String 으로 두고 jsonb_set
+    // patch 는 native query 로 처리 (sync 모듈 owner). JPA 는 schema
+    // validate 만 — read/write 는 sync 모듈의 native SQL.
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "data", nullable = false, columnDefinition = "jsonb")
+    private String data = "{}";
+
+    @Column(name = "data_version", nullable = false)
+    private long dataVersion = 1L;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "sheet_tree", nullable = false, columnDefinition = "jsonb")
+    private String sheetTree = "[]";
+
+    @Column(name = "sheet_tree_version", nullable = false)
+    private long sheetTreeVersion = 1L;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "doc_tree", nullable = false, columnDefinition = "jsonb")
+    private String docTree = "[]";
+
+    @Column(name = "doc_tree_version", nullable = false)
+    private long docTreeVersion = 1L;
+
     protected ProjectEntity() {}
 
     ProjectEntity(UUID workspaceId, String slug, String name, String description, UUID createdBy) {
@@ -85,6 +114,17 @@ class ProjectEntity {
     public OffsetDateTime getUpdatedAt() { return updatedAt; }
     public OffsetDateTime getDeletedAt() { return deletedAt; }
     public boolean isDeleted() { return deletedAt != null; }
+
+    // sync state — read-only via JPA. The sync module mutates via
+    // native jsonb_set queries inside @Transactional service code, not
+    // by setting these fields. Read-only getters let other modules
+    // hydrate the initial sync.full payload without coupling to schema.
+    public String getData()             { return data; }
+    public long   getDataVersion()      { return dataVersion; }
+    public String getSheetTree()        { return sheetTree; }
+    public long   getSheetTreeVersion() { return sheetTreeVersion; }
+    public String getDocTree()          { return docTree; }
+    public long   getDocTreeVersion()   { return docTreeVersion; }
 
     void rename(String newName) { this.name = newName; }
     void changeSlug(String newSlug) { this.slug = newSlug; }

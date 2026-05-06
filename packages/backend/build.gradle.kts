@@ -69,6 +69,13 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     testImplementation("org.springframework.security:spring-security-test")
 
+    // Native WebSocket — sync phase (ADR 0017 Stage B). The starter pulls
+    // the Spring WebSocket autoconfig + Tomcat's WS upgrade machinery.
+    // We use plain {@link WebSocketHandler}, not STOMP — the broker
+    // would add ops complexity for our simple project-scoped broadcast
+    // (ADR 0017 §3 거부 이유).
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+
     // OpenAPI / Swagger UI — springdoc 2.8+ supports Spring Boot 4. Enabled
     // in dev/local profile only; prod disables both api-docs and swagger-ui
     // via application-prod.yml so the schema isn't an attack surface.
