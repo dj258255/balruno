@@ -70,10 +70,15 @@ class ProjectServiceImpl implements ProjectService {
         var now = System.currentTimeMillis();
         var sheetId = UUID.randomUUID().toString();
         var columnId = UUID.randomUUID().toString();
+        var rowId = UUID.randomUUID().toString();
+        // One starter row + one starter column so the very first
+        // page mount has an addressable (sheetId, rowId, columnId)
+        // tuple — cell.update can fire on the first keystroke
+        // without needing row.add / column.add wired up first.
         return """
-                [{"id":"%s","name":"Sheet 1","columns":[{"id":"%s","name":"Column 1","type":"general"}],"rows":[],"createdAt":%d,"updatedAt":%d}]
+                [{"id":"%s","name":"Sheet 1","columns":[{"id":"%s","name":"Column 1","type":"general"}],"rows":[{"id":"%s","cells":{}}],"createdAt":%d,"updatedAt":%d}]
                 """
-                .formatted(sheetId, columnId, now, now)
+                .formatted(sheetId, columnId, rowId, now, now)
                 .stripTrailing();
     }
 

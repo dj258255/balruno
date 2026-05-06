@@ -36,6 +36,7 @@ import {
   type Workspace,
 } from '@/lib/backend';
 import { useBackendAuthStore } from '@/stores/backendAuthStore';
+import { useProjectStore } from '@/stores/projectStore';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 
@@ -90,6 +91,36 @@ export default function ProjectDetailPage() {
     };
   }, [slug, projectSlug, router]);
 
+  // Seed project metadata into the store as soon as the resolve
+  // effect populates `project`. sync.full will replace .sheets
+  // wholesale on arrival (Stage E.1's hydrateProjectFromSyncFull),
+  // so seeding metadata first means the broadcast apply path always
+  // has a project to attach to. The find guard makes the seed
+  // idempotent against re-runs.
+  useEffect(() => {
+    if (!project) return;
+    useProjectStore.setState((state) => {
+      if (state.projects.find((p) => p.id === project.id)) return state;
+      const now = Date.now();
+      return {
+        projects: [
+          ...state.projects,
+          {
+            id: project.id,
+            name: project.name,
+            // backend Project.description is string | null, store
+            // Project.description is string | undefined (optional);
+            // coerce so the shape matches.
+            description: project.description ?? undefined,
+            sheets: [],
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+      };
+    });
+  }, [project]);
+
   // Bridge stays idle while projectId is unknown; once the resolve
   // effect populates `project`, useProjectSyncBridge opens
   // /ws/projects/{id}, registers the live sender on the writeQueue,
@@ -99,6 +130,17 @@ export default function ProjectDetailPage() {
     projectId: project?.id ?? null,
     enabled: Boolean(project),
   });
+
+  // Read the live sheet from the store — populated by hydrate from
+  // sync.full. Falls back to undefined while the WS handshake races
+  // with the resolve effect.
+  const localProject = useProjectStore((state) =>
+    project ? state.projects.find((p) => p.id === project.id) : undefined,
+  );
+  const updateCellAction = useProjectStore((state) => state.updateCell);
+  const firstSheet = localProject?.sheets[0];
+  const firstColumn = firstSheet?.columns[0];
+  const firstRow = firstSheet?.rows[0];
 
   if (loading) {
     return (
@@ -153,22 +195,79 @@ export default function ProjectDetailPage() {
       </header>
 
       <section
-        className="rounded-lg border p-4 text-sm"
+        className="mb-4 rounded-lg border p-4 text-sm"
         style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
       >
-        <div className="mb-2 flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <span style={{ color: 'var(--text-secondary)' }}>실시간 동기화 상태:</span>
           <ConnectionStatus />
           <code className="ml-2 text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
             {syncStatus}
           </code>
         </div>
-        <p style={{ color: 'var(--text-tertiary)' }}>
-          본 페이지 진입 즉시 <code>/ws/projects/{project.id}</code> 에 WebSocket 이 연결되고,
-          백엔드는 <code>sync.full</code> 첫 프레임으로 현재 프로젝트 상태를 hydrate 합니다.
-          시트 편집 UI 의 server-canonical 통합은 다음 phase 에서 이어집니다.
-        </p>
       </section>
+
+      {firstSheet && firstColumn && firstRow ? (
+        <section
+          className="rounded-lg border p-4"
+          style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+        >
+          <h2 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            {firstSheet.name}
+          </h2>
+          {/*
+           * Minimal cell editor — Stage E.2 first cut. The full
+           * SheetTable depends on ~6 zustand stores (history /
+           * sheetUI / recordDetail / simulationPreload / ...) that
+           * the local-mode home page sets up; mounting it here
+           * needs a separate phase to mirror that hydrate. For
+           * now this single input proves the keystroke -> store
+           * -> writeQueue -> wss -> backend round-trip end-to-end.
+           */}
+          <label
+            className="flex items-center gap-3 text-sm"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <span className="w-24 truncate" title={firstColumn.name}>
+              {firstColumn.name}:
+            </span>
+            <input
+              type="text"
+              defaultValue={String(firstRow.cells[firstColumn.id] ?? '')}
+              onBlur={(e) => {
+                updateCellAction(
+                  project.id,
+                  firstSheet.id,
+                  firstRow.id,
+                  firstColumn.id,
+                  e.target.value,
+                );
+              }}
+              className="flex-1 rounded-md border px-3 py-2 font-mono text-sm"
+              style={{
+                borderColor: 'var(--border-primary)',
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+              }}
+              placeholder="값 입력 후 다른 곳 클릭하면 동기화"
+            />
+          </label>
+          <p className="mt-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            blur 시 cell.update 가 <code>/ws/projects/{project.id}</code> 로 emit. 다른 사용자가
+            같은 프로젝트를 열고 있으면 broadcast 로 화면 자동 반영. 풀 SheetTable 통합은
+            다음 phase.
+          </p>
+        </section>
+      ) : (
+        <section
+          className="rounded-lg border p-4 text-sm"
+          style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+        >
+          <p style={{ color: 'var(--text-tertiary)' }}>
+            <code>sync.full</code> 응답을 기다리는 중...
+          </p>
+        </section>
+      )}
     </main>
   );
 }
