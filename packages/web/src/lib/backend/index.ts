@@ -38,6 +38,9 @@ export { WORKSPACE_ROLES } from './types';
 
 export { fetchUserQuota, isUnlimited } from './quota';
 
+export { fetchCollabToken, collabBaseUrl } from './collab';
+export type { CollabTokenResponse } from './collab';
+
 export {
   acceptInvite,
   changeMemberRole,
