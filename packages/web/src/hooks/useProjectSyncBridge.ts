@@ -1,7 +1,7 @@
 /**
  * Project sync wiring — connects {@link useProjectSync} to the
  * module-level write queue and the zustand project store
- * (ADR 0018 Stages B + D).
+ * (ADR 0018 Stages B + D + F).
  *
  * The page component calls this hook instead of useProjectSync
  * directly. It does four jobs:
@@ -12,16 +12,13 @@
  *      mount and clear it on unmount.
  *   3. Watch inbound traffic and update the writeQueue's per-region
  *      baseVersions so the next outbound op carries a fresh version.
- *   4. Apply broadcast frames (peer ops) back into the project store
- *      with origin='remote' so the local UI mirrors remote edits and
- *      the dual-write guard prevents the store from echoing them
- *      back to the socket.
+ *   4. Apply broadcast frames (peer ops) directly to projectStore
+ *      via setState — bypassing cellSlice's Y.Doc-based mutation
+ *      (which only propagates to state through useYDocSync, not
+ *      mounted on the server-canonical project page).
  *
- * Store apply is currently wired only for {@code cell.update} —
- * matches Stage C's outbound surface (the cellSlice.updateCell
- * dual-write). Other broadcast variants only update the version
- * counter; the store-apply for row / column / tree ops lands with
- * the corresponding outbound stage.
+ * Tree broadcasts (sheet_tree / doc_tree) only update the version
+ * counter for now — the apply path lands with Stage G.
  */
 
 import { useEffect } from 'react';
@@ -29,7 +26,7 @@ import { useEffect } from 'react';
 import { useProjectSync, type ServerMsg, type SyncFullPayload } from './useProjectSync';
 import { setSyncSender, setVersions, bumpVersion } from '@/lib/sync/writeQueue';
 import { useProjectStore } from '@/stores/projectStore';
-import type { CellValue, Column, Sheet } from '@balruno/shared';
+import type { CellValue, Column, Row, Sheet } from '@balruno/shared';
 
 interface UseProjectSyncBridgeOptions {
   projectId: string | null;
@@ -44,8 +41,6 @@ export function useProjectSyncBridge({
     projectId,
     enabled,
     onMessage: (msg) => {
-      // projectId enters the handler's closure here so the apply
-      // path can call store actions scoped to this project.
       if (projectId) handleServerMsg(msg, projectId);
     },
   });
@@ -61,12 +56,6 @@ export function useProjectSyncBridge({
   return { status };
 }
 
-/**
- * Translate inbound frames into writeQueue version updates and
- * store-apply calls. Kept at module scope (not inline) so it can be
- * unit-tested without rendering React; the hook passes projectId in
- * as an argument rather than capturing it via closure.
- */
 function handleServerMsg(msg: ServerMsg, projectId: string): void {
   switch (msg.type) {
     case 'sync.full':
@@ -74,17 +63,11 @@ function handleServerMsg(msg: ServerMsg, projectId: string): void {
       hydrateProjectFromSyncFull(projectId, msg);
       break;
     case 'op.acked':
-      // op.acked carries only clientMsgId + version. Without a
-      // pending-ops tracker we cannot route to one region, so bump
-      // all three monotonically; bumpVersion's Math.max guard keeps
-      // it race-safe.
       bumpVersion('data', msg.version);
       bumpVersion('sheetTree', msg.version);
       bumpVersion('docTree', msg.version);
       break;
     case 'conflict':
-      // sync.full will follow per ADR 0018 Stage E; let that reset
-      // the versions and rehydrate the store.
       break;
     default:
       handleBroadcast(msg, projectId);
@@ -106,134 +89,143 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
     else if (treeKind === 'DOC') bumpVersion('docTree', msg.version);
   }
 
-  // Store apply — cell.update + row.{add,delete,move} so far. The
-  // sender's own ops come back as broadcasts too (ADR 0008 v2.0 Q7);
-  // re-applying them with origin='remote' is idempotent thanks to
-  // the duplicate-id drop in addRowInDoc / deleteRowInDoc / the
-  // isSameValue guard in updateCell.
-  const store = useProjectStore.getState();
-  if (msg.type === 'cell.update') {
-    const op = msg.op as {
-      sheetId?: string;
-      rowId?: string;
-      columnId?: string;
-      value?: CellValue;
-    } | null;
-    if (op?.sheetId && op.rowId && op.columnId) {
-      // Apply directly via setState rather than store.updateCell —
-      // the cellSlice action goes through updateCellInDoc(Y.Doc),
-      // and the Y.Doc observer that propagates back to projectStore
-      // state lives in useYDocSync, which the server-canonical
-      // project page does NOT mount. The Y.Doc changes silently and
-      // store.projects[].sheets[].rows[].cells never updates.
-      // Direct setState mirrors hydrateProjectFromSyncFull's
-      // pattern (Stage E.1) and keeps the round-trip visible to the
-      // controlled <input value={cellValue}>.
-      const targetSheetId = op.sheetId;
-      const targetRowId = op.rowId;
-      const targetColumnId = op.columnId;
-      const targetValue = op.value as CellValue;
-      useProjectStore.setState((state) => ({
-        projects: state.projects.map((p) =>
-          p.id !== projectId
-            ? p
-            : {
-                ...p,
-                sheets: p.sheets.map((s) =>
-                  s.id !== targetSheetId
-                    ? s
-                    : {
-                        ...s,
-                        rows: s.rows.map((r) =>
-                          r.id !== targetRowId
-                            ? r
-                            : {
-                                ...r,
-                                cells: { ...r.cells, [targetColumnId]: targetValue },
-                              },
-                        ),
-                      },
-                ),
-              },
-        ),
-      }));
+  // Store apply — direct setState, Y.Doc-bypass. The sender's own
+  // ops echo back (ADR 0008 v2.0 Q7); idempotent because each
+  // mutator is "find by id and apply", not "append blindly".
+  switch (msg.type) {
+    case 'cell.update': {
+      const op = msg.op as {
+        sheetId?: string;
+        rowId?: string;
+        columnId?: string;
+        value?: CellValue;
+      } | null;
+      if (op?.sheetId && op.rowId && op.columnId) {
+        applyToSheet(projectId, op.sheetId, (sheet) => ({
+          ...sheet,
+          rows: sheet.rows.map((r) =>
+            r.id !== op.rowId
+              ? r
+              : { ...r, cells: { ...r.cells, [op.columnId!]: op.value as CellValue } },
+          ),
+        }));
+      }
+      break;
     }
-  } else if (msg.type === 'row.add') {
-    const op = msg.op as {
-      sheetId?: string;
-      row?: { id?: string; cells?: Record<string, CellValue> };
-    } | null;
-    if (op?.sheetId && op.row?.id) {
-      store.addRow(projectId, op.sheetId, op.row.cells ?? {}, {
-        origin: 'remote',
-        rowId: op.row.id,
-      });
+    case 'row.add': {
+      const op = msg.op as {
+        sheetId?: string;
+        row?: { id?: string; cells?: Record<string, CellValue> };
+      } | null;
+      if (op?.sheetId && op.row?.id) {
+        const newRow: Row = { id: op.row.id, cells: op.row.cells ?? {} };
+        applyToSheet(projectId, op.sheetId, (sheet) =>
+          sheet.rows.some((r) => r.id === newRow.id)
+            ? sheet
+            : { ...sheet, rows: [...sheet.rows, newRow] },
+        );
+      }
+      break;
     }
-  } else if (msg.type === 'row.delete') {
-    const op = msg.op as { sheetId?: string; rowId?: string } | null;
-    if (op?.sheetId && op.rowId) {
-      store.deleteRow(projectId, op.sheetId, op.rowId, { origin: 'remote' });
+    case 'row.delete': {
+      const op = msg.op as { sheetId?: string; rowId?: string } | null;
+      if (op?.sheetId && op.rowId) {
+        applyToSheet(projectId, op.sheetId, (sheet) => ({
+          ...sheet,
+          rows: sheet.rows.filter((r) => r.id !== op.rowId),
+        }));
+      }
+      break;
     }
-  } else if (msg.type === 'row.move') {
-    const op = msg.op as { sheetId?: string; rowId?: string; toIndex?: number } | null;
-    if (op?.sheetId && op.rowId && typeof op.toIndex === 'number') {
-      store.reorderRow(projectId, op.sheetId, op.rowId, op.toIndex, {
-        origin: 'remote',
-      });
+    case 'row.move': {
+      const op = msg.op as { sheetId?: string; rowId?: string; toIndex?: number } | null;
+      if (op?.sheetId && op.rowId && typeof op.toIndex === 'number') {
+        applyToSheet(projectId, op.sheetId, (sheet) => {
+          const fromIdx = sheet.rows.findIndex((r) => r.id === op.rowId);
+          if (fromIdx < 0) return sheet;
+          const clamped = Math.max(0, Math.min(sheet.rows.length - 1, op.toIndex!));
+          if (clamped === fromIdx) return sheet;
+          const next = [...sheet.rows];
+          const [moved] = next.splice(fromIdx, 1);
+          next.splice(clamped, 0, moved);
+          return { ...sheet, rows: next };
+        });
+      }
+      break;
     }
-  } else if (msg.type === 'column.add') {
-    const op = msg.op as {
-      sheetId?: string;
-      column?: { id?: string } & Record<string, unknown>;
-    } | null;
-    if (op?.sheetId && op.column?.id) {
-      const { id: colId, ...rest } = op.column;
-      store.addColumn(projectId, op.sheetId, rest as Omit<Column, 'id'>, {
-        origin: 'remote',
-        columnId: colId,
-      });
+    case 'column.add': {
+      const op = msg.op as {
+        sheetId?: string;
+        column?: { id?: string } & Record<string, unknown>;
+      } | null;
+      if (op?.sheetId && op.column?.id) {
+        const newColumn = op.column as unknown as Column;
+        applyToSheet(projectId, op.sheetId, (sheet) =>
+          sheet.columns.some((c) => c.id === newColumn.id)
+            ? sheet
+            : { ...sheet, columns: [...sheet.columns, newColumn] },
+        );
+      }
+      break;
     }
-  } else if (msg.type === 'column.update') {
-    const op = msg.op as {
-      sheetId?: string;
-      columnId?: string;
-      patch?: Partial<Column>;
-    } | null;
-    if (op?.sheetId && op.columnId && op.patch) {
-      store.updateColumn(projectId, op.sheetId, op.columnId, op.patch, {
-        origin: 'remote',
-      });
+    case 'column.update': {
+      const op = msg.op as {
+        sheetId?: string;
+        columnId?: string;
+        patch?: Partial<Column>;
+      } | null;
+      if (op?.sheetId && op.columnId && op.patch) {
+        applyToSheet(projectId, op.sheetId, (sheet) => ({
+          ...sheet,
+          columns: sheet.columns.map((c) =>
+            c.id !== op.columnId ? c : { ...c, ...op.patch },
+          ),
+        }));
+      }
+      break;
     }
-  } else if (msg.type === 'column.delete') {
-    const op = msg.op as { sheetId?: string; columnId?: string } | null;
-    if (op?.sheetId && op.columnId) {
-      store.deleteColumn(projectId, op.sheetId, op.columnId, { origin: 'remote' });
+    case 'column.delete': {
+      const op = msg.op as { sheetId?: string; columnId?: string } | null;
+      if (op?.sheetId && op.columnId) {
+        applyToSheet(projectId, op.sheetId, (sheet) => ({
+          ...sheet,
+          columns: sheet.columns.filter((c) => c.id !== op.columnId),
+        }));
+      }
+      break;
     }
+    default:
+      // tree.* — apply path lands with Stage G.
+      break;
   }
 }
 
 /**
- * Hydrate the project store from a sync.full envelope (ADR 0018
- * Stage E.1). The backend's projects.data JSONB is a Sheet[] (the
- * shape SheetCellOpService mutates with `sheets[?id].rows[?id]
- * .cells[?columnId]`), which is wire-compatible with the local
- * Project.sheets type, so the cast is intentional and not lossy.
- *
- * If the project already exists in the store (e.g. the page's
- * resolve effect seeded metadata first), only sheets are replaced.
- * If it does not exist, a minimal Project is inserted — the page's
- * effect will fill name / description on its own pass; if the
- * effect ran first it wins, and this branch becomes the no-op
- * "sheets-only" update on the next sync.full.
- *
- * Doc tree / doc bodies are NOT hydrated here — those land in Stage
- * G alongside the Hocuspocus wiring. This commit's scope is the
- * sheets surface that Stage C / D already reach.
- *
- * Exported for unit testing — the function is pure with respect to
- * its inputs (msg + projectId) and the side-effect channel
- * (useProjectStore.setState).
+ * Apply a mutator to a single sheet inside the project's sheets
+ * array. Pure setState, no Y.Doc — the page reads cell values off
+ * store state directly, so this is the actual visible-state path
+ * for server-canonical mode. Returning the same sheet reference
+ * unchanged keeps the React subtree stable when a broadcast doesn't
+ * affect any visible field (e.g. row.add for a row that already
+ * exists from the sender's own echo).
  */
+function applyToSheet(
+  projectId: string,
+  sheetId: string,
+  mutator: (sheet: Sheet) => Sheet,
+): void {
+  useProjectStore.setState((state) => ({
+    projects: state.projects.map((p) =>
+      p.id !== projectId
+        ? p
+        : {
+            ...p,
+            sheets: p.sheets.map((s) => (s.id !== sheetId ? s : mutator(s))),
+          },
+    ),
+  }));
+}
+
 export function hydrateProjectFromSyncFull(
   projectId: string,
   msg: SyncFullPayload,
