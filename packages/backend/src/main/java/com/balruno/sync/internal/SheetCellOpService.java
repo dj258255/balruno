@@ -97,13 +97,23 @@ class SheetCellOpService {
             return new SyncResult.Conflict(row.dataVersion);
         }
 
-        // 4. apply to the JSON tree.
+        // 4. apply to the JSON tree. The DB-side schema is Sheet[] (a
+        //    bare array; ProjectServiceImpl.buildDefaultSheetJson, V9
+        //    backfill, and the frontend hydrate all agree on that
+        //    shape). The internal navigator below was written against
+        //    a {"sheets": [...]} wrapping object — older spec leftover
+        //    that mismatched after the seed shape changed. Wrap on
+        //    read, unwrap on write so the navigator keeps working but
+        //    the on-disk shape stays Sheet[].
         ObjectNode data;
+        ArrayNode sheets;
         try {
             JsonNode parsed = nodeMapper.readTree(row.dataJson);
-            data = parsed.isObject()
-                    ? (ObjectNode) parsed
-                    : nodeMapper.createObjectNode();
+            sheets = parsed.isArray()
+                    ? (ArrayNode) parsed
+                    : nodeMapper.createArrayNode();
+            data = nodeMapper.createObjectNode();
+            data.set("sheets", sheets);
             applyToData(data, op);
         } catch (Exception e) {
             throw new IllegalStateException("failed to apply op to projects.data", e);
@@ -113,7 +123,7 @@ class SheetCellOpService {
         jdbc.update(
                 "UPDATE projects SET data = ?::jsonb, data_version = ?, updated_at = now() "
               + "WHERE id = ?",
-                data.toString(), newVersion, projectId);
+                sheets.toString(), newVersion, projectId);
 
         // 5. broadcast payload + idempotency cache.
         var broadcast = buildBroadcastPayload(op, newVersion, userId);
