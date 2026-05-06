@@ -26,7 +26,7 @@ import { useEffect } from 'react';
 import { useProjectSync, type ServerMsg, type SyncFullPayload } from './useProjectSync';
 import { setSyncSender, setVersions, bumpVersion } from '@/lib/sync/writeQueue';
 import { useProjectStore } from '@/stores/projectStore';
-import type { CellValue, Column, Row, Sheet } from '@balruno/shared';
+import type { CellValue, Column, Row, Sheet, TreeNode } from '@balruno/shared';
 
 interface UseProjectSyncBridgeOptions {
   projectId: string | null;
@@ -231,18 +231,21 @@ export function hydrateProjectFromSyncFull(
   msg: SyncFullPayload,
 ): void {
   const sheets: Sheet[] = Array.isArray(msg.data) ? (msg.data as Sheet[]) : [];
+  const sheetTree: TreeNode[] = Array.isArray(msg.sheetTree)
+    ? (msg.sheetTree as TreeNode[])
+    : [];
   useProjectStore.setState((state) => {
     const idx = state.projects.findIndex((p) => p.id === projectId);
     if (idx >= 0) {
       const next = [...state.projects];
-      next[idx] = { ...next[idx], sheets };
+      next[idx] = { ...next[idx], sheets, sheetTree };
       return { projects: next };
     }
     const now = Date.now();
     return {
       projects: [
         ...state.projects,
-        { id: projectId, name: '', sheets, createdAt: now, updatedAt: now },
+        { id: projectId, name: '', sheets, sheetTree, createdAt: now, updatedAt: now },
       ],
     };
   });

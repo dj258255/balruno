@@ -27,6 +27,18 @@ export interface ProjectMember {
 }
 
 // 프로젝트(=Game) 타입 — UI 노출 명칭은 "Game", 데이터 모델은 Project 유지
+/**
+ * Outline-style nested tree node — used for both sheet_tree and
+ * doc_tree (ADR 0011). Folders carry children; sheet/doc leaves
+ * carry the matching id from the flat data array.
+ */
+export interface TreeNode {
+  id: string;
+  type: 'folder' | 'sheet' | 'doc';
+  name: string;
+  children?: TreeNode[];
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -34,6 +46,13 @@ export interface Project {
   createdAt: number;
   updatedAt: number;
   sheets: Sheet[];
+  /**
+   * Optional Notion-style nested tree of sheet groups + sheet
+   * leaves. Server-canonical mode hydrates this from
+   * projects.sheet_tree on sync.full; local mode leaves it
+   * undefined and renders a flat sheet list.
+   */
+  sheetTree?: TreeNode[];
   folders?: Folder[];       // 시트 폴더 (navigation only — ACL 없음)
   docs?: Doc[];             // GDD · 설계안 문서 (Phase A) — Notion 식 nested 트리 (Doc.parentId)
   changelog?: ChangeEntry[]; // Track변경 이력 (내부 기록)

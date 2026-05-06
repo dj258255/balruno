@@ -39,6 +39,7 @@ import { useBackendAuthStore } from '@/stores/backendAuthStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
+import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
 
 export default function ProjectDetailPage() {
   const params = useParams<{ slug: string; projectSlug: string }>();
@@ -138,9 +139,22 @@ export default function ProjectDetailPage() {
     project ? state.projects.find((p) => p.id === project.id) : undefined,
   );
   const updateCellAction = useProjectStore((state) => state.updateCell);
-  const firstSheet = localProject?.sheets[0];
-  const firstColumn = firstSheet?.columns[0];
-  const firstRow = firstSheet?.rows[0];
+  const sheets = localProject?.sheets ?? [];
+  const sheetTree = localProject?.sheetTree ?? [];
+
+  // Selected sheet — defaults to the first available sheet once the
+  // store hydrate lands. The user picks via the sheet_tree sidebar
+  // (Stage D minimal — folder expand/collapse + sheet leaf click).
+  const [selectedSheetId, setSelectedSheetId] = useState<string | null>(null);
+  useEffect(() => {
+    if (selectedSheetId !== null) return;
+    if (sheets.length === 0) return;
+    setSelectedSheetId(sheets[0].id);
+  }, [selectedSheetId, sheets]);
+
+  const selectedSheet = sheets.find((s) => s.id === selectedSheetId);
+  const firstColumn = selectedSheet?.columns[0];
+  const firstRow = selectedSheet?.rows[0];
   const cellValue =
     firstRow && firstColumn ? String(firstRow.cells[firstColumn.id] ?? '') : '';
 
@@ -220,63 +234,88 @@ export default function ProjectDetailPage() {
         )}
       </header>
 
-      {firstSheet && firstColumn && firstRow ? (
-        <section
-          className="rounded-lg border p-4"
-          style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+      {sheets.length > 0 ? (
+        <div
+          className="grid gap-4"
+          style={{ gridTemplateColumns: '260px 1fr' }}
         >
-          {/*
-           * Minimal cell editor for now — mounting the local-mode
-           * SheetTable (`useProjectStore()` whole-store subscription
-           * + 7 internal useEffect hooks) caused React error #185
-           * (max update depth) on the freshly-hydrated server-canonical
-           * page. The render-loop diagnosis is its own phase; the
-           * round-trip path (input -> updateCell -> writeQueue ->
-           * /ws/projects/{id} -> backend -> broadcast -> peer apply)
-           * is fully exercised by this single input, so prod e2e
-           * proof doesn't depend on the full grid being mounted yet.
-           */}
-          <h2 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {firstSheet.name}
-          </h2>
-          <label
-            className="flex items-center gap-3 text-sm"
-            style={{ color: 'var(--text-secondary)' }}
+          {/* Sidebar — sheet_tree navigation (ADR 0020 Stage D minimal) */}
+          <aside
+            className="rounded-lg border p-2"
+            style={{
+              borderColor: 'var(--border-primary)',
+              background: 'var(--bg-primary)',
+              minHeight: '400px',
+            }}
           >
-            <span className="w-24 truncate" title={firstColumn.name}>
-              {firstColumn.name}:
-            </span>
-            <input
-              ref={inputRef}
-              type="text"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={() => {
-                if (draft !== cellValue) {
-                  updateCellAction(
-                    project.id,
-                    firstSheet.id,
-                    firstRow.id,
-                    firstColumn.id,
-                    draft,
-                  );
-                }
-              }}
-              className="flex-1 rounded-md border px-3 py-2 font-mono text-sm"
-              style={{
-                borderColor: 'var(--border-primary)',
-                background: 'var(--bg-secondary)',
-                color: 'var(--text-primary)',
-              }}
-              placeholder="값 입력 후 다른 곳 클릭하면 동기화"
+            <h2
+              className="px-2 py-1.5 text-xs font-medium uppercase tracking-wide"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              시트
+            </h2>
+            <ServerSheetTree
+              tree={sheetTree}
+              selectedSheetId={selectedSheetId}
+              onSelectSheet={setSelectedSheetId}
             />
-          </label>
-          <p className="mt-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            blur 시 cell.update 가 <code>/ws/projects/{project.id}</code> 로 emit. 다른 사용자가
-            같은 프로젝트를 열고 있으면 broadcast 로 화면 자동 반영. 풀 SheetTable 통합은
-            다음 phase.
-          </p>
-        </section>
+          </aside>
+
+          {/* Main — minimal cell editor for the selected sheet */}
+          <section
+            className="rounded-lg border p-4"
+            style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+          >
+            {selectedSheet && firstColumn && firstRow ? (
+              <>
+                <h2 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {selectedSheet.name}
+                </h2>
+                <label
+                  className="flex items-center gap-3 text-sm"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  <span className="w-24 truncate" title={firstColumn.name}>
+                    {firstColumn.name}:
+                  </span>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onBlur={() => {
+                      if (draft !== cellValue) {
+                        updateCellAction(
+                          project.id,
+                          selectedSheet.id,
+                          firstRow.id,
+                          firstColumn.id,
+                          draft,
+                        );
+                      }
+                    }}
+                    className="flex-1 rounded-md border px-3 py-2 font-mono text-sm"
+                    style={{
+                      borderColor: 'var(--border-primary)',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                    }}
+                    placeholder="값 입력 후 다른 곳 클릭하면 동기화"
+                  />
+                </label>
+                <p className="mt-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  blur 시 cell.update 가 <code>/ws/projects/{project.id}</code> 로 emit. 다른
+                  사용자가 같은 프로젝트를 열고 있으면 broadcast 로 화면 자동 반영. 풀 SheetTable
+                  통합은 다음 phase.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                시트를 선택하세요.
+              </p>
+            )}
+          </section>
+        </div>
       ) : (
         <section
           className="rounded-lg border p-4 text-sm"
