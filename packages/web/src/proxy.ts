@@ -22,6 +22,7 @@ const PUBLIC_PATHS = [
   '/login',
   '/auth/callback',
   '/i',         // /i/{token} invite links
+  '/pricing',
   '/terms',
   '/privacy',
 ];

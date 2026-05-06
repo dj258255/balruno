@@ -12,10 +12,18 @@
  * echo), `errors` (field-level array on validation failure).
  */
 
+// No hard-coded default — leaving the prod URL in here would mean a fork
+// of this repo would, until rebuilt, ship pointing at the upstream
+// hosted SaaS. Set NEXT_PUBLIC_BALRUNO_API_URL in your deploy
+// environment (Vercel → Project Settings → Environment Variables, or
+// .env.local for `pnpm dev`). When unset, BASE_URL is empty and
+// {@link isBackendConfigured} returns false — sync hooks and the
+// workspace-list bootstrap silently no-op so a self-host operator who
+// forgot to set the env at least gets a working local-only build.
 const BASE_URL =
   (typeof process !== 'undefined' &&
     (process.env.NEXT_PUBLIC_BALRUNO_API_URL ?? process.env.NEXT_PUBLIC_API_URL)) ||
-  'https://api.balruno.com';
+  '';
 
 export interface ProblemDetail {
   type?: string;
