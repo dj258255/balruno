@@ -99,7 +99,10 @@ balruno.jwt:
   # browser still sends the cookie to api.* and app.* alike when Domain is
   # the apex domain.
   cookie-domain: balruno.com
-  frontend-redirect-base: https://app.balruno.com
+  # Frontend lives at the apex (balruno.com on Vercel) for now. The
+  # subdomain split (app.* / docs.* / etc.) lands when the marketing
+  # surface separates from the application UI.
+  frontend-redirect-base: https://balruno.com
 
 # ─── CORS allowed origins ────────────────────────────────────────────────
 # allowCredentials=true (we send the session cookie) rules out wildcard,
