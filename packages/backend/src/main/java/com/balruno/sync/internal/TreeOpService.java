@@ -13,11 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Tree region op log writer — sheet_tree / doc_tree (ADR 0008 v2.0
@@ -30,8 +32,11 @@ import java.util.UUID;
  *     (ADR 0008 §3.4 BFS cycle prevention).
  *   - {@code tree.delete} on the document tree cascade-soft-deletes the
  *     matching {@code documents} rows so the Hocuspocus container can't
- *     re-hydrate yjs state for an orphaned node. The cascade SQL is a
- *     B.5 follow-up; this commit lands the tree mutation only.
+ *     re-hydrate yjs state for an orphaned node. Soft delete (not hard)
+ *     so the 30-day grace period (ADR 0015 §6 Q4) still applies; a
+ *     separate cron does the hard delete after retention. {@code id IN
+ *     (...)} is the matched key — doc_tree node id and documents.id are
+ *     both UUIDs and are intentionally the same value for a given doc.
  *
  * Two regions ride this service via {@link SyncMessage.TreeKind}:
  *   - SHEET → projects.sheet_tree / projects.sheet_tree_version
@@ -91,12 +96,15 @@ class TreeOpService {
             return new SyncResult.Conflict(row.version);
         }
 
-        // 4. apply to the JSON tree.
+        // 4. apply to the JSON tree. tree.delete returns the BFS-collected
+        //    ids of the detached subtree so DOC kind can cascade them onto
+        //    documents below; other ops return an empty set.
         ArrayNode roots;
+        Set<UUID> deletedNodeIds;
         try {
             JsonNode parsed = nodeMapper.readTree(row.treeJson);
             roots = parsed.isArray() ? (ArrayNode) parsed : nodeMapper.createArrayNode();
-            applyToTree(roots, op);
+            deletedNodeIds = applyToTree(roots, op);
         } catch (Exception e) {
             throw new IllegalStateException("failed to apply op to projects."
                   + columns.treeColumn, e);
@@ -108,6 +116,15 @@ class TreeOpService {
               + columns.versionColumn + " = ?, updated_at = now() "
               + "WHERE id = ?",
                 roots.toString(), newVersion, projectId);
+
+        // 4.5 cascade soft-delete on documents — DOC tree.delete only.
+        // Same transaction as the JSONB tree mutation so the doc body
+        // and the doc_tree node disappear atomically. Sheet tree
+        // deletes have no analogous side-effect (sheet bodies live in
+        // projects.data, which the same projects row already updated).
+        if (treeKind == SyncMessage.TreeKind.DOC && !deletedNodeIds.isEmpty()) {
+            cascadeDocumentSoftDelete(deletedNodeIds);
+        }
 
         // 5. broadcast payload + idempotency cache.
         var broadcast = buildBroadcastPayload(op, newVersion, userId);
@@ -124,15 +141,21 @@ class TreeOpService {
 
     // ── op-tree mutation ──────────────────────────────────────────────
 
-    private void applyToTree(ArrayNode roots, SyncMessage op) {
-        switch (op) {
-            case SyncMessage.TreeAdd u    -> applyTreeAdd(roots, u);
-            case SyncMessage.TreeMove u   -> applyTreeMove(roots, u);
+    /**
+     * Returns the BFS-collected ids of any deleted subtree (for {@code
+     * tree.delete}; an empty set for the other tree ops). The caller
+     * uses these to cascade-soft-delete {@code documents} rows when
+     * the affected tree is the doc tree.
+     */
+    private Set<UUID> applyToTree(ArrayNode roots, SyncMessage op) {
+        return switch (op) {
+            case SyncMessage.TreeAdd u    -> { applyTreeAdd(roots, u);    yield Collections.emptySet(); }
+            case SyncMessage.TreeMove u   -> { applyTreeMove(roots, u);   yield Collections.emptySet(); }
             case SyncMessage.TreeDelete u -> applyTreeDelete(roots, u);
-            case SyncMessage.TreeRename u -> applyTreeRename(roots, u);
+            case SyncMessage.TreeRename u -> { applyTreeRename(roots, u); yield Collections.emptySet(); }
             default -> throw new UnsupportedOperationException(
                     "not a tree op: " + op.getClass().getSimpleName());
-        }
+        };
     }
 
     private void applyTreeAdd(ArrayNode roots, SyncMessage.TreeAdd u) {
@@ -180,13 +203,42 @@ class TreeOpService {
         siblings.insert(clamped, moving);
     }
 
-    private void applyTreeDelete(ArrayNode roots, SyncMessage.TreeDelete u) {
-        if (!detach(roots, u.nodeId())) {
+    private Set<UUID> applyTreeDelete(ArrayNode roots, SyncMessage.TreeDelete u) {
+        // BFS the subtree before detaching — once detach() rips the
+        // node out of the tree we no longer have a handle to its
+        // descendants. The collected ids drive the cascade in apply().
+        var node = findById(roots, u.nodeId());
+        if (node == null) {
             throw new IllegalArgumentException("node not found: " + u.nodeId());
         }
-        // Cascade soft-delete on documents (treeKind=DOC) is a B.5
-        // follow-up — the SQL needs to walk the detached subtree's ids
-        // and run UPDATE documents SET deleted_at = now() WHERE id = ANY(?).
+        var ids = collectIdsIncludingSelf(node);
+        if (!detach(roots, u.nodeId())) {
+            throw new IllegalStateException(
+                    "node lookup succeeded but detach missed: " + u.nodeId());
+        }
+        return ids;
+    }
+
+    /**
+     * Soft-delete every {@code documents} row whose id is in the
+     * supplied set. {@code AND deleted_at IS NULL} keeps the operation
+     * idempotent (re-applying the same tree.delete via the
+     * op_idempotency replay path doesn't bump deleted_at again).
+     *
+     * The {@code id IN (...)} predicate uses inlined UUID literals
+     * because UUID's toString() is hex+dash with no quoting hazard,
+     * which avoids prepared-statement cache fragmentation across
+     * different N-element sets. Real call volume here is low (only
+     * tree.delete on the doc tree), so the trade-off favours one SQL
+     * shape over a single cached prepared statement.
+     */
+    private void cascadeDocumentSoftDelete(Set<UUID> documentIds) {
+        var inClause = documentIds.stream()
+                .map(id -> "'" + id + "'")
+                .collect(Collectors.joining(",", "(", ")"));
+        jdbc.update(
+                "UPDATE documents SET deleted_at = now() "
+              + "WHERE id IN " + inClause + " AND deleted_at IS NULL");
     }
 
     private void applyTreeRename(ArrayNode roots, SyncMessage.TreeRename u) {
