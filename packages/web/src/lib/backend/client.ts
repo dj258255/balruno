@@ -21,9 +21,7 @@
 // workspace-list bootstrap silently no-op so a self-host operator who
 // forgot to set the env at least gets a working local-only build.
 const BASE_URL =
-  (typeof process !== 'undefined' &&
-    (process.env.NEXT_PUBLIC_BALRUNO_API_URL ?? process.env.NEXT_PUBLIC_API_URL)) ||
-  '';
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BALRUNO_API_URL) || '';
 
 export interface ProblemDetail {
   type?: string;

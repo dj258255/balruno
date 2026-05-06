@@ -24,7 +24,7 @@ import { useEffect, useRef, useState } from 'react';
 import { HocuspocusProvider, WebSocketStatus } from '@hocuspocus/provider';
 import * as Y from 'yjs';
 
-import { collabBaseUrl, fetchCollabToken, isBackendConfigured } from '@/lib/backend';
+import { collabBaseUrl, fetchCollabToken, isBackendConfigured, isCollabConfigured } from '@/lib/backend';
 import { useConnectionStore } from '@/stores/connectionStore';
 
 export type SyncStatus = 'idle' | 'connecting' | 'connected' | 'offline' | 'error';
@@ -51,7 +51,7 @@ export function useDocYjsCloudSync({
   const reportToStore = useConnectionStore((s) => s.setDocStatus);
 
   useEffect(() => {
-    if (!enabled || !documentId || !doc || !isBackendConfigured()) {
+    if (!enabled || !documentId || !doc || !isBackendConfigured() || !isCollabConfigured()) {
       setStatus('idle');
       reportToStore(documentId ?? null, 'idle');
       return;

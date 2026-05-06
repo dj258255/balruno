@@ -2,8 +2,8 @@
  * Login guard — Linear-style "server is canonical" mode.
  *
  * Redirects unauthenticated visits to /login when the backend is wired
- * up (NEXT_PUBLIC_API_URL or NEXT_PUBLIC_BALRUNO_API_URL set). Without
- * a backend the app still works offline so the proxy is a no-op.
+ * up (NEXT_PUBLIC_BALRUNO_API_URL set). Without a backend the app
+ * still works offline so the proxy is a no-op.
  *
  * Auth signal: the backend's httpOnly `balruno_session` cookie (a JWT)
  * is sent by the browser to *.balruno.com automatically. The proxy
@@ -39,9 +39,7 @@ function isPublicPath(pathname: string): boolean {
 }
 
 function backendConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_BALRUNO_API_URL ?? process.env.NEXT_PUBLIC_API_URL,
-  );
+  return Boolean(process.env.NEXT_PUBLIC_BALRUNO_API_URL);
 }
 
 export function proxy(req: NextRequest) {

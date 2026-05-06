@@ -31,16 +31,21 @@ export function fetchCollabToken(documentId: string): Promise<CollabTokenRespons
 
 /**
  * Hocuspocus WS base URL — the document name is appended by the
- * provider, not by this helper. Defaults to the production hostname so
- * a self-host operator who forgets to set the env still reaches their
- * own collab server if they aliased its DNS to {@code collab.balruno.com}.
- * Override in {@code .env.local} or Vercel project env.
+ * provider, not by this helper. Returns an empty string when the env
+ * is not set so {@link isCollabConfigured} can gate the provider; the
+ * old "default to upstream prod" behaviour was removed in Stage E so
+ * forks of this repo never silently connect to balruno.com.
  */
 export function collabBaseUrl(): string {
-  if (typeof process === 'undefined') return 'wss://collab.balruno.com';
-  return (
-    process.env.NEXT_PUBLIC_BALRUNO_COLLAB_URL ??
-    process.env.NEXT_PUBLIC_WS_URL ??
-    'wss://collab.balruno.com'
-  );
+  if (typeof process === 'undefined') return '';
+  return process.env.NEXT_PUBLIC_BALRUNO_COLLAB_URL ?? '';
+}
+
+/**
+ * Whether a Hocuspocus URL is configured. Sync hooks should treat
+ * `false` as a signal to stay in idle / local-only mode, mirroring
+ * {@link import('./client').isBackendConfigured}.
+ */
+export function isCollabConfigured(): boolean {
+  return Boolean(collabBaseUrl());
 }
