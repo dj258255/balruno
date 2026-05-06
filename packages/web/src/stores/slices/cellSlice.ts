@@ -12,6 +12,7 @@ import type { Column, Row, CellValue, CellStyle, Sticker, ChangeEntry } from '@/
 import type { ProjectState } from '../projectStore';
 import { wouldCreateCycle } from '@/lib/linkGraph';
 import { toast } from '@/components/ui/Toast';
+import { emitOp } from '@/lib/sync/writeQueue';
 
 /** 현재 사용자 이름 읽기 (usePresence 가 쓰는 키). */
 function getCurrentUserName(): string {
@@ -265,8 +266,13 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     sheetId: string,
     rowId: string,
     columnId: string,
-    value: CellValue
+    value: CellValue,
+    options?: { origin?: 'local' | 'remote' }
   ) => {
+    // origin='remote' is set by the broadcast handler when applying
+    // a peer's op back into the store; that path must not re-emit
+    // the op or the sender would echo to itself indefinitely.
+    const isRemote = options?.origin === 'remote';
     const doc = getProjectDoc(projectId);
     const state = get();
     const project = state.projects.find((p) => p.id === projectId);
@@ -333,6 +339,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
 
         doc.transact(() => {
           updateCellInDoc(doc, sheetId, rowId, columnId, value);
+          if (!isRemote) emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value });
           recordChange();
           // 추가된 target row 의 reverse 컬럼에 현재 rowId 추가
           for (const targetRowId of added) {
@@ -345,6 +352,15 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
             if (!currentLinks.includes(rowId)) {
               const next = [...currentLinks, rowId].join(',');
               updateCellInDoc(doc, targetSheetId, targetRowId, reverseColId, next);
+              if (!isRemote) {
+                emitOp({
+                  kind: 'cell.update',
+                  sheetId: targetSheetId,
+                  rowId: targetRowId,
+                  columnId: reverseColId,
+                  value: next,
+                });
+              }
             }
           }
           // 제거된 target row 의 reverse 컬럼에서 현재 rowId 제거
@@ -357,6 +373,15 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
               .filter(Boolean);
             const next = currentLinks.filter((x) => x !== rowId).join(',');
             updateCellInDoc(doc, targetSheetId, targetRowId, reverseColId, next);
+            if (!isRemote) {
+              emitOp({
+                kind: 'cell.update',
+                sheetId: targetSheetId,
+                rowId: targetRowId,
+                columnId: reverseColId,
+                value: next,
+              });
+            }
           }
         });
         return;
@@ -364,6 +389,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     }
 
     updateCellInDoc(doc, sheetId, rowId, columnId, value);
+    if (!isRemote) emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value });
     recordChange();
   },
 

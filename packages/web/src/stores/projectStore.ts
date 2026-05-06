@@ -140,7 +140,8 @@ export interface ProjectState {
     sheetId: string,
     rowId: string,
     columnId: string,
-    value: CellValue
+    value: CellValue,
+    options?: { origin?: 'local' | 'remote' }
   ) => void;
   updateCellStyle: (
     projectId: string,
