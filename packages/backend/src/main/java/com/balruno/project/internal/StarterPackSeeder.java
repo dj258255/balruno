@@ -3,7 +3,6 @@ package com.balruno.project.internal;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -12,60 +11,64 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * Loads {@code resources/starter/catalog.json} (exported from
- * {@code packages/web/scripts/exportStarterCatalog.ts}) on startup
- * and exposes JSON serialisations of the project.data (Sheet[]) and
- * project.sheet_tree (Outline-style nested folder tree) shapes.
+ * Loads {@code resources/starter/catalog-{locale}.json} (one file
+ * per language, exported by {@code packages/web/scripts/
+ * exportStarterCatalog.ts}) on startup and exposes JSON
+ * serialisations of project.data + project.sheet_tree per locale.
  *
- * The catalog has 12 starter "groups" (튜토리얼 / RPG / FPS / MOBA
- * / RTS / Idle / 덱빌더 / RPG 캐릭터 스탯 / 버그 트래커 / 플레이테스트
- * / 스프린트 보드 / 로드맵). Each group's sheets are flattened into
- * a single project.data array, and the sheet_tree gets one folder
- * per group with the group's sheets as leaf nodes (ADR 0011).
+ * Lookup order on {@link #buildFor}:
+ *   1. exact locale match — {@code catalog-{locale}.json}
+ *   2. fallback to {@code catalog-ko.json} — the source language
+ *      STARTER_CATALOG was authored in
+ *   3. empty if neither exists — {@link #isAvailable} returns false
+ *      so the caller falls back to the minimal Sheet 1 seed
  *
- * Why pre-flatten on startup once instead of per-call: the catalog is
- * static (only changes when the export script re-runs at build time),
- * so the same JSON is served to every new signup. The flat strings
- * are cached as fields and copied verbatim into projects.data /
- * projects.sheet_tree.
- *
- * Uses fasterxml ObjectMapper rather than tools.jackson because
- * ProjectEntity stores JSONB columns as String and the surrounding
- * code (V9, V10, ProjectServiceImpl.buildDefaultSheetJson) is
- * fasterxml; keeping one library across this seam (memory:
- * project_sb4_abstractions, Jackson 3 mix trap).
+ * Each locale's catalog is parsed once at @PostConstruct and the
+ * pre-flattened (data, sheetTree) JSON strings are cached. Per-call
+ * cost is a Map lookup + two String hand-offs.
  */
 @Service
 class StarterPackSeeder {
 
     private static final Logger log = LoggerFactory.getLogger(StarterPackSeeder.class);
+    private static final String DEFAULT_LOCALE = "ko";
+    private static final String[] SUPPORTED_LOCALES = {"ko", "en"};
 
     private final ObjectMapper json = new ObjectMapper();
-    private String dataJson = "[]";
-    private String sheetTreeJson = "[]";
-    private int starterCount = 0;
+    private final Map<String, Bundle> bundles = new HashMap<>();
 
     @PostConstruct
     void load() throws IOException {
-        var resource = new ClassPathResource("starter/catalog.json");
-        if (!resource.exists()) {
-            log.warn("starter/catalog.json not found — onboarding will use minimal Sheet 1");
-            return;
+        for (var locale : SUPPORTED_LOCALES) {
+            var resource = new ClassPathResource("starter/catalog-" + locale + ".json");
+            if (!resource.exists()) {
+                log.info("starter/catalog-{}.json not present — skipping", locale);
+                continue;
+            }
+            JsonNode root;
+            try (var is = resource.getInputStream()) {
+                root = json.readTree(is);
+            }
+            var bundle = parse(root);
+            if (bundle == null) {
+                log.warn("starter/catalog-{}.json malformed — expected 'starters' array", locale);
+                continue;
+            }
+            bundles.put(locale, bundle);
+            log.info("starter pack loaded: locale={} groups={} sheets={}",
+                    locale, bundle.starterCount, bundle.sheetCount);
         }
+    }
 
-        JsonNode root;
-        try (var is = resource.getInputStream()) {
-            root = json.readTree(is);
-        }
-
+    private Bundle parse(JsonNode root) {
         var starters = root.get("starters");
-        if (starters == null || !starters.isArray()) {
-            log.warn("starter/catalog.json malformed — expected 'starters' array");
-            return;
-        }
+        if (starters == null || !starters.isArray()) return null;
 
         var allSheets = json.createArrayNode();
         var treeFolders = json.createArrayNode();
@@ -76,9 +79,6 @@ class StarterPackSeeder {
             var sheets = project.get("sheets");
             if (sheets == null || !sheets.isArray()) continue;
 
-            // Flat data — every sheet from every starter ends up under
-            // projects.data with its original id, so cell.update against
-            // sheetId resolves regardless of which folder the sheet sits in.
             var sheetLeaves = json.createArrayNode();
             for (var sheet : sheets) {
                 allSheets.add(sheet);
@@ -91,9 +91,6 @@ class StarterPackSeeder {
                 }
             }
 
-            // One folder per starter group. The folder's id is fresh —
-            // it has no analogue in the local-mode store; it's purely
-            // the navigation node in sheet_tree.
             var folder = json.createObjectNode();
             folder.put("id", UUID.randomUUID().toString());
             folder.put("type", "folder");
@@ -102,25 +99,32 @@ class StarterPackSeeder {
             treeFolders.add(folder);
         }
 
-        this.dataJson = allSheets.toString();
-        this.sheetTreeJson = treeFolders.toString();
-        this.starterCount = treeFolders.size();
-        log.info("starter pack loaded: {} groups, {} sheets total",
-                starterCount, allSheets.size());
+        var result = new LinkedHashMap<String, String>();
+        result.put("data", allSheets.toString());
+        result.put("sheetTree", treeFolders.toString());
+        return new Bundle(
+                result.get("data"),
+                result.get("sheetTree"),
+                treeFolders.size(),
+                allSheets.size());
     }
 
-    /** Project.data — flat Sheet[] across all starter groups. */
-    String dataJson() {
-        return dataJson;
+    /**
+     * Best matching catalog for the given locale, with ko fallback.
+     * Returns null when neither the requested locale nor ko is loaded —
+     * caller should treat that as "starter pack not available".
+     */
+    Bundle buildFor(String locale) {
+        var key = locale == null || locale.isBlank() ? DEFAULT_LOCALE : locale;
+        var hit = bundles.get(key);
+        if (hit != null) return hit;
+        return bundles.get(DEFAULT_LOCALE);
     }
 
-    /** Project.sheet_tree — one folder per group, sheets as leaves. */
-    String sheetTreeJson() {
-        return sheetTreeJson;
-    }
-
-    /** True iff the catalog loaded with at least one group. */
     boolean isAvailable() {
-        return starterCount > 0;
+        return !bundles.isEmpty();
     }
+
+    /** Pre-flattened seed for one locale. */
+    record Bundle(String dataJson, String sheetTreeJson, int starterCount, int sheetCount) {}
 }

@@ -109,7 +109,8 @@ class UserAuthServiceImpl implements UserAuthService {
                         u.getId(),
                         "main",
                         "내 첫 게임",
-                        null);
+                        null,
+                        u.getLocale());
 
                 yield u;
             }

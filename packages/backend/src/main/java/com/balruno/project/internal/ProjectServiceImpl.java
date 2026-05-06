@@ -57,7 +57,8 @@ class ProjectServiceImpl implements ProjectService {
 
     @Override
     public Project createWithStarterPack(UUID workspaceId, UUID callerUserId,
-                                         String slug, String name, String description) {
+                                         String slug, String name, String description,
+                                         String locale) {
         workspaces.requireRole(workspaceId, callerUserId, WorkspaceRole.BUILDER);
         ProjectSlugFormat.validate(slug);
         if (projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(workspaceId, slug)) {
@@ -69,9 +70,10 @@ class ProjectServiceImpl implements ProjectService {
         limitGuard.requireBelow(plan, "projectsPerWorkspace", current, limit);
 
         var fresh = new ProjectEntity(workspaceId, slug, name, description, callerUserId);
-        if (starterPack.isAvailable()) {
-            fresh.seedInitialData(starterPack.dataJson());
-            fresh.seedInitialSheetTree(starterPack.sheetTreeJson());
+        var bundle = starterPack.isAvailable() ? starterPack.buildFor(locale) : null;
+        if (bundle != null) {
+            fresh.seedInitialData(bundle.dataJson());
+            fresh.seedInitialSheetTree(bundle.sheetTreeJson());
         } else {
             // Catalog file missing — keep onboarding usable with the
             // minimal Sheet 1. Logged once at boot time by

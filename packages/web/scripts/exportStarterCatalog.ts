@@ -34,9 +34,14 @@ const out = STARTER_CATALOG.map((entry) => ({
   stepsI18nKey: entry.stepsI18nKey ?? null,
 }));
 
+// Filename carries the locale of the source data — STARTER_CATALOG
+// is currently Korean. A future English STARTER_CATALOG_EN (or a
+// Crowdin-style translation pipeline) emits catalog-en.json beside
+// this one; the backend StarterPackSeeder picks the right file by
+// user.locale with ko as the fallback.
 const outPath = resolve(
   __dirname,
-  '../../backend/src/main/resources/starter/catalog.json',
+  '../../backend/src/main/resources/starter/catalog-ko.json',
 );
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, JSON.stringify({ starters: out }, null, 2));
