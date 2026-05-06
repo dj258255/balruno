@@ -182,13 +182,10 @@ class TreeOpService {
         }
         // Cycle prevention — newParentId may not be the moving node itself
         // nor any descendant. ADR 0008 §3.4: BFS over the moving subtree.
-        if (u.newParentId() != null) {
-            var blocked = collectIdsIncludingSelf(moving);
-            if (blocked.contains(u.newParentId())) {
-                throw new IllegalArgumentException(
-                        "tree.move would create a cycle: parent="
-                      + u.newParentId() + " is inside subtree " + u.nodeId());
-            }
+        if (wouldTreeMoveCreateCycle(roots, u.nodeId(), u.newParentId())) {
+            throw new IllegalArgumentException(
+                    "tree.move would create a cycle: parent="
+                  + u.newParentId() + " is inside subtree " + u.nodeId());
         }
         // Detach from current parent (anywhere in the tree).
         if (!detach(roots, u.nodeId())) {
@@ -312,6 +309,27 @@ class TreeOpService {
         var fresh = nodeMapper.createArrayNode();
         parent.set("children", fresh);
         return fresh;
+    }
+
+    /**
+     * Pure tree-walk predicate for {@code tree.move} cycle prevention.
+     * Package-private so the unit test can exercise the rule without
+     * standing up a JdbcTemplate or going through {@link #apply}.
+     *
+     * Returns {@code true} when moving {@code nodeId} under
+     * {@code newParentId} would place the moving subtree under itself
+     * — either because {@code newParentId} equals {@code nodeId} or
+     * because it sits inside the moving subtree's descendants. A
+     * {@code null} {@code newParentId} (root drop) can never form a
+     * cycle. A missing {@code nodeId} returns {@code false} so the
+     * caller's existing "node not found" path stays the visible
+     * failure mode.
+     */
+    static boolean wouldTreeMoveCreateCycle(ArrayNode roots, UUID nodeId, UUID newParentId) {
+        if (newParentId == null) return false;
+        var moving = findById(roots, nodeId);
+        if (moving == null) return false;
+        return collectIdsIncludingSelf(moving).contains(newParentId);
     }
 
     /**
