@@ -36,7 +36,7 @@ import {
   type Workspace,
 } from '@/lib/backend';
 import { useBackendAuthStore } from '@/stores/backendAuthStore';
-import { useProjectSync } from '@/hooks/useProjectSync';
+import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 
 export default function ProjectDetailPage() {
@@ -90,10 +90,12 @@ export default function ProjectDetailPage() {
     };
   }, [slug, projectSlug, router]);
 
-  // Sync hook stays idle while projectId is unknown; once the resolve
-  // effect populates `project`, the hook opens /ws/projects/{id} and
-  // backend pushes sync.full as the first frame.
-  const { status: syncStatus } = useProjectSync({
+  // Bridge stays idle while projectId is unknown; once the resolve
+  // effect populates `project`, useProjectSyncBridge opens
+  // /ws/projects/{id}, registers the live sender on the writeQueue,
+  // and forwards sync.full / op.acked / broadcast frames into the
+  // per-region baseVersions (ADR 0018 Stage B).
+  const { status: syncStatus } = useProjectSyncBridge({
     projectId: project?.id ?? null,
     enabled: Boolean(project),
   });
