@@ -19,6 +19,15 @@ public interface ProjectService {
     Project create(UUID workspaceId, UUID callerUserId,
                    String slug, String name, String description);
 
+    /**
+     * Create a project pre-populated with the starter pack (12 group
+     * Notion-style sheet_tree, ADR 0020). Used by the onboarding
+     * path; falls back to {@link #create}'s minimal Sheet 1 seed when
+     * the catalog isn't loaded.
+     */
+    Project createWithStarterPack(UUID workspaceId, UUID callerUserId,
+                                  String slug, String name, String description);
+
     Project findById(UUID projectId, UUID callerUserId);
 
     /** Active projects of a workspace, oldest first. Caller must be Viewer+. */

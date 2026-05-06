@@ -22,13 +22,16 @@ class ProjectServiceImpl implements ProjectService {
     private final ProjectRepository projects;
     private final WorkspaceService workspaces;
     private final LimitGuard limitGuard;
+    private final StarterPackSeeder starterPack;
 
     ProjectServiceImpl(ProjectRepository projects,
                        WorkspaceService workspaces,
-                       LimitGuard limitGuard) {
+                       LimitGuard limitGuard,
+                       StarterPackSeeder starterPack) {
         this.projects = projects;
         this.workspaces = workspaces;
         this.limitGuard = limitGuard;
+        this.starterPack = starterPack;
     }
 
     @Override
@@ -48,6 +51,33 @@ class ProjectServiceImpl implements ProjectService {
 
         var fresh = new ProjectEntity(workspaceId, slug, name, description, callerUserId);
         fresh.seedInitialData(buildDefaultSheetJson());
+        var entity = saveOrThrow(fresh);
+        return toDto(entity);
+    }
+
+    @Override
+    public Project createWithStarterPack(UUID workspaceId, UUID callerUserId,
+                                         String slug, String name, String description) {
+        workspaces.requireRole(workspaceId, callerUserId, WorkspaceRole.BUILDER);
+        ProjectSlugFormat.validate(slug);
+        if (projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(workspaceId, slug)) {
+            throw slugTaken();
+        }
+        var plan = workspaces.findById(workspaceId).plan();
+        var limit = WorkspaceLimits.forPlan(plan).maxProjectsPerWorkspace();
+        var current = projects.countByWorkspaceIdAndDeletedAtIsNull(workspaceId);
+        limitGuard.requireBelow(plan, "projectsPerWorkspace", current, limit);
+
+        var fresh = new ProjectEntity(workspaceId, slug, name, description, callerUserId);
+        if (starterPack.isAvailable()) {
+            fresh.seedInitialData(starterPack.dataJson());
+            fresh.seedInitialSheetTree(starterPack.sheetTreeJson());
+        } else {
+            // Catalog file missing — keep onboarding usable with the
+            // minimal Sheet 1. Logged once at boot time by
+            // StarterPackSeeder.
+            fresh.seedInitialData(buildDefaultSheetJson());
+        }
         var entity = saveOrThrow(fresh);
         return toDto(entity);
     }

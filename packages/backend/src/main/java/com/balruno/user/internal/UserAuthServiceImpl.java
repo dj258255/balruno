@@ -104,7 +104,7 @@ class UserAuthServiceImpl implements UserAuthService {
                 // .create's seedInitialData path drops the starter
                 // Sheet 1 + Column 1 + Row 1 in projects.data so the
                 // minimal cell editor renders immediately.
-                projectService.create(
+                projectService.createWithStarterPack(
                         workspace.id(),
                         u.getId(),
                         "main",

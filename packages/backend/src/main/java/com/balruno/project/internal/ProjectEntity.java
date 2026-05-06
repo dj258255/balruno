@@ -112,6 +112,19 @@ class ProjectEntity {
         this.data = json;
     }
 
+    /**
+     * Replace the sheet_tree JSONB before persistence. Same semantics
+     * as {@link #seedInitialData} — only applies on the default empty
+     * array. Used by the starter-pack onboarding path so the seeded
+     * project lands with a populated Notion-style folder tree
+     * (ADR 0011 Outline pattern, ADR 0020 Stage B).
+     */
+    void seedInitialSheetTree(String json) {
+        if (json == null) return;
+        if (!"[]".equals(this.sheetTree)) return;
+        this.sheetTree = json;
+    }
+
     @PrePersist
     void onCreate() {
         var now = OffsetDateTime.now(ZoneOffset.UTC);
