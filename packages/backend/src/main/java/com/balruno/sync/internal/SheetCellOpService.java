@@ -139,19 +139,20 @@ class SheetCellOpService {
 
     private void applyToData(ObjectNode data, SyncMessage op) {
         switch (op) {
-            case SyncMessage.CellUpdate u -> applyCellUpdate(data, u);
+            case SyncMessage.CellUpdate u   -> applyCellUpdate(data, u);
+            case SyncMessage.RowAdd u       -> applyRowAdd(data, u);
+            case SyncMessage.RowDelete u    -> applyRowDelete(data, u);
+            case SyncMessage.RowMove u      -> applyRowMove(data, u);
+            case SyncMessage.ColumnAdd u    -> applyColumnAdd(data, u);
+            case SyncMessage.ColumnUpdate u -> applyColumnUpdate(data, u);
+            case SyncMessage.ColumnDelete u -> applyColumnDelete(data, u);
             default -> throw new UnsupportedOperationException(
-                    "sheet-cell op not yet implemented in B.4: "
-                  + op.getClass().getSimpleName());
+                    "not a sheet-cell op: " + op.getClass().getSimpleName());
         }
     }
 
     private void applyCellUpdate(ObjectNode data, SyncMessage.CellUpdate u) {
-        var sheets = ensureArray(data, "sheets");
-        var sheet = findById(sheets, u.sheetId());
-        if (sheet == null) {
-            throw new IllegalArgumentException("sheet not found: " + u.sheetId());
-        }
+        var sheet = sheetOrThrow(data, u.sheetId());
         var rows = ensureArray(sheet, "rows");
         var rowNode = findById(rows, u.rowId());
         if (rowNode == null) {
@@ -165,6 +166,105 @@ class SheetCellOpService {
             cells.add(cell);
         }
         cell.set("value", nodeMapper.valueToTree(u.value()));
+    }
+
+    private void applyRowAdd(ObjectNode data, SyncMessage.RowAdd u) {
+        var sheet = sheetOrThrow(data, u.sheetId());
+        var rows = ensureArray(sheet, "rows");
+        // row.id is client-supplied (UUIDv7). Same id replayed → idempotency
+        // would have caught it already; if it slips through (no clientMsgId
+        // collision but a duplicate row.id) we drop the duplicate rather
+        // than corrupting the array.
+        var rowNode = nodeMapper.valueToTree(u.row());
+        if (!(rowNode instanceof ObjectNode rowObj) || rowObj.get("id") == null) {
+            throw new IllegalArgumentException("row.add payload must be an object with id");
+        }
+        if (findById(rows, UUID.fromString(rowObj.get("id").asText())) == null) {
+            rows.add(rowObj);
+        }
+    }
+
+    private void applyRowDelete(ObjectNode data, SyncMessage.RowDelete u) {
+        var sheet = sheetOrThrow(data, u.sheetId());
+        var rows = ensureArray(sheet, "rows");
+        removeById(rows, u.rowId());
+    }
+
+    private void applyRowMove(ObjectNode data, SyncMessage.RowMove u) {
+        var sheet = sheetOrThrow(data, u.sheetId());
+        var rows = ensureArray(sheet, "rows");
+        var fromIdx = indexOfId(rows, u.rowId());
+        if (fromIdx < 0) {
+            throw new IllegalArgumentException("row not found: " + u.rowId());
+        }
+        // Clamp to [0, size-1]; an out-of-range toIndex is the client's
+        // best guess from a stale view, not a hard error.
+        var clamped = Math.max(0, Math.min(rows.size() - 1, u.toIndex()));
+        if (clamped == fromIdx) return;
+        var moving = rows.remove(fromIdx);
+        rows.insert(clamped, moving);
+    }
+
+    private void applyColumnAdd(ObjectNode data, SyncMessage.ColumnAdd u) {
+        var sheet = sheetOrThrow(data, u.sheetId());
+        var columns = ensureArray(sheet, "columns");
+        var node = nodeMapper.valueToTree(u.column());
+        if (!(node instanceof ObjectNode colObj) || colObj.get("id") == null) {
+            throw new IllegalArgumentException("column.add payload must be an object with id");
+        }
+        if (findById(columns, UUID.fromString(colObj.get("id").asText())) == null) {
+            columns.add(colObj);
+        }
+    }
+
+    private void applyColumnUpdate(ObjectNode data, SyncMessage.ColumnUpdate u) {
+        var sheet = sheetOrThrow(data, u.sheetId());
+        var columns = ensureArray(sheet, "columns");
+        var col = findById(columns, u.columnId());
+        if (col == null) {
+            throw new IllegalArgumentException("column not found: " + u.columnId());
+        }
+        var patch = nodeMapper.valueToTree(u.patch());
+        if (!(patch instanceof ObjectNode patchObj)) {
+            throw new IllegalArgumentException("column.update patch must be an object");
+        }
+        // Field-level merge — null values mean "clear"; absent fields stay
+        // unchanged. Matches the frontend column-edit modal contract.
+        // Never let the patch overwrite the column id — that would re-key
+        // the column and break every existing cell.columnId pointer.
+        patchObj.properties().forEach(entry -> {
+            if (!"id".equals(entry.getKey())) {
+                col.set(entry.getKey(), entry.getValue());
+            }
+        });
+    }
+
+    private void applyColumnDelete(ObjectNode data, SyncMessage.ColumnDelete u) {
+        var sheet = sheetOrThrow(data, u.sheetId());
+        var columns = ensureArray(sheet, "columns");
+        removeById(columns, u.columnId());
+        // Cascade: every row's cells array drops cells matching this
+        // columnId so we don't leave dangling values referencing a
+        // gone column.
+        var rows = sheet.get("rows");
+        if (rows instanceof ArrayNode rowArr) {
+            var target = u.columnId().toString();
+            for (var row : rowArr) {
+                if (row instanceof ObjectNode rowObj
+                        && rowObj.get("cells") instanceof ArrayNode cells) {
+                    removeByField(cells, "columnId", target);
+                }
+            }
+        }
+    }
+
+    private ObjectNode sheetOrThrow(ObjectNode data, UUID sheetId) {
+        var sheets = ensureArray(data, "sheets");
+        var sheet = findById(sheets, sheetId);
+        if (sheet == null) {
+            throw new IllegalArgumentException("sheet not found: " + sheetId);
+        }
+        return sheet;
     }
 
     // ── broadcast payload ─────────────────────────────────────────────
@@ -205,13 +305,45 @@ class SheetCellOpService {
         // map to keep the broadcast envelope canonical regardless of
         // future field additions to the records.
         return switch (op) {
-            case SyncMessage.CellUpdate u -> Map.of(
-                    "sheetId", u.sheetId().toString(),
-                    "rowId", u.rowId().toString(),
+            case SyncMessage.CellUpdate u -> mapOf(
+                    "sheetId",  u.sheetId().toString(),
+                    "rowId",    u.rowId().toString(),
                     "columnId", u.columnId().toString(),
-                    "value", u.value() == null ? "" : u.value());
+                    "value",    u.value());
+            case SyncMessage.RowAdd u -> mapOf(
+                    "sheetId", u.sheetId().toString(),
+                    "row",     u.row());
+            case SyncMessage.RowDelete u -> mapOf(
+                    "sheetId", u.sheetId().toString(),
+                    "rowId",   u.rowId().toString());
+            case SyncMessage.RowMove u -> mapOf(
+                    "sheetId", u.sheetId().toString(),
+                    "rowId",   u.rowId().toString(),
+                    "toIndex", u.toIndex());
+            case SyncMessage.ColumnAdd u -> mapOf(
+                    "sheetId", u.sheetId().toString(),
+                    "column",  u.column());
+            case SyncMessage.ColumnUpdate u -> mapOf(
+                    "sheetId",  u.sheetId().toString(),
+                    "columnId", u.columnId().toString(),
+                    "patch",    u.patch());
+            case SyncMessage.ColumnDelete u -> mapOf(
+                    "sheetId",  u.sheetId().toString(),
+                    "columnId", u.columnId().toString());
             default -> Map.of();
         };
+    }
+
+    /**
+     * {@link Map#of} doesn't accept null values; the broadcast envelope
+     * can carry a null cell value legitimately ("clear this cell"), so
+     * the helper builds a LinkedHashMap so that path stays representable.
+     * Order is preserved so the wire shape is stable for golden tests.
+     */
+    private static Map<String, Object> mapOf(Object... kv) {
+        var m = new LinkedHashMap<String, Object>();
+        for (int i = 0; i < kv.length; i += 2) m.put((String) kv[i], kv[i + 1]);
+        return m;
     }
 
     // ── op envelope helpers (clientMsgId / baseVersion) ───────────────
@@ -264,14 +396,43 @@ class SheetCellOpService {
     }
 
     private static ObjectNode findByColumnId(ArrayNode cells, UUID columnId) {
-        var target = columnId.toString();
-        for (var node : cells) {
+        return findByField(cells, "columnId", columnId.toString());
+    }
+
+    private static ObjectNode findByField(ArrayNode siblings, String field, String value) {
+        for (var node : siblings) {
             if (node instanceof ObjectNode obj) {
-                var col = obj.get("columnId");
-                if (col != null && target.equals(col.asText())) return obj;
+                var f = obj.get(field);
+                if (f != null && value.equals(f.asText())) return obj;
             }
         }
         return null;
+    }
+
+    private static int indexOfId(ArrayNode siblings, UUID id) {
+        var target = id.toString();
+        for (int i = 0; i < siblings.size(); i++) {
+            if (siblings.get(i) instanceof ObjectNode obj) {
+                var f = obj.get("id");
+                if (f != null && target.equals(f.asText())) return i;
+            }
+        }
+        return -1;
+    }
+
+    private static void removeById(ArrayNode siblings, UUID id) {
+        removeByField(siblings, "id", id.toString());
+    }
+
+    private static void removeByField(ArrayNode siblings, String field, String value) {
+        for (int i = siblings.size() - 1; i >= 0; i--) {
+            if (siblings.get(i) instanceof ObjectNode obj) {
+                var f = obj.get(field);
+                if (f != null && value.equals(f.asText())) {
+                    siblings.remove(i);
+                }
+            }
+        }
     }
 
     private record ProjectRow(String dataJson, long dataVersion) {}
