@@ -2,7 +2,7 @@
 
 /**
  * Balruno collab server — Hocuspocus + Postgres for the document-body
- * sync region (yjs binary). Sheet/tree sync runs on a separate Spring
+ * sync region (yjs binary state). Sheet/tree sync runs on a separate Spring
  * WebSocket; see ADR 0008 v2.0 for the 4-region split, ADR 0017 §2 for
  * how this container fits the deploy.
  *
@@ -62,19 +62,19 @@ const server = new Server({
   },
 
   /**
-   * On first subscribe, hydrate the Y.Doc from {@code documents.binary}.
+   * On first subscribe, hydrate the Y.Doc from {@code documents.ydoc_state}.
    * Missing / soft-deleted rows return an empty Y.Doc — the client can
    * still edit locally; persistence is gated below.
    */
   async onLoadDocument(data) {
     const documentId = data.documentName;
-    const result = await pool.query<{ binary: Buffer }>(
-      'SELECT binary FROM documents WHERE id = $1 AND deleted_at IS NULL',
+    const result = await pool.query<{ ydoc_state: Buffer }>(
+      'SELECT ydoc_state FROM documents WHERE id = $1 AND deleted_at IS NULL',
       [documentId],
     );
     const ydoc = new Y.Doc();
     if (result.rowCount && result.rowCount > 0 && result.rows[0]) {
-      Y.applyUpdate(ydoc, result.rows[0].binary);
+      Y.applyUpdate(ydoc, result.rows[0].ydoc_state);
     }
     return ydoc;
   },
@@ -91,7 +91,7 @@ const server = new Server({
     const update = Y.encodeStateAsUpdate(data.document);
     const r = await pool.query(
       `UPDATE documents
-         SET binary = $1, updated_at = now()
+         SET ydoc_state = $1, updated_at = now()
        WHERE id = $2 AND deleted_at IS NULL`,
       [Buffer.from(update), documentId],
     );

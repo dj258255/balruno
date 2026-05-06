@@ -1,5 +1,5 @@
 -- SPDX-License-Identifier: AGPL-3.0-or-later
--- V7 — documents (yjs binary 저장 — Hocuspocus 컨테이너가 read/write).
+-- V7 — documents (yjs encoded state 저장 — Hocuspocus 컨테이너가 read/write).
 --
 -- Owner: 본 마이그레이션은 schema 만 정의한다. 실제 read/write 는
 -- packages/collab 의 Hocuspocus 서버가 자체 hooks (onLoadDocument /
@@ -10,12 +10,16 @@
 -- 본 schema 결정은 ADR 0017 §2.5 (V6/V7 분리) 그대로. V6 (sync 영역
 -- 컬럼 + op_idempotency) 는 Stage B 와 함께 추가.
 
+-- {@code binary} is a reserved word in PostgreSQL (used by BINARY VARYING
+-- and friends). Even quoted it reads poorly from app code, so the
+-- column is named {@code ydoc_state} — the data is the yjs encoded
+-- state vector (Y.encodeStateAsUpdate output).
 CREATE TABLE documents (
     id          UUID            PRIMARY KEY DEFAULT uuidv7(),
     project_id  UUID            NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     slug        VARCHAR(50)     NOT NULL,
     title       TEXT            NOT NULL,
-    binary      BYTEA           NOT NULL,
+    ydoc_state  BYTEA           NOT NULL,
     deleted_at  TIMESTAMPTZ,
     created_at  TIMESTAMPTZ     NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ     NOT NULL DEFAULT now(),
