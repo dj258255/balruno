@@ -1,0 +1,137 @@
+# Build the Hocuspocus collab Docker image, push to GHCR, deploy to
+# prod_app via `docker compose pull && up -d`.
+# Triggers:
+#   - push to main that touches packages/collab/**
+#   - workflow_dispatch (manual rollback / retry)
+#
+# Decision: ADR 0017 § Stage A (Hocuspocus infrastructure). Mirrors the
+# backend-deploy.yml shape — different image name, different install
+# dir, but the same waiting-on-ansible / native-arm64 / GHCR / SSH path.
+#
+# Secrets required:
+#   OCI_SSH_PRIVATE_KEY  — same key the Ansible workflow already uses
+# GHCR auth uses the workflow's built-in GITHUB_TOKEN with packages: write.
+#
+# Workflow injection: github.actor / secrets.* are the only template
+# expansions used inside run: blocks, both are trusted; no escaping
+# concerns.
+
+name: collab-deploy
+
+# Manual-only until the Ansible roles/collab role lands and renders
+# /opt/balruno/collab/docker-compose.yml on prod_app. Once the role is
+# merged + a successful ansible-deploy run lands on main, switch back
+# to the standard push trigger:
+#   on:
+#     push:
+#       branches: [main]
+#       paths:
+#         - 'packages/collab/**'
+#         - '.github/workflows/collab-deploy.yml'
+#     workflow_dispatch:
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: collab-deploy
+  cancel-in-progress: false
+
+env:
+  IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/balruno-collab
+  PROD_HOST: 168.107.47.33
+  PROD_USER: rocky
+  INSTALL_DIR: /opt/balruno/collab
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Wait for ansible-deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          for i in $(seq 1 60); do
+            run=$(gh api "/repos/${REPO}/actions/workflows/ansible-deploy.yml/runs?branch=main&per_page=1" --jq '.workflow_runs[0] // empty')
+            if [ -z "$run" ]; then
+              echo "No ansible-deploy run on main yet — abort"
+              exit 1
+            fi
+            status=$(echo "$run" | jq -r '.status')
+            concl=$(echo "$run" | jq -r '.conclusion // "null"')
+            sha=$(echo "$run" | jq -r '.head_sha')
+            echo "[try ${i}/60] latest ansible-deploy on main: sha=${sha:0:7} status=$status conclusion=$concl"
+            if [ "$status" = "completed" ]; then
+              [ "$concl" = "success" ] && exit 0 || { echo "abort: ansible-deploy ${concl}"; exit 1; }
+            fi
+            sleep 20
+          done
+          echo "ansible-deploy did not reach a terminal state in 20 minutes — abort"
+          exit 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Build + push image (linux/arm64, tags = latest + commit SHA)"
+        uses: docker/build-push-action@v6
+        with:
+          context: packages/collab
+          file: packages/collab/Dockerfile
+          push: true
+          platforms: linux/arm64
+          tags: |
+            ${{ env.IMAGE_REPO }}:latest
+            ${{ env.IMAGE_REPO }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Configure SSH key
+        env:
+          OCI_SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$OCI_SSH_PRIVATE_KEY" > ~/.ssh/oci_key
+          chmod 600 ~/.ssh/oci_key
+
+      - name: Pull image + restart on prod_app
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+              -i ~/.ssh/oci_key \
+              "${PROD_USER}@${PROD_HOST}" \
+              "echo \"$GH_TOKEN\" | docker login ghcr.io -u \"$ACTOR\" --password-stdin \
+               && cd ${INSTALL_DIR} \
+               && docker compose pull \
+               && docker compose up -d --remove-orphans \
+               && sleep 5 \
+               && docker compose ps"
+
+      - name: Smoke-test via Cloudflare
+        run: |
+          for i in $(seq 1 12); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://collab.balruno.com/ || true)
+            if [ "$code" = "426" ] || [ "$code" = "200" ]; then
+              echo "collab.balruno.com -> ${code} after ${i} retries"
+              exit 0
+            fi
+            echo "  retry ${i}/12 — got '${code}', waiting 5s"
+            sleep 5
+          done
+          echo "ERROR: collab.balruno.com never returned 426/200"
+          exit 1
