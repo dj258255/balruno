@@ -24,7 +24,7 @@
  * placeholder so each phase ships behind a green CI run.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 
@@ -141,6 +141,23 @@ export default function ProjectDetailPage() {
   const firstSheet = localProject?.sheets[0];
   const firstColumn = firstSheet?.columns[0];
   const firstRow = firstSheet?.rows[0];
+  const cellValue =
+    firstRow && firstColumn ? String(firstRow.cells[firstColumn.id] ?? '') : '';
+
+  // Controlled input + draft state. Without this, the broadcast-driven
+  // store update never reaches the visible <input value> (uncontrolled
+  // inputs ignore prop changes after the initial mount), so peer edits
+  // were silently invisible. The focus check protects the local user's
+  // in-progress typing — store updates only re-sync the draft when the
+  // input isn't currently focused, otherwise an incoming broadcast
+  // would yank the cursor mid-keystroke.
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [draft, setDraft] = useState(cellValue);
+  useEffect(() => {
+    if (document.activeElement !== inputRef.current) {
+      setDraft(cellValue);
+    }
+  }, [cellValue]);
 
   if (loading) {
     return (
@@ -230,16 +247,20 @@ export default function ProjectDetailPage() {
               {firstColumn.name}:
             </span>
             <input
+              ref={inputRef}
               type="text"
-              defaultValue={String(firstRow.cells[firstColumn.id] ?? '')}
-              onBlur={(e) => {
-                updateCellAction(
-                  project.id,
-                  firstSheet.id,
-                  firstRow.id,
-                  firstColumn.id,
-                  e.target.value,
-                );
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={() => {
+                if (draft !== cellValue) {
+                  updateCellAction(
+                    project.id,
+                    firstSheet.id,
+                    firstRow.id,
+                    firstColumn.id,
+                    draft,
+                  );
+                }
               }}
               className="flex-1 rounded-md border px-3 py-2 font-mono text-sm"
               style={{
