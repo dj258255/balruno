@@ -1,7 +1,7 @@
 /**
  * Presence store — keyed by scope (sheet:<id> or doc:<id>).
  *
- * Sync hooks (useSheetCellSync / useDocYjsCloudSync) push remote presence
+ * Sync hooks (useProjectSync / useDocYjsCloudSync) push remote presence
  * updates here; UI components read via useActiveUsers(scope).
  */
 

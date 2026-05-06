@@ -2,8 +2,11 @@
  * Connection store — aggregates the sheet & doc sync channel statuses.
  *
  * The sidebar footer ConnectionStatus component reads `aggregate` to render a
- * single dot. Each sync hook (useSheetCellSync, useDocYjsCloudSync) calls
- * `setSheetStatus` / `setDocStatus` to publish their state.
+ * single dot. Each sync hook (useProjectSync, useDocYjsCloudSync) calls
+ * `setSheetStatus` / `setDocStatus` to publish their state. The "sheet"
+ * channel here is the project-scoped op-log socket (sheet cell + sheet
+ * tree + doc tree, ADR 0008 v2.0); the "doc" channel is the Hocuspocus
+ * document body.
  */
 
 import { create } from 'zustand';

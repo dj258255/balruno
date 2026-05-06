@@ -54,7 +54,7 @@ function hashColor(seed: string): string {
 /** Wire-up helper invoked by the sync hooks. UI should not call this directly. */
 export function useReportPresenceConsumer(scope: PresenceScope | null): void {
   const _ = scope;
-  // Reserved for the upcoming useDocYjsCloudSync / useSheetCellSync wiring —
+  // Reserved for the upcoming useDocYjsCloudSync / useProjectSync wiring —
   // they push into usePresenceStore which this hook reads.
   useEffect(() => {
     // no-op; logic lives in the sync hooks themselves.
