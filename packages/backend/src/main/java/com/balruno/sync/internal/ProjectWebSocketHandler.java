@@ -71,10 +71,6 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
         // than silently dropping the connection.
         try {
             var fullPayload = stateLoader.loadFull(projectId);
-            // TEMP debug — diagnose frontend sheetCount=0 vs DB-populated
-            log.info("ws_hydrate_payload projectId={} size={} preview={}",
-                    projectId, fullPayload.length(),
-                    fullPayload.substring(0, Math.min(500, fullPayload.length())));
             session.sendMessage(new org.springframework.web.socket.TextMessage(fullPayload));
         } catch (IllegalStateException e) {
             log.warn("ws_hydrate_failed projectId={} cause={}",

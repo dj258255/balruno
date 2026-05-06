@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.sync.internal;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -32,8 +31,6 @@ class ProjectStateLoader {
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
-    private final com.fasterxml.jackson.databind.ObjectMapper nodeMapper =
-            new com.fasterxml.jackson.databind.ObjectMapper();
 
     ProjectStateLoader(JdbcTemplate jdbc, ObjectMapper json) {
         this.jdbc = jdbc;
@@ -86,8 +83,15 @@ class ProjectStateLoader {
     private Object parse(String raw) {
         if (raw == null || raw.isBlank()) return Map.of();
         try {
-            return nodeMapper.readTree(raw);
-        } catch (JsonProcessingException e) {
+            // Use tools.jackson (the same ObjectMapper that
+            // writeValueAsString uses below). Mixing fasterxml's
+            // JsonNode with tools.jackson's writer made the writer
+            // treat the foreign node as a POJO and emit
+            // {array: true, bigDecimal: false, ...} (the JsonNode
+            // method getters serialised as fields), which is what
+            // hit the frontend's hydrate as sheetCount=0.
+            return json.readTree(raw);
+        } catch (Exception e) {
             return Map.of();
         }
     }

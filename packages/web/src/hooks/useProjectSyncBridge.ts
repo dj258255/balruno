@@ -210,27 +210,14 @@ export function hydrateProjectFromSyncFull(
   msg: SyncFullPayload,
 ): void {
   const sheets: Sheet[] = Array.isArray(msg.data) ? (msg.data as Sheet[]) : [];
-  // eslint-disable-next-line no-console
-  console.info('[balruno] hydrate sync.full', {
-    projectId,
-    sheetCount: sheets.length,
-    firstSheetId: sheets[0]?.id,
-    firstSheetColumns: sheets[0]?.columns?.length,
-    firstSheetRows: sheets[0]?.rows?.length,
-    rawData: msg.data,
-  });
   useProjectStore.setState((state) => {
     const idx = state.projects.findIndex((p) => p.id === projectId);
     if (idx >= 0) {
       const next = [...state.projects];
       next[idx] = { ...next[idx], sheets };
-      // eslint-disable-next-line no-console
-      console.info('[balruno] hydrate replace existing project at idx', idx);
       return { projects: next };
     }
     const now = Date.now();
-    // eslint-disable-next-line no-console
-    console.info('[balruno] hydrate insert new project, was missing in store');
     return {
       projects: [
         ...state.projects,

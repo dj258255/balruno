@@ -141,16 +141,6 @@ export default function ProjectDetailPage() {
   const firstSheet = localProject?.sheets[0];
   const firstColumn = firstSheet?.columns[0];
   const firstRow = firstSheet?.rows[0];
-  // eslint-disable-next-line no-console
-  console.info('[balruno] page render', {
-    projectId: project?.id,
-    localProjectFound: !!localProject,
-    sheetCount: localProject?.sheets.length,
-    firstSheetId: firstSheet?.id,
-    firstColumnId: firstColumn?.id,
-    firstRowId: firstRow?.id,
-    syncStatus,
-  });
 
   if (loading) {
     return (
