@@ -88,6 +88,11 @@ class TreeOpService {
         var treeKind = treeKindOf(op);
         var columns = TreeColumns.forKind(treeKind);
 
+        // Cross-region detection: tree.add(SHEET, type=sheet) also
+        // appends an empty Sheet shell to projects.data. We need this
+        // upfront so the FOR UPDATE locks both columns in one shot.
+        var sheetLeaf = detectSheetLeafCreation(op, treeKind);
+
         // 1. idempotency replay shortcut.
         var cached = idempotency.findById(clientMsgId).orElse(null);
         if (cached != null) {
@@ -95,22 +100,42 @@ class TreeOpService {
         }
 
         // 2. lock + read. Column names come from a closed enum so the
-        //    string interpolation is not an injection vector.
-        TreeRow row;
+        //    string interpolation is not an injection vector. The data
+        //    columns are pulled only when the op also touches them —
+        //    keeps the row size for the 99% folder-add / move / delete
+        //    / rename path the same as before.
+        ProjectRow row;
         try {
-            row = jdbc.queryForObject(
-                    "SELECT " + columns.treeColumn + "::text AS tree_json, "
-                  + columns.versionColumn + " AS tree_version "
-                  + "FROM projects WHERE id = ? AND deleted_at IS NULL FOR UPDATE",
-                    (rs, i) -> new TreeRow(rs.getString("tree_json"), rs.getLong("tree_version")),
-                    projectId);
+            if (sheetLeaf != null) {
+                row = jdbc.queryForObject(
+                        "SELECT " + columns.treeColumn + "::text AS tree_json, "
+                      + columns.versionColumn + " AS tree_version, "
+                      + "data::text AS data_json, data_version "
+                      + "FROM projects WHERE id = ? AND deleted_at IS NULL FOR UPDATE",
+                        (rs, i) -> new ProjectRow(
+                                rs.getString("tree_json"),
+                                rs.getLong("tree_version"),
+                                rs.getString("data_json"),
+                                rs.getLong("data_version")),
+                        projectId);
+            } else {
+                row = jdbc.queryForObject(
+                        "SELECT " + columns.treeColumn + "::text AS tree_json, "
+                      + columns.versionColumn + " AS tree_version "
+                      + "FROM projects WHERE id = ? AND deleted_at IS NULL FOR UPDATE",
+                        (rs, i) -> new ProjectRow(
+                                rs.getString("tree_json"),
+                                rs.getLong("tree_version"),
+                                null, 0L),
+                        projectId);
+            }
         } catch (EmptyResultDataAccessException e) {
             throw new IllegalStateException("project not found: " + projectId, e);
         }
 
         // 3. baseVersion check.
-        if (baseVersion != row.version) {
-            return new SyncResult.Conflict(row.version);
+        if (baseVersion != row.treeVersion) {
+            return new SyncResult.Conflict(row.treeVersion);
         }
 
         // 4. apply to the JSON tree. tree.delete returns the BFS-collected
@@ -127,24 +152,53 @@ class TreeOpService {
                   + columns.treeColumn, e);
         }
 
-        var newVersion = row.version + 1L;
-        jdbc.update(
-                "UPDATE projects SET " + columns.treeColumn + " = ?::jsonb, "
-              + columns.versionColumn + " = ?, updated_at = now() "
-              + "WHERE id = ?",
-                roots.toString(), newVersion, projectId);
+        var newVersion = row.treeVersion + 1L;
 
-        // 4.5 cascade soft-delete on documents — DOC tree.delete only.
+        // 4.5 cross-region side-effect: sheet leaf creation also appends
+        // an empty Sheet shell to projects.data. Single UPDATE keeps
+        // both columns in one MVCC step so peers can never observe a
+        // tree leaf without a matching sheet body or vice versa.
+        ObjectNode createdSheetShell = null;
+        long newDataVersion = 0L;
+        if (sheetLeaf != null) {
+            ArrayNode sheets;
+            try {
+                JsonNode dataParsed = nodeMapper.readTree(row.dataJson);
+                sheets = dataParsed.isArray()
+                        ? (ArrayNode) dataParsed
+                        : nodeMapper.createArrayNode();
+            } catch (Exception e) {
+                throw new IllegalStateException("failed to parse projects.data", e);
+            }
+            createdSheetShell = buildEmptySheetShell(sheetLeaf);
+            sheets.add(createdSheetShell);
+            newDataVersion = row.dataVersion + 1L;
+            jdbc.update(
+                    "UPDATE projects SET " + columns.treeColumn + " = ?::jsonb, "
+                  + columns.versionColumn + " = ?, "
+                  + "data = ?::jsonb, data_version = ?, updated_at = now() "
+                  + "WHERE id = ?",
+                    roots.toString(), newVersion,
+                    sheets.toString(), newDataVersion,
+                    projectId);
+        } else {
+            jdbc.update(
+                    "UPDATE projects SET " + columns.treeColumn + " = ?::jsonb, "
+                  + columns.versionColumn + " = ?, updated_at = now() "
+                  + "WHERE id = ?",
+                    roots.toString(), newVersion, projectId);
+        }
+
+        // 4.6 cascade soft-delete on documents — DOC tree.delete only.
         // Same transaction as the JSONB tree mutation so the doc body
-        // and the doc_tree node disappear atomically. Sheet tree
-        // deletes have no analogous side-effect (sheet bodies live in
-        // projects.data, which the same projects row already updated).
+        // and the doc_tree node disappear atomically.
         if (treeKind == SyncMessage.TreeKind.DOC && !deletedNodeIds.isEmpty()) {
             cascadeDocumentSoftDelete(deletedNodeIds);
         }
 
         // 5. broadcast payload + idempotency cache.
-        var broadcast = buildBroadcastPayload(op, newVersion, userId);
+        var broadcast = buildBroadcastPayload(op, newVersion, userId,
+                createdSheetShell, newDataVersion);
         try {
             idempotency.save(new OpIdempotencyEntity(
                     clientMsgId, userId, columns.scopeKind, projectId, newVersion, broadcast));
@@ -155,6 +209,65 @@ class TreeOpService {
 
         return new SyncResult.Acked(newVersion, broadcast);
     }
+
+    /**
+     * Detects {@code tree.add(SHEET, type=sheet)} — the only op type
+     * that has a cross-region side-effect on {@code projects.data}.
+     * Returns the leaf spec ({@code id} + {@code name}) when matched,
+     * {@code null} otherwise. Pulled out of {@link #apply} so the
+     * SELECT/UPDATE branching can read off a single nullable.
+     */
+    private SheetLeafSpec detectSheetLeafCreation(SyncMessage op, SyncMessage.TreeKind kind) {
+        if (kind != SyncMessage.TreeKind.SHEET) return null;
+        if (!(op instanceof SyncMessage.TreeAdd add)) return null;
+        var node = nodeMapper.valueToTree(add.node());
+        if (!(node instanceof ObjectNode obj)) return null;
+        var typeField = obj.get("type");
+        if (typeField == null || !"sheet".equals(typeField.asText())) return null;
+        var idField = obj.get("id");
+        if (idField == null || idField.isNull()) return null;
+        UUID sheetId;
+        try {
+            sheetId = UUID.fromString(idField.asText());
+        } catch (IllegalArgumentException e) {
+            return null; // validateTreeAddNodeBudget will reject before we get here
+        }
+        var nameField = obj.get("name");
+        var name = nameField == null || nameField.isNull()
+                ? "Sheet"
+                : nameField.asText();
+        return new SheetLeafSpec(sheetId, name);
+    }
+
+    /**
+     * Builds an empty Sheet shell matching V10 / starter pack shape:
+     * one default text column, one empty row. The id stays the same
+     * as the leaf node so the sheet_tree pointer ↔ sheets[] array
+     * lookup is stable in the frontend.
+     */
+    private ObjectNode buildEmptySheetShell(SheetLeafSpec spec) {
+        var col = nodeMapper.createObjectNode();
+        col.put("id", UUID.randomUUID().toString());
+        col.put("name", "Column 1");
+        col.put("type", "text");
+
+        var row = nodeMapper.createObjectNode();
+        row.put("id", UUID.randomUUID().toString());
+        row.set("cells", nodeMapper.createArrayNode());
+
+        var sheet = nodeMapper.createObjectNode();
+        sheet.put("id", spec.id().toString());
+        sheet.put("name", spec.name());
+        var columns = nodeMapper.createArrayNode();
+        columns.add(col);
+        sheet.set("columns", columns);
+        var rows = nodeMapper.createArrayNode();
+        rows.add(row);
+        sheet.set("rows", rows);
+        return sheet;
+    }
+
+    private record SheetLeafSpec(UUID id, String name) {}
 
     // ── op-tree mutation ──────────────────────────────────────────────
 
@@ -185,6 +298,13 @@ class TreeOpService {
         // before the existing sibling lookup so a malicious payload
         // doesn't waste a row lock + tree walk.
         validateTreeAddNodeBudget(obj);
+        // Sheet leaves are leaves by definition — strip any client-
+        // supplied children so the recursive renderer can never show a
+        // sub-tree under a sheet row. Folder nodes keep their children.
+        var typeField = obj.get("type");
+        if (typeField != null && "sheet".equals(typeField.asText())) {
+            obj.remove("children");
+        }
         // Clamp to [0, size]; insertion at end (size) is the natural append.
         var siblings = u.parentId() == null
                 ? roots
@@ -452,13 +572,28 @@ class TreeOpService {
 
     // ── broadcast envelope ────────────────────────────────────────────
 
-    private String buildBroadcastPayload(SyncMessage op, long version, UUID userId) {
+    /**
+     * Builds the broadcast envelope. {@code sheetShell} +
+     * {@code newDataVersion} ride along inside the op payload only
+     * when the op was a sheet leaf creation — peers use them to grow
+     * their local {@code sheets[]} array atomically with the
+     * sheet_tree leaf insertion. {@code sheetShell == null} means
+     * "no cross-region side-effect" and the op payload stays the
+     * same as before.
+     */
+    private String buildBroadcastPayload(SyncMessage op, long version, UUID userId,
+                                         ObjectNode sheetShell, long newDataVersion) {
         var envelope = new LinkedHashMap<String, Object>();
         envelope.put("type", typeNameOf(op));
         envelope.put("version", version);
         envelope.put("userId", userId.toString());
         envelope.put("ts", System.currentTimeMillis());
-        envelope.put("op", opPayload(op));
+        var payload = new LinkedHashMap<>(opPayload(op));
+        if (sheetShell != null) {
+            payload.put("sheetShell", sheetShell);
+            payload.put("newDataVersion", newDataVersion);
+        }
+        envelope.put("op", payload);
         try {
             return json.writeValueAsString(envelope);
         } catch (Exception e) {
@@ -552,5 +687,13 @@ class TreeOpService {
         }
     }
 
-    private record TreeRow(String treeJson, long version) {}
+    /**
+     * Row snapshot for the FOR UPDATE read in {@link #apply}. The
+     * {@code dataJson} / {@code dataVersion} fields are populated only
+     * for the sheet-leaf-creation branch — folder/move/delete/rename
+     * leave them {@code null} / {@code 0L} since those ops don't read
+     * or write {@code projects.data}.
+     */
+    private record ProjectRow(String treeJson, long treeVersion,
+                              String dataJson, long dataVersion) {}
 }
