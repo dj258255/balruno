@@ -16,7 +16,7 @@
 import { create } from 'zustand';
 
 import type { AuthenticatedUser } from '@/lib/backend';
-import { fetchCurrentUser } from '@/lib/backend';
+import { backendBaseUrl, fetchCurrentUser } from '@/lib/backend';
 
 export type BackendAuthStatus = 'idle' | 'loading' | 'authenticated' | 'anonymous';
 
@@ -43,12 +43,18 @@ export const useBackendAuthStore = create<BackendAuthState>((set, get) => ({
     if (get().status === 'loading') return;
     set({ status: 'loading', error: null });
     try {
+      // eslint-disable-next-line no-console
+      console.info('[balruno] bootstrap start, BASE_URL=', backendBaseUrl());
       const user = await fetchCurrentUser();
+      // eslint-disable-next-line no-console
+      console.info('[balruno] fetchCurrentUser ->', user);
       set({
         user,
         status: user ? 'authenticated' : 'anonymous',
       });
     } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('[balruno] bootstrap caught', e);
       set({
         status: 'anonymous',
         error: e instanceof Error ? e.message : 'Failed to load session.',
