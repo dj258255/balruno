@@ -50,6 +50,23 @@ import java.util.stream.Collectors;
 @Service
 class TreeOpService {
 
+    /**
+     * Tree.add subtree budget — bounds the BFS in {@link
+     * #validateTreeAddNodeBudget} so a malicious client can't push a
+     * deeply nested or wide-fan-out node payload that explodes JSONB
+     * row size or memory during apply. 100 covers any plausible UI
+     * action (add folder = 1; move starter group = ≤ 30).
+     */
+    static final int MAX_TREE_ADD_NODES = 100;
+
+    /**
+     * Tree node label cap — applied to {@code name} / {@code title}
+     * on tree.add and to {@code newName} on tree.rename. 200 chars
+     * fits any UI label (starter sheet names = ≤ 20 chars) while
+     * blocking a 1MB-name attack that would balloon the JSONB row.
+     */
+    static final int MAX_NAME_LENGTH = 200;
+
     private final JdbcTemplate jdbc;
     private final OpIdempotencyRepository idempotency;
     private final ObjectMapper json;
@@ -163,6 +180,11 @@ class TreeOpService {
         if (!(node instanceof ObjectNode obj) || obj.get("id") == null) {
             throw new IllegalArgumentException("tree.add node must be an object with id");
         }
+        // Bound the node payload: subtree node count, name length,
+        // UUID-shaped ids, no duplicate ids inside the subtree. Run
+        // before the existing sibling lookup so a malicious payload
+        // doesn't waste a row lock + tree walk.
+        validateTreeAddNodeBudget(obj);
         // Clamp to [0, size]; insertion at end (size) is the natural append.
         var siblings = u.parentId() == null
                 ? roots
@@ -173,6 +195,58 @@ class TreeOpService {
         }
         var clamped = Math.max(0, Math.min(siblings.size(), u.position()));
         siblings.insert(clamped, obj);
+    }
+
+    /**
+     * BFS over the tree.add payload to enforce the four invariants:
+     * subtree node count ≤ {@link #MAX_TREE_ADD_NODES}, every {@code
+     * id} is a valid UUID, no two ids inside the same payload match,
+     * and {@code name}/{@code title} stay under {@link
+     * #MAX_NAME_LENGTH}. Package-private so {@link TreeOpServiceTest}
+     * can exercise the rule without standing up Spring + JdbcTemplate.
+     */
+    static void validateTreeAddNodeBudget(ObjectNode root) {
+        var queue = new ArrayDeque<JsonNode>();
+        queue.add(root);
+        var seenIds = new HashSet<String>();
+        int count = 0;
+        while (!queue.isEmpty()) {
+            var cur = queue.poll();
+            if (!(cur instanceof ObjectNode obj)) continue;
+            count++;
+            if (count > MAX_TREE_ADD_NODES) {
+                throw new IllegalArgumentException(
+                        "tree.add subtree exceeds " + MAX_TREE_ADD_NODES + " nodes");
+            }
+            var idField = obj.get("id");
+            if (idField != null && !idField.isNull()) {
+                var idText = idField.asText();
+                try {
+                    UUID.fromString(idText);
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException(
+                            "tree.add node id is not a valid UUID: " + idText);
+                }
+                if (!seenIds.add(idText)) {
+                    throw new IllegalArgumentException(
+                            "tree.add subtree contains duplicate id: " + idText);
+                }
+            }
+            checkLabelLength(obj.get("name"), "name");
+            checkLabelLength(obj.get("title"), "title");
+            var children = obj.get("children");
+            if (children instanceof ArrayNode kids) {
+                for (var kid : kids) queue.add(kid);
+            }
+        }
+    }
+
+    private static void checkLabelLength(JsonNode field, String which) {
+        if (field == null || field.isNull()) return;
+        if (field.asText().length() > MAX_NAME_LENGTH) {
+            throw new IllegalArgumentException(
+                    "tree node " + which + " exceeds " + MAX_NAME_LENGTH + " chars");
+        }
     }
 
     private void applyTreeMove(ArrayNode roots, SyncMessage.TreeMove u) {
@@ -239,6 +313,7 @@ class TreeOpService {
     }
 
     private void applyTreeRename(ArrayNode roots, SyncMessage.TreeRename u) {
+        validateRenameNewName(u.newName());
         var node = findById(roots, u.nodeId());
         if (node == null) {
             throw new IllegalArgumentException("node not found: " + u.nodeId());
@@ -309,6 +384,21 @@ class TreeOpService {
         var fresh = nodeMapper.createArrayNode();
         parent.set("children", fresh);
         return fresh;
+    }
+
+    /**
+     * Reject a tree.rename whose newName is missing, blank, or longer
+     * than {@link #MAX_NAME_LENGTH}. Trim is the caller's job (frontend
+     * already trims); the server only enforces hard bounds.
+     */
+    static void validateRenameNewName(String newName) {
+        if (newName == null || newName.isBlank()) {
+            throw new IllegalArgumentException("tree.rename newName is blank");
+        }
+        if (newName.length() > MAX_NAME_LENGTH) {
+            throw new IllegalArgumentException(
+                    "tree.rename newName exceeds " + MAX_NAME_LENGTH + " chars");
+        }
     }
 
     /**
