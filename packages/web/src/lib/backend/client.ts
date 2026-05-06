@@ -20,15 +20,18 @@
 // {@link isBackendConfigured} returns false — sync hooks and the
 // workspace-list bootstrap silently no-op so a self-host operator who
 // forgot to set the env at least gets a working local-only build.
-// Next.js inlines NEXT_PUBLIC_* at build time; no `typeof process`
-// guard needed (turbopack's client bundle imports process from a
-// separate module whose default export is undefined, so a guard like
-// `typeof process !== 'undefined' && ...` evaluates to false on the
-// browser even though the literal substitution did happen — the
-// resulting BASE_URL silently falls through to '' and every backend
-// call hits the frontend domain as a relative path. Direct access
-// is the supported pattern).
-const BASE_URL = process.env.NEXT_PUBLIC_BALRUNO_API_URL ?? '';
+// Next.js inlines NEXT_PUBLIC_* at build time. The hardcoded fallback
+// is the upstream Balruno SaaS host so the deployed bundle keeps
+// working even when this module is consumed from a chunk where the
+// env literal didn't make it through turbopack's module graph (the
+// pure `?? ''` form intermittently evaluated empty in production
+// despite a sibling chunk inlining the literal correctly). Self-host
+// operators override via NEXT_PUBLIC_BALRUNO_API_URL in their deploy
+// env (Vercel project / .env.local / OSS fork's CI) — the fallback
+// only kicks in when nothing is set, in which case landing on
+// upstream prod is acceptable for diagnostics.
+const BASE_URL =
+  process.env.NEXT_PUBLIC_BALRUNO_API_URL || 'https://api.balruno.com';
 
 export interface ProblemDetail {
   type?: string;
