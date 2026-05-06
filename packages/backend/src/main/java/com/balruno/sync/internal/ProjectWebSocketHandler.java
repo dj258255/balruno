@@ -37,17 +37,20 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
     private final SheetCellOpService sheetCellOps;
     private final TreeOpService treeOps;
     private final SyncBroadcaster broadcaster;
+    private final ProjectStateLoader stateLoader;
 
     ProjectWebSocketHandler(SessionRegistry sessions,
                             ObjectMapper json,
                             SheetCellOpService sheetCellOps,
                             TreeOpService treeOps,
-                            SyncBroadcaster broadcaster) {
+                            SyncBroadcaster broadcaster,
+                            ProjectStateLoader stateLoader) {
         this.sessions = sessions;
         this.json = json;
         this.sheetCellOps = sheetCellOps;
         this.treeOps = treeOps;
         this.broadcaster = broadcaster;
+        this.stateLoader = stateLoader;
     }
 
     @Override
@@ -60,7 +63,20 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
         session.getAttributes().put(ATTR_PROJECT_ID, projectId);
         sessions.register(projectId, session);
         log.info("ws_connect projectId={} sessionId={}", projectId, session.getId());
-        // Stage B.5: send sync.full hydrate here once the loader exists.
+
+        // sync.full hydrate (B.6). One SELECT pulls all three op-log
+        // regions + versions in the same MVCC snapshot, so the version
+        // triple the client receives is internally consistent. A
+        // missing project closes the socket with NOT_ACCEPTABLE rather
+        // than silently dropping the connection.
+        try {
+            var fullPayload = stateLoader.loadFull(projectId);
+            session.sendMessage(new org.springframework.web.socket.TextMessage(fullPayload));
+        } catch (IllegalStateException e) {
+            log.warn("ws_hydrate_failed projectId={} cause={}",
+                    projectId, e.getClass().getSimpleName());
+            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("project not available"));
+        }
     }
 
     @Override
