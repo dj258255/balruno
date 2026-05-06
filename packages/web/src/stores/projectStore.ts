@@ -110,7 +110,12 @@ export interface ProjectState {
   reorderOpenTabs: (fromIndex: number, toIndex: number) => void;
 
   // 컬럼 액션
-  addColumn: (projectId: string, sheetId: string, column: Omit<Column, 'id'>) => string;
+  addColumn: (
+    projectId: string,
+    sheetId: string,
+    column: Omit<Column, 'id'>,
+    options?: { origin?: 'local' | 'remote'; columnId?: string }
+  ) => string;
   insertColumn: (
     projectId: string,
     sheetId: string,
@@ -121,9 +126,15 @@ export interface ProjectState {
     projectId: string,
     sheetId: string,
     columnId: string,
-    updates: Partial<Column>
+    updates: Partial<Column>,
+    options?: { origin?: 'local' | 'remote' }
   ) => void;
-  deleteColumn: (projectId: string, sheetId: string, columnId: string) => void;
+  deleteColumn: (
+    projectId: string,
+    sheetId: string,
+    columnId: string,
+    options?: { origin?: 'local' | 'remote' }
+  ) => void;
   reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => void;
 
   // 행 액션

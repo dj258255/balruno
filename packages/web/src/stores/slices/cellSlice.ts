@@ -66,8 +66,14 @@ const DEFAULT_CELL_STYLE: CellStyle = {
 export const createCellActions = (_set: SetFn, get: GetFn) => ({
   // ==== 컬럼 ====
 
-  addColumn: (projectId: string, sheetId: string, column: Omit<Column, 'id'>): string => {
-    const id = newId();
+  addColumn: (
+    projectId: string,
+    sheetId: string,
+    column: Omit<Column, 'id'>,
+    options?: { origin?: 'local' | 'remote'; columnId?: string }
+  ): string => {
+    const isRemote = options?.origin === 'remote';
+    const id = options?.columnId ?? newId();
     const doc = getProjectDoc(projectId);
 
     // link/lookup/rollup 사이클 사전 검사. 생성 차단.
@@ -91,24 +97,30 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
       const targetSheet = project?.sheets.find((s) => s.id === column.linkedSheetId);
       if (sourceSheet && targetSheet) {
         const reverseId = newId();
+        const forwardCol: Column = { ...column, id, reverseColumnId: reverseId };
+        const reverseCol: Column = {
+          id: reverseId,
+          name: `${sourceSheet.name} (역참조)`,
+          type: 'link',
+          linkedSheetId: sheetId,
+          linkedDisplayColumnId: undefined,
+          linkedMultiple: true,
+          reverseColumnId: id,
+          isReverseLink: true,
+          width: 160,
+        };
         // 한 transaction 에 양쪽 컬럼 생성
         doc.transact(() => {
-          addColumnInDoc(doc, sheetId, {
-            ...column,
-            id,
-            reverseColumnId: reverseId,
-          });
-          addColumnInDoc(doc, column.linkedSheetId!, {
-            id: reverseId,
-            name: `${sourceSheet.name} (역참조)`,
-            type: 'link',
-            linkedSheetId: sheetId,
-            linkedDisplayColumnId: undefined,
-            linkedMultiple: true,
-            reverseColumnId: id,
-            isReverseLink: true,
-            width: 160,
-          });
+          addColumnInDoc(doc, sheetId, forwardCol);
+          addColumnInDoc(doc, column.linkedSheetId!, reverseCol);
+          if (!isRemote) {
+            emitOp({ kind: 'column.add', sheetId, column: forwardCol });
+            emitOp({
+              kind: 'column.add',
+              sheetId: column.linkedSheetId!,
+              column: reverseCol,
+            });
+          }
         });
         return id;
       }
@@ -116,6 +128,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
 
     const fullColumn = { ...column, id };
     addColumnInDoc(doc, sheetId, fullColumn);
+    if (!isRemote) emitOp({ kind: 'column.add', sheetId, column: fullColumn });
 
     // Trackfix: formula 타입 컬럼 추가 시 기존 행들에 formula 값 prefill
     // (addRow 에서는 이미 처리됨, addColumn 경로에서는 누락되어 있었음)
@@ -154,7 +167,8 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
     projectId: string,
     sheetId: string,
     columnId: string,
-    updates: Partial<Column>
+    updates: Partial<Column>,
+    options?: { origin?: 'local' | 'remote' }
   ) => {
     // link/lookup/rollup 관련 필드 변경 시 사이클 사전 검사
     const touchesLink = (
@@ -178,9 +192,18 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
       }
     }
     updateColumnInDoc(getProjectDoc(projectId), sheetId, columnId, updates);
+    if (options?.origin !== 'remote') {
+      emitOp({ kind: 'column.update', sheetId, columnId, patch: updates });
+    }
   },
 
-  deleteColumn: (projectId: string, sheetId: string, columnId: string) => {
+  deleteColumn: (
+    projectId: string,
+    sheetId: string,
+    columnId: string,
+    options?: { origin?: 'local' | 'remote' }
+  ) => {
+    const isRemote = options?.origin === 'remote';
     const doc = getProjectDoc(projectId);
     const state = get();
     const project = state.projects.find((p) => p.id === projectId);
@@ -192,10 +215,19 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
       doc.transact(() => {
         deleteColumnInDoc(doc, sheetId, columnId);
         deleteColumnInDoc(doc, column.linkedSheetId!, column.reverseColumnId!);
+        if (!isRemote) {
+          emitOp({ kind: 'column.delete', sheetId, columnId });
+          emitOp({
+            kind: 'column.delete',
+            sheetId: column.linkedSheetId!,
+            columnId: column.reverseColumnId!,
+          });
+        }
       });
       return;
     }
     deleteColumnInDoc(doc, sheetId, columnId);
+    if (!isRemote) emitOp({ kind: 'column.delete', sheetId, columnId });
   },
 
   reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => {

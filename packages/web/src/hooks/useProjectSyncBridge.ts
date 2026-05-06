@@ -29,7 +29,7 @@ import { useEffect } from 'react';
 import { useProjectSync, type ServerMsg, type SyncFullPayload } from './useProjectSync';
 import { setSyncSender, setVersions, bumpVersion } from '@/lib/sync/writeQueue';
 import { useProjectStore } from '@/stores/projectStore';
-import type { CellValue, Sheet } from '@balruno/shared';
+import type { CellValue, Column, Sheet } from '@balruno/shared';
 
 interface UseProjectSyncBridgeOptions {
   projectId: string | null;
@@ -151,6 +151,34 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       store.reorderRow(projectId, op.sheetId, op.rowId, op.toIndex, {
         origin: 'remote',
       });
+    }
+  } else if (msg.type === 'column.add') {
+    const op = msg.op as {
+      sheetId?: string;
+      column?: { id?: string } & Record<string, unknown>;
+    } | null;
+    if (op?.sheetId && op.column?.id) {
+      const { id: colId, ...rest } = op.column;
+      store.addColumn(projectId, op.sheetId, rest as Omit<Column, 'id'>, {
+        origin: 'remote',
+        columnId: colId,
+      });
+    }
+  } else if (msg.type === 'column.update') {
+    const op = msg.op as {
+      sheetId?: string;
+      columnId?: string;
+      patch?: Partial<Column>;
+    } | null;
+    if (op?.sheetId && op.columnId && op.patch) {
+      store.updateColumn(projectId, op.sheetId, op.columnId, op.patch, {
+        origin: 'remote',
+      });
+    }
+  } else if (msg.type === 'column.delete') {
+    const op = msg.op as { sheetId?: string; columnId?: string } | null;
+    if (op?.sheetId && op.columnId) {
+      store.deleteColumn(projectId, op.sheetId, op.columnId, { origin: 'remote' });
     }
   }
 }
