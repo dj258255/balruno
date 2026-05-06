@@ -39,6 +39,7 @@ import { useBackendAuthStore } from '@/stores/backendAuthStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
+import { SheetTable } from '@/components/sheet';
 
 export default function ProjectDetailPage() {
   const params = useParams<{ slug: string; projectSlug: string }>();
@@ -137,10 +138,7 @@ export default function ProjectDetailPage() {
   const localProject = useProjectStore((state) =>
     project ? state.projects.find((p) => p.id === project.id) : undefined,
   );
-  const updateCellAction = useProjectStore((state) => state.updateCell);
   const firstSheet = localProject?.sheets[0];
-  const firstColumn = firstSheet?.columns[0];
-  const firstRow = firstSheet?.rows[0];
 
   if (loading) {
     return (
@@ -171,16 +169,25 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <button
-        onClick={() => router.push(`/w/${workspace.slug}`)}
-        className="mb-4 inline-flex items-center gap-1 text-sm"
-        style={{ color: 'var(--text-secondary)' }}
-      >
-        <ArrowLeft className="w-3.5 h-3.5" /> {workspace.name}
-      </button>
+    <main className="mx-auto max-w-7xl px-6 py-8">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <button
+          onClick={() => router.push(`/w/${workspace.slug}`)}
+          className="inline-flex items-center gap-1 text-sm"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> {workspace.name}
+        </button>
+        <div className="flex items-center gap-2 text-xs">
+          <span style={{ color: 'var(--text-secondary)' }}>동기화:</span>
+          <ConnectionStatus />
+          <code className="font-mono" style={{ color: 'var(--text-tertiary)' }}>
+            {syncStatus}
+          </code>
+        </div>
+      </div>
 
-      <header className="mb-6">
+      <header className="mb-4">
         <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
           {project.name}
         </h1>
@@ -194,69 +201,29 @@ export default function ProjectDetailPage() {
         )}
       </header>
 
-      <section
-        className="mb-4 rounded-lg border p-4 text-sm"
-        style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
-      >
-        <div className="flex items-center gap-2">
-          <span style={{ color: 'var(--text-secondary)' }}>실시간 동기화 상태:</span>
-          <ConnectionStatus />
-          <code className="ml-2 text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
-            {syncStatus}
-          </code>
-        </div>
-      </section>
-
-      {firstSheet && firstColumn && firstRow ? (
+      {firstSheet ? (
         <section
-          className="rounded-lg border p-4"
+          className="rounded-lg border"
           style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
         >
-          <h2 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {firstSheet.name}
-          </h2>
           {/*
-           * Minimal cell editor — Stage E.2 first cut. The full
-           * SheetTable depends on ~6 zustand stores (history /
-           * sheetUI / recordDetail / simulationPreload / ...) that
-           * the local-mode home page sets up; mounting it here
-           * needs a separate phase to mirror that hydrate. For
-           * now this single input proves the keystroke -> store
-           * -> writeQueue -> wss -> backend round-trip end-to-end.
+           * SheetTable from local mode reused as-is. Cell / row /
+           * column store actions are dual-write since ADR 0018
+           * Stage C+D+F so each edit emits to /ws/projects/{id}
+           * and broadcast applies back. Side-affecting hooks
+           * (history pushState, presence cursor publish) operate
+           * against their default zustand stores; tour /
+           * automation observers / global keybinds aren't mounted
+           * here because they're sidebar / shell concerns, and
+           * SheetTable doesn't transitively require them.
            */}
-          <label
-            className="flex items-center gap-3 text-sm"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <span className="w-24 truncate" title={firstColumn.name}>
-              {firstColumn.name}:
-            </span>
-            <input
-              type="text"
-              defaultValue={String(firstRow.cells[firstColumn.id] ?? '')}
-              onBlur={(e) => {
-                updateCellAction(
-                  project.id,
-                  firstSheet.id,
-                  firstRow.id,
-                  firstColumn.id,
-                  e.target.value,
-                );
-              }}
-              className="flex-1 rounded-md border px-3 py-2 font-mono text-sm"
-              style={{
-                borderColor: 'var(--border-primary)',
-                background: 'var(--bg-secondary)',
-                color: 'var(--text-primary)',
-              }}
-              placeholder="값 입력 후 다른 곳 클릭하면 동기화"
-            />
-          </label>
-          <p className="mt-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            blur 시 cell.update 가 <code>/ws/projects/{project.id}</code> 로 emit. 다른 사용자가
-            같은 프로젝트를 열고 있으면 broadcast 로 화면 자동 반영. 풀 SheetTable 통합은
-            다음 phase.
-          </p>
+          <SheetTable
+            projectId={project.id}
+            sheet={firstSheet}
+            onAddMemo={() => {
+              /* memo modal not wired in server-canonical mode yet — Stage F.3+ */
+            }}
+          />
         </section>
       ) : (
         <section
