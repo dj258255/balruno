@@ -30,6 +30,7 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ProjectWebSocketHandler.class);
     static final String ATTR_PROJECT_ID = "balruno.projectId";
+    static final String ATTR_USER_ID    = "balruno.userId";
 
     private final SessionRegistry sessions;
     private final ObjectMapper json;
@@ -122,15 +123,18 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
     }
 
     /**
-     * Stage B.3 will replace this with the JWT-verified subject from the
-     * handshake interceptor. The placeholder is deterministic per
-     * session so the op_idempotency PK constraint can still be tested
-     * end-to-end before auth lands.
+     * Reads the verified subject left by {@link SyncHandshakeInterceptor}
+     * during the upgrade handshake. Connections that get this far always
+     * have one — a missing attribute means the interceptor wasn't run,
+     * which would be a config bug, not a runtime case to recover from.
      */
     private static UUID resolveUserId(WebSocketSession session) {
-        var existing = (UUID) session.getAttributes().get("balruno.userId");
-        if (existing != null) return existing;
-        return new UUID(0L, 0L);
+        var userId = (UUID) session.getAttributes().get(ATTR_USER_ID);
+        if (userId == null) {
+            throw new IllegalStateException(
+                    "WebSocket session missing user id — handshake interceptor not run");
+        }
+        return userId;
     }
 
     @Override

@@ -24,15 +24,19 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 class ProjectWebSocketConfig implements WebSocketConfigurer {
 
     private final ProjectWebSocketHandler handler;
+    private final SyncHandshakeInterceptor authInterceptor;
 
-    ProjectWebSocketConfig(ProjectWebSocketHandler handler) {
+    ProjectWebSocketConfig(ProjectWebSocketHandler handler,
+                           SyncHandshakeInterceptor authInterceptor) {
         this.handler = handler;
+        this.authInterceptor = authInterceptor;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry
                 .addHandler(handler, "/ws/projects/{id}")
+                .addInterceptors(authInterceptor)
                 .setAllowedOriginPatterns(
                         "https://*.balruno.com",
                         "https://balruno.com",
