@@ -24,6 +24,16 @@ import { randomId } from '@/lib/uuid';
 import type { ClientOp } from '@/hooks/useProjectSync';
 
 /**
+ * The {@link ClientOp} union has one variant — `presence` — without a
+ * `clientMsgId` because presence frames are fire-and-forget (no
+ * idempotency, no ack, no broadcast echo). The mapper never produces
+ * presence; constraining the return type to the idempotent subset
+ * lets call sites read clientMsgId / baseVersion without union
+ * narrowing.
+ */
+export type MappedClientOp = Exclude<ClientOp, { type: 'presence' }>;
+
+/**
  * Closed enumeration of store actions that have a sync wire counterpart.
  * The mapper takes one of these (the *intent* of the action, free of
  * sync-specific fields) and produces a ClientOp ready for the
@@ -47,7 +57,7 @@ export type StoreActionIntent =
  * caller supplies the current baseVersion (from sync.full / op.acked
  * tracking); this function only adds the sync envelope.
  */
-export function mapStoreActionToOp(intent: StoreActionIntent, baseVersion: number): ClientOp {
+export function mapStoreActionToOp(intent: StoreActionIntent, baseVersion: number): MappedClientOp {
   const clientMsgId = randomId();
   switch (intent.kind) {
     case 'cell.update':
