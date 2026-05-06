@@ -168,14 +168,27 @@ class SheetCellOpService {
         if (rowNode == null) {
             throw new IllegalArgumentException("row not found: " + u.rowId());
         }
-        var cells = ensureArray(rowNode, "cells");
-        var cell = findByColumnId(cells, u.columnId());
-        if (cell == null) {
-            cell = nodeMapper.createObjectNode();
-            cell.put("columnId", u.columnId().toString());
-            cells.add(cell);
-        }
-        cell.set("value", nodeMapper.valueToTree(u.value()));
+        // cells is a {columnId: value} map — matches the shared Row
+        // type (Record<string, CellValue>) the frontend uses. Legacy
+        // V10 rows seeded `cells: []` (empty array) which we convert
+        // to map on first edit; the values were always empty so the
+        // conversion is loss-less.
+        var cellsMap = ensureCellMap(rowNode);
+        cellsMap.set(u.columnId().toString(), nodeMapper.valueToTree(u.value()));
+    }
+
+    /**
+     * Returns rowNode.cells as ObjectNode, creating or replacing as
+     * needed. Replacement only happens for empty arrays (legacy V10
+     * seed shape) — a non-empty array would be a real shape mismatch
+     * we don't want to silently drop, so we still replace but log.
+     */
+    private ObjectNode ensureCellMap(ObjectNode rowNode) {
+        var existing = rowNode.get("cells");
+        if (existing instanceof ObjectNode obj) return obj;
+        var fresh = nodeMapper.createObjectNode();
+        rowNode.set("cells", fresh);
+        return fresh;
     }
 
     private void applyRowAdd(ObjectNode data, SyncMessage.RowAdd u) {
@@ -253,16 +266,21 @@ class SheetCellOpService {
         var sheet = sheetOrThrow(data, u.sheetId());
         var columns = ensureArray(sheet, "columns");
         removeById(columns, u.columnId());
-        // Cascade: every row's cells array drops cells matching this
+        // Cascade: every row's cells map drops the entry for this
         // columnId so we don't leave dangling values referencing a
-        // gone column.
+        // gone column. Legacy array-shape cells get the same treatment
+        // via removeByField for backward compatibility — until they
+        // get touched by a cell.update and convert to map.
         var rows = sheet.get("rows");
         if (rows instanceof ArrayNode rowArr) {
             var target = u.columnId().toString();
             for (var row : rowArr) {
-                if (row instanceof ObjectNode rowObj
-                        && rowObj.get("cells") instanceof ArrayNode cells) {
-                    removeByField(cells, "columnId", target);
+                if (!(row instanceof ObjectNode rowObj)) continue;
+                var cells = rowObj.get("cells");
+                if (cells instanceof ObjectNode cellMap) {
+                    cellMap.remove(target);
+                } else if (cells instanceof ArrayNode cellArr) {
+                    removeByField(cellArr, "columnId", target);
                 }
             }
         }
@@ -403,10 +421,6 @@ class SheetCellOpService {
             }
         }
         return null;
-    }
-
-    private static ObjectNode findByColumnId(ArrayNode cells, UUID columnId) {
-        return findByField(cells, "columnId", columnId.toString());
     }
 
     private static ObjectNode findByField(ArrayNode siblings, String field, String value) {

@@ -253,7 +253,10 @@ class TreeOpService {
 
         var row = nodeMapper.createObjectNode();
         row.put("id", UUID.randomUUID().toString());
-        row.set("cells", nodeMapper.createArrayNode());
+        // cells is a {columnId: value} map (Record<string, CellValue>
+        // on the frontend). An empty map is the right baseline so the
+        // first cell.update lands without a shape conversion step.
+        row.set("cells", nodeMapper.createObjectNode());
 
         var sheet = nodeMapper.createObjectNode();
         sheet.put("id", spec.id().toString());
