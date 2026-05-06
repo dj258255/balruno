@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
+import { useBackendAuthStore } from '@/stores/backendAuthStore';
 import { useProjectHistory, useTour, useYDocSync } from '@/hooks';
 import { usePanelStates } from '@/hooks/usePanelStates';
 import { useAutoSave } from '@/hooks/useAutoSave';
@@ -106,6 +108,20 @@ import SidebarResizer from './components/SidebarResizer';
 
 export default function Home() {
   const t = useTranslations();
+  const router = useRouter();
+
+  // Authenticated users land in the server-canonical workspace flow,
+  // not the legacy local-only home page. The local mode here remains
+  // available for self-host operators who haven't wired up a backend
+  // (it's a soft deprecate — IndexedDB + Y.Doc still work). Memory:
+  // project_online_offline_decision — server-first primary, /
+  // is legacy.
+  const backendAuthStatus = useBackendAuthStore((s) => s.status);
+  useEffect(() => {
+    if (backendAuthStatus === 'authenticated') {
+      router.replace('/workspaces');
+    }
+  }, [backendAuthStatus, router]);
 
   // Store
   const {
