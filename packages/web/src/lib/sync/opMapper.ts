@@ -21,7 +21,7 @@
 
 import type { Column, Row, CellValue } from '@balruno/shared';
 import { randomId } from '@/lib/uuid';
-import type { ClientOp } from '@/hooks/useProjectSync';
+import type { ClientOp, UndoMeta } from '@/hooks/useProjectSync';
 
 /**
  * The {@link ClientOp} union has one variant — `presence` — without a
@@ -57,11 +57,19 @@ export type StoreActionIntent =
  * caller supplies the current baseVersion (from sync.full / op.acked
  * tracking); this function only adds the sync envelope.
  */
-export function mapStoreActionToOp(intent: StoreActionIntent, baseVersion: number): MappedClientOp {
+export function mapStoreActionToOp(
+  intent: StoreActionIntent,
+  baseVersion: number,
+  undo?: UndoMeta,
+): MappedClientOp {
   const clientMsgId = randomId();
+  // Helper to splice in the optional undo field — keeping the switch
+  // arms readable. ADR 0021 v2.3 Phase 5 — Pattern C wire metadata.
+  const withUndo = <T extends Record<string, unknown>>(op: T): T & { undo?: UndoMeta } =>
+    undo ? { ...op, undo } : op;
   switch (intent.kind) {
     case 'cell.update':
-      return {
+      return withUndo({
         type: 'cell.update',
         sheetId: intent.sheetId,
         rowId: intent.rowId,
@@ -69,59 +77,59 @@ export function mapStoreActionToOp(intent: StoreActionIntent, baseVersion: numbe
         value: intent.value,
         baseVersion,
         clientMsgId,
-      };
+      });
     case 'row.add':
-      return {
+      return withUndo({
         type: 'row.add',
         sheetId: intent.sheetId,
         row: intent.row,
         baseVersion,
         clientMsgId,
-      };
+      });
     case 'row.delete':
-      return {
+      return withUndo({
         type: 'row.delete',
         sheetId: intent.sheetId,
         rowId: intent.rowId,
         baseVersion,
         clientMsgId,
-      };
+      });
     case 'row.move':
-      return {
+      return withUndo({
         type: 'row.move',
         sheetId: intent.sheetId,
         rowId: intent.rowId,
         toIndex: intent.toIndex,
         baseVersion,
         clientMsgId,
-      };
+      });
     case 'column.add':
-      return {
+      return withUndo({
         type: 'column.add',
         sheetId: intent.sheetId,
         column: intent.column,
         baseVersion,
         clientMsgId,
-      };
+      });
     case 'column.update':
-      return {
+      return withUndo({
         type: 'column.update',
         sheetId: intent.sheetId,
         columnId: intent.columnId,
         patch: intent.patch,
         baseVersion,
         clientMsgId,
-      };
+      });
     case 'column.delete':
-      return {
+      return withUndo({
         type: 'column.delete',
         sheetId: intent.sheetId,
         columnId: intent.columnId,
         baseVersion,
         clientMsgId,
-      };
+      });
     case 'tree.add':
-      return {
+      return withUndo({
         type: 'tree.add',
         treeKind: intent.treeKind,
         parentId: intent.parentId,
@@ -129,9 +137,9 @@ export function mapStoreActionToOp(intent: StoreActionIntent, baseVersion: numbe
         node: intent.node,
         baseVersion,
         clientMsgId,
-      };
+      });
     case 'tree.move':
-      return {
+      return withUndo({
         type: 'tree.move',
         treeKind: intent.treeKind,
         nodeId: intent.nodeId,
@@ -139,23 +147,23 @@ export function mapStoreActionToOp(intent: StoreActionIntent, baseVersion: numbe
         newPosition: intent.newPosition,
         baseVersion,
         clientMsgId,
-      };
+      });
     case 'tree.delete':
-      return {
+      return withUndo({
         type: 'tree.delete',
         treeKind: intent.treeKind,
         nodeId: intent.nodeId,
         baseVersion,
         clientMsgId,
-      };
+      });
     case 'tree.rename':
-      return {
+      return withUndo({
         type: 'tree.rename',
         treeKind: intent.treeKind,
         nodeId: intent.nodeId,
         newName: intent.newName,
         baseVersion,
         clientMsgId,
-      };
+      });
   }
 }

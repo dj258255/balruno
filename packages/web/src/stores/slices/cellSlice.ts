@@ -14,6 +14,9 @@ import { wouldCreateCycle } from '@/lib/linkGraph';
 import { toast } from '@/components/ui/Toast';
 import { emitOp } from '@/lib/sync/writeQueue';
 import { pushUndo, type UndoableOp } from '@/lib/undo/undoStack';
+import type { UndoMeta } from '@/hooks/useProjectSync';
+import { getClientSessionId } from '@/lib/undo/sessionId';
+import { nextActionGroupId } from '@/lib/undo/actionGroup';
 import { useAuthStore } from '@/stores/authStore';
 
 /** 현재 사용자 이름 읽기 (usePresence 가 쓰는 키). */

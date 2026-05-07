@@ -29,7 +29,7 @@
  */
 
 import { mapStoreActionToOp, type StoreActionIntent, type MappedClientOp } from './opMapper';
-import type { ClientOp } from '@/hooks/useProjectSync';
+import type { ClientOp, UndoMeta } from '@/hooks/useProjectSync';
 
 /**
  * Sender contract. useProjectSync.send takes the full ClientOp
@@ -91,11 +91,17 @@ export function getVersion(region: Region): number {
  * Convert a store-action intent to a wire frame and dispatch it on
  * the registered sender. Returns false when no sender is registered
  * (the caller should treat that as "local-only mode, skip emit").
+ *
+ * Optional undo metadata (ADR 0021 v2.3 Phase 5 — Pattern C) attaches
+ * the action's forward + inverse op arrays so the backend can serve
+ * Cmd+Z / Cmd+Shift+Z on the resulting op_idempotency row. Omit it
+ * for ops the user shouldn't be able to undo (none today, but the
+ * shape is forward-compatible).
  */
-export function emitOp(intent: StoreActionIntent): boolean {
+export function emitOp(intent: StoreActionIntent, undo?: UndoMeta): boolean {
   if (!currentSender) return false;
   const region = regionOf(intent);
-  const op = mapStoreActionToOp(intent, versions[region]);
+  const op = mapStoreActionToOp(intent, versions[region], undo);
   return currentSender(op);
 }
 

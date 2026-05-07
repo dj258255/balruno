@@ -34,27 +34,47 @@ export type ProjectSyncStatus = 'idle' | 'connecting' | 'connected' | 'offline' 
 // names are identical so JSON.stringify produces the exact wire shape
 // the backend's Jackson 3 polymorphic deserialiser expects.
 
+/**
+ * Optional undo metadata attached to each non-presence ClientOp
+ * (ADR 0021 v2.3 Phase 5 — Pattern C). Backend reads these to fill
+ * V14 op_idempotency columns and serve the /undo + /redo endpoints.
+ *
+ * forward + inverse are arrays so multi-op cascades (link bidirectional
+ * column add/delete, deleteRow with row.add + row.move snapshot) fit
+ * one envelope. Each item is the same wire-format ClientOp shape
+ * minus baseVersion + clientMsgId (filled in at apply time).
+ */
+export interface UndoMeta {
+  forward: unknown[];
+  inverse: unknown[];
+  actionGroupId: string;
+  clientSessionId: string;
+}
+
 export type ClientOp =
   | { type: 'cell.update'; sheetId: string; rowId: string; columnId: string; value: unknown;
-      baseVersion: number; clientMsgId: string }
-  | { type: 'row.add'; sheetId: string; row: unknown; baseVersion: number; clientMsgId: string }
-  | { type: 'row.delete'; sheetId: string; rowId: string; baseVersion: number; clientMsgId: string }
+      baseVersion: number; clientMsgId: string; undo?: UndoMeta }
+  | { type: 'row.add'; sheetId: string; row: unknown; baseVersion: number; clientMsgId: string;
+      undo?: UndoMeta }
+  | { type: 'row.delete'; sheetId: string; rowId: string; baseVersion: number; clientMsgId: string;
+      undo?: UndoMeta }
   | { type: 'row.move'; sheetId: string; rowId: string; toIndex: number;
-      baseVersion: number; clientMsgId: string }
-  | { type: 'column.add'; sheetId: string; column: unknown; baseVersion: number; clientMsgId: string }
+      baseVersion: number; clientMsgId: string; undo?: UndoMeta }
+  | { type: 'column.add'; sheetId: string; column: unknown; baseVersion: number; clientMsgId: string;
+      undo?: UndoMeta }
   | { type: 'column.update'; sheetId: string; columnId: string; patch: unknown;
-      baseVersion: number; clientMsgId: string }
+      baseVersion: number; clientMsgId: string; undo?: UndoMeta }
   | { type: 'column.delete'; sheetId: string; columnId: string;
-      baseVersion: number; clientMsgId: string }
+      baseVersion: number; clientMsgId: string; undo?: UndoMeta }
   | { type: 'tree.add'; treeKind: 'SHEET' | 'DOC'; parentId: string | null; position: number;
-      node: unknown; baseVersion: number; clientMsgId: string }
+      node: unknown; baseVersion: number; clientMsgId: string; undo?: UndoMeta }
   | { type: 'tree.move'; treeKind: 'SHEET' | 'DOC'; nodeId: string;
       newParentId: string | null; newPosition: number;
-      baseVersion: number; clientMsgId: string }
+      baseVersion: number; clientMsgId: string; undo?: UndoMeta }
   | { type: 'tree.delete'; treeKind: 'SHEET' | 'DOC'; nodeId: string;
-      baseVersion: number; clientMsgId: string }
+      baseVersion: number; clientMsgId: string; undo?: UndoMeta }
   | { type: 'tree.rename'; treeKind: 'SHEET' | 'DOC'; nodeId: string; newName: string;
-      baseVersion: number; clientMsgId: string }
+      baseVersion: number; clientMsgId: string; undo?: UndoMeta }
   | { type: 'presence'; userId: string; cursor?: unknown };
 
 // ── server → client ────────────────────────────────────────────────

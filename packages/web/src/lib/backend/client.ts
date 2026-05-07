@@ -82,6 +82,9 @@ export interface RequestOptions {
   requestId?: string;
   /** Skip the credentials: include behaviour (rarely needed). */
   noCookie?: boolean;
+  /** Custom headers — currently used by undo/redo for X-Client-Session-Id
+   *  (ADR 0021 v2.3 Phase 5). Keys are taken verbatim. */
+  headers?: Record<string, string>;
 }
 
 export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
@@ -92,6 +95,9 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
   if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
   if (opts.bearer) headers['Authorization'] = `Bearer ${opts.bearer}`;
   if (opts.requestId) headers['X-Request-Id'] = opts.requestId;
+  if (opts.headers) {
+    for (const [k, v] of Object.entries(opts.headers)) headers[k] = v;
+  }
 
   const init: RequestInit = {
     method: opts.method ?? 'GET',
