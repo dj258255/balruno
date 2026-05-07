@@ -1,20 +1,17 @@
 /**
- * Doc actions slice — Phase A.
+ * Doc actions slice — direct setState (post v0.6 cleanup).
  *
- * 문서(GDD · 설계안)의 CRUD. Y.Doc 에 저장, Zustand 는 현재 선택된 docId 와
- * 통합 탭 배열 (openTabs: TabEntry[]) 에 문서 entry 를 추가/제거한다.
+ * 문서(GDD · 설계안)의 CRUD. 이전엔 Y.Doc 경유 + observer 가 zustand 반사
+ * 했지만, ADR 0008 §10 stage α 에서 cellSlice 와 동일하게 *직접 setState*
+ * 패턴으로 전환. server-canonical 페이지는 doc tree 변경을 makeTreeHandlers
+ * ('DOC') 의 tree.* op (별도 path) 로 처리하고, 이 slice 는 *legacy DocView
+ * 의 호환* + *future inline-rename surface 용 base*.
  */
 
 import { newId } from '@/lib/uuid';
 import type { StoreApi } from 'zustand';
 import type { Doc } from '@/types';
 import type { ProjectState, TabEntry } from '../projectStore';
-import {
-  getProjectDoc,
-  addDocInDoc,
-  updateDocInDoc,
-  deleteDocInDoc,
-} from '@/lib/ydoc';
 
 type SetFn = StoreApi<ProjectState>['setState'];
 
@@ -78,8 +75,10 @@ export const createDocActions = (set: SetFn) => ({
       createdAt: now,
       updatedAt: now,
     };
-    addDocInDoc(getProjectDoc(projectId), newDoc);
     set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== projectId ? p : { ...p, docs: [...(p.docs ?? []), newDoc] },
+      ),
       currentDocId: id,
       currentSheetId: null,
       openTabs: withTab(state.openTabs, 'doc', id),
@@ -92,7 +91,18 @@ export const createDocActions = (set: SetFn) => ({
     docId: string,
     updates: Partial<Pick<Doc, 'name' | 'content' | 'icon' | 'parentId' | 'isExpanded' | 'position'>>
   ) => {
-    updateDocInDoc(getProjectDoc(projectId), docId, updates);
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== projectId
+          ? p
+          : {
+              ...p,
+              docs: (p.docs ?? []).map((d) =>
+                d.id !== docId ? d : { ...d, ...updates, updatedAt: Date.now() },
+              ),
+            },
+      ),
+    }));
   },
 
   deleteDoc: (projectId: string, docId: string) => {
@@ -101,19 +111,20 @@ export const createDocActions = (set: SetFn) => ({
     const descendants = collectDescendantDocIds(project?.docs ?? [], docId);
     const allIds = new Set<string>([docId, ...descendants]);
 
-    // Delete root + descendants from YDoc.
-    for (const id of allIds) {
-      deleteDocInDoc(getProjectDoc(projectId), id);
-    }
-
     set((state) => {
       let newTabs = state.openTabs;
       for (const id of allIds) newTabs = withoutTab(newTabs, 'doc', id);
+      const projects = state.projects.map((p) =>
+        p.id !== projectId
+          ? p
+          : { ...p, docs: (p.docs ?? []).filter((d) => !allIds.has(d.id)) },
+      );
       if (!allIds.has(state.currentDocId ?? '')) {
-        return { openTabs: newTabs };
+        return { projects, openTabs: newTabs };
       }
       const next = nextActiveAfterClose(newTabs);
       return {
+        projects,
         openTabs: newTabs,
         currentDocId: next?.kind === 'doc' ? next.id : null,
         currentSheetId: next?.kind === 'sheet' ? next.id : null,
@@ -123,18 +134,41 @@ export const createDocActions = (set: SetFn) => ({
 
   /** 부모 변경 — 트리 안에서 다른 위치로 이동. parentId === undefined 면 루트로. */
   moveDoc: (projectId: string, docId: string, parentId: string | undefined, position?: number) => {
-    updateDocInDoc(getProjectDoc(projectId), docId, {
-      parentId,
-      ...(position !== undefined ? { position } : {}),
-    });
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== projectId
+          ? p
+          : {
+              ...p,
+              docs: (p.docs ?? []).map((d) =>
+                d.id !== docId
+                  ? d
+                  : {
+                      ...d,
+                      parentId,
+                      ...(position !== undefined ? { position } : {}),
+                      updatedAt: Date.now(),
+                    },
+              ),
+            },
+      ),
+    }));
   },
 
   /** 사이드바 펼침/접힘 토글. */
   toggleDocExpanded: (projectId: string, docId: string) => {
-    const project = useProjectStoreGetters.getProject(projectId);
-    const doc = project?.docs?.find((d) => d.id === docId);
-    if (!doc) return;
-    updateDocInDoc(getProjectDoc(projectId), docId, { isExpanded: !doc.isExpanded });
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== projectId
+          ? p
+          : {
+              ...p,
+              docs: (p.docs ?? []).map((d) =>
+                d.id !== docId ? d : { ...d, isExpanded: !d.isExpanded },
+              ),
+            },
+      ),
+    }));
   },
 
   /** 문서 선택 — null 이면 단순 해제. id 면 탭 자동 열림 + 시트 해제. */
