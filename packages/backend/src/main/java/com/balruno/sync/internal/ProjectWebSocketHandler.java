@@ -104,6 +104,14 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        // Presence is fire-and-forget — no idempotency, no version,
+        // no sender ack. Short-circuit it before the op-log switch
+        // so the broadcaster's persistence + ack path never runs.
+        if (op instanceof SyncMessage.Presence presence) {
+            broadcaster.broadcastPresence(projectId, session, userId, presence.cursor());
+            return;
+        }
+
         // Sealed switch — every concrete record routes to exactly one
         // service, and missing a new variant becomes a compile error.
         var result = switch (op) {
@@ -118,7 +126,10 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
             case SyncMessage.TreeMove      msg -> treeOps.apply(projectId, userId, msg);
             case SyncMessage.TreeDelete    msg -> treeOps.apply(projectId, userId, msg);
             case SyncMessage.TreeRename    msg -> treeOps.apply(projectId, userId, msg);
-            case SyncMessage.Presence      msg -> new SyncResult.Acked(0L, "{}"); // TODO B.5 broadcast
+            // Presence handled above. Listed here so the sealed
+            // switch stays exhaustive and a future variant addition
+            // is a compile error.
+            case SyncMessage.Presence      ignored -> { yield new SyncResult.Acked(0L, "{}"); }
             // Server → client variants — clients should never send these,
             // but the compiler forces us to enumerate them.
             case SyncMessage.SyncFull      ignored -> rejectClientMessage(session, "sync.full");

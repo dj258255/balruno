@@ -102,4 +102,31 @@ class SyncBroadcaster {
             }
         }
     }
+
+    /**
+     * Presence broadcast — fire-and-forget. Goes to peers only (the
+     * sender is excluded; their cursor is already on their own
+     * screen). No idempotency, no version, no sender ack — losing a
+     * frame is fine because the next mouse move replaces the state
+     * within milliseconds.
+     */
+    void broadcastPresence(UUID projectId, WebSocketSession sender, UUID userId, Object cursor) {
+        var envelope = new LinkedHashMap<String, Object>();
+        envelope.put("type", "presence");
+        envelope.put("userId", userId.toString());
+        envelope.put("ts", System.currentTimeMillis());
+        envelope.put("cursor", cursor);
+        var payload = writeOrFallback(envelope);
+        var msg = new TextMessage(payload);
+        var recipients = sessions.sessionsFor(projectId);
+        for (var session : recipients) {
+            if (session == sender) continue; // skip echo to sender
+            try {
+                if (session.isOpen()) session.sendMessage(msg);
+            } catch (Exception e) {
+                log.warn("ws_presence_failed sessionId={} cause={}",
+                        session.getId(), e.getClass().getSimpleName());
+            }
+        }
+    }
 }
