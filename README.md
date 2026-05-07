@@ -63,7 +63,7 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 | **Grid View** | Virtualized rows (TanStack Virtual), sticky header + first column on mobile, drag-drop column reorder |
 | **Formula Engine** | mathjs + @formulajs — game-specific (DPS, EHP, TTK, SCALE, DIMINISH, etc.) |
 | **Linked Records** | Bidirectional links across sheets with reverse column auto-creation |
-| **Undo/Redo** | Cmd+Z / Cmd+Shift+Z covers cell.update / row.* / column.* / tree.* — ADR 0021 |
+| **Undo/Redo** | Cmd+Z / Cmd+Shift+Z covers cell.update / row.* / column.* / tree.* — *server-backed*, refresh-survival within 120 min, per-tab scope (Baserow `MINUTES_UNTIL_ACTION_CLEANED_UP`) — ADR 0021 v3.0 |
 
 #### Document
 | Category | Features |
@@ -92,13 +92,18 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 | **i18n** | UI + 12-group starter pack catalog fully translated (en, ko) |
 | **Observability** | Sentry SaaS (env-gated, optional for self-host) |
 
+### Recently shipped
+
+- ✅ **ADR 0021 v3.0 phase 5** — server-backed persistent undo (refresh-survival, 120-min Baserow window, per-tab scope, hydrate-on-mount)
+
 ### Planned (next 6 months)
 
 | ADR | Feature | Stack | Status |
 |---|---|---|---|
-| **0023 v3.0** | AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | Accepted |
-| **0025 v2.0** | ML — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity · RAG over comments | **Same Python sidecar** (`scikit-learn` / `scipy` / `trueskill` / `sentence-transformers`) | Accepted |
-| **0021 v2.1 phase 5** | Server-backed persistent undo with Baserow-style TTL (PRO = 2h, TEAM = 24h) | Spring backend extension (`op_idempotency` table) | Planned for paid tier launch |
+| **0022 v1.2** | Mobile UX completion — bottom-sheet cell editor + Tiptap mobile toolbar + long-press drag-drop alt | Frontend | Next priority (~2 weeks) |
+| **0023 v3.0** | AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | Deferred by user |
+| **0025 v2.0** | ML — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity · RAG over comments | **Same Python sidecar** | Deferred by user |
+| **0024 v2.1** | Comment reply thread + @mention email/push delivery | Spring + ESP API | Separate ADR |
 | **0008 v2.2** | Cell style sync (currently Y.Doc local-only) | Spring backend | TBD |
 | (TBD) | Re-introduce additional views (Kanban / Calendar / Gantt) on top of server-canonical sync | Frontend | TBD |
 
@@ -205,14 +210,17 @@ We welcome contributions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before 
 - Template import — graft any starter group onto an existing project
 - i18n — UI + starter catalog fully translated (en, ko)
 - Sentry observability (env-gated, free tier)
-- **Undo / redo** — full op coverage (cell / row / column / tree) — ADR 0021
+- **Undo / redo** — full op coverage (cell / row / column / tree) — ADR 0021 phases 1-4
+- **Server-backed persistent undo** — refresh-survival, per-tab scope, 120-min Baserow window, hydrate-on-mount — ADR 0021 v3.0 phase 5
 - **Comments + @mentions** — sheet cells + doc body (range-anchored highlights via Tiptap Decoration plugin), inbox bell — ADR 0024
-- **Mobile UX** — sidebar drawer + sticky first column + iOS 16px input + 44px hit targets — ADR 0022 (Stage A / B partial / E)
+- **Mobile UX** — sidebar drawer + sticky first column + iOS 16px input + 44px hit targets — ADR 0022 (Stage A / B / E)
 - **v0.6 Y.Doc cleanup** — legacy local-mode + 294 dead files removed (-77K lines), only server-canonical mode remains — ADR 0008 §10
 
 **Next (planned, ~6 months)**
+- Mobile UX completion — bottom-sheet cell editor + Tiptap mobile toolbar + long-press drag-drop alternative (ADR 0022 stage B' / C / D)
 - AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) — ADR 0023
 - ML capabilities — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity — ADR 0025
+- Comment reply threads + email/push @mention delivery (ADR 0024 stage H / I)
 - Cell style sync (server-canonical migration of remaining Y.Doc-local cell styling)
 - Re-introduce additional views (Kanban / Calendar / Gantt) on top of server-canonical sync
 - Share links per view (read-only)
@@ -267,7 +275,7 @@ For commercial licensing inquiries: dj258255@naver.com
 | **Grid 뷰** | 가상화 행 (TanStack Virtual), 모바일에선 sticky header + 첫 컬럼, drag-drop 컬럼 재배치 |
 | **수식 엔진** | mathjs + @formulajs — 게임 특화 (DPS, EHP, TTK, SCALE, DIMINISH 등) |
 | **링크 레코드** | 시트 간 양방향 link + reverse 컬럼 자동 생성 |
-| **Undo/Redo** | Cmd+Z / Cmd+Shift+Z 가 cell.update / row.* / column.* / tree.* 모두 커버 — ADR 0021 |
+| **Undo/Redo** | Cmd+Z / Cmd+Shift+Z 가 cell.update / row.* / column.* / tree.* 모두 커버 — *server-backed*, 페이지 새로고침 후에도 120분 내 Cmd+Z 가능, per-tab 격리 (Baserow `MINUTES_UNTIL_ACTION_CLEANED_UP`) — ADR 0021 v3.0 |
 
 #### 문서
 | 카테고리 | 기능 |
@@ -296,13 +304,19 @@ For commercial licensing inquiries: dj258255@naver.com
 | **i18n** | UI + 12-그룹 스타터 팩 카탈로그 영/한 번역 |
 | **관측** | Sentry SaaS (env-gated, 셀프호스트는 선택) |
 
-### 계획 중 (다음 6 개월)
+### 출하 완료 + 계획 중
+
+**Shipped (이번 sprint)**
+- ✅ ADR 0021 v3.0 phase 5 — server-backed persistent undo (refresh 후 Cmd+Z 가능, 120 분 Baserow 윈도우)
+
+**계획 중 (다음 6 개월)**
 
 | ADR | 기능 | 스택 | 상태 |
 |---|---|---|---|
-| **0023 v3.0** | AI 통합 (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | Accepted |
-| **0025 v2.0** | ML — outlier 탐지 · 클러스터 시각화 · curve fit · TrueSkill · 임베딩 유사도 · RAG | **같은 Python sidecar** (`scikit-learn` / `scipy` / `trueskill` / `sentence-transformers`) | Accepted |
-| **0021 v2.1 phase 5** | Server-backed persistent undo + Baserow TTL (PRO = 2 시간, TEAM = 24 시간) | Spring backend 확장 (`op_idempotency`) | paid tier 출시 시 |
+| **0022 v1.2** | Mobile UX 완성 — bottom-sheet cell editor + Tiptap mobile toolbar + long-press drag-drop | Frontend | 다음 1순위 (~2주) |
+| **0023 v3.0** | AI 통합 (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | 사용자 보류 |
+| **0025 v2.0** | ML — outlier 탐지 · 클러스터 시각화 · curve fit · TrueSkill · 임베딩 유사도 · RAG | **같은 Python sidecar** | 사용자 보류 |
+| **0024 v2.1** | Comment reply thread + @mention email/push delivery | Spring + ESP API | 별 ADR |
 | **0008 v2.2** | 셀 스타일 동기화 (현재 Y.Doc 로컬 only) | Spring backend | TBD |
 | (TBD) | 추가 뷰 재도입 (Kanban / Calendar / Gantt) — server-canonical sync 위에 | Frontend | TBD |
 
