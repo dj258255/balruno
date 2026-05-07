@@ -85,12 +85,14 @@ class TemplateImportServiceIntegrationTest {
         assertThat(treeJson).isNotNull();
         assertThat(treeJson).contains("RPG 프로젝트");
 
-        // Assert: both versions advanced.
+        // Assert: both versions advanced. V8 ships *_version columns
+        // with NOT NULL DEFAULT 1, so a freshly-seeded project starts
+        // at 1:1 and advances to 2:2 after one templates.apply call.
         var versions = jdbc.queryForObject(
                 "SELECT data_version, sheet_tree_version FROM projects WHERE id = ?",
                 (rs, i) -> rs.getLong(1) + ":" + rs.getLong(2),
                 projectId);
-        assertThat(versions).isEqualTo("1:1");
+        assertThat(versions).isEqualTo("2:2");
     }
 
     @Test
