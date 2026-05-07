@@ -50,6 +50,8 @@ import {
 // 컴포넌트
 import SheetCell from './SheetCell';
 import { CellEditor } from './CellEditor';
+import { MobileCellEditor } from './MobileCellEditor';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import SheetKindEmptyState from './SheetKindEmptyState';
 import { isUnitMappable, rowToUnitStats, rowsToUnitStats } from '@/lib/simulation/rowToUnits';
 import { useSimulationPreload } from '@/stores/simulationPreloadStore';
@@ -109,6 +111,11 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
   // selectedCell 바인딩은 아래 useSheetSelection 에서 나오므로 이후 effect 에서 publish
   const { zoomLevel, setCurrentCellStyle, columnHeaderFontSize, rowHeaderFontSize, rowHeaderWidth } = useSheetUIStore();
   const quickFilter = useSheetUIStore((s) => s.quickFilter);
+
+  // Mobile viewport detection (ADR 0022 v1.2 stage B'). When true,
+  // the inline absolute-positioned CellEditor is replaced with a
+  // bottom-sheet portal modal — touch-friendly + iOS-keyboard-safe.
+  const isMobile = useIsMobile();
 
   // Refs
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -1033,6 +1040,39 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
               editingColumn?.type === 'link' && editingColumn.linkedSheetId
                 ? currentProject?.sheets.find((s) => s.id === editingColumn.linkedSheetId) ?? null
                 : null;
+
+            // ADR 0022 v1.2 stage B' — mobile viewport gets the
+            // bottom-sheet portal modal instead of the inline editor.
+            // Same finishEditing / cancel contract — SheetTable's edit
+            // state machine doesn't know which renderer is active.
+            if (isMobile) {
+              const rowIdx = sheet.rows.findIndex((r) => r.id === editingCell.rowId);
+              const columnName = editingColumn?.name ?? editingCell.columnId.slice(0, 8);
+              const cellLabel = `${columnName}${rowIdx >= 0 ? ` · Row ${rowIdx + 1}` : ''}`;
+              return (
+                <MobileCellEditor
+                  cellLabel={cellLabel}
+                  value={editValue}
+                  columnType={editingColumn?.type}
+                  selectOptions={editingColumn?.selectOptions}
+                  linkedSheet={linkedSheet}
+                  linkedDisplayColumnId={editingColumn?.linkedDisplayColumnId}
+                  linkedMultiple={editingColumn?.linkedMultiple}
+                  onCommit={(v) => finishEditing(v)}
+                  onCancel={() => {
+                    setEditingCell(null);
+                    setEditorPosition(null);
+                    setEditValue('');
+                    setShowAutocomplete(false);
+                  }}
+                  onChange={(value) => {
+                    setEditValue(value);
+                    setFormulaBarValue(value);
+                  }}
+                />
+              );
+            }
+
             return (
             <>
               <CellEditor

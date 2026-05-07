@@ -18,6 +18,7 @@ import React, { memo, useCallback } from 'react';
 import { Lock } from 'lucide-react';
 import type { CellValue, CellStyle, Column, Row } from '@/types';
 import { DEFAULT_CELL_STYLE } from '@/stores/sheetUIStore';
+import { useLongPress } from '@/hooks/useLongPress';
 
 export interface SheetCellProps {
   // 식별자
@@ -180,6 +181,12 @@ const SheetCell = memo(function SheetCell({
     onContextMenu(e, rowId, columnId);
   }, [onContextMenu, rowId, columnId]);
 
+  // ADR 0022 v1.2 stage D — long-press on touch devices synthesises
+  // a contextmenu event. Mouse/pen users still get the native
+  // right-click contextmenu, so the same handler covers all input
+  // types without per-platform branching.
+  const longPress = useLongPress();
+
   const handleMemoClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (cellMemo) {
@@ -226,6 +233,7 @@ const SheetCell = memo(function SheetCell({
       onPointerLeave={handlePointerLeave}
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenuClick}
+      {...longPress}
       className={`sheet-cell px-2 sm:px-2 py-1.5 sm:py-1 h-full w-full absolute inset-0 overflow-hidden select-none flex ${
         (cellStyle?.vAlign || DEFAULT_CELL_STYLE.vAlign) === 'top' ? 'items-start' : (cellStyle?.vAlign || DEFAULT_CELL_STYLE.vAlign) === 'bottom' ? 'items-end' : 'items-center'
       } ${isSelected && !isEditing ? 'cursor-move' : 'cursor-cell'} ${isMoveSource && !isCopyMode ? 'opacity-50' : ''}`}
