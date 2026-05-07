@@ -1178,12 +1178,25 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                           // 패딩으로 높이 조절 (내용에 따라 자동 확장)
                           padding: isActions ? '4px' : '8px 12px',
                           color: isSelectedColumn ? 'var(--row-col-highlight-text)' : 'var(--text-secondary)',
-                          background: isSelectedColumn ? 'var(--row-col-highlight)' : undefined,
+                          background: isSelectedColumn
+                            ? 'var(--row-col-highlight)'
+                            // rowNumber: opaque so the sticky-left column
+                            // doesn't bleed body cells through. Other
+                            // headers ride on the sticky thead background.
+                            : isRowNumber ? 'var(--bg-tertiary)' : undefined,
                           fontWeight: isSelectedColumn ? 700 : undefined,
                           // 선택 시에도 높이 변화 없도록 box-shadow 사용 (border 대신)
                           borderBottom: '1px solid var(--border-primary)',
                           boxShadow: isSelectedColumn ? 'inset 0 -2px 0 var(--row-col-highlight-border)' : undefined,
                           borderRight: '1px solid var(--border-primary)',
+                          // ADR 0022 stage B — first column sticky on
+                          // horizontal scroll. The header's rowNumber
+                          // gets a higher z-index so it stays above the
+                          // body's sticky rowNumber when the user scrolls
+                          // both axes simultaneously (top-left corner).
+                          position: isRowNumber ? 'sticky' : undefined,
+                          left: isRowNumber ? 0 : undefined,
+                          zIndex: isRowNumber ? 30 : undefined,
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1426,17 +1439,32 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                                 flex: `0 0 ${width}px`,
                                 minWidth: isActions ? 36 : 100,
                                 height: rowHeight,
+                                // ADR 0022 stage B — sticky first column.
+                                // rowNumber must paint an opaque background
+                                // so body cells scrolling under it don't
+                                // show through. Pick the same shade as the
+                                // row hover stripe (else the row context
+                                // gets visually orphaned at scroll-left).
                                 background: isActions
                                   ? 'var(--bg-secondary)'
                                   : isRowNumber && isSelectedRow
                                     ? 'var(--row-col-highlight)'
-                                    : undefined,
+                                    : isRowNumber
+                                      ? 'var(--bg-primary)'
+                                      : undefined,
                                 color: isRowNumber && isSelectedRow ? 'var(--row-col-highlight-text)' : undefined,
                                 fontWeight: isRowNumber && isSelectedRow ? 700 : undefined,
                                 borderBottom: '1px solid var(--border-primary)',
                                 borderRight: '1px solid var(--border-primary)',
                                 // 선택 시에도 너비 변화 없도록 box-shadow 사용 (border 대신)
                                 boxShadow: isRowNumber && isSelectedRow ? 'inset -2px 0 0 var(--row-col-highlight-border)' : undefined,
+                                position: isRowNumber ? 'sticky' : undefined,
+                                left: isRowNumber ? 0 : undefined,
+                                // Body rowNumber sits above other body
+                                // cells but below the sticky thead — the
+                                // top-left corner (header rowNumber) gets
+                                // z=30 to win when both axes scroll.
+                                zIndex: isRowNumber ? 20 : undefined,
                               }}
                             >
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
