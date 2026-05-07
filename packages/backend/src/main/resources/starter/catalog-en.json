@@ -1,0 +1,2295 @@
+{
+  "starters": [
+    {
+      "id": "tutorial",
+      "i18nKey": "tutorial",
+      "color": "#8b5cf6",
+      "project": {
+        "id": "019dfedb-a9e3-729e-9bb3-8865facb5d7f",
+        "name": "Tutorial",
+        "description": "Starter examples — feel free to edit or delete",
+        "createdAt": 1778097301987,
+        "updatedAt": 1778097301987,
+        "sheets": [
+          {
+            "id": "019dfedb-a9e2-769a-8aab-badb01e8306d",
+            "name": "Characters",
+            "columns": [
+              {
+                "id": "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9",
+                "width": 140,
+                "name": "Name",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e2-769a-8aab-a466466838d1",
+                "width": 90,
+                "name": "HP",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e2-769a-8aab-a8b5875a8f88",
+                "width": 90,
+                "name": "Attack",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e2-769a-8aab-aef17207188c",
+                "width": 90,
+                "name": "Defense",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e2-769a-8aab-b3fea09d4ec8",
+                "width": 100,
+                "name": "Attack Speed",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e2-769a-8aab-b785be124294",
+                "width": 200,
+                "name": "Notes",
+                "type": "general"
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e2-769a-8aab-bed6740b378b",
+                "cells": {
+                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "전사",
+                  "019dfedb-a9e2-769a-8aab-a466466838d1": 200,
+                  "019dfedb-a9e2-769a-8aab-a8b5875a8f88": 30,
+                  "019dfedb-a9e2-769a-8aab-aef17207188c": 20,
+                  "019dfedb-a9e2-769a-8aab-b3fea09d4ec8": 1,
+                  "019dfedb-a9e2-769a-8aab-b785be124294": "균형형 탱커"
+                }
+              },
+              {
+                "id": "019dfedb-a9e2-769a-8aab-c2afdd627a82",
+                "cells": {
+                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "도적",
+                  "019dfedb-a9e2-769a-8aab-a466466838d1": 120,
+                  "019dfedb-a9e2-769a-8aab-a8b5875a8f88": 45,
+                  "019dfedb-a9e2-769a-8aab-aef17207188c": 8,
+                  "019dfedb-a9e2-769a-8aab-b3fea09d4ec8": 1.6,
+                  "019dfedb-a9e2-769a-8aab-b785be124294": "빠른 딜러"
+                }
+              },
+              {
+                "id": "019dfedb-a9e2-769a-8aab-c5db835d6850",
+                "cells": {
+                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "마법사",
+                  "019dfedb-a9e2-769a-8aab-a466466838d1": 100,
+                  "019dfedb-a9e2-769a-8aab-a8b5875a8f88": 50,
+                  "019dfedb-a9e2-769a-8aab-aef17207188c": 5,
+                  "019dfedb-a9e2-769a-8aab-b3fea09d4ec8": 0.9,
+                  "019dfedb-a9e2-769a-8aab-b785be124294": "유리대포"
+                }
+              },
+              {
+                "id": "019dfedb-a9e2-769a-8aab-c871bbe38193",
+                "cells": {
+                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "성기사",
+                  "019dfedb-a9e2-769a-8aab-a466466838d1": 220,
+                  "019dfedb-a9e2-769a-8aab-a8b5875a8f88": 25,
+                  "019dfedb-a9e2-769a-8aab-aef17207188c": 28,
+                  "019dfedb-a9e2-769a-8aab-b3fea09d4ec8": 0.8,
+                  "019dfedb-a9e2-769a-8aab-b785be124294": "최고 방어"
+                }
+              },
+              {
+                "id": "019dfedb-a9e2-769a-8aab-cc3401524ec7",
+                "cells": {
+                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "궁수",
+                  "019dfedb-a9e2-769a-8aab-a466466838d1": 130,
+                  "019dfedb-a9e2-769a-8aab-a8b5875a8f88": 38,
+                  "019dfedb-a9e2-769a-8aab-aef17207188c": 10,
+                  "019dfedb-a9e2-769a-8aab-b3fea09d4ec8": 1.3,
+                  "019dfedb-a9e2-769a-8aab-b785be124294": "원거리 균형"
+                }
+              }
+            ],
+            "createdAt": 1778097301986,
+            "updatedAt": 1778097301986,
+            "kind": "game-data"
+          },
+          {
+            "id": "019dfedb-a9e3-729e-9bb3-72f557407716",
+            "name": "Sprint",
+            "columns": [
+              {
+                "id": "019dfedb-a9e2-769a-8aab-d1c39668486c",
+                "width": 220,
+                "name": "Title",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-5bbb0f980fc9",
+                "width": 110,
+                "name": "Status",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "todo",
+                    "label": "Todo",
+                    "color": "#94a3b8"
+                  },
+                  {
+                    "id": "doing",
+                    "label": "Doing",
+                    "color": "#3b82f6"
+                  },
+                  {
+                    "id": "done",
+                    "label": "Done",
+                    "color": "#10b981"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-5fea83fc2edd",
+                "width": 110,
+                "name": "Priority",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "p0",
+                    "label": "P0",
+                    "color": "#dc2626"
+                  },
+                  {
+                    "id": "p1",
+                    "label": "P1",
+                    "color": "#f59e0b"
+                  },
+                  {
+                    "id": "p2",
+                    "label": "P2",
+                    "color": "#94a3b8"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-62d4871261ff",
+                "width": 90,
+                "name": "Effort",
+                "type": "rating",
+                "ratingMax": 5
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-6751581c62be",
+                "width": 110,
+                "name": "Type",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "feature",
+                    "label": "Feature",
+                    "color": "#3b82f6"
+                  },
+                  {
+                    "id": "bug",
+                    "label": "Bug",
+                    "color": "#ef4444"
+                  },
+                  {
+                    "id": "chore",
+                    "label": "Chore",
+                    "color": "#94a3b8"
+                  },
+                  {
+                    "id": "design",
+                    "label": "Design",
+                    "color": "#a855f7"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-6bae095149d7",
+                "width": 100,
+                "name": "Assignee",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-6fed24d06b85",
+                "width": 120,
+                "name": "Due",
+                "type": "date"
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-74d804ba7297",
+                "cells": {
+                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "캐릭터 1차 밸런스",
+                  "019dfedb-a9e3-729e-9bb3-5bbb0f980fc9": "doing",
+                  "019dfedb-a9e3-729e-9bb3-5fea83fc2edd": "p0",
+                  "019dfedb-a9e3-729e-9bb3-62d4871261ff": 5,
+                  "019dfedb-a9e3-729e-9bb3-6751581c62be": "design",
+                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "나"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-7a51dad19857",
+                "cells": {
+                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "신규 무기 데이터",
+                  "019dfedb-a9e3-729e-9bb3-5bbb0f980fc9": "todo",
+                  "019dfedb-a9e3-729e-9bb3-5fea83fc2edd": "p1",
+                  "019dfedb-a9e3-729e-9bb3-62d4871261ff": 3,
+                  "019dfedb-a9e3-729e-9bb3-6751581c62be": "feature",
+                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "나"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-7c8ff002d4ee",
+                "cells": {
+                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "인플레이션 검토",
+                  "019dfedb-a9e3-729e-9bb3-5bbb0f980fc9": "todo",
+                  "019dfedb-a9e3-729e-9bb3-5fea83fc2edd": "p1",
+                  "019dfedb-a9e3-729e-9bb3-62d4871261ff": 2,
+                  "019dfedb-a9e3-729e-9bb3-6751581c62be": "design",
+                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "나"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-8312dc852dd8",
+                "cells": {
+                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "튜토리얼 텍스트",
+                  "019dfedb-a9e3-729e-9bb3-5bbb0f980fc9": "done",
+                  "019dfedb-a9e3-729e-9bb3-5fea83fc2edd": "p2",
+                  "019dfedb-a9e3-729e-9bb3-62d4871261ff": 1,
+                  "019dfedb-a9e3-729e-9bb3-6751581c62be": "chore",
+                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "나"
+                }
+              }
+            ],
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987,
+            "kind": "pm"
+          }
+        ],
+        "docs": [
+          {
+            "id": "019dfedb-a9e3-729e-9bb3-868771f552d9",
+            "name": "Welcome",
+            "content": "<h1>튜토리얼 시작 팩</h1>\n<p>튜토리얼 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>캐릭터</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li><li><strong>스프린트</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987
+          }
+        ],
+        "starterId": "tutorial"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": "common"
+    },
+    {
+      "id": "rpg",
+      "i18nKey": "rpg",
+      "color": "#dc2626",
+      "project": {
+        "id": "019dfedb-a9e3-729e-9bb4-771edf3725fa",
+        "name": "RPG Project",
+        "description": "RPG balancing starter pack",
+        "createdAt": 1778097301987,
+        "updatedAt": 1778097301987,
+        "sheets": [
+          {
+            "id": "019dfedb-a9e3-729e-9bb3-a7b26aa5ac70",
+            "name": "Characters",
+            "columns": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-8f54f7962ace",
+                "width": 140,
+                "name": "Name",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-92a9dd3b1fa0",
+                "width": 90,
+                "name": "HP",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-9718fff25b91",
+                "width": 90,
+                "name": "Attack",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-9bfc076ac382",
+                "width": 90,
+                "name": "Defense",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-9d2a9d9481f2",
+                "width": 100,
+                "name": "Attack Speed",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-a2a742ff84d9",
+                "width": 200,
+                "name": "Notes",
+                "type": "general"
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-ab9f2173593c",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "전사",
+                  "019dfedb-a9e3-729e-9bb3-92a9dd3b1fa0": 200,
+                  "019dfedb-a9e3-729e-9bb3-9718fff25b91": 30,
+                  "019dfedb-a9e3-729e-9bb3-9bfc076ac382": 20,
+                  "019dfedb-a9e3-729e-9bb3-9d2a9d9481f2": 1,
+                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "균형형 탱커"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-ad1cabdae179",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "도적",
+                  "019dfedb-a9e3-729e-9bb3-92a9dd3b1fa0": 120,
+                  "019dfedb-a9e3-729e-9bb3-9718fff25b91": 45,
+                  "019dfedb-a9e3-729e-9bb3-9bfc076ac382": 8,
+                  "019dfedb-a9e3-729e-9bb3-9d2a9d9481f2": 1.6,
+                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "빠른 딜러"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-b2c862e90784",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "마법사",
+                  "019dfedb-a9e3-729e-9bb3-92a9dd3b1fa0": 100,
+                  "019dfedb-a9e3-729e-9bb3-9718fff25b91": 50,
+                  "019dfedb-a9e3-729e-9bb3-9bfc076ac382": 5,
+                  "019dfedb-a9e3-729e-9bb3-9d2a9d9481f2": 0.9,
+                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "유리대포"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-b48becd78160",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "성기사",
+                  "019dfedb-a9e3-729e-9bb3-92a9dd3b1fa0": 220,
+                  "019dfedb-a9e3-729e-9bb3-9718fff25b91": 25,
+                  "019dfedb-a9e3-729e-9bb3-9bfc076ac382": 28,
+                  "019dfedb-a9e3-729e-9bb3-9d2a9d9481f2": 0.8,
+                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "최고 방어"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-b8463b17a6be",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "궁수",
+                  "019dfedb-a9e3-729e-9bb3-92a9dd3b1fa0": 130,
+                  "019dfedb-a9e3-729e-9bb3-9718fff25b91": 38,
+                  "019dfedb-a9e3-729e-9bb3-9bfc076ac382": 10,
+                  "019dfedb-a9e3-729e-9bb3-9d2a9d9481f2": 1.3,
+                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "원거리 균형"
+                }
+              }
+            ],
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987,
+            "kind": "game-data"
+          },
+          {
+            "id": "019dfedb-a9e3-729e-9bb3-d7ac68c61756",
+            "name": "Weapons",
+            "columns": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-bc5576676bf3",
+                "width": 140,
+                "name": "Weapons",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-c0500d994008",
+                "width": 110,
+                "name": "Type",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "sword",
+                    "label": "검",
+                    "color": "#3b82f6"
+                  },
+                  {
+                    "id": "bow",
+                    "label": "활",
+                    "color": "#10b981"
+                  },
+                  {
+                    "id": "staff",
+                    "label": "지팡이",
+                    "color": "#a855f7"
+                  },
+                  {
+                    "id": "gun",
+                    "label": "총",
+                    "color": "#ef4444"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-c622af10b2c1",
+                "width": 90,
+                "name": "Damage",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-c8444a80764e",
+                "width": 90,
+                "name": "Range",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-cdef24d57b49",
+                "width": 90,
+                "name": "Cooldown",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-d136c51a83ca",
+                "width": 100,
+                "name": "Tier",
+                "type": "rating",
+                "ratingMax": 5
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-d987b3e1a15c",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "롱소드",
+                  "019dfedb-a9e3-729e-9bb3-c0500d994008": "sword",
+                  "019dfedb-a9e3-729e-9bb3-c622af10b2c1": 35,
+                  "019dfedb-a9e3-729e-9bb3-c8444a80764e": 2,
+                  "019dfedb-a9e3-729e-9bb3-cdef24d57b49": 1,
+                  "019dfedb-a9e3-729e-9bb3-d136c51a83ca": 2
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-df19ca37e129",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "엘븐 보우",
+                  "019dfedb-a9e3-729e-9bb3-c0500d994008": "bow",
+                  "019dfedb-a9e3-729e-9bb3-c622af10b2c1": 28,
+                  "019dfedb-a9e3-729e-9bb3-c8444a80764e": 12,
+                  "019dfedb-a9e3-729e-9bb3-cdef24d57b49": 1.2,
+                  "019dfedb-a9e3-729e-9bb3-d136c51a83ca": 3
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-e1d447998e71",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "아이스 스태프",
+                  "019dfedb-a9e3-729e-9bb3-c0500d994008": "staff",
+                  "019dfedb-a9e3-729e-9bb3-c622af10b2c1": 50,
+                  "019dfedb-a9e3-729e-9bb3-c8444a80764e": 8,
+                  "019dfedb-a9e3-729e-9bb3-cdef24d57b49": 2.5,
+                  "019dfedb-a9e3-729e-9bb3-d136c51a83ca": 4
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-e432b8292785",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "신성 검",
+                  "019dfedb-a9e3-729e-9bb3-c0500d994008": "sword",
+                  "019dfedb-a9e3-729e-9bb3-c622af10b2c1": 60,
+                  "019dfedb-a9e3-729e-9bb3-c8444a80764e": 2,
+                  "019dfedb-a9e3-729e-9bb3-cdef24d57b49": 1.5,
+                  "019dfedb-a9e3-729e-9bb3-d136c51a83ca": 5
+                }
+              }
+            ],
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987,
+            "kind": "game-data"
+          },
+          {
+            "id": "019dfedb-a9e3-729e-9bb4-48fb7b98362e",
+            "name": "EXP Curve",
+            "columns": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-eb2c288be44f",
+                "width": 70,
+                "name": "Level",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-eff11e33e76f",
+                "width": 110,
+                "name": "Required EXP",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-f33e2b39eff6",
+                "width": 110,
+                "name": "Total EXP",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc",
+                "width": 160,
+                "name": "Reward",
+                "type": "general"
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-f903e2edd92e",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 1,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 100,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 99,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb3-fd3be65fb7d0",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 2,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 114,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 214,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-01789725359b",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 3,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 132,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 347,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-066608e65de7",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 4,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 152,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 499,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-08a768c22847",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 5,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 174,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 674,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "스킬 포인트 + 1"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-0efb1a66f657",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 6,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 201,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 875,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-11ff8747e905",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 7,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 231,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 1106,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-1493ed4fb1be",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 8,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 266,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 1372,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-1a00418ba18b",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 9,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 305,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 1678,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-1cb2a3c66dfd",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 10,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 351,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 2030,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "스킬 포인트 + 1"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-23d66f5f7419",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 11,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 404,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 2434,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-25c85dc18f27",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 12,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 465,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 2900,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-2904a144c613",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 13,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 535,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 3435,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-2fd5e640666f",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 14,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 615,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 4050,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-31a3d3296486",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 15,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 707,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 4758,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "스킬 포인트 + 1"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-35b577054cc3",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 16,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 813,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 5571,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-3b8969c34888",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 17,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 935,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 6507,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-3e5eae63f0da",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 18,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 1076,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 7583,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-431fa4d1beee",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 19,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 1237,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 8821,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": ""
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-44dd8fd3ff35",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 20,
+                  "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 1423,
+                  "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 10244,
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "스킬 포인트 + 1"
+                }
+              }
+            ],
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987,
+            "kind": "game-data"
+          },
+          {
+            "id": "019dfedb-a9e3-729e-9bb4-5f0d8450d76f",
+            "name": "Gacha Rates",
+            "columns": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-4f70a8c21787",
+                "width": 80,
+                "name": "Tier",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-522c4c21f239",
+                "width": 100,
+                "name": "Rate (%)",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-5769a493a4d6",
+                "width": 100,
+                "name": "Pity (count)",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-59d5555a656e",
+                "width": 160,
+                "name": "Featured Item",
+                "type": "general"
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-60667c6f186c",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-4f70a8c21787": "SSR",
+                  "019dfedb-a9e3-729e-9bb4-522c4c21f239": 0.6,
+                  "019dfedb-a9e3-729e-9bb4-5769a493a4d6": 80,
+                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "전설 무기"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-676ab2367328",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-4f70a8c21787": "SR",
+                  "019dfedb-a9e3-729e-9bb4-522c4c21f239": 5.1,
+                  "019dfedb-a9e3-729e-9bb4-5769a493a4d6": 10,
+                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "에픽 무기"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-6bb27343e5ab",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-4f70a8c21787": "R",
+                  "019dfedb-a9e3-729e-9bb4-522c4c21f239": 30,
+                  "019dfedb-a9e3-729e-9bb4-5769a493a4d6": 0,
+                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "레어 재료"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-6f174641e292",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-4f70a8c21787": "N",
+                  "019dfedb-a9e3-729e-9bb4-522c4c21f239": 64.3,
+                  "019dfedb-a9e3-729e-9bb4-5769a493a4d6": 0,
+                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "일반 재료"
+                }
+              }
+            ],
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987,
+            "kind": "game-data"
+          }
+        ],
+        "docs": [
+          {
+            "id": "019dfedb-a9e3-729e-9bb4-714ec344c621",
+            "name": "Welcome",
+            "content": "<h1>RPG 시작 팩</h1>\n<p>RPG 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>캐릭터</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li><li><strong>무기</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li><li><strong>EXP 곡선</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li><li><strong>가챠 확률</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>EXP 곡선의 base/rate 만 바꾸면 1-20렙 자동 재계산. 무기는 등급(별점)으로 정렬해 보세요.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987
+          }
+        ],
+        "starterId": "rpg"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": null
+    },
+    {
+      "id": "fps",
+      "i18nKey": "fps",
+      "color": "#ea580c",
+      "project": {
+        "id": "019dfedb-a9e3-729e-9bb4-ad8da2c719f0",
+        "name": "FPS Project",
+        "description": "FPS shooter balancing",
+        "createdAt": 1778097301987,
+        "updatedAt": 1778097301987,
+        "sheets": [
+          {
+            "id": "019dfedb-a9e3-729e-9bb4-9491a61f7337",
+            "name": "FPS Weapons",
+            "columns": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-7bca4db1d402",
+                "width": 130,
+                "name": "Weapons",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-7d45263ec4f4",
+                "width": 110,
+                "name": "Category",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "ar",
+                    "label": "AR",
+                    "color": "#3b82f6"
+                  },
+                  {
+                    "id": "smg",
+                    "label": "SMG",
+                    "color": "#10b981"
+                  },
+                  {
+                    "id": "sniper",
+                    "label": "저격",
+                    "color": "#a855f7"
+                  },
+                  {
+                    "id": "shotgun",
+                    "label": "샷건",
+                    "color": "#ef4444"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-80f0b878437e",
+                "width": 80,
+                "name": "Damage",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-852b5fac18ec",
+                "width": 110,
+                "name": "Fire Rate (RPM)",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-8973f2cf7ae0",
+                "width": 130,
+                "name": "Effective Range (m)",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-8eb48eb6d3f9",
+                "width": 100,
+                "name": "Recoil",
+                "type": "rating",
+                "ratingMax": 5
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-90a0e77bb3c2",
+                "width": 100,
+                "name": "TTK (ms)",
+                "type": "general"
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-997132c7f72f",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-7bca4db1d402": "M4A1",
+                  "019dfedb-a9e3-729e-9bb4-7d45263ec4f4": "ar",
+                  "019dfedb-a9e3-729e-9bb4-80f0b878437e": 30,
+                  "019dfedb-a9e3-729e-9bb4-852b5fac18ec": 700,
+                  "019dfedb-a9e3-729e-9bb4-8973f2cf7ae0": 50,
+                  "019dfedb-a9e3-729e-9bb4-8eb48eb6d3f9": 2,
+                  "019dfedb-a9e3-729e-9bb4-90a0e77bb3c2": 257
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-9e2ef953b976",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-7bca4db1d402": "MP5",
+                  "019dfedb-a9e3-729e-9bb4-7d45263ec4f4": "smg",
+                  "019dfedb-a9e3-729e-9bb4-80f0b878437e": 22,
+                  "019dfedb-a9e3-729e-9bb4-852b5fac18ec": 800,
+                  "019dfedb-a9e3-729e-9bb4-8973f2cf7ae0": 25,
+                  "019dfedb-a9e3-729e-9bb4-8eb48eb6d3f9": 1,
+                  "019dfedb-a9e3-729e-9bb4-90a0e77bb3c2": 300
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-a1b7f0e29680",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-7bca4db1d402": "AWP",
+                  "019dfedb-a9e3-729e-9bb4-7d45263ec4f4": "sniper",
+                  "019dfedb-a9e3-729e-9bb4-80f0b878437e": 115,
+                  "019dfedb-a9e3-729e-9bb4-852b5fac18ec": 41,
+                  "019dfedb-a9e3-729e-9bb4-8973f2cf7ae0": 100,
+                  "019dfedb-a9e3-729e-9bb4-8eb48eb6d3f9": 5,
+                  "019dfedb-a9e3-729e-9bb4-90a0e77bb3c2": 0
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-a7d420703351",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-7bca4db1d402": "SPAS-12",
+                  "019dfedb-a9e3-729e-9bb4-7d45263ec4f4": "shotgun",
+                  "019dfedb-a9e3-729e-9bb4-80f0b878437e": 80,
+                  "019dfedb-a9e3-729e-9bb4-852b5fac18ec": 60,
+                  "019dfedb-a9e3-729e-9bb4-8973f2cf7ae0": 8,
+                  "019dfedb-a9e3-729e-9bb4-8eb48eb6d3f9": 4,
+                  "019dfedb-a9e3-729e-9bb4-90a0e77bb3c2": 1000
+                }
+              }
+            ],
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987,
+            "kind": "game-data"
+          }
+        ],
+        "docs": [
+          {
+            "id": "019dfedb-a9e3-729e-9bb4-a8eae5c4336f",
+            "name": "Welcome",
+            "content": "<h1>FPS 슈터 시작 팩</h1>\n<p>FPS 슈터 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>FPS 무기</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>TTK = 1000 / (DPS / target_hp). 카테고리별 평균 TTK 가 비슷해야 균형. PM 작업은 별도 \"스프린트 보드\" 프로젝트 사용.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987
+          }
+        ],
+        "starterId": "fps"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": null
+    },
+    {
+      "id": "moba",
+      "i18nKey": "moba",
+      "color": "#0ea5e9",
+      "project": {
+        "id": "019dfedb-a9e3-729e-9bb4-ee7cea227126",
+        "name": "MOBA Project",
+        "description": "MOBA champion balancing",
+        "createdAt": 1778097301987,
+        "updatedAt": 1778097301987,
+        "sheets": [
+          {
+            "id": "019dfedb-a9e3-729e-9bb4-d3b20ec5d31b",
+            "name": "Champions",
+            "columns": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-b2774075a259",
+                "width": 130,
+                "name": "Champions",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-b700313d8a64",
+                "width": 110,
+                "name": "Role",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "top",
+                    "label": "탑",
+                    "color": "#dc2626"
+                  },
+                  {
+                    "id": "jungle",
+                    "label": "정글",
+                    "color": "#16a34a"
+                  },
+                  {
+                    "id": "mid",
+                    "label": "미드",
+                    "color": "#7c3aed"
+                  },
+                  {
+                    "id": "adc",
+                    "label": "원딜",
+                    "color": "#ea580c"
+                  },
+                  {
+                    "id": "sup",
+                    "label": "서포터",
+                    "color": "#0ea5e9"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-b878514128d7",
+                "width": 80,
+                "name": "HP",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-bc6d115ee201",
+                "width": 70,
+                "name": "AD",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-c05d9121370c",
+                "width": 70,
+                "name": "AP",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-c46712f87e54",
+                "width": 70,
+                "name": "Defense",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-c99344807d68",
+                "width": 70,
+                "name": "MR",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-cf9651d9f383",
+                "width": 100,
+                "name": "Difficulty",
+                "type": "rating",
+                "ratingMax": 5
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-d61ab053e788",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-b2774075a259": "Garen",
+                  "019dfedb-a9e3-729e-9bb4-b700313d8a64": "top",
+                  "019dfedb-a9e3-729e-9bb4-b878514128d7": 690,
+                  "019dfedb-a9e3-729e-9bb4-bc6d115ee201": 66,
+                  "019dfedb-a9e3-729e-9bb4-c05d9121370c": 0,
+                  "019dfedb-a9e3-729e-9bb4-c46712f87e54": 36,
+                  "019dfedb-a9e3-729e-9bb4-c99344807d68": 32,
+                  "019dfedb-a9e3-729e-9bb4-cf9651d9f383": 1
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-d990f25bf88f",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-b2774075a259": "Lee Sin",
+                  "019dfedb-a9e3-729e-9bb4-b700313d8a64": "jungle",
+                  "019dfedb-a9e3-729e-9bb4-b878514128d7": 600,
+                  "019dfedb-a9e3-729e-9bb4-bc6d115ee201": 70,
+                  "019dfedb-a9e3-729e-9bb4-c05d9121370c": 0,
+                  "019dfedb-a9e3-729e-9bb4-c46712f87e54": 33,
+                  "019dfedb-a9e3-729e-9bb4-c99344807d68": 32,
+                  "019dfedb-a9e3-729e-9bb4-cf9651d9f383": 4
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-de77bfe96ab6",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-b2774075a259": "Yasuo",
+                  "019dfedb-a9e3-729e-9bb4-b700313d8a64": "mid",
+                  "019dfedb-a9e3-729e-9bb4-b878514128d7": 590,
+                  "019dfedb-a9e3-729e-9bb4-bc6d115ee201": 60,
+                  "019dfedb-a9e3-729e-9bb4-c05d9121370c": 0,
+                  "019dfedb-a9e3-729e-9bb4-c46712f87e54": 30,
+                  "019dfedb-a9e3-729e-9bb4-c99344807d68": 32,
+                  "019dfedb-a9e3-729e-9bb4-cf9651d9f383": 5
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-e3fe4b1120d9",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-b2774075a259": "Ahri",
+                  "019dfedb-a9e3-729e-9bb4-b700313d8a64": "mid",
+                  "019dfedb-a9e3-729e-9bb4-b878514128d7": 526,
+                  "019dfedb-a9e3-729e-9bb4-bc6d115ee201": 53,
+                  "019dfedb-a9e3-729e-9bb4-c05d9121370c": 0,
+                  "019dfedb-a9e3-729e-9bb4-c46712f87e54": 21,
+                  "019dfedb-a9e3-729e-9bb4-c99344807d68": 30,
+                  "019dfedb-a9e3-729e-9bb4-cf9651d9f383": 3
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-e6d27f7da509",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-b2774075a259": "Thresh",
+                  "019dfedb-a9e3-729e-9bb4-b700313d8a64": "sup",
+                  "019dfedb-a9e3-729e-9bb4-b878514128d7": 580,
+                  "019dfedb-a9e3-729e-9bb4-bc6d115ee201": 56,
+                  "019dfedb-a9e3-729e-9bb4-c05d9121370c": 0,
+                  "019dfedb-a9e3-729e-9bb4-c46712f87e54": 32,
+                  "019dfedb-a9e3-729e-9bb4-c99344807d68": 30,
+                  "019dfedb-a9e3-729e-9bb4-cf9651d9f383": 4
+                }
+              }
+            ],
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987,
+            "kind": "game-data"
+          }
+        ],
+        "docs": [
+          {
+            "id": "019dfedb-a9e3-729e-9bb4-e97e29c50bdd",
+            "name": "Welcome",
+            "content": "<h1>MOBA 시작 팩</h1>\n<p>MOBA 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>챔피언</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>난이도 별점은 1=쉬움 5=어려움. 같은 포지션 끼리 ad/ap/hp 평균 비교. PM 작업은 별도 \"스프린트 보드\" 프로젝트 사용.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987
+          }
+        ],
+        "starterId": "moba"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": null
+    },
+    {
+      "id": "rts",
+      "i18nKey": "rts",
+      "color": "#16a34a",
+      "project": {
+        "id": "019dfedb-a9e3-729e-9bb5-27111283a365",
+        "name": "RTS Project",
+        "description": "RTS unit balancing",
+        "createdAt": 1778097301987,
+        "updatedAt": 1778097301987,
+        "sheets": [
+          {
+            "id": "019dfedb-a9e3-729e-9bb5-0e973365830c",
+            "name": "RTS Units",
+            "columns": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-f35da1d577fe",
+                "width": 120,
+                "name": "Unit",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-f6ea023d2450",
+                "width": 80,
+                "name": "Food",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-f9680f2109fa",
+                "width": 80,
+                "name": "Gold",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb4-fe2db643b8e2",
+                "width": 100,
+                "name": "Build Time (s)",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-0180e4e7d9b7",
+                "width": 80,
+                "name": "HP",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-05970b4ae060",
+                "width": 80,
+                "name": "Damage",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-08ec9a85a66b",
+                "width": 130,
+                "name": "Counter",
+                "type": "general"
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-100b7f298482",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "보병",
+                  "019dfedb-a9e3-729e-9bb4-f6ea023d2450": 50,
+                  "019dfedb-a9e3-729e-9bb4-f9680f2109fa": 0,
+                  "019dfedb-a9e3-729e-9bb4-fe2db643b8e2": 17,
+                  "019dfedb-a9e3-729e-9bb5-0180e4e7d9b7": 60,
+                  "019dfedb-a9e3-729e-9bb5-05970b4ae060": 8,
+                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "기병"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-16d279d1211d",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "궁수",
+                  "019dfedb-a9e3-729e-9bb4-f6ea023d2450": 40,
+                  "019dfedb-a9e3-729e-9bb4-f9680f2109fa": 30,
+                  "019dfedb-a9e3-729e-9bb4-fe2db643b8e2": 23,
+                  "019dfedb-a9e3-729e-9bb5-0180e4e7d9b7": 35,
+                  "019dfedb-a9e3-729e-9bb5-05970b4ae060": 10,
+                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "보병"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-19eae1bb5b4f",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "기병",
+                  "019dfedb-a9e3-729e-9bb4-f6ea023d2450": 80,
+                  "019dfedb-a9e3-729e-9bb4-f9680f2109fa": 0,
+                  "019dfedb-a9e3-729e-9bb4-fe2db643b8e2": 30,
+                  "019dfedb-a9e3-729e-9bb5-0180e4e7d9b7": 100,
+                  "019dfedb-a9e3-729e-9bb5-05970b4ae060": 9,
+                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "궁수"
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-1cf4fd3f5847",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "공성탑",
+                  "019dfedb-a9e3-729e-9bb4-f6ea023d2450": 0,
+                  "019dfedb-a9e3-729e-9bb4-f9680f2109fa": 200,
+                  "019dfedb-a9e3-729e-9bb4-fe2db643b8e2": 50,
+                  "019dfedb-a9e3-729e-9bb5-0180e4e7d9b7": 200,
+                  "019dfedb-a9e3-729e-9bb5-05970b4ae060": 30,
+                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "근접"
+                }
+              }
+            ],
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987,
+            "kind": "game-data"
+          }
+        ],
+        "docs": [
+          {
+            "id": "019dfedb-a9e3-729e-9bb5-22a411ea1321",
+            "name": "Welcome",
+            "content": "<h1>RTS 시작 팩</h1>\n<p>RTS 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>RTS 유닛</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>카운터 컬럼은 가위바위보. 보병 → 기병 → 궁수 → 보병 같은 순환이 핵심. PM 작업은 별도 \"스프린트 보드\" 프로젝트 사용.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987
+          }
+        ],
+        "starterId": "rts"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": null
+    },
+    {
+      "id": "idle",
+      "i18nKey": "idle",
+      "color": "#f59e0b",
+      "project": {
+        "id": "019dfedb-a9e3-729e-9bb5-7e87d31ee3b8",
+        "name": "Idle Project",
+        "description": "Idle clicker balancing",
+        "createdAt": 1778097301987,
+        "updatedAt": 1778097301987,
+        "sheets": [
+          {
+            "id": "019dfedb-a9e3-729e-9bb5-777877a9367c",
+            "name": "Idle Upgrades",
+            "columns": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba",
+                "width": 70,
+                "name": "Level",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-2ec412c9e02c",
+                "width": 110,
+                "name": "Cost",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-33510b94c7f8",
+                "width": 110,
+                "name": "Income/sec",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-366a67a1fbc5",
+                "width": 130,
+                "name": "Payback (s)",
+                "type": "general"
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-3af6b472acb7",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 1,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 100,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 2,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 50
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-3e2a2472477c",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 2,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 150,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 2,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 75
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-43d20c6b2c1c",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 3,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 225,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 3,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 75
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-47886c622c61",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 4,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 337,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 4,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 84
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-488fb7ceb2ad",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 5,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 506,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 5,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 101
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-4f3f2db74a91",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 6,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 759,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 7,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 108
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-51ebcd4928d2",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 7,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 1139,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 9,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 126
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-55750e7a7f67",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 8,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 1708,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 12,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 142
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-593879e7827c",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 9,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 2562,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 16,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 160
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-5d8a677694a8",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 10,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 3844,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 21,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 183
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-627efa11bca0",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 11,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 5766,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 27,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 213
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-64c4b29d109f",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 12,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 8649,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 35,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 247
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-6bb6c8cea60d",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 13,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 12974,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 46,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 282
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-6f7b1ac85303",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 14,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 19461,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 60,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 324
+                }
+              },
+              {
+                "id": "019dfedb-a9e3-729e-9bb5-7244973f7b65",
+                "cells": {
+                  "019dfedb-a9e3-729e-9bb5-282c0c5ca9ba": 15,
+                  "019dfedb-a9e3-729e-9bb5-2ec412c9e02c": 29192,
+                  "019dfedb-a9e3-729e-9bb5-33510b94c7f8": 78,
+                  "019dfedb-a9e3-729e-9bb5-366a67a1fbc5": 374
+                }
+              }
+            ],
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987,
+            "kind": "game-data"
+          }
+        ],
+        "docs": [
+          {
+            "id": "019dfedb-a9e3-729e-9bb5-7a59752881d2",
+            "name": "Welcome",
+            "content": "<h1>Idle 클리커 시작 팩</h1>\n<p>Idle 클리커 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>Idle 업그레이드</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>회수 시간(s) 가 일정하게 늘어야 진행 곡선 부드러움. 비용 1.5배수 / 수익 1.3배수 가 기본. PM 작업은 별도 \"스프린트 보드\" 프로젝트 사용.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "createdAt": 1778097301987,
+            "updatedAt": 1778097301987
+          }
+        ],
+        "starterId": "idle"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": null
+    },
+    {
+      "id": "roguelike",
+      "i18nKey": "roguelike",
+      "color": "#7c3aed",
+      "project": {
+        "id": "019dfedb-a9e4-7023-bda9-bf9fbc28e551",
+        "name": "Deckbuilder Project",
+        "description": "Roguelike deckbuilder balancing",
+        "createdAt": 1778097301988,
+        "updatedAt": 1778097301988,
+        "sheets": [
+          {
+            "id": "019dfedb-a9e4-7023-bda9-a1d418efa14d",
+            "name": "Card Deck",
+            "columns": [
+              {
+                "id": "019dfedb-a9e4-7023-bda9-8f40ee5f6db9",
+                "width": 130,
+                "name": "Card",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-91735803f728",
+                "width": 110,
+                "name": "Type",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "attack",
+                    "label": "공격",
+                    "color": "#ef4444"
+                  },
+                  {
+                    "id": "skill",
+                    "label": "스킬",
+                    "color": "#3b82f6"
+                  },
+                  {
+                    "id": "power",
+                    "label": "파워",
+                    "color": "#a855f7"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-962d6828ac4b",
+                "width": 90,
+                "name": "Energy",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-9b784d3c083a",
+                "width": 200,
+                "name": "Effect",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-9fb49d0800ff",
+                "width": 110,
+                "name": "Rarity",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "starter",
+                    "label": "시작",
+                    "color": "#94a3b8"
+                  },
+                  {
+                    "id": "common",
+                    "label": "커먼",
+                    "color": "#64748b"
+                  },
+                  {
+                    "id": "uncommon",
+                    "label": "언커먼",
+                    "color": "#3b82f6"
+                  },
+                  {
+                    "id": "rare",
+                    "label": "레어",
+                    "color": "#f59e0b"
+                  }
+                ]
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e4-7023-bda9-a6cfa677a30b",
+                "cells": {
+                  "019dfedb-a9e4-7023-bda9-8f40ee5f6db9": "Strike",
+                  "019dfedb-a9e4-7023-bda9-91735803f728": "attack",
+                  "019dfedb-a9e4-7023-bda9-962d6828ac4b": 1,
+                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "6 데미지",
+                  "019dfedb-a9e4-7023-bda9-9fb49d0800ff": "starter"
+                }
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-ab35aa9270b6",
+                "cells": {
+                  "019dfedb-a9e4-7023-bda9-8f40ee5f6db9": "Defend",
+                  "019dfedb-a9e4-7023-bda9-91735803f728": "skill",
+                  "019dfedb-a9e4-7023-bda9-962d6828ac4b": 1,
+                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "5 방어",
+                  "019dfedb-a9e4-7023-bda9-9fb49d0800ff": "starter"
+                }
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-ae8f4dfc75c4",
+                "cells": {
+                  "019dfedb-a9e4-7023-bda9-8f40ee5f6db9": "Bash",
+                  "019dfedb-a9e4-7023-bda9-91735803f728": "attack",
+                  "019dfedb-a9e4-7023-bda9-962d6828ac4b": 2,
+                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "8 데미지 + 취약 2",
+                  "019dfedb-a9e4-7023-bda9-9fb49d0800ff": "starter"
+                }
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-b22970d4028e",
+                "cells": {
+                  "019dfedb-a9e4-7023-bda9-8f40ee5f6db9": "Cleave",
+                  "019dfedb-a9e4-7023-bda9-91735803f728": "attack",
+                  "019dfedb-a9e4-7023-bda9-962d6828ac4b": 1,
+                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "8 광역 데미지",
+                  "019dfedb-a9e4-7023-bda9-9fb49d0800ff": "common"
+                }
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-b60f8cfb8e6c",
+                "cells": {
+                  "019dfedb-a9e4-7023-bda9-8f40ee5f6db9": "Inflame",
+                  "019dfedb-a9e4-7023-bda9-91735803f728": "power",
+                  "019dfedb-a9e4-7023-bda9-962d6828ac4b": 1,
+                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "근력 + 2",
+                  "019dfedb-a9e4-7023-bda9-9fb49d0800ff": "uncommon"
+                }
+              }
+            ],
+            "createdAt": 1778097301988,
+            "updatedAt": 1778097301988,
+            "kind": "game-data"
+          }
+        ],
+        "docs": [
+          {
+            "id": "019dfedb-a9e4-7023-bda9-b9256dd304af",
+            "name": "Welcome",
+            "content": "<h1>로그라이크 덱빌더 시작 팩</h1>\n<p>로그라이크 덱빌더 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>카드 덱</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>희귀도별 평균 데미지/방어 비율 점검. starter 카드는 약하지만 시너지 기반. PM 작업은 별도 \"스프린트 보드\" 프로젝트 사용.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "createdAt": 1778097301988,
+            "updatedAt": 1778097301988
+          }
+        ],
+        "starterId": "roguelike"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": null
+    },
+    {
+      "id": "sprint",
+      "i18nKey": "sprint",
+      "color": "#3b82f6",
+      "project": {
+        "id": "019dfedb-a9e4-7023-bda9-f4041cfb2925",
+        "name": "Sprint Board",
+        "description": "Project management",
+        "createdAt": 1778097301988,
+        "updatedAt": 1778097301988,
+        "sheets": [
+          {
+            "id": "019dfedb-a9e4-7023-bda9-ddf070faded1",
+            "name": "Sprint",
+            "columns": [
+              {
+                "id": "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8",
+                "width": 220,
+                "name": "Title",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-c6765d47b7fb",
+                "width": 110,
+                "name": "Status",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "todo",
+                    "label": "Todo",
+                    "color": "#94a3b8"
+                  },
+                  {
+                    "id": "doing",
+                    "label": "Doing",
+                    "color": "#3b82f6"
+                  },
+                  {
+                    "id": "done",
+                    "label": "Done",
+                    "color": "#10b981"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-c9d9fde0d50c",
+                "width": 110,
+                "name": "Priority",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "p0",
+                    "label": "P0",
+                    "color": "#dc2626"
+                  },
+                  {
+                    "id": "p1",
+                    "label": "P1",
+                    "color": "#f59e0b"
+                  },
+                  {
+                    "id": "p2",
+                    "label": "P2",
+                    "color": "#94a3b8"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-ccd4fd71369f",
+                "width": 90,
+                "name": "Effort",
+                "type": "rating",
+                "ratingMax": 5
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-d3d62f1d3d8f",
+                "width": 110,
+                "name": "Type",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "feature",
+                    "label": "Feature",
+                    "color": "#3b82f6"
+                  },
+                  {
+                    "id": "bug",
+                    "label": "Bug",
+                    "color": "#ef4444"
+                  },
+                  {
+                    "id": "chore",
+                    "label": "Chore",
+                    "color": "#94a3b8"
+                  },
+                  {
+                    "id": "design",
+                    "label": "Design",
+                    "color": "#a855f7"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-d4344a7973bc",
+                "width": 100,
+                "name": "Assignee",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-d9c49f701f8c",
+                "width": 120,
+                "name": "Due",
+                "type": "date"
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e4-7023-bda9-e263d535b528",
+                "cells": {
+                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "캐릭터 1차 밸런스",
+                  "019dfedb-a9e4-7023-bda9-c6765d47b7fb": "doing",
+                  "019dfedb-a9e4-7023-bda9-c9d9fde0d50c": "p0",
+                  "019dfedb-a9e4-7023-bda9-ccd4fd71369f": 5,
+                  "019dfedb-a9e4-7023-bda9-d3d62f1d3d8f": "design",
+                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "나"
+                }
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-e4aa287669ea",
+                "cells": {
+                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "신규 무기 데이터",
+                  "019dfedb-a9e4-7023-bda9-c6765d47b7fb": "todo",
+                  "019dfedb-a9e4-7023-bda9-c9d9fde0d50c": "p1",
+                  "019dfedb-a9e4-7023-bda9-ccd4fd71369f": 3,
+                  "019dfedb-a9e4-7023-bda9-d3d62f1d3d8f": "feature",
+                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "나"
+                }
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-eaa48cdae640",
+                "cells": {
+                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "인플레이션 검토",
+                  "019dfedb-a9e4-7023-bda9-c6765d47b7fb": "todo",
+                  "019dfedb-a9e4-7023-bda9-c9d9fde0d50c": "p1",
+                  "019dfedb-a9e4-7023-bda9-ccd4fd71369f": 2,
+                  "019dfedb-a9e4-7023-bda9-d3d62f1d3d8f": "design",
+                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "나"
+                }
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-ef0df4c9c045",
+                "cells": {
+                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "튜토리얼 텍스트",
+                  "019dfedb-a9e4-7023-bda9-c6765d47b7fb": "done",
+                  "019dfedb-a9e4-7023-bda9-c9d9fde0d50c": "p2",
+                  "019dfedb-a9e4-7023-bda9-ccd4fd71369f": 1,
+                  "019dfedb-a9e4-7023-bda9-d3d62f1d3d8f": "chore",
+                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "나"
+                }
+              }
+            ],
+            "createdAt": 1778097301988,
+            "updatedAt": 1778097301988,
+            "kind": "pm"
+          }
+        ],
+        "docs": [
+          {
+            "id": "019dfedb-a9e4-7023-bda9-f33eb4939c7e",
+            "name": "Welcome",
+            "content": "<h1>스프린트 보드 시작 팩</h1>\n<p>스프린트 보드 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>스프린트</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>칸반 뷰 (단축키 K) 로 status 별 카드. 다른 status 로 drag.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "createdAt": 1778097301988,
+            "updatedAt": 1778097301988
+          }
+        ],
+        "starterId": "sprint"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": null
+    },
+    {
+      "id": "bug",
+      "i18nKey": "bug",
+      "color": "#ef4444",
+      "project": {
+        "id": "019dfedb-a9e4-7023-bdaa-322cf357bd7a",
+        "name": "Bug Tracker",
+        "description": "Bug tracking",
+        "createdAt": 1778097301988,
+        "updatedAt": 1778097301988,
+        "sheets": [
+          {
+            "id": "019dfedb-a9e4-7023-bdaa-202053e80520",
+            "name": "Bug Tracker",
+            "columns": [
+              {
+                "id": "019dfedb-a9e4-7023-bda9-fb7981c6da01",
+                "width": 240,
+                "name": "Bug",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bda9-fcbc03728d67",
+                "width": 110,
+                "name": "Severity",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "critical",
+                    "label": "Critical",
+                    "color": "#dc2626"
+                  },
+                  {
+                    "id": "major",
+                    "label": "Major",
+                    "color": "#f59e0b"
+                  },
+                  {
+                    "id": "minor",
+                    "label": "Minor",
+                    "color": "#94a3b8"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-0089a4e366d0",
+                "width": 110,
+                "name": "Priority",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "p0",
+                    "label": "P0",
+                    "color": "#dc2626"
+                  },
+                  {
+                    "id": "p1",
+                    "label": "P1",
+                    "color": "#f59e0b"
+                  },
+                  {
+                    "id": "p2",
+                    "label": "P2",
+                    "color": "#94a3b8"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-04037021cb50",
+                "width": 110,
+                "name": "Status",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "open",
+                    "label": "Open",
+                    "color": "#ef4444"
+                  },
+                  {
+                    "id": "fixing",
+                    "label": "Fixing",
+                    "color": "#f59e0b"
+                  },
+                  {
+                    "id": "fixed",
+                    "label": "Fixed",
+                    "color": "#10b981"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-087a23c5c1de",
+                "width": 240,
+                "name": "Description",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-0d6105841424",
+                "width": 220,
+                "name": "Repro Steps",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-11a003c79706",
+                "width": 130,
+                "name": "Screenshot",
+                "type": "url"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-16decfbfef50",
+                "width": 100,
+                "name": "Reporter",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-19ba88093670",
+                "width": 100,
+                "name": "Assignee",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-1fb54ad7b741",
+                "width": 120,
+                "name": "Filed At",
+                "type": "date"
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-249d801a01ea",
+                "cells": {
+                  "019dfedb-a9e4-7023-bda9-fb7981c6da01": "도적 크리율 100% 시 데미지 이상",
+                  "019dfedb-a9e4-7023-bda9-fcbc03728d67": "major",
+                  "019dfedb-a9e4-7023-bdaa-0089a4e366d0": "p1",
+                  "019dfedb-a9e4-7023-bdaa-04037021cb50": "open",
+                  "019dfedb-a9e4-7023-bdaa-087a23c5c1de": "도적 크리율을 100%로 설정하면 일반 공격에 critDamage 배율이 적용되지 않음",
+                  "019dfedb-a9e4-7023-bdaa-0d6105841424": "1) 도적 선택 2) critRate=1, critDamage=2 설정 3) 일반 공격 시 데미지 = base * 1 (예상: base * 2)",
+                  "019dfedb-a9e4-7023-bdaa-16decfbfef50": "QA1",
+                  "019dfedb-a9e4-7023-bdaa-19ba88093670": "나"
+                }
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-29634df1dd11",
+                "cells": {
+                  "019dfedb-a9e4-7023-bda9-fb7981c6da01": "경제 시뮬 9999일 시 NaN",
+                  "019dfedb-a9e4-7023-bda9-fcbc03728d67": "minor",
+                  "019dfedb-a9e4-7023-bdaa-0089a4e366d0": "p2",
+                  "019dfedb-a9e4-7023-bdaa-04037021cb50": "fixing",
+                  "019dfedb-a9e4-7023-bdaa-087a23c5c1de": "시뮬레이션 일수가 10000을 넘으면 supplyOverTime 차트에 NaN 값 표시",
+                  "019dfedb-a9e4-7023-bdaa-0d6105841424": "경제 설계 → 시뮬 일수 10000 입력 → 차트 보면 후반부 NaN",
+                  "019dfedb-a9e4-7023-bdaa-16decfbfef50": "나",
+                  "019dfedb-a9e4-7023-bdaa-19ba88093670": "나"
+                }
+              }
+            ],
+            "createdAt": 1778097301988,
+            "updatedAt": 1778097301988,
+            "kind": "pm"
+          }
+        ],
+        "docs": [
+          {
+            "id": "019dfedb-a9e4-7023-bdaa-2d07f51d5078",
+            "name": "Welcome",
+            "content": "<h1>버그 트래커 시작 팩</h1>\n<p>버그 트래커 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>버그 트래커</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "createdAt": 1778097301988,
+            "updatedAt": 1778097301988
+          }
+        ],
+        "starterId": "bug"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": null
+    },
+    {
+      "id": "roadmap",
+      "i18nKey": "roadmap",
+      "color": "#10b981",
+      "project": {
+        "id": "019dfedb-a9e4-7023-bdaa-6a405ca1cd85",
+        "name": "Roadmap",
+        "description": "Epic Roadmap",
+        "createdAt": 1778097301988,
+        "updatedAt": 1778097301988,
+        "sheets": [
+          {
+            "id": "019dfedb-a9e4-7023-bdaa-564ebf2f34a8",
+            "name": "Epic Roadmap",
+            "columns": [
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-3504559267ad",
+                "width": 220,
+                "name": "Epic",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-3b6185715da9",
+                "width": 110,
+                "name": "Quarter",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "q1",
+                    "label": "Q1",
+                    "color": "#3b82f6"
+                  },
+                  {
+                    "id": "q2",
+                    "label": "Q2",
+                    "color": "#10b981"
+                  },
+                  {
+                    "id": "q3",
+                    "label": "Q3",
+                    "color": "#f59e0b"
+                  },
+                  {
+                    "id": "q4",
+                    "label": "Q4",
+                    "color": "#a855f7"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-3dca40bb8447",
+                "width": 110,
+                "name": "Status",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "planning",
+                    "label": "Planning",
+                    "color": "#94a3b8"
+                  },
+                  {
+                    "id": "building",
+                    "label": "Building",
+                    "color": "#3b82f6"
+                  },
+                  {
+                    "id": "shipped",
+                    "label": "Shipped",
+                    "color": "#10b981"
+                  }
+                ]
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-4308327e7c27",
+                "width": 120,
+                "name": "Start",
+                "type": "date"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-46dfe42795a1",
+                "width": 120,
+                "name": "End",
+                "type": "date"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-497086e06db4",
+                "width": 100,
+                "name": "Progress %",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-4d89e3499bc5",
+                "width": 100,
+                "name": "Owner",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-52a7dbc5905c",
+                "width": 100,
+                "name": "Impact",
+                "type": "rating",
+                "ratingMax": 5
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-5b44ecaf901c",
+                "cells": {
+                  "019dfedb-a9e4-7023-bdaa-3504559267ad": "경제 시스템 v2",
+                  "019dfedb-a9e4-7023-bdaa-3b6185715da9": "q2",
+                  "019dfedb-a9e4-7023-bdaa-3dca40bb8447": "building",
+                  "019dfedb-a9e4-7023-bdaa-4308327e7c27": "2026-04-01",
+                  "019dfedb-a9e4-7023-bdaa-46dfe42795a1": "2026-06-30",
+                  "019dfedb-a9e4-7023-bdaa-497086e06db4": 45,
+                  "019dfedb-a9e4-7023-bdaa-4d89e3499bc5": "나",
+                  "019dfedb-a9e4-7023-bdaa-52a7dbc5905c": 5
+                }
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-5de22fbfc474",
+                "cells": {
+                  "019dfedb-a9e4-7023-bdaa-3504559267ad": "신규 챔피언 5종",
+                  "019dfedb-a9e4-7023-bdaa-3b6185715da9": "q3",
+                  "019dfedb-a9e4-7023-bdaa-3dca40bb8447": "planning",
+                  "019dfedb-a9e4-7023-bdaa-4308327e7c27": "2026-07-01",
+                  "019dfedb-a9e4-7023-bdaa-46dfe42795a1": "2026-09-30",
+                  "019dfedb-a9e4-7023-bdaa-497086e06db4": 0,
+                  "019dfedb-a9e4-7023-bdaa-4d89e3499bc5": "나",
+                  "019dfedb-a9e4-7023-bdaa-52a7dbc5905c": 4
+                }
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-61f5fce6a28b",
+                "cells": {
+                  "019dfedb-a9e4-7023-bdaa-3504559267ad": "튜토리얼 개편",
+                  "019dfedb-a9e4-7023-bdaa-3b6185715da9": "q1",
+                  "019dfedb-a9e4-7023-bdaa-3dca40bb8447": "shipped",
+                  "019dfedb-a9e4-7023-bdaa-4308327e7c27": "2026-01-15",
+                  "019dfedb-a9e4-7023-bdaa-46dfe42795a1": "2026-03-15",
+                  "019dfedb-a9e4-7023-bdaa-497086e06db4": 100,
+                  "019dfedb-a9e4-7023-bdaa-4d89e3499bc5": "나",
+                  "019dfedb-a9e4-7023-bdaa-52a7dbc5905c": 3
+                }
+              }
+            ],
+            "createdAt": 1778097301988,
+            "updatedAt": 1778097301988,
+            "kind": "pm"
+          }
+        ],
+        "docs": [
+          {
+            "id": "019dfedb-a9e4-7023-bdaa-67577f2b7d33",
+            "name": "Welcome",
+            "content": "<h1>에픽 로드맵 시작 팩</h1>\n<p>에픽 로드맵 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>에픽 로드맵</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>간트 뷰 (단축키 T) 로 분기별 일정 시각화.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "createdAt": 1778097301988,
+            "updatedAt": 1778097301988
+          }
+        ],
+        "starterId": "roadmap"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": null
+    },
+    {
+      "id": "playtest",
+      "i18nKey": "playtest",
+      "color": "#06b6d4",
+      "project": {
+        "id": "019dfedb-a9e4-7023-bdaa-a1991fe20b37",
+        "name": "Playtest",
+        "description": "Playtest session log",
+        "createdAt": 1778097301988,
+        "updatedAt": 1778097301988,
+        "sheets": [
+          {
+            "id": "019dfedb-a9e4-7023-bdaa-90117fa78fe6",
+            "name": "Playtest",
+            "columns": [
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-6fbc79fda6cc",
+                "width": 200,
+                "name": "Session",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-73746aa2b5a4",
+                "width": 120,
+                "name": "Date",
+                "type": "date"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-7640abc598ca",
+                "width": 100,
+                "name": "Build",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-787449942601",
+                "width": 100,
+                "name": "Tester",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-7facbcf75e9e",
+                "width": 100,
+                "name": "Host",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-82b195901e30",
+                "width": 100,
+                "name": "Fun Score",
+                "type": "rating",
+                "ratingMax": 10
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-8748e51425d5",
+                "width": 240,
+                "name": "Pros",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-8819c9fb15de",
+                "width": 240,
+                "name": "Cons",
+                "type": "general"
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-8fdac50855ab",
+                "width": 110,
+                "name": "Actions",
+                "type": "select",
+                "selectOptions": [
+                  {
+                    "id": "pending",
+                    "label": "검토 중",
+                    "color": "#94a3b8"
+                  },
+                  {
+                    "id": "inprogress",
+                    "label": "반영 중",
+                    "color": "#3b82f6"
+                  },
+                  {
+                    "id": "done",
+                    "label": "반영 완료",
+                    "color": "#10b981"
+                  },
+                  {
+                    "id": "wontfix",
+                    "label": "미반영",
+                    "color": "#71717a"
+                  }
+                ]
+              }
+            ],
+            "rows": [
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-952ab0fdb6e0",
+                "cells": {
+                  "019dfedb-a9e4-7023-bdaa-6fbc79fda6cc": "1차 클로즈드 베타",
+                  "019dfedb-a9e4-7023-bdaa-7640abc598ca": "v0.3.0",
+                  "019dfedb-a9e4-7023-bdaa-787449942601": "내부 5명",
+                  "019dfedb-a9e4-7023-bdaa-7facbcf75e9e": "나",
+                  "019dfedb-a9e4-7023-bdaa-82b195901e30": 7,
+                  "019dfedb-a9e4-7023-bdaa-8748e51425d5": "핵심 루프 재미있음. 캐릭터 디자인 호평.",
+                  "019dfedb-a9e4-7023-bdaa-8819c9fb15de": "튜토리얼 너무 김 (15분+). 보스 1번이 너무 어려움.",
+                  "019dfedb-a9e4-7023-bdaa-8fdac50855ab": "inprogress"
+                }
+              },
+              {
+                "id": "019dfedb-a9e4-7023-bdaa-9a5731932ef4",
+                "cells": {
+                  "019dfedb-a9e4-7023-bdaa-6fbc79fda6cc": "2차 친구 5명",
+                  "019dfedb-a9e4-7023-bdaa-7640abc598ca": "v0.4.1",
+                  "019dfedb-a9e4-7023-bdaa-787449942601": "외부",
+                  "019dfedb-a9e4-7023-bdaa-7facbcf75e9e": "나",
+                  "019dfedb-a9e4-7023-bdaa-82b195901e30": 8,
+                  "019dfedb-a9e4-7023-bdaa-8748e51425d5": "튜토리얼 짧아져서 진입 부드러움.",
+                  "019dfedb-a9e4-7023-bdaa-8819c9fb15de": "경제 후반 인플레. 가챠 박애심 (소프트 피티) 부족.",
+                  "019dfedb-a9e4-7023-bdaa-8fdac50855ab": "pending"
+                }
+              }
+            ],
+            "createdAt": 1778097301988,
+            "updatedAt": 1778097301988,
+            "kind": "pm"
+          }
+        ],
+        "docs": [
+          {
+            "id": "019dfedb-a9e4-7023-bdaa-9cf931c512ad",
+            "name": "Welcome",
+            "content": "<h1>플레이테스트 시작 팩</h1>\n<p>플레이테스트 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>플레이테스트</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>재미도 별점 평균 + 핵심 피드백 텍스트로 회고.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "createdAt": 1778097301988,
+            "updatedAt": 1778097301988
+          }
+        ],
+        "starterId": "playtest"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": null
+    },
+    {
+      "id": "blank",
+      "i18nKey": "blank",
+      "color": "#94a3b8",
+      "project": {
+        "id": "019dfedb-a9e4-7023-bdaa-a6a3250a79c4",
+        "name": "New Project",
+        "createdAt": 1778097301988,
+        "updatedAt": 1778097301988,
+        "sheets": [],
+        "docs": [],
+        "starterId": "blank"
+      },
+      "stepCount": 5,
+      "stepsI18nKey": "common"
+    }
+  ]
+}
