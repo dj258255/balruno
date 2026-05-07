@@ -127,13 +127,13 @@ export interface ProjectState {
     sheetId: string,
     columnId: string,
     updates: Partial<Column>,
-    options?: { origin?: 'local' | 'remote' }
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
   ) => void;
   deleteColumn: (
     projectId: string,
     sheetId: string,
     columnId: string,
-    options?: { origin?: 'local' | 'remote' }
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
   ) => void;
   reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => void;
 
@@ -183,7 +183,7 @@ export interface ProjectState {
     projectId: string,
     sheetId: string,
     rowId: string,
-    options?: { origin?: 'local' | 'remote' }
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
   ) => void;
   /** 단일 row 를 sheet.rows 안의 새 위치(targetIndex) 로 이동. Kanban 컬럼 내 정렬용. */
   reorderRow: (
@@ -191,7 +191,7 @@ export interface ProjectState {
     sheetId: string,
     rowId: string,
     targetIndex: number,
-    options?: { origin?: 'local' | 'remote' }
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
   ) => void;
   addMultipleRows: (projectId: string, sheetId: string, count: number) => void;
 

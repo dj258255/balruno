@@ -20,7 +20,7 @@ import {
   popRedo,
   subscribe as subscribeStack,
 } from '@/lib/undo/undoStack';
-import { applyUndoableOp } from '@/lib/undo/applyUndoable';
+import { applyUndoableOps } from '@/lib/undo/applyUndoable';
 
 export interface HistoryEntry {
   state: unknown;
@@ -60,13 +60,13 @@ export const useHistoryStore = create<HistoryState>((_set, get) => {
     undo: () => {
       const entry = popUndo();
       if (!entry) return null;
-      applyUndoableOp(entry.inverse);
+      applyUndoableOps(entry.inverse);
       return null;
     },
     redo: () => {
       const entry = popRedo();
       if (!entry) return null;
-      applyUndoableOp(entry.forward);
+      applyUndoableOps(entry.forward);
       return null;
     },
     clear: () => {

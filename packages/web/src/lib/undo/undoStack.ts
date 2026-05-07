@@ -19,17 +19,21 @@
 
 import type { ClientOp } from '@/hooks/useProjectSync';
 
-/** A pair of (forward op, inverse op). The forward op is what the
- *  user just did; the inverse op undoes it. Both are full ClientOp
- *  shapes minus version/clientMsgId — those are filled in at emit
- *  time from the live writeQueue state. */
+/** A pair of (forward ops, inverse ops). The forward sequence is
+ *  what the user just did; the inverse sequence undoes it. Always
+ *  arrays — single-op entries are length-1. Phase 2a started with
+ *  scalar fields; Phase 2b promoted to arrays so deletions can
+ *  emit (column.add, cell.update[]) on undo and tree.* phases can
+ *  bundle (tree.add, tree.move) atomically. baseVersion /
+ *  clientMsgId on every op are placeholders — writeQueue.emitOp
+ *  fills them in when the inverse is later replayed. */
 export interface UndoEntry {
   /** Description shown in undo history UI ("Cell update", "Row add"). */
   label: string;
-  /** Op the user just performed — used for redo (re-emit). */
-  forward: UndoableOp;
-  /** Op that undoes the forward op — emitted on Cmd+Z. */
-  inverse: UndoableOp;
+  /** Op sequence the user just performed — re-emitted on redo. */
+  forward: UndoableOp[];
+  /** Op sequence that undoes the forward — emitted on Cmd+Z. */
+  inverse: UndoableOp[];
   /** Wall-clock time of the original emit, for chronological display. */
   timestamp: number;
 }

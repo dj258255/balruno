@@ -15,7 +15,23 @@ import { useProjectStore } from '@/stores/projectStore';
 import type { CellValue, Column } from '@/types';
 import type { UndoableOp } from './undoStack';
 
-export function applyUndoableOp(op: UndoableOp): void {
+/**
+ * Apply a sequence of UndoableOps in order. Phase 2b promoted the
+ * UndoEntry forward/inverse fields from scalar to array because
+ * deleteRow / deleteColumn need a multi-op restore (column.add +
+ * cell.update[] for column, row.add + row.move for row). Single-op
+ * entries (cell.update, addRow, addColumn) are length-1 arrays.
+ *
+ * Each op runs through the matching store action with skipUndoPush
+ * (so the redo path doesn't push duplicate entries). Failures in
+ * one op do not abort the rest — partial undo is better than no
+ * undo at all when a peer raced us.
+ */
+export function applyUndoableOps(ops: UndoableOp[]): void {
+  for (const op of ops) applySingle(op);
+}
+
+function applySingle(op: UndoableOp): void {
   const store = useProjectStore.getState();
   const projectId = store.currentProjectId;
   if (!projectId) return;
@@ -65,13 +81,32 @@ export function applyUndoableOp(op: UndoableOp): void {
       break;
     }
     case 'column.delete': {
-      store.deleteColumn(projectId, op.sheetId, op.columnId);
+      store.deleteColumn(projectId, op.sheetId, op.columnId, { skipUndoPush: true });
       break;
     }
-    // row.move / column.update / tree.* paths land in follow-up
-    // commits as their inverse generators come online. The
-    // undoStack already accepts those op types so the wire is
-    // hot-pluggable.
+    case 'row.move': {
+      // Reorder the row to op.toIndex. Both forward + inverse reuse
+      // the same op type — the inverse just carries the original
+      // fromIndex so undo and redo are symmetric without needing a
+      // dedicated row.move-back op.
+      store.reorderRow(projectId, op.sheetId, op.rowId, op.toIndex, {
+        skipUndoPush: true,
+      });
+      break;
+    }
+    case 'column.update': {
+      // op.patch carries either (a) the user's new partial — when
+      // forward is replayed for redo, or (b) the inverse partial
+      // capturing the original field values, when undo replays.
+      // Both directions go through the same updateColumn signature.
+      store.updateColumn(projectId, op.sheetId, op.columnId, op.patch as Record<string, unknown>, {
+        skipUndoPush: true,
+      });
+      break;
+    }
+    // tree.* paths require access to the page-local tree mutators
+    // (renameNodeInTree / moveNodeInTree / etc.). Phase 3 extracts
+    // those into /lib/tree.ts so applyUndoableOps can dispatch them.
     default:
       break;
   }

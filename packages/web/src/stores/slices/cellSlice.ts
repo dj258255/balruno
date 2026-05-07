@@ -103,24 +103,109 @@ function pushAddRowUndo(
 ): void {
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return;
-  const forward: UndoableOp = {
-    type: 'row.add',
-    sheetId,
-    row: { id: rowId, cells },
-    baseVersion: 0,
-    clientMsgId: '',
-  };
-  const inverse: UndoableOp = {
-    type: 'row.delete',
-    sheetId,
-    rowId,
-    baseVersion: 0,
-    clientMsgId: '',
-  };
   pushUndo(userId, projectId, {
     label: 'Row add',
-    forward,
-    inverse,
+    forward: [{
+      type: 'row.add',
+      sheetId,
+      row: { id: rowId, cells },
+      baseVersion: 0,
+      clientMsgId: '',
+    }],
+    inverse: [{
+      type: 'row.delete',
+      sheetId,
+      rowId,
+      baseVersion: 0,
+      clientMsgId: '',
+    }],
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Push an undo entry for a row.delete — captures the row snapshot
+ * + its original index so the inverse can restore both the cells
+ * and the position. The inverse is multi-op: row.add appends to
+ * end, then row.move puts it back at the original index.
+ *
+ * If the row was at the last index already the row.move is a
+ * no-op on the wire (server short-circuits same-index moves), but
+ * we still emit it to keep the inverse shape uniform — easier to
+ * read than a conditional.
+ */
+function pushDeleteRowUndo(
+  projectId: string,
+  sheetId: string,
+  rowId: string,
+  cells: Record<string, CellValue>,
+  originalIndex: number,
+): void {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  pushUndo(userId, projectId, {
+    label: 'Row delete',
+    forward: [{
+      type: 'row.delete',
+      sheetId,
+      rowId,
+      baseVersion: 0,
+      clientMsgId: '',
+    }],
+    inverse: [
+      {
+        type: 'row.add',
+        sheetId,
+        row: { id: rowId, cells },
+        baseVersion: 0,
+        clientMsgId: '',
+      },
+      {
+        type: 'row.move',
+        sheetId,
+        rowId,
+        toIndex: originalIndex,
+        baseVersion: 0,
+        clientMsgId: '',
+      },
+    ],
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Push an undo entry for a row.move — both forward and inverse
+ * are row.move; only the toIndex differs. fromIndex is captured
+ * before the mutation so undo lands the row exactly where it was.
+ */
+function pushReorderRowUndo(
+  projectId: string,
+  sheetId: string,
+  rowId: string,
+  fromIndex: number,
+  toIndex: number,
+): void {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  if (fromIndex === toIndex) return;
+  pushUndo(userId, projectId, {
+    label: 'Row move',
+    forward: [{
+      type: 'row.move',
+      sheetId,
+      rowId,
+      toIndex,
+      baseVersion: 0,
+      clientMsgId: '',
+    }],
+    inverse: [{
+      type: 'row.move',
+      sheetId,
+      rowId,
+      toIndex: fromIndex,
+      baseVersion: 0,
+      clientMsgId: '',
+    }],
     timestamp: Date.now(),
   });
 }
@@ -141,24 +226,112 @@ function pushAddColumnUndo(
 ): void {
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return;
-  const forward: UndoableOp = {
-    type: 'column.add',
-    sheetId,
-    column,
-    baseVersion: 0,
-    clientMsgId: '',
-  };
-  const inverse: UndoableOp = {
+  pushUndo(userId, projectId, {
+    label: 'Column add',
+    forward: [{
+      type: 'column.add',
+      sheetId,
+      column,
+      baseVersion: 0,
+      clientMsgId: '',
+    }],
+    inverse: [{
+      type: 'column.delete',
+      sheetId,
+      columnId: column.id,
+      baseVersion: 0,
+      clientMsgId: '',
+    }],
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Push an undo entry for a column.delete — multi-op inverse with
+ * column.add (restores column metadata) followed by cell.update
+ * for each non-empty cell that the column held. Empty cells are
+ * skipped because cell.update on a never-set cell is a no-op on
+ * the wire and just bloats the inverse list.
+ *
+ * Position recovery: column.add appends to the end of the
+ * sheet's columns. ClientOp has no column.move — the column
+ * lands at the right edge after undo and the user can drag it
+ * back. Adding column.move to the wire protocol is its own ADR
+ * decision; for now Phase 2b accepts the position drift on undo.
+ */
+function pushDeleteColumnUndo(
+  projectId: string,
+  sheetId: string,
+  column: Column,
+  cellValues: Array<{ rowId: string; value: CellValue }>,
+): void {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  const forward: UndoableOp[] = [{
     type: 'column.delete',
     sheetId,
     columnId: column.id,
     baseVersion: 0,
     clientMsgId: '',
-  };
+  }];
+  const inverse: UndoableOp[] = [{
+    type: 'column.add',
+    sheetId,
+    column,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
+  for (const { rowId, value } of cellValues) {
+    inverse.push({
+      type: 'cell.update',
+      sheetId,
+      rowId,
+      columnId: column.id,
+      value,
+      baseVersion: 0,
+      clientMsgId: '',
+    });
+  }
   pushUndo(userId, projectId, {
-    label: 'Column add',
+    label: 'Column delete',
     forward,
     inverse,
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Push an undo entry for a column.update — inverse carries the
+ * *original* values of the same fields the user changed. Only the
+ * touched fields are stored so the inverse stays minimal.
+ */
+function pushUpdateColumnUndo(
+  projectId: string,
+  sheetId: string,
+  columnId: string,
+  prevPatch: Record<string, unknown>,
+  newPatch: Record<string, unknown>,
+): void {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  pushUndo(userId, projectId, {
+    label: 'Column update',
+    forward: [{
+      type: 'column.update',
+      sheetId,
+      columnId,
+      patch: newPatch,
+      baseVersion: 0,
+      clientMsgId: '',
+    }],
+    inverse: [{
+      type: 'column.update',
+      sheetId,
+      columnId,
+      patch: prevPatch,
+      baseVersion: 0,
+      clientMsgId: '',
+    }],
     timestamp: Date.now(),
   });
 }
@@ -181,28 +354,26 @@ function pushCellUpdateUndo(
 ): void {
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return;
-  const forward: UndoableOp = {
-    type: 'cell.update',
-    sheetId,
-    rowId,
-    columnId,
-    value: newValue,
-    baseVersion: 0,
-    clientMsgId: '',
-  };
-  const inverse: UndoableOp = {
-    type: 'cell.update',
-    sheetId,
-    rowId,
-    columnId,
-    value: prevValue,
-    baseVersion: 0,
-    clientMsgId: '',
-  };
   pushUndo(userId, projectId, {
     label: 'Cell update',
-    forward,
-    inverse,
+    forward: [{
+      type: 'cell.update',
+      sheetId,
+      rowId,
+      columnId,
+      value: newValue,
+      baseVersion: 0,
+      clientMsgId: '',
+    }],
+    inverse: [{
+      type: 'cell.update',
+      sheetId,
+      rowId,
+      columnId,
+      value: prevValue,
+      baseVersion: 0,
+      clientMsgId: '',
+    }],
     timestamp: Date.now(),
   });
 }
@@ -369,8 +540,11 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     sheetId: string,
     columnId: string,
     updates: Partial<Column>,
-    options?: { origin?: 'local' | 'remote' }
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
   ) => {
+    const isRemote = options?.origin === 'remote';
+    const skipUndoPush = options?.skipUndoPush ?? false;
+
     // link/lookup/rollup 관련 필드 변경 시 사이클 사전 검사
     const touchesLink = (
       'type' in updates || 'linkedSheetId' in updates
@@ -392,6 +566,21 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
         }
       }
     }
+
+    // Snapshot only the fields the user touched — minimal inverse.
+    let prevPatch: Record<string, unknown> | null = null;
+    if (!isRemote && !skipUndoPush) {
+      const sheet = get().getSheet(projectId, sheetId);
+      const existing = sheet?.columns.find((c) => c.id === columnId);
+      if (existing) {
+        prevPatch = {};
+        for (const key of Object.keys(updates)) {
+          (prevPatch as Record<string, unknown>)[key] =
+            (existing as unknown as Record<string, unknown>)[key];
+        }
+      }
+    }
+
     writeSheet(
       set,
       projectId,
@@ -403,8 +592,17 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
         ),
       }),
     );
-    if (options?.origin !== 'remote') {
+    if (!isRemote) {
       emitOp({ kind: 'column.update', sheetId, columnId, patch: updates });
+    }
+    if (prevPatch) {
+      pushUpdateColumnUndo(
+        projectId,
+        sheetId,
+        columnId,
+        prevPatch,
+        updates as Record<string, unknown>,
+      );
     }
   },
 
@@ -412,14 +610,38 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     projectId: string,
     sheetId: string,
     columnId: string,
-    options?: { origin?: 'local' | 'remote' }
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
   ) => {
     const isRemote = options?.origin === 'remote';
+    const skipUndoPush = options?.skipUndoPush ?? false;
     const doc = getProjectDoc(projectId);
     const state = get();
     const project = state.projects.find((p) => p.id === projectId);
     const sourceSheet = project?.sheets.find((s) => s.id === sheetId);
     const column = sourceSheet?.columns.find((c) => c.id === columnId);
+
+    // Capture (column metadata + per-row cell values) before the
+    // mutation. The link bidirectional case (column.linkedSheetId
+    // + reverseColumnId) returns early below — undoing two coupled
+    // column.delete ops needs a richer multi-op inverse than we
+    // build here, so the link path doesn't push undo. Single-column
+    // delete is the common path; that's what the snapshot covers.
+    let snapshotCells: Array<{ rowId: string; value: CellValue }> | null = null;
+    if (
+      !isRemote
+      && !skipUndoPush
+      && column
+      && !(column.type === 'link' && column.linkedSheetId && column.reverseColumnId)
+      && sourceSheet
+    ) {
+      snapshotCells = [];
+      for (const row of sourceSheet.rows) {
+        const v = row.cells[columnId];
+        if (v !== undefined && v !== null && v !== '') {
+          snapshotCells.push({ rowId: row.id, value: v });
+        }
+      }
+    }
 
     const removeColumnAndCells = (s: import('@/types').Sheet, colId: string) => ({
       ...s,
@@ -466,6 +688,9 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
       (s) => removeColumnAndCells(s, columnId),
     );
     if (!isRemote) emitOp({ kind: 'column.delete', sheetId, columnId });
+    if (snapshotCells && column) {
+      pushDeleteColumnUndo(projectId, sheetId, column, snapshotCells);
+    }
   },
 
   reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => {
@@ -770,15 +995,35 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     projectId: string,
     sheetId: string,
     rowId: string,
-    options?: { origin?: 'local' | 'remote' }
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
   ) => {
+    const isRemote = options?.origin === 'remote';
+    const skipUndoPush = options?.skipUndoPush ?? false;
+
+    // Snapshot the row state *before* the mutation so the inverse
+    // can restore both the cells and the original index. If the
+    // row isn't in the local sheet (e.g. peer race) the snapshot is
+    // null and we skip the undo push — there's nothing meaningful
+    // to undo.
+    let snapshot: { cells: Record<string, CellValue>; index: number } | null = null;
+    if (!isRemote && !skipUndoPush) {
+      const sheet = get().getSheet(projectId, sheetId);
+      const idx = sheet?.rows.findIndex((r) => r.id === rowId) ?? -1;
+      if (idx >= 0 && sheet) {
+        snapshot = { cells: { ...sheet.rows[idx].cells }, index: idx };
+      }
+    }
+
     writeSheet(
       set,
       projectId,
       sheetId,
       (s) => ({ ...s, rows: s.rows.filter((r) => r.id !== rowId) }),
     );
-    if (options?.origin !== 'remote') emitOp({ kind: 'row.delete', sheetId, rowId });
+    if (!isRemote) emitOp({ kind: 'row.delete', sheetId, rowId });
+    if (snapshot) {
+      pushDeleteRowUndo(projectId, sheetId, rowId, snapshot.cells, snapshot.index);
+    }
   },
 
   reorderRow: (
@@ -786,8 +1031,20 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     sheetId: string,
     rowId: string,
     targetIndex: number,
-    options?: { origin?: 'local' | 'remote' }
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
   ) => {
+    const isRemote = options?.origin === 'remote';
+    const skipUndoPush = options?.skipUndoPush ?? false;
+
+    // Snapshot the source index before the mutation. Same shape as
+    // deleteRow: skip the undo push if the row isn't there (peer
+    // race) — nothing meaningful to undo.
+    let fromIndex = -1;
+    if (!isRemote && !skipUndoPush) {
+      const sheet = get().getSheet(projectId, sheetId);
+      fromIndex = sheet?.rows.findIndex((r) => r.id === rowId) ?? -1;
+    }
+
     writeSheet(
       set,
       projectId,
@@ -803,8 +1060,11 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
         return { ...s, rows: next };
       },
     );
-    if (options?.origin !== 'remote') {
+    if (!isRemote) {
       emitOp({ kind: 'row.move', sheetId, rowId, toIndex: targetIndex });
+    }
+    if (fromIndex >= 0) {
+      pushReorderRowUndo(projectId, sheetId, rowId, fromIndex, targetIndex);
     }
   },
 
