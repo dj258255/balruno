@@ -1,13 +1,25 @@
 /**
- * TrackPresence — y-webrtc awareness API 기반 다중 사용자 표시.
+ * TrackPresence — peer awareness for SheetTable.
  *
- * - 익명 사용자 이름/색 자동 생성 (localStorage 영구 저장)
- * - WebRTC provider 활성 시 awareness.setLocalState 로 publish
- * - 다른 사용자 변경 구독 → peers 배열 반환
+ * Two source channels merge into one Peer[] view:
+ *
+ *   1. y-webrtc awareness — local mode peers (no backend). Carries
+ *      the rich state (activeCell + selectedCells + isEditing).
+ *   2. presenceStore — server-canonical peers via wss broadcast
+ *      (Stage B.5). Carries activeCell only; selectedCells /
+ *      isEditing arrive as empty until the wss presence schema
+ *      grows.
+ *
+ * Self stays out of the peer list (the local cursor is rendered
+ * directly, not through the peer pipeline). Both channels run in
+ * parallel; their peer ids don't collide because WebRTC clientIDs
+ * are numeric and presenceStore userIds are UUIDs — we hash UUID →
+ * negative number for the Peer.id field so React keys stay stable.
  */
 
 import { useEffect, useMemo, useState } from 'react';
 import { getWebrtc } from '@/lib/ydoc';
+import { usePresenceStore } from '@/stores/presenceStore';
 
 const NAME_KEY = 'balruno:user-name';
 const COLOR_KEY = 'balruno:user-color';
@@ -96,16 +108,16 @@ export function usePresence(projectId: string | null): {
     [identityVersion]
   );
 
-  const [peers, setPeers] = useState<Peer[]>([]);
+  const [webrtcPeers, setWebrtcPeers] = useState<Peer[]>([]);
 
   useEffect(() => {
     if (!projectId) {
-      setPeers([]);
+      setWebrtcPeers([]);
       return;
     }
     const provider = getWebrtc(projectId);
     if (!provider) {
-      setPeers([]);
+      setWebrtcPeers([]);
       return;
     }
 
@@ -135,7 +147,7 @@ export function usePresence(projectId: string | null): {
           isEditing: s.isEditing ?? false,
         });
       });
-      setPeers(next);
+      setWebrtcPeers(next);
     };
 
     provider.awareness.on('change', update);
@@ -145,6 +157,38 @@ export function usePresence(projectId: string | null): {
       provider.awareness.off('change', update);
     };
   }, [projectId, myName, myColor]);
+
+  // Server-canonical peers from presenceStore. Scope key is the
+  // sheet leaf id (sheet:<id>) for sheet rendering; SheetTable
+  // doesn't know which sheet a peer is on at the hook level, so
+  // we flatten every "sheet:*" scope and pass the per-cell filter
+  // up to the renderer (which already filters by sheet.id +
+  // rowId + columnId in SheetTable). This keeps the hook signature
+  // compatible without a per-sheet hook variant.
+  const presenceMap = usePresenceStore((s) => s.byScope);
+  const wssPeers = useMemo<Peer[]>(() => {
+    const next: Peer[] = [];
+    for (const [scope, users] of Object.entries(presenceMap)) {
+      if (!scope.startsWith('sheet:')) continue;
+      const sheetId = scope.slice('sheet:'.length);
+      for (const user of users.values()) {
+        if (user.isSelf) continue;
+        next.push({
+          id: hashStringToInt(user.userId),
+          name: user.displayName,
+          color: user.color,
+          activeCell: user.cellKey
+            ? { sheetId, rowId: user.cellKey.rowId, columnId: user.cellKey.columnId }
+            : null,
+          selectedCells: [],
+          isEditing: false,
+        });
+      }
+    }
+    return next;
+  }, [presenceMap]);
+
+  const peers = useMemo(() => [...webrtcPeers, ...wssPeers], [webrtcPeers, wssPeers]);
 
   const mergeLocalState = (patch: Record<string, unknown>) => {
     if (!projectId) return;
@@ -163,4 +207,16 @@ export function usePresence(projectId: string | null): {
   const publishEditing = (editing: boolean) => mergeLocalState({ isEditing: editing });
 
   return { peers, myName, myColor, publishActiveCell, publishSelectedCells, publishEditing };
+}
+
+/**
+ * Stable hash UUID → 32-bit signed int so server-canonical peers
+ * can ride the same React-key field as WebRTC clientIDs (which are
+ * already numbers). The negative-number sign separates them from
+ * WebRTC ids — useful for debugging in React DevTools.
+ */
+function hashStringToInt(seed: string): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = ((h * 31) + seed.charCodeAt(i)) | 0;
+  return -Math.abs(h) - 1; // always negative + non-zero
 }
