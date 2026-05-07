@@ -1,24 +1,23 @@
 /**
  * TrackPresence — peer awareness for SheetTable.
  *
- * Two source channels merge into one Peer[] view:
- *
- *   1. y-webrtc awareness — local mode peers (no backend). Carries
- *      the rich state (activeCell + selectedCells + isEditing).
- *   2. presenceStore — server-canonical peers via wss broadcast
- *      (Stage B.5). Carries activeCell only; selectedCells /
- *      isEditing arrive as empty until the wss presence schema
- *      grows.
+ * Single source — presenceStore, fed by the server-canonical wss
+ * broadcast in useProjectSyncBridge (Stage B.5). The earlier
+ * y-webrtc fallback path was retired in v0.6 cleanup along with the
+ * rest of the local-mode plumbing.
  *
  * Self stays out of the peer list (the local cursor is rendered
- * directly, not through the peer pipeline). Both channels run in
- * parallel; their peer ids don't collide because WebRTC clientIDs
- * are numeric and presenceStore userIds are UUIDs — we hash UUID →
- * negative number for the Peer.id field so React keys stay stable.
+ * directly, not through the peer pipeline). Peer.id stays a number
+ * for React keys — UUID userIds hash into negative ints so they
+ * can't collide with anything still expecting numeric ids
+ * elsewhere.
+ *
+ * publishActiveCell / publishSelectedCells / publishEditing are
+ * now no-ops kept for call-site compatibility — the actual cursor
+ * emit goes through writeQueue.emitPresence in SheetTable's effect.
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { getWebrtc } from '@/lib/ydoc';
 import { usePresenceStore } from '@/stores/presenceStore';
 
 const NAME_KEY = 'balruno:user-name';
@@ -108,65 +107,12 @@ export function usePresence(projectId: string | null): {
     [identityVersion]
   );
 
-  const [webrtcPeers, setWebrtcPeers] = useState<Peer[]>([]);
-
-  useEffect(() => {
-    if (!projectId) {
-      setWebrtcPeers([]);
-      return;
-    }
-    const provider = getWebrtc(projectId);
-    if (!provider) {
-      setWebrtcPeers([]);
-      return;
-    }
-
-    // 내 정보 publish
-    provider.awareness.setLocalState({
-      user: { name: myName, color: myColor },
-    });
-
-    const myId = provider.awareness.clientID;
-
-    const update = () => {
-      const next: Peer[] = [];
-      provider.awareness.getStates().forEach((state, id) => {
-        if (id === myId) return;
-        const s = state as {
-          user?: { name?: string; color?: string };
-          activeCell?: PeerCellRef | null;
-          selectedCells?: PeerCellRef[];
-          isEditing?: boolean;
-        };
-        next.push({
-          id,
-          name: s.user?.name ?? 'Anonymous',
-          color: s.user?.color ?? '#94a3b8',
-          activeCell: s.activeCell ?? null,
-          selectedCells: s.selectedCells ?? [],
-          isEditing: s.isEditing ?? false,
-        });
-      });
-      setWebrtcPeers(next);
-    };
-
-    provider.awareness.on('change', update);
-    update();
-
-    return () => {
-      provider.awareness.off('change', update);
-    };
-  }, [projectId, myName, myColor]);
-
   // Server-canonical peers from presenceStore. Scope key is the
   // sheet leaf id (sheet:<id>) for sheet rendering; SheetTable
-  // doesn't know which sheet a peer is on at the hook level, so
-  // we flatten every "sheet:*" scope and pass the per-cell filter
-  // up to the renderer (which already filters by sheet.id +
-  // rowId + columnId in SheetTable). This keeps the hook signature
-  // compatible without a per-sheet hook variant.
+  // filters per-cell at render time so flattening every "sheet:*"
+  // scope here keeps the hook signature stable.
   const presenceMap = usePresenceStore((s) => s.byScope);
-  const wssPeers = useMemo<Peer[]>(() => {
+  const peers = useMemo<Peer[]>(() => {
     const next: Peer[] = [];
     for (const [scope, users] of Object.entries(presenceMap)) {
       if (!scope.startsWith('sheet:')) continue;
@@ -188,23 +134,14 @@ export function usePresence(projectId: string | null): {
     return next;
   }, [presenceMap]);
 
-  const peers = useMemo(() => [...webrtcPeers, ...wssPeers], [webrtcPeers, wssPeers]);
-
-  const mergeLocalState = (patch: Record<string, unknown>) => {
-    if (!projectId) return;
-    const provider = getWebrtc(projectId);
-    if (!provider) return;
-    const prev = (provider.awareness.getLocalState() ?? {}) as Record<string, unknown>;
-    provider.awareness.setLocalState({
-      ...prev,
-      user: prev.user ?? { name: myName, color: myColor },
-      ...patch,
-    });
-  };
-
-  const publishActiveCell = (cell: PeerCellRef | null) => mergeLocalState({ activeCell: cell });
-  const publishSelectedCells = (cells: PeerCellRef[]) => mergeLocalState({ selectedCells: cells });
-  const publishEditing = (editing: boolean) => mergeLocalState({ isEditing: editing });
+  // publish* functions are no-ops post v0.6 cleanup. The actual
+  // cursor emit lives in SheetTable's effect via
+  // writeQueue.emitPresence — these stubs only exist so existing
+  // call sites compile. They can be removed once SheetTable drops
+  // its publishActiveCell call.
+  const publishActiveCell = (_cell: PeerCellRef | null) => { void _cell; };
+  const publishSelectedCells = (_cells: PeerCellRef[]) => { void _cells; };
+  const publishEditing = (_editing: boolean) => { void _editing; };
 
   return { peers, myName, myColor, publishActiveCell, publishSelectedCells, publishEditing };
 }
