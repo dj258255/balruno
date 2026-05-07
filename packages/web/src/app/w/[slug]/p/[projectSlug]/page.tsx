@@ -338,15 +338,19 @@ export default function ProjectDetailPage() {
   // Selection is polymorphic — at most one of {sheet leaf, doc leaf}
   // is active. Keep a discriminated union so the main panel knows
   // whether to render the SheetTable or the doc editor placeholder.
-  // Defaults to the first available sheet on first hydrate so the
-  // page doesn't sit on a blank panel.
+  //
+  // Default selection (first sheet) is computed *during render* from
+  // the live sheets array — no effect-driven setState. The selector
+  // returns a stable object reference unless either the explicit
+  // selection or the first-sheet id changes, which is exactly the
+  // dependency set that should cause the main panel to re-render.
+  // Avoids the react-hooks/set-state-in-effect lint and the
+  // cascading-render warning the previous useEffect path triggered.
   type Selection = { kind: 'sheet' | 'doc'; id: string } | null;
-  const [selection, setSelection] = useState<Selection>(null);
-  useEffect(() => {
-    if (selection !== null) return;
-    if (sheets.length === 0) return;
-    setSelection({ kind: 'sheet', id: sheets[0].id });
-  }, [selection, sheets]);
+  const [explicitSelection, setExplicitSelection] = useState<Selection>(null);
+  const selection: Selection =
+    explicitSelection ?? (sheets[0] ? { kind: 'sheet', id: sheets[0].id } : null);
+  const setSelection = setExplicitSelection;
 
   const selectedSheet =
     selection?.kind === 'sheet'
