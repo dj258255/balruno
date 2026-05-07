@@ -1,6 +1,7 @@
 # Balruno Backend
 
-> Spring Boot 4.1 + Java 25 (LTS) + Gradle Kotlin DSL.
+> Spring Boot 4.0.6 + Java 25 (LTS) + PostgreSQL 18 + Hibernate 7 + Gradle Kotlin DSL.
+> Deployed on OCI ($0 free tier, ARM 12GB ×2 + x86 1GB ×2).
 > AGPL-3.0-or-later. **MIT 라이센스 frontend 코드 import 절대 금지** (ADR 0006 v1.2).
 
 ---
