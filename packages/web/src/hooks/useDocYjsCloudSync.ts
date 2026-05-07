@@ -44,8 +44,15 @@ export function useDocYjsCloudSync({
 }: UseDocYjsCloudSyncOptions): {
   status: SyncStatus;
   reconnect: () => void;
+  /** Live HocuspocusProvider — null until the first connect lands.
+   *  Callers needing awareness (collaboration cursors, presence
+   *  rendering) read provider.awareness from this. The reference
+   *  changes on every reconnect / token refresh, so subscribers
+   *  should re-bind their listeners when this swaps. */
+  provider: HocuspocusProvider | null;
 } {
   const [status, setStatus] = useState<SyncStatus>('idle');
+  const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
   const providerRef = useRef<HocuspocusProvider | null>(null);
   const idbProviderRef = useRef<IndexeddbPersistence | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -74,6 +81,7 @@ export function useDocYjsCloudSync({
       if (providerRef.current) {
         providerRef.current.destroy();
         providerRef.current = null;
+        setProvider(null);
       }
       // IndexeddbPersistence stays alive across reconnects within the
       // same documentId — it's keyed on a stable doc handle and the
@@ -97,7 +105,7 @@ export function useDocYjsCloudSync({
         const { collabToken, expiresAt } = await fetchCollabToken(documentId);
         if (cancelled) return;
 
-        const provider = new HocuspocusProvider({
+        const next = new HocuspocusProvider({
           url: collabBaseUrl(),
           name: documentId,
           document: doc,
@@ -106,16 +114,17 @@ export function useDocYjsCloudSync({
           // token expiry to force a fresh handshake with a new JWT.
           forceSyncInterval: false,
         });
-        providerRef.current = provider;
+        providerRef.current = next;
+        setProvider(next);
 
-        provider.on('status', (event: { status: WebSocketStatus }) => {
+        next.on('status', (event: { status: WebSocketStatus }) => {
           if (cancelled) return;
-          const next = mapStatus(event.status);
-          setStatus(next);
-          reportToStore(documentId, next);
+          const mapped = mapStatus(event.status);
+          setStatus(mapped);
+          reportToStore(documentId, mapped);
         });
 
-        provider.on('authenticationFailed', () => {
+        next.on('authenticationFailed', () => {
           if (cancelled) return;
           setStatus('error');
           reportToStore(documentId, 'error');
@@ -170,7 +179,7 @@ export function useDocYjsCloudSync({
     setStatus('connecting');
   };
 
-  return { status, reconnect };
+  return { status, reconnect, provider };
 }
 
 function mapStatus(ws: WebSocketStatus): SyncStatus {

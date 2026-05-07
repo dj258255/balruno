@@ -34,7 +34,7 @@ export function useDocCollab(documentId: string | null): {
     docRef.current = null;
   }
 
-  const { status } = useDocYjsCloudSync({ documentId, doc: docRef.current });
+  const { status, provider } = useDocYjsCloudSync({ documentId, doc: docRef.current });
   const user = useAuthStore((s) => s.user);
 
   const extensions = useMemo<Extensions>(() => {
@@ -44,19 +44,22 @@ export function useDocCollab(documentId: string | null): {
     const exts: Extensions = [
       Collaboration.configure({ fragment }),
     ];
-    if (user) {
+    // Cursor presence rides Hocuspocus's awareness; the provider
+    // attaches one and updates it whenever a peer's local state
+    // changes (selection, name, color). Until the provider has
+    // landed (first connect or after a token refresh) the cursor
+    // extension is omitted — it gets re-added on the next memo run
+    // because `provider` is a useState that triggers re-render.
+    if (user && provider) {
       exts.push(
         CollaborationCursor.configure({
-          // Awareness object comes from a y-websocket-style provider; the Hocuspocus client
-          // attaches one. When using only useDocYjsCloudSync's raw socket we can omit it
-          // and rely on the upcoming Hocuspocus migration to provide awareness.
-          provider: { awareness: { setLocalStateField: () => {}, on: () => {}, off: () => {}, getStates: () => new Map() } } as never,
+          provider,
           user: { name: user.name, color: hashColor(user.id) },
         }),
       );
     }
     return exts;
-  }, [documentId, user]);
+  }, [documentId, user, provider]);
 
   return { extensions, doc: docRef.current, status };
 }
