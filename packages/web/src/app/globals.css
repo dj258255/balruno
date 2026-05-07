@@ -1769,3 +1769,39 @@ tr.row-flash {
 .platform-electron:not(.platform-electron-mac) header {
   padding-right: 140px;
 }
+
+/* ============================================================================
+ * Mobile UX (ADR 0022 stage B-D)
+ * ============================================================================ */
+
+/* iOS Safari auto-zooms on inputs with font-size < 16px when focused.
+ * Override every cell editor / dialog input on mobile to 16px so the
+ * viewport stays put. The inline style sets a 13px default for desktop;
+ * !important wins because inline styles are otherwise the highest
+ * specificity. Caveat: rendering looks slightly bigger on mobile, but
+ * that's the cost of avoiding the zoom-and-restore dance.
+ */
+@media (max-width: 768px) {
+  input[type='text'],
+  input[type='number'],
+  input[type='date'],
+  input[type='url'],
+  input[type='email'],
+  input[type='search'],
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Disable iOS double-tap-zoom on interactive UI — taps already behave
+ * as click events; the 300ms delay before the zoom decision is pure
+ * latency cost. Constrained to controls so the editor body still
+ * supports pinch-zoom in case the user actually wants it. */
+button,
+[role='button'],
+.cell-editor-input,
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
