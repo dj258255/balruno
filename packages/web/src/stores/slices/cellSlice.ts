@@ -12,7 +12,7 @@ import type { Column, Row, CellValue, CellStyle, Sticker, ChangeEntry } from '@/
 import type { ProjectState } from '../projectStore';
 import { wouldCreateCycle } from '@/lib/linkGraph';
 import { toast } from '@/components/ui/Toast';
-import { emitOp } from '@/lib/sync/writeQueue';
+import { emitOp, hasSender } from '@/lib/sync/writeQueue';
 
 /** 현재 사용자 이름 읽기 (usePresence 가 쓰는 키). */
 function getCurrentUserName(): string {
@@ -63,7 +63,52 @@ const DEFAULT_CELL_STYLE: CellStyle = {
   textRotation: 0,
 };
 
-export const createCellActions = (_set: SetFn, get: GetFn) => ({
+/**
+ * Cell write — server-canonical mode does direct setState (Y.Doc has
+ * no observer mounted on the project page so the Y.Doc round-trip
+ * costs an extra event with no benefit). Local mode keeps the Y.Doc
+ * mutation as the persistence + observer path. ADR 0008 v0.6 first
+ * step: split the single write helper into the explicit branches.
+ */
+function writeCell(
+  set: SetFn,
+  doc: ReturnType<typeof getProjectDoc>,
+  projectId: string,
+  sheetId: string,
+  rowId: string,
+  columnId: string,
+  value: CellValue,
+): void {
+  if (hasSender()) {
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== projectId
+          ? p
+          : {
+              ...p,
+              sheets: p.sheets.map((s) =>
+                s.id !== sheetId
+                  ? s
+                  : {
+                      ...s,
+                      rows: s.rows.map((r) =>
+                        r.id !== rowId
+                          ? r
+                          : { ...r, cells: { ...r.cells, [columnId]: value } },
+                      ),
+                    },
+              ),
+            },
+      ),
+    }));
+    return;
+  }
+  // Local mode — Y.Doc owns the state path via its observer, IndexedDB
+  // owns persistence. Same shape as before this refactor.
+  updateCellInDoc(doc, sheetId, rowId, columnId, value);
+}
+
+export const createCellActions = (set: SetFn, get: GetFn) => ({
   // ==== 컬럼 ====
 
   addColumn: (
@@ -378,7 +423,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
         const targetSheetId = column.linkedSheetId;
 
         doc.transact(() => {
-          updateCellInDoc(doc, sheetId, rowId, columnId, value);
+          writeCell(set, doc, projectId, sheetId, rowId, columnId, value);
           if (!isRemote) emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value });
           recordChange();
           // 추가된 target row 의 reverse 컬럼에 현재 rowId 추가
@@ -391,7 +436,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
               .filter(Boolean);
             if (!currentLinks.includes(rowId)) {
               const next = [...currentLinks, rowId].join(',');
-              updateCellInDoc(doc, targetSheetId, targetRowId, reverseColId, next);
+              writeCell(set, doc, projectId, targetSheetId, targetRowId, reverseColId, next);
               if (!isRemote) {
                 emitOp({
                   kind: 'cell.update',
@@ -412,7 +457,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
               .map((s) => s.trim())
               .filter(Boolean);
             const next = currentLinks.filter((x) => x !== rowId).join(',');
-            updateCellInDoc(doc, targetSheetId, targetRowId, reverseColId, next);
+            writeCell(set, doc, projectId, targetSheetId, targetRowId, reverseColId, next);
             if (!isRemote) {
               emitOp({
                 kind: 'cell.update',
@@ -428,7 +473,7 @@ export const createCellActions = (_set: SetFn, get: GetFn) => ({
       }
     }
 
-    updateCellInDoc(doc, sheetId, rowId, columnId, value);
+    writeCell(set, doc, projectId, sheetId, rowId, columnId, value);
     if (!isRemote) emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value });
     recordChange();
   },

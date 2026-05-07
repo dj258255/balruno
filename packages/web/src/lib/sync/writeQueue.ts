@@ -111,6 +111,17 @@ export function emitPresence(cursor: unknown): boolean {
   return currentSender({ type: 'presence', userId: 'self', cursor });
 }
 
+/**
+ * Whether a server-canonical sender is currently registered.
+ * Callers (e.g. cellSlice) use this to choose between the
+ * direct-setState fast path (server-canonical) and the Y.Doc
+ * mutation path (local mode). True only while a project page is
+ * mounted with an active wss connection.
+ */
+export function hasSender(): boolean {
+  return currentSender !== null;
+}
+
 /** Test-only — reset module state between cases. */
 export function __resetWriteQueueForTests(): void {
   currentSender = null;
