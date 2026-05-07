@@ -2,13 +2,10 @@ import { create } from 'zustand';
 import type {
   Project,
   Sheet,
-  SheetKind,
   Column,
   Row,
   CellValue,
-  Sticker,
   CellStyle,
-  Folder,
   Doc,
 } from '@/types';
 import { createProjectActions } from './slices/projectSlice';
@@ -54,60 +51,12 @@ export interface ProjectState {
   selectedRows: SelectedRowData[];
   cellSelectionMode: CellSelectionMode;
 
-  // 프로젝트 액션
-  createProject: (name: string, description?: string, options?: { seedStarter?: boolean; seedStarterId?: string }) => string;
-  createFromSample: (
-    sampleId: string,
-    name: string,
-    t: (key: string) => string,
-    description?: string
-  ) => string | null;
-  updateProject: (
-    id: string,
-    updates: Partial<Pick<Project, 'name' | 'description' | 'syncMode' | 'syncRoomId' | 'visibility'>>
-  ) => void;
-  deleteProject: (id: string) => void;
-  duplicateProject: (id: string) => string;
-  reorderProjects: (fromIndex: number, toIndex: number) => void;
+  // 프로젝트 액션 — 로컬 UI 상태만. CRUD 는 backend REST.
   setCurrentProject: (id: string | null) => void;
   loadProjects: (projects: Project[]) => void;
 
-  // 시트 액션
-  createSheet: (
-    projectId: string,
-    name: string,
-    exportClassName?: string,
-    kind?: SheetKind,
-  ) => string;
-  updateSheet: (
-    projectId: string,
-    sheetId: string,
-    updates: Partial<Pick<Sheet,
-      | 'name'
-      | 'icon'
-      | 'kind'
-      | 'exportClassName'
-      | 'activeView'
-      | 'viewGroupColumnId'
-      | 'viewKanbanCoverColumnId'
-      | 'viewKanbanFieldIds'
-      | 'viewCalendarEndColumnId'
-      | 'viewGanttEndColumnId'
-      | 'viewGanttDependsColumnId'
-      | 'savedViews'
-      | 'activeSavedViewId'
-      | 'filterGroup'
-      | 'tags'
-    >>
-  ) => void;
-  deleteSheet: (projectId: string, sheetId: string) => void;
+  // 시트 액션 — 로컬 UI 상태만. CRUD 는 sheet tree wire ops (/lib/tree).
   setCurrentSheet: (id: string | null) => void;
-  duplicateSheet: (projectId: string, sheetId: string) => string;
-  reorderSheets: (projectId: string, fromIndex: number, toIndex: number) => void;
-  moveSheetToProject: (fromProjectId: string, toProjectId: string, sheetId: string) => void;
-  openSheetTab: (sheetId: string) => void;
-  closeSheetTab: (sheetId: string) => void;
-  reorderOpenTabs: (fromIndex: number, toIndex: number) => void;
 
   // 컬럼 액션
   addColumn: (
@@ -207,20 +156,6 @@ export interface ProjectState {
   clearSelectedRows: () => void;
   toggleRowSelection: (data: SelectedRowData) => void;
 
-  // 스티커 액션
-  addSticker: (
-    projectId: string,
-    sheetId: string,
-    sticker: Omit<Sticker, 'id' | 'createdAt'>
-  ) => string;
-  updateSticker: (
-    projectId: string,
-    sheetId: string,
-    stickerId: string,
-    updates: Partial<Sticker>
-  ) => void;
-  deleteSticker: (projectId: string, sheetId: string, stickerId: string) => void;
-
   // 셀 선택 모드 액션
   startCellSelection: (
     fieldLabel: string,
@@ -251,23 +186,6 @@ export interface ProjectState {
   openDocTab: (docId: string) => void;
   closeDocTab: (docId: string) => void;
 
-  // 폴더 액션
-  createFolder: (projectId: string, name: string, parentId?: string) => string;
-  updateFolder: (
-    projectId: string,
-    folderId: string,
-    updates: Partial<Pick<Folder, 'name' | 'color' | 'isExpanded'>>
-  ) => void;
-  deleteFolder: (projectId: string, folderId: string, deleteContents?: boolean) => void;
-  toggleFolderExpanded: (projectId: string, folderId: string) => void;
-  moveSheetToFolder: (projectId: string, sheetId: string, folderId: string | null) => void;
-  moveFolderToFolder: (projectId: string, folderId: string, parentId: string | null) => void;
-  reorderFolders: (
-    projectId: string,
-    parentId: string | null,
-    fromIndex: number,
-    toIndex: number
-  ) => void;
 }
 
 // ==== 스토어 구성 ====

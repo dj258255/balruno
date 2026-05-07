@@ -1,14 +1,14 @@
 /**
- * Column + Row + Cell + Sticker actions slice.
+ * Column + Row + Cell actions slice.
  *
- * TrackPhase 2 — 모든 write 가 Y.Doc helper 로 수렴.
- * Zustand 의 `projects` 배열은 Y.Doc observer 가 자동 동기화하므로 이 slice 는
- * `set()` 을 호출하지 않는다 (UI state 만 필요하면 예외).
+ * Server-canonical writes — every action calls writeSheet() / writeCell()
+ * for the local mutation, then emitOp() for the wire op + UndoMeta.
+ * useProjectSyncBridge echoes peer ops back via setState (origin='remote').
  */
 
 import { newId } from '@/lib/uuid';
 import type { StoreApi } from 'zustand';
-import type { Column, Row, CellValue, CellStyle, Sticker, ChangeEntry } from '@/types';
+import type { Column, Row, CellValue, CellStyle } from '@/types';
 import type { ProjectState } from '../projectStore';
 import { wouldCreateCycle } from '@/lib/linkGraph';
 import { toast } from '@/components/ui/Toast';
@@ -18,19 +18,6 @@ import type { UndoMeta } from '@/hooks/useProjectSync';
 import { getClientSessionId } from '@/lib/undo/sessionId';
 import { nextActionGroupId } from '@/lib/undo/actionGroup';
 import { useAuthStore } from '@/stores/authStore';
-
-/** 현재 사용자 이름 읽기 (usePresence 가 쓰는 키). */
-function getCurrentUserName(): string {
-  if (typeof window === 'undefined') return 'local';
-  return localStorage.getItem('balruno:user-name') ?? 'local';
-}
-
-/** 두 CellValue 가 실질적으로 같은지 (null/'' 취급). */
-function isSameValue(a: CellValue, b: CellValue): boolean {
-  if (a === b) return true;
-  if ((a === null || a === '') && (b === null || b === '')) return true;
-  return false;
-}
 
 /**
  * Build the UndoMeta wire envelope for an UndoEntry that the local
@@ -51,18 +38,6 @@ function metaOf(entry: { forward: UndoableOp[]; inverse: UndoableOp[] }): UndoMe
     clientSessionId: getClientSessionId(),
   };
 }
-import {
-  getProjectDoc,
-  // Cell style migrated to server-canonical (ADR 0008 v2.2 — wire
-  // op cell.style.update). Remaining Y.Doc helpers cover sticker +
-  // changelog which still live local-only; their server migration
-  // is the rest of v0.6 ζ.
-  addStickerInDoc,
-  updateStickerInDoc,
-  deleteStickerInDoc,
-  appendChangelogInDoc,
-} from '@/lib/ydoc';
-
 type SetFn = StoreApi<ProjectState>['setState'];
 type GetFn = StoreApi<ProjectState>['getState'];
 
@@ -591,7 +566,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     const isRemote = options?.origin === 'remote';
     const skipUndoPush = options?.skipUndoPush ?? false;
     const id = options?.columnId ?? newId();
-    const doc = getProjectDoc(projectId);
 
     // link/lookup/rollup 사이클 사전 검사. 생성 차단.
     if (column.type === 'link' || column.type === 'lookup' || column.type === 'rollup') {
@@ -627,50 +601,47 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
           width: 160,
         };
         const linkedSheetId = column.linkedSheetId;
-        // 한 transaction 에 양쪽 컬럼 생성
-        doc.transact(() => {
-          writeSheet(
-            set,
-            projectId,
-            sheetId,
-            (s) =>
-              s.columns.some((c) => c.id === forwardCol.id)
-                ? s
-                : { ...s, columns: [...s.columns, forwardCol] },
-          );
-          writeSheet(
-            set,
-            projectId,
-            linkedSheetId,
-            (s) =>
-              s.columns.some((c) => c.id === reverseCol.id)
-                ? s
-                : { ...s, columns: [...s.columns, reverseCol] },
-          );
-          // Cascade UndoMeta rides on the FIRST emit only — server
-          // gets one op_idempotency row with both ops in the forward
-          // + inverse arrays. The SECOND emit goes out as a normal
-          // (non-undoable) op so the cascade collapses to a single
-          // Cmd+Z press. (op_idempotency_undo_lookup partial index
-          // filters NULL inverse_payload rows out of the lookup.)
-          const linkAddMeta = !isRemote && !skipUndoPush
-            ? pushAddLinkColumnsUndo(
-                projectId,
-                sheetId,
-                forwardCol,
-                linkedSheetId,
-                reverseCol,
-              )
-            : null;
-          if (!isRemote) {
-            emitOp({ kind: 'column.add', sheetId, column: forwardCol }, linkAddMeta);
-            emitOp({
-              kind: 'column.add',
-              sheetId: linkedSheetId,
-              column: reverseCol,
-            });
-          }
-        });
+        writeSheet(
+          set,
+          projectId,
+          sheetId,
+          (s) =>
+            s.columns.some((c) => c.id === forwardCol.id)
+              ? s
+              : { ...s, columns: [...s.columns, forwardCol] },
+        );
+        writeSheet(
+          set,
+          projectId,
+          linkedSheetId,
+          (s) =>
+            s.columns.some((c) => c.id === reverseCol.id)
+              ? s
+              : { ...s, columns: [...s.columns, reverseCol] },
+        );
+        // Cascade UndoMeta rides on the FIRST emit only — server
+        // gets one op_idempotency row with both ops in the forward
+        // + inverse arrays. The SECOND emit goes out as a normal
+        // (non-undoable) op so the cascade collapses to a single
+        // Cmd+Z press. (op_idempotency_undo_lookup partial index
+        // filters NULL inverse_payload rows out of the lookup.)
+        const linkAddMeta = !isRemote && !skipUndoPush
+          ? pushAddLinkColumnsUndo(
+              projectId,
+              sheetId,
+              forwardCol,
+              linkedSheetId,
+              reverseCol,
+            )
+          : null;
+        if (!isRemote) {
+          emitOp({ kind: 'column.add', sheetId, column: forwardCol }, linkAddMeta);
+          emitOp({
+            kind: 'column.add',
+            sheetId: linkedSheetId,
+            column: reverseCol,
+          });
+        }
         return id;
       }
     }
@@ -697,15 +668,13 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
       const project = state.projects.find((p) => p.id === projectId);
       const sheet = project?.sheets.find((s) => s.id === sheetId);
       if (sheet && sheet.rows.length > 0) {
-        doc.transact(() => {
-          for (const row of sheet.rows) {
-            const existing = row.cells[id];
-            // 빈 셀에만 prefill — 기존 값 덮어쓰기 방지
-            if (existing === undefined || existing === null || existing === '') {
-              writeCell(set, projectId, sheetId, row.id, id, fullColumn.formula!);
-            }
+        for (const row of sheet.rows) {
+          const existing = row.cells[id];
+          // 빈 셀에만 prefill — 기존 값 덮어쓰기 방지
+          if (existing === undefined || existing === null || existing === '') {
+            writeCell(set, projectId, sheetId, row.id, id, fullColumn.formula!);
           }
-        });
+        }
       }
     }
 
@@ -813,7 +782,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
   ) => {
     const isRemote = options?.origin === 'remote';
     const skipUndoPush = options?.skipUndoPush ?? false;
-    const doc = getProjectDoc(projectId);
     const state = get();
     const project = state.projects.find((p) => p.id === projectId);
     const sourceSheet = project?.sheets.find((s) => s.id === sheetId);
@@ -882,42 +850,40 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
         }
       }
 
-      doc.transact(() => {
-        writeSheet(
-          set,
-          projectId,
-          sheetId,
-          (s) => removeColumnAndCells(s, columnId),
-        );
-        writeSheet(
-          set,
-          projectId,
-          linkedSheetId,
-          (s) => removeColumnAndCells(s, reverseColumnId),
-        );
-        // Cascade UndoMeta on the FIRST emit only (same pattern as
-        // addColumn link branch — server gets one op_idempotency row
-        // covering both column deletes for atomic Cmd+Z).
-        const linkDeleteMeta = !isRemote && !skipUndoPush && column && reverseColumn
-          ? pushDeleteLinkColumnsUndo(
-              projectId,
-              sheetId,
-              column,
-              forwardCells,
-              linkedSheetId,
-              reverseColumn,
-              reverseCells,
-            )
-          : null;
-        if (!isRemote) {
-          emitOp({ kind: 'column.delete', sheetId, columnId }, linkDeleteMeta);
-          emitOp({
-            kind: 'column.delete',
-            sheetId: linkedSheetId,
-            columnId: reverseColumnId,
-          });
-        }
-      });
+      writeSheet(
+        set,
+        projectId,
+        sheetId,
+        (s) => removeColumnAndCells(s, columnId),
+      );
+      writeSheet(
+        set,
+        projectId,
+        linkedSheetId,
+        (s) => removeColumnAndCells(s, reverseColumnId),
+      );
+      // Cascade UndoMeta on the FIRST emit only (same pattern as
+      // addColumn link branch — server gets one op_idempotency row
+      // covering both column deletes for atomic Cmd+Z).
+      const linkDeleteMeta = !isRemote && !skipUndoPush && column && reverseColumn
+        ? pushDeleteLinkColumnsUndo(
+            projectId,
+            sheetId,
+            column,
+            forwardCells,
+            linkedSheetId,
+            reverseColumn,
+            reverseCells,
+          )
+        : null;
+      if (!isRemote) {
+        emitOp({ kind: 'column.delete', sheetId, columnId }, linkDeleteMeta);
+        emitOp({
+          kind: 'column.delete',
+          sheetId: linkedSheetId,
+          columnId: reverseColumnId,
+        });
+      }
       return;
     }
     writeSheet(
@@ -1064,52 +1030,10 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     // undo entry or Cmd+Z+Cmd+Z chases its tail.
     const isRemote = options?.origin === 'remote';
     const skipUndoPush = options?.skipUndoPush ?? false;
-    const doc = getProjectDoc(projectId);
     const state = get();
     const project = state.projects.find((p) => p.id === projectId);
     const sourceSheet = project?.sheets.find((s) => s.id === sheetId);
     const column = sourceSheet?.columns.find((c) => c.id === columnId);
-
-    // 이전 값 snapshot + changelog 기록
-    // (link 양방향 미러링 분기 전에 미리 찍어둠)
-    const prevValue = sourceSheet?.rows.find((r) => r.id === rowId)?.cells[columnId] ?? null;
-    const recordChange = () => {
-      if (isSameValue(prevValue, value)) return; // no-op 스킵
-
-      // 역방향 링크 — 같은 row 의 task-link 셀들이 가리키는 task row IDs 를 수집.
-      // 이걸 저장해두면 task 레코드 열 때 "이 task 와 연결된 변경" 을 역조회 가능.
-      const linkedTaskIds: string[] = [];
-      if (sourceSheet) {
-        const currentRow = sourceSheet.rows.find((r) => r.id === rowId);
-        if (currentRow) {
-          for (const col of sourceSheet.columns) {
-            if (col.type === 'task-link') {
-              const v = currentRow.cells[col.id];
-              if (typeof v === 'string' && v.trim()) {
-                for (const tid of v.split(',').map((s) => s.trim()).filter(Boolean)) {
-                  if (!linkedTaskIds.includes(tid)) linkedTaskIds.push(tid);
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // 수식 입력 (`=...`) 은 엔진 결과가 아니라 원본 수식이 바뀌어도 의미 있음 — 기록
-      const entry: ChangeEntry = {
-        id: newId(),
-        timestamp: Date.now(),
-        userId: getCurrentUserName(),
-        userName: getCurrentUserName(),
-        sheetId,
-        rowId,
-        columnId,
-        before: prevValue,
-        after: value,
-        ...(linkedTaskIds.length > 0 ? { linkedTaskIds } : {}),
-      };
-      appendChangelogInDoc(doc, entry);
-    };
 
     // Track양방향 미러링: link 타입 셀 업데이트 시 반대쪽도 동기화
     if (
@@ -1128,41 +1052,18 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
         const reverseColId = column.reverseColumnId;
         const targetSheetId = column.linkedSheetId;
 
-        doc.transact(() => {
-          writeCell(set, projectId, sheetId, rowId, columnId, value);
-          if (!isRemote) emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value });
-          recordChange();
-          // 추가된 target row 의 reverse 컬럼에 현재 rowId 추가
-          for (const targetRowId of added) {
-            const targetRow = targetSheet.rows.find((r) => r.id === targetRowId);
-            if (!targetRow) continue;
-            const currentLinks = String(targetRow.cells[reverseColId] ?? '')
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean);
-            if (!currentLinks.includes(rowId)) {
-              const next = [...currentLinks, rowId].join(',');
-              writeCell(set, projectId, targetSheetId, targetRowId, reverseColId, next);
-              if (!isRemote) {
-                emitOp({
-                  kind: 'cell.update',
-                  sheetId: targetSheetId,
-                  rowId: targetRowId,
-                  columnId: reverseColId,
-                  value: next,
-                });
-              }
-            }
-          }
-          // 제거된 target row 의 reverse 컬럼에서 현재 rowId 제거
-          for (const targetRowId of removed) {
-            const targetRow = targetSheet.rows.find((r) => r.id === targetRowId);
-            if (!targetRow) continue;
-            const currentLinks = String(targetRow.cells[reverseColId] ?? '')
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean);
-            const next = currentLinks.filter((x) => x !== rowId).join(',');
+        writeCell(set, projectId, sheetId, rowId, columnId, value);
+        if (!isRemote) emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value });
+        // 추가된 target row 의 reverse 컬럼에 현재 rowId 추가
+        for (const targetRowId of added) {
+          const targetRow = targetSheet.rows.find((r) => r.id === targetRowId);
+          if (!targetRow) continue;
+          const currentLinks = String(targetRow.cells[reverseColId] ?? '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+          if (!currentLinks.includes(rowId)) {
+            const next = [...currentLinks, rowId].join(',');
             writeCell(set, projectId, targetSheetId, targetRowId, reverseColId, next);
             if (!isRemote) {
               emitOp({
@@ -1174,11 +1075,32 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
               });
             }
           }
-        });
+        }
+        // 제거된 target row 의 reverse 컬럼에서 현재 rowId 제거
+        for (const targetRowId of removed) {
+          const targetRow = targetSheet.rows.find((r) => r.id === targetRowId);
+          if (!targetRow) continue;
+          const currentLinks = String(targetRow.cells[reverseColId] ?? '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const next = currentLinks.filter((x) => x !== rowId).join(',');
+          writeCell(set, projectId, targetSheetId, targetRowId, reverseColId, next);
+          if (!isRemote) {
+            emitOp({
+              kind: 'cell.update',
+              sheetId: targetSheetId,
+              rowId: targetRowId,
+              columnId: reverseColId,
+              value: next,
+            });
+          }
+        }
         return;
       }
     }
 
+    const prevValue = sourceSheet?.rows.find((r) => r.id === rowId)?.cells[columnId] ?? null;
     writeCell(set, projectId, sheetId, rowId, columnId, value);
     if (!isRemote) {
       const cellUpdateMeta = !skipUndoPush
@@ -1186,7 +1108,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
         : null;
       emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value }, cellUpdateMeta);
     }
-    recordChange();
   },
 
   updateCellStyle: (
@@ -1358,32 +1279,4 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     }
   },
 
-  // ==== 스티커 ====
-
-  addSticker: (
-    projectId: string,
-    sheetId: string,
-    sticker: Omit<Sticker, 'id' | 'createdAt'>
-  ): string => {
-    const id = newId();
-    addStickerInDoc(getProjectDoc(projectId), sheetId, {
-      ...sticker,
-      id,
-      createdAt: Date.now(),
-    });
-    return id;
-  },
-
-  updateSticker: (
-    projectId: string,
-    sheetId: string,
-    stickerId: string,
-    updates: Partial<Sticker>
-  ) => {
-    updateStickerInDoc(getProjectDoc(projectId), sheetId, stickerId, updates);
-  },
-
-  deleteSticker: (projectId: string, sheetId: string, stickerId: string) => {
-    deleteStickerInDoc(getProjectDoc(projectId), sheetId, stickerId);
-  },
 });

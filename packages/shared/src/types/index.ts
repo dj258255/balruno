@@ -62,7 +62,6 @@ export interface Project {
   docTree?: TreeNode[];
   folders?: Folder[];       // 시트 폴더 (navigation only — ACL 없음)
   docs?: Doc[];             // GDD · 설계안 문서 (Phase A) — Notion 식 nested 트리 (Doc.parentId)
-  changelog?: ChangeEntry[]; // Track변경 이력 (내부 기록)
   // 동기화 설정
   syncMode?: ProjectSyncMode;  // 'local' (기본) | 'cloud'
   syncRoomId?: string;         // 클라우드 모드 시 협업 룸 ID
@@ -149,19 +148,6 @@ export interface FilterGroup {
   groups?: FilterGroup[];
 }
 
-// 스티커 타입
-export interface Sticker {
-  id: string;
-  text: string;
-  color: string;  // 배경색
-  x: number;      // 위치 X (퍼센트)
-  y: number;      // 위치 Y (퍼센트)
-  width: number;  // 너비 (px)
-  height: number; // 높이 (px)
-  fontSize?: number;
-  createdAt: number;
-}
-
 // 뷰 타입 — 'heatmap'/'curve'/'probability'/'diff' 는 game-domain 차별 view (v0.5+)
 export type ViewType =
   | 'grid'
@@ -189,7 +175,6 @@ export interface Sheet {
   kind?: SheetKind;
   columns: Column[];
   rows: Row[];
-  stickers?: Sticker[];  // 스티커 목록
   exportClassName?: string;  // 게임 엔진 내보내기 시 사용할 클래스명 (영문)
   folderId?: string;     // 소속 폴더 ID (없으면 루트)
   /** 현재 활성 뷰 (기본 'grid'). 단일 뷰 MVP — 다중 뷰 저장은 추후 */
@@ -466,17 +451,3 @@ export interface SheetMetadata {
   generatedAt?: number;
 }
 
-// 변경 이력 엔트리 (내부 기록용, UI 는 아직 미완)
-export interface ChangeEntry {
-  id: string;
-  timestamp: number;
-  userId: string;
-  userName: string;
-  sheetId: string;
-  rowId: string;
-  columnId: string;
-  before: CellValue;
-  after: CellValue;
-  reason?: string;
-  linkedTaskIds?: string[];
-}

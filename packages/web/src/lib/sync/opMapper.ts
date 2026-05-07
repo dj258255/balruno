@@ -13,10 +13,8 @@
  * policy: it is the PK of the backend's op_idempotency cache, so
  * collision resistance matters more than time-ordering.
  *
- * Sticker actions and doc-body actions are intentionally NOT mapped —
- * stickers stay local-only in v0.5 (ADR 0008 §3.6 deferred), and doc
- * body lives on the separate Hocuspocus channel (ADR 0017 §2.1
- * pattern B).
+ * Doc-body actions are intentionally NOT mapped — they live on the
+ * separate Hocuspocus channel (ADR 0017 §2.1 pattern B).
  */
 
 import type { Column, Row, CellValue, CellStyle } from '@balruno/shared';
