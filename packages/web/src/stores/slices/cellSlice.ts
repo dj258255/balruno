@@ -12,7 +12,7 @@ import type { Column, Row, CellValue, CellStyle, Sticker, ChangeEntry } from '@/
 import type { ProjectState } from '../projectStore';
 import { wouldCreateCycle } from '@/lib/linkGraph';
 import { toast } from '@/components/ui/Toast';
-import { emitOp, hasSender } from '@/lib/sync/writeQueue';
+import { emitOp } from '@/lib/sync/writeQueue';
 
 /** 현재 사용자 이름 읽기 (usePresence 가 쓰는 키). */
 function getCurrentUserName(): string {
@@ -64,11 +64,14 @@ const DEFAULT_CELL_STYLE: CellStyle = {
 };
 
 /**
- * Sheet-scoped write — server-canonical mode does direct setState
- * (Y.Doc has no observer mounted on the project page so the round-
- * trip is wasted), local mode keeps the Y.Doc mutation as the
- * persistence + observer path. v0.6 cleanup pattern: every write
- * passes through here so the two modes stay symmetric.
+ * Sheet-scoped write — direct setState only. v0.6 cleanup retired
+ * the Y.Doc fallback because the local-mode `/` page now redirects
+ * to /login and every other surface mounts useProjectSyncBridge
+ * (which registers the sender via setSyncSender). The yDocFn arg
+ * stays in the signature so existing call sites compile while
+ * follow-up commits delete the Y.Doc helpers from lib/ydoc — the
+ * wrapper is invoked but the side-effect path is the setState
+ * branch only.
  */
 function writeSheet(
   yDocFn: () => void,
@@ -77,20 +80,17 @@ function writeSheet(
   sheetId: string,
   mutator: (sheet: import('@/types').Sheet) => import('@/types').Sheet,
 ): void {
-  if (hasSender()) {
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id !== projectId
-          ? p
-          : {
-              ...p,
-              sheets: p.sheets.map((s) => (s.id !== sheetId ? s : mutator(s))),
-            },
-      ),
-    }));
-    return;
-  }
-  yDocFn();
+  void yDocFn;
+  set((state) => ({
+    projects: state.projects.map((p) =>
+      p.id !== projectId
+        ? p
+        : {
+            ...p,
+            sheets: p.sheets.map((s) => (s.id !== sheetId ? s : mutator(s))),
+          },
+    ),
+  }));
 }
 
 /** writeCell — narrow case for cell.update (most frequent op). */

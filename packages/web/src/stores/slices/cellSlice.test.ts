@@ -129,20 +129,20 @@ describe('cellSlice (server-canonical mode, hasSender=true)', () => {
   });
 });
 
-describe('cellSlice (no sender, hasSender=false)', () => {
+describe('cellSlice (no sender, post-v0.6 cleanup)', () => {
   beforeEach(() => {
     useProjectStore.setState({ projects: [structuredClone(projectSeed)] });
     __resetWriteQueueForTests();
   });
 
-  it('hasSender path is gated — no sender means the Y.Doc helper runs', () => {
-    // The Y.Doc path is exercised by the local-mode UI in production
-    // and is hard to mock in isolation (depends on yjs internals).
-    // This case asserts the gate's *false* branch doesn't crash even
-    // though we can't observe the resulting Y.Doc state without
-    // mounting useYDocSync. The lack of throw is the spec.
-    expect(() =>
-      useProjectStore.getState().updateCell('p1', 'sh1', 'r1', 'c1', 42),
-    ).not.toThrow();
+  it('updateCell still writes setState even without a sender', () => {
+    // v0.6 cleanup: the Y.Doc fallback was retired (the legacy
+    // /page entry that depended on it now redirects). writeSheet
+    // collapses to direct setState in both branches — sender
+    // registration controls whether emitOp goes anywhere, not
+    // whether the local state lands.
+    useProjectStore.getState().updateCell('p1', 'sh1', 'r1', 'c1', 42);
+    const r = useProjectStore.getState().projects[0].sheets[0].rows[0];
+    expect(r.cells.c1).toBe(42);
   });
 });
