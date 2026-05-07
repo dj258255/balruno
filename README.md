@@ -78,7 +78,7 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 |----------|----------|
 | **Sync** | Server-canonical wss op log (sheet/tree) + Hocuspocus (doc bodies, yjs CRDT) — ADR 0008 |
 | **Presence** | Sheet cell awareness via wss + doc cursor via Hocuspocus awareness |
-| **Comments** | Sheet cell + doc body (range-anchored highlights) — ADR 0024 |
+| **Comments** | Sheet cell + doc body (range-anchored highlights) + reply thread (1-level nesting, Slack/Linear pattern) — ADR 0024 v2.2 |
 | **@mentions** | Tiptap mention extension + inbox bell + per-mention notification — ADR 0024 |
 
 #### Platform
@@ -87,7 +87,7 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 | **Auth** | OAuth-only (GitHub + Google) + JWT session cookie — no SMTP dependency |
 | **Workspaces** | Multi-tenant with role-based access (Owner / Admin / Editor / Viewer) |
 | **Projects** | Per-workspace, with member invites + role management |
-| **Mobile** | Sidebar drawer + sticky first column + iOS 16px input + 44px hit targets — ADR 0022 |
+| **Mobile** | Sidebar drawer + sticky first column + iOS 16px input + 44px hit targets + bottom-sheet cell editor + long-press contextmenu + sticky Tiptap toolbar — ADR 0022 v1.3 |
 | **Desktop** | Native Mac / Windows / Linux app (Electron 41 + auto-update via GitHub Releases) |
 | **i18n** | UI + 12-group starter pack catalog fully translated (en, ko) |
 | **Observability** | Sentry SaaS (env-gated, optional for self-host) |
@@ -95,16 +95,19 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 ### Recently shipped
 
 - ✅ **ADR 0021 v3.0 phase 5** — server-backed persistent undo (refresh-survival, 120-min Baserow window, per-tab scope, hydrate-on-mount)
+- ✅ **ADR 0008 v2.2** — cell style server-canonical sync (was silent local-only — now broadcasts to peers + cross-device)
+- ✅ **ADR 0022 v1.3** — mobile UX completion (6 stages prod: drawer · sticky col · bottom-sheet editor · Tiptap mobile toolbar · long-press contextmenu · 44px hit targets)
+- ✅ **ADR 0024 v2.2** — comment reply threads (1-level nesting via `parentId`, Slack/Linear pattern, both cell + doc panels)
 
 ### Planned (next 6 months)
 
 | ADR | Feature | Stack | Status |
 |---|---|---|---|
-| **0022 v1.2** | Mobile UX completion — bottom-sheet cell editor + Tiptap mobile toolbar + long-press drag-drop alt | Frontend | Next priority (~2 weeks) |
+| **0008 ζ.3** | `lib/ydoc.ts` complete deletion — sticker + changelog migration to server-canonical wire ops, V15 schema | Spring backend + Frontend | Next (~1 week) |
+| **0024 stage I** | @mention email + browser push delivery (Resend free tier 100/day, Brevo 300/day, Web Push VAPID) | Spring backend + Web Push | Deferred (waiting on real users) |
+| **0022 polish** | Mobile link picker search/filter for 100+ row sheets | Frontend | Minor |
 | **0023 v3.0** | AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | Deferred by user |
 | **0025 v2.0** | ML — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity · RAG over comments | **Same Python sidecar** | Deferred by user |
-| **0024 v2.1** | Comment reply thread + @mention email/push delivery | Spring + ESP API | Separate ADR |
-| **0008 v2.2** | Cell style sync (currently Y.Doc local-only) | Spring backend | TBD |
 | (TBD) | Re-introduce additional views (Kanban / Calendar / Gantt) on top of server-canonical sync | Frontend | TBD |
 
 ### Quick Start
@@ -212,16 +215,17 @@ We welcome contributions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before 
 - Sentry observability (env-gated, free tier)
 - **Undo / redo** — full op coverage (cell / row / column / tree) — ADR 0021 phases 1-4
 - **Server-backed persistent undo** — refresh-survival, per-tab scope, 120-min Baserow window, hydrate-on-mount — ADR 0021 v3.0 phase 5
-- **Comments + @mentions** — sheet cells + doc body (range-anchored highlights via Tiptap Decoration plugin), inbox bell — ADR 0024
-- **Mobile UX** — sidebar drawer + sticky first column + iOS 16px input + 44px hit targets — ADR 0022 (Stage A / B / E)
+- **Comments + @mentions** — sheet cells + doc body (range-anchored highlights via Tiptap Decoration plugin), inbox bell, **reply threads (1-level nesting via parentId, Slack/Linear pattern)** — ADR 0024 v2.2
+- **Mobile UX** — full 6-stage prod: sidebar drawer + sticky first column + iOS 16px input + 44px hit targets + **bottom-sheet portal cell editor + long-press synthetic contextmenu + sticky Tiptap mobile toolbar** — ADR 0022 v1.3
+- **Cell style server-canonical sync** — was silent local-only, now broadcasts to all peers and survives cross-device — ADR 0008 v2.2
 - **v0.6 Y.Doc cleanup** — legacy local-mode + 294 dead files removed (-77K lines), only server-canonical mode remains — ADR 0008 §10
 
 **Next (planned, ~6 months)**
-- Mobile UX completion — bottom-sheet cell editor + Tiptap mobile toolbar + long-press drag-drop alternative (ADR 0022 stage B' / C / D)
+- `lib/ydoc.ts` complete deletion — sticker + changelog migration to wire ops, V15 schema (ADR 0008 ζ.3)
+- @mention email + browser push delivery — Resend/Brevo free tier + Web Push VAPID (ADR 0024 stage I, deferred until real users land)
+- Mobile link picker search/filter (ADR 0022 minor polish for 100+ row sheets)
 - AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) — ADR 0023
 - ML capabilities — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity — ADR 0025
-- Comment reply threads + email/push @mention delivery (ADR 0024 stage H / I)
-- Cell style sync (server-canonical migration of remaining Y.Doc-local cell styling)
 - Re-introduce additional views (Kanban / Calendar / Gantt) on top of server-canonical sync
 - Share links per view (read-only)
 - Webhook integrations (GitHub / Discord)
@@ -290,7 +294,7 @@ For commercial licensing inquiries: dj258255@naver.com
 |----------|------|
 | **동기화** | Server-canonical wss op log (시트/트리) + Hocuspocus (문서 본문, yjs CRDT) — ADR 0008 |
 | **Presence** | 시트 셀 awareness via wss + 문서 커서 via Hocuspocus awareness |
-| **코멘트** | 시트 셀 + 문서 본문 (범위 핀 하이라이트) — ADR 0024 |
+| **코멘트** | 시트 셀 + 문서 본문 (범위 핀 하이라이트) + 답글 스레드 (1단계 nesting, Slack/Linear 패턴) — ADR 0024 v2.2 |
 | **@멘션** | Tiptap mention 확장 + 인박스 종 + per-mention 알림 — ADR 0024 |
 
 #### 플랫폼
@@ -299,7 +303,7 @@ For commercial licensing inquiries: dj258255@naver.com
 | **인증** | OAuth 만 (GitHub + Google) + JWT 세션 쿠키 — SMTP 의존성 0 |
 | **워크스페이스** | 멀티 테넌트 + 역할 (Owner / Admin / Editor / Viewer) |
 | **프로젝트** | 워크스페이스 별, 멤버 초대 + 역할 관리 |
-| **모바일** | 사이드바 드로어 + 첫 컬럼 sticky + iOS 16px input + 44px hit target — ADR 0022 |
+| **모바일** | 사이드바 드로어 + 첫 컬럼 sticky + iOS 16px input + 44px hit target + bottom-sheet 셀 에디터 + 길게 누르기 컨텍스트 메뉴 + 문서 sticky Tiptap 툴바 — ADR 0022 v1.3 |
 | **데스크톱** | Mac / Windows / Linux 네이티브 (Electron 41 + GitHub Releases 자동 업데이트) |
 | **i18n** | UI + 12-그룹 스타터 팩 카탈로그 영/한 번역 |
 | **관측** | Sentry SaaS (env-gated, 셀프호스트는 선택) |
@@ -307,17 +311,20 @@ For commercial licensing inquiries: dj258255@naver.com
 ### 출하 완료 + 계획 중
 
 **Shipped (이번 sprint)**
-- ✅ ADR 0021 v3.0 phase 5 — server-backed persistent undo (refresh 후 Cmd+Z 가능, 120 분 Baserow 윈도우)
+- ✅ ADR 0021 v3.0 phase 5 — server-backed persistent undo (refresh 후 Cmd+Z, 120 분 Baserow 윈도우)
+- ✅ ADR 0008 v2.2 — 셀 스타일 server-canonical 동기화 (이전엔 silent local-only — 이제 peer + cross-device 진짜 sync)
+- ✅ ADR 0022 v1.3 — 모바일 UX 6 stage 풀 (드로어 · sticky 컬럼 · bottom-sheet 셀 에디터 · Tiptap 모바일 툴바 · 길게 누르기 컨텍스트 메뉴 · 44px hit target)
+- ✅ ADR 0024 v2.2 — 코멘트 답글 스레드 (V11 schema 의 parentId 활용, 1단계 nesting, Slack/Linear 패턴, cell + doc 양 panel)
 
 **계획 중 (다음 6 개월)**
 
 | ADR | 기능 | 스택 | 상태 |
 |---|---|---|---|
-| **0022 v1.2** | Mobile UX 완성 — bottom-sheet cell editor + Tiptap mobile toolbar + long-press drag-drop | Frontend | 다음 1순위 (~2주) |
+| **0008 ζ.3** | `lib/ydoc.ts` 통째 삭제 — sticker + changelog 마이그레이션, V15 schema | Spring backend + Frontend | 다음 (~1주) |
+| **0024 stage I** | @mention 이메일 + 브라우저 푸시 delivery (Resend free 100/day, Brevo 300/day, Web Push VAPID $0) | Spring backend + Web Push | 사용자 등장 시 |
+| **0022 polish** | 모바일 link picker 검색/필터 (100+ 행 시트) | Frontend | 마이너 |
 | **0023 v3.0** | AI 통합 (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | 사용자 보류 |
 | **0025 v2.0** | ML — outlier 탐지 · 클러스터 시각화 · curve fit · TrueSkill · 임베딩 유사도 · RAG | **같은 Python sidecar** | 사용자 보류 |
-| **0024 v2.1** | Comment reply thread + @mention email/push delivery | Spring + ESP API | 별 ADR |
-| **0008 v2.2** | 셀 스타일 동기화 (현재 Y.Doc 로컬 only) | Spring backend | TBD |
 | (TBD) | 추가 뷰 재도입 (Kanban / Calendar / Gantt) — server-canonical sync 위에 | Frontend | TBD |
 
 ### 빠른 시작
