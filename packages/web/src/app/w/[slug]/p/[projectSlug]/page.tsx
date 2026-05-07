@@ -45,6 +45,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { setActiveStack } from '@/lib/undo/undoStack';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { CellCommentPanel } from '@/components/comments/CellCommentPanel';
+import { DocCommentPanel } from '@/components/comments/DocCommentPanel';
+import { InboxBell } from '@/components/comments/InboxBell';
 import { ServerDocView } from '@/components/docs/ServerDocView';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
 import SheetTable from '@/components/sheet/SheetTable';
@@ -504,6 +506,19 @@ export default function ProjectDetailPage() {
   const commentPanelOpen = useCommentSelectionStore((s) => s.panelOpen);
   const setCommentPanelOpen = useCommentSelectionStore((s) => s.setPanelOpen);
   const commentSelection = useCommentSelectionStore((s) => s.selection);
+  const setCommentSelection = useCommentSelectionStore((s) => s.setSelection);
+
+  // Mirror the active doc into commentSelection so DocCommentPanel
+  // can render comments scoped to the current document. SheetTable's
+  // own effect handles the sheet-cell case; this effect covers
+  // doc-body. When neither a sheet-cell nor a doc is active the
+  // selection is left as-is (sheet selection persists across a brief
+  // tree click flicker that way).
+  useEffect(() => {
+    if (selection?.kind === 'doc' && selection.id) {
+      setCommentSelection({ kind: 'doc-body', documentId: selection.id });
+    }
+  }, [selection, setCommentSelection]);
 
   // Mobile sidebar drawer state — desktop (md+) ignores this and
   // renders the sidebar inline. ADR 0022 stage A.
@@ -553,7 +568,7 @@ export default function ProjectDetailPage() {
           <button
             type="button"
             onClick={() => setMobileSidebarOpen(true)}
-            className="rounded p-1.5 hover:bg-[var(--bg-hover)] md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded hover:bg-[var(--bg-hover)] md:hidden"
             style={{ color: 'var(--text-secondary)' }}
             aria-label="시트 사이드바 열기"
           >
@@ -571,18 +586,17 @@ export default function ProjectDetailPage() {
           <button
             type="button"
             onClick={() => setCommentPanelOpen(!commentPanelOpen)}
-            className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-[var(--bg-hover)]"
+            className="inline-flex items-center gap-1 rounded px-2 py-1 max-md:min-h-11 max-md:px-3 hover:bg-[var(--bg-hover)]"
             style={{
               color: commentPanelOpen ? 'var(--text-primary)' : 'var(--text-secondary)',
               background: commentPanelOpen ? 'var(--bg-hover)' : undefined,
             }}
-            title={commentSelection?.kind === 'sheet-cell'
-              ? '코멘트 패널 토글'
-              : '셀을 선택하면 활성화'}
+            title="코멘트 패널 토글"
           >
             <MessageSquare className="h-3.5 w-3.5" />
             코멘트
           </button>
+          <InboxBell />
           <span style={{ color: 'var(--text-secondary)' }}>동기화:</span>
           <ConnectionStatus />
           <code className="font-mono" style={{ color: 'var(--text-tertiary)' }}>
@@ -722,7 +736,17 @@ export default function ProjectDetailPage() {
               onClose={() => setCommentPanelOpen(false)}
             />
           )}
-          {commentPanelOpen && commentSelection?.kind !== 'sheet-cell' && (
+          {commentPanelOpen && commentSelection?.kind === 'doc-body' && (
+            <DocCommentPanel
+              projectId={project.id}
+              documentId={commentSelection.documentId}
+              docTitle={selectedDocTitle || '문서'}
+              onClose={() => setCommentPanelOpen(false)}
+            />
+          )}
+          {commentPanelOpen
+            && commentSelection?.kind !== 'sheet-cell'
+            && commentSelection?.kind !== 'doc-body' && (
             <aside
               className="rounded-lg border p-4 text-sm"
               style={{
@@ -731,7 +755,7 @@ export default function ProjectDetailPage() {
                 color: 'var(--text-tertiary)',
               }}
             >
-              코멘트를 달 셀을 먼저 선택하세요.
+              코멘트를 달 셀이나 문서를 먼저 선택하세요.
             </aside>
           )}
         </div>
