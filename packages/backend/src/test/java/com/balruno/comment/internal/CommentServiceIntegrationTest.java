@@ -89,12 +89,16 @@ class CommentServiceIntegrationTest {
 
         var documentId = UUID.randomUUID();
         // Insert a documents row so the FK from comments.document_id
-        // is satisfiable. V7 ships documents with (id, project_id,
-        // created_by, name, kind) NOT NULL — leave the rest as defaults.
+        // is satisfiable. V7 schema: (id, project_id, slug, title,
+        // ydoc_state) NOT NULL — Hocuspocus normally populates the
+        // ydoc_state with an encoded Y.Doc; for the test an empty
+        // BYTEA suffices because the comment path never reads it.
         jdbc.update(
-                "INSERT INTO documents (id, project_id, created_by, name, kind) "
+                "INSERT INTO documents (id, project_id, slug, title, ydoc_state) "
               + "VALUES (?, ?, ?, ?, ?)",
-                documentId, ctx.projectId, ctx.userId, "test doc", "DOCUMENT");
+                documentId, ctx.projectId,
+                "test-" + documentId.toString().substring(0, 8),
+                "test doc", new byte[0]);
 
         var body = bodyOf("highlighted range");
         var created = comments.create(ctx.userId, new CommentService.CreateRequest(
