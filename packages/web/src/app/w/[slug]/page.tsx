@@ -14,13 +14,14 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Users, Plus, ArrowLeft, Loader2, Settings } from 'lucide-react';
+import { Users, Plus, ArrowLeft, Loader2, Settings, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 
 import {
   BackendError,
   createProject,
+  deleteProject,
   listProjects,
   listWorkspaces,
   type Project,
@@ -45,6 +46,7 @@ export default function WorkspaceDetailPage() {
   const [creating, setCreating] = useState(false);
   const [newSlug, setNewSlug] = useState('');
   const [newName, setNewName] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -98,6 +100,29 @@ export default function WorkspaceDetailPage() {
       setError(msg);
     } finally {
       setCreating(false);
+    }
+  };
+
+  // Hard delete a project — server-side it's a soft delete, the row
+  // gets deleted_at set so future imports / sync drops it. Confirm
+  // dialog is window.confirm for now (no shared ConfirmDialog wired
+  // here yet); the destructive action is irreversible from the UI's
+  // POV so the explicit prompt is a guardrail worth keeping.
+  const handleDelete = async (p: Project) => {
+    const confirmed = window.confirm(
+      `프로젝트 "${p.name}"을(를) 삭제할까요?\n\n시트, 문서, 셀 데이터가 모두 함께 사라집니다.`,
+    );
+    if (!confirmed) return;
+    setDeletingId(p.id);
+    try {
+      await deleteProject(p.id);
+      setProjects((prev) => prev?.filter((proj) => proj.id !== p.id) ?? null);
+      toast.success(`"${p.name}" 삭제됨`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '프로젝트를 삭제하지 못했습니다.';
+      toast.error(msg);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -195,10 +220,14 @@ export default function WorkspaceDetailPage() {
         {projects && projects.length > 0 && (
           <ul>
             {projects.map((p) => (
-              <li key={p.id} className="border-t" style={{ borderColor: 'var(--border-primary)' }}>
+              <li
+                key={p.id}
+                className="group flex items-center border-t hover:bg-[var(--bg-hover)]"
+                style={{ borderColor: 'var(--border-primary)' }}
+              >
                 <button
                   onClick={() => router.push(`/w/${workspace.slug}/p/${p.slug}`)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-[var(--bg-hover)]"
+                  className="flex flex-1 items-center justify-between px-4 py-3 text-left"
                 >
                   <div>
                     <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -213,6 +242,20 @@ export default function WorkspaceDetailPage() {
                   <span className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
                     /{p.slug}
                   </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(p)}
+                  disabled={deletingId === p.id}
+                  className="mr-3 rounded p-1.5 opacity-0 transition group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-30"
+                  style={{ color: 'var(--text-tertiary)' }}
+                  title="프로젝트 삭제"
+                >
+                  {deletingId === p.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                 </button>
               </li>
             ))}
