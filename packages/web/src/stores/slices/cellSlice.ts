@@ -28,20 +28,14 @@ function isSameValue(a: CellValue, b: CellValue): boolean {
 }
 import {
   getProjectDoc,
-  addColumnInDoc,
-  insertColumnInDoc,
-  updateColumnInDoc,
-  deleteColumnInDoc,
-  reorderColumnsInDoc,
-  addRowInDoc,
-  insertRowInDoc,
-  updateRowInDoc,
-  updateCellInDoc,
+  // sheet-cell + tree mutations no longer go through Y.Doc — cellSlice
+  // does direct setState (post v0.6 cleanup). The remaining Y.Doc
+  // helpers below cover features (style / sticker / changelog) that
+  // haven't migrated yet and silently no-op on server-canonical pages
+  // (Y.Doc has no observer mounted there). Future stages migrate
+  // these too and the import block goes to 0.
   updateCellStyleInDoc,
   updateCellsStyleInDoc,
-  deleteRowInDoc,
-  reorderRowInDoc,
-  addMultipleRowsInDoc,
   addStickerInDoc,
   updateStickerInDoc,
   deleteStickerInDoc,
@@ -64,23 +58,18 @@ const DEFAULT_CELL_STYLE: CellStyle = {
 };
 
 /**
- * Sheet-scoped write — direct setState only. v0.6 cleanup retired
- * the Y.Doc fallback because the local-mode `/` page now redirects
- * to /login and every other surface mounts useProjectSyncBridge
- * (which registers the sender via setSyncSender). The yDocFn arg
- * stays in the signature so existing call sites compile while
- * follow-up commits delete the Y.Doc helpers from lib/ydoc — the
- * wrapper is invoked but the side-effect path is the setState
- * branch only.
+ * Sheet-scoped write — direct setState. v0.6 cleanup retired the
+ * Y.Doc fallback (every project page mounts useProjectSyncBridge
+ * which registers the sender; the broadcast handler echoes the
+ * mutation back so the sender + every peer converge on the same
+ * shape). The signature shrinks accordingly.
  */
 function writeSheet(
-  yDocFn: () => void,
   set: SetFn,
   projectId: string,
   sheetId: string,
   mutator: (sheet: import('@/types').Sheet) => import('@/types').Sheet,
 ): void {
-  void yDocFn;
   set((state) => ({
     projects: state.projects.map((p) =>
       p.id !== projectId
@@ -96,25 +85,18 @@ function writeSheet(
 /** writeCell — narrow case for cell.update (most frequent op). */
 function writeCell(
   set: SetFn,
-  doc: ReturnType<typeof getProjectDoc>,
   projectId: string,
   sheetId: string,
   rowId: string,
   columnId: string,
   value: CellValue,
 ): void {
-  writeSheet(
-    () => updateCellInDoc(doc, sheetId, rowId, columnId, value),
-    set,
-    projectId,
-    sheetId,
-    (sheet) => ({
-      ...sheet,
-      rows: sheet.rows.map((r) =>
-        r.id !== rowId ? r : { ...r, cells: { ...r.cells, [columnId]: value } },
-      ),
-    }),
-  );
+  writeSheet(set, projectId, sheetId, (sheet) => ({
+    ...sheet,
+    rows: sheet.rows.map((r) =>
+      r.id !== rowId ? r : { ...r, cells: { ...r.cells, [columnId]: value } },
+    ),
+  }));
 }
 
 export const createCellActions = (set: SetFn, get: GetFn) => ({
@@ -167,7 +149,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
         // 한 transaction 에 양쪽 컬럼 생성
         doc.transact(() => {
           writeSheet(
-            () => addColumnInDoc(doc, sheetId, forwardCol),
             set,
             projectId,
             sheetId,
@@ -177,7 +158,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
                 : { ...s, columns: [...s.columns, forwardCol] },
           );
           writeSheet(
-            () => addColumnInDoc(doc, linkedSheetId, reverseCol),
             set,
             projectId,
             linkedSheetId,
@@ -201,7 +181,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
 
     const fullColumn = { ...column, id };
     writeSheet(
-      () => addColumnInDoc(doc, sheetId, fullColumn),
       set,
       projectId,
       sheetId,
@@ -224,7 +203,7 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
             const existing = row.cells[id];
             // 빈 셀에만 prefill — 기존 값 덮어쓰기 방지
             if (existing === undefined || existing === null || existing === '') {
-              writeCell(set, doc, projectId, sheetId, row.id, id, fullColumn.formula!);
+              writeCell(set, projectId, sheetId, row.id, id, fullColumn.formula!);
             }
           }
         });
@@ -243,7 +222,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     const id = newId();
     const fullColumn = { ...column, id } as Column;
     writeSheet(
-      () => insertColumnInDoc(getProjectDoc(projectId), sheetId, fullColumn, atIndex),
       set,
       projectId,
       sheetId,
@@ -286,7 +264,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
       }
     }
     writeSheet(
-      () => updateColumnInDoc(getProjectDoc(projectId), sheetId, columnId, updates),
       set,
       projectId,
       sheetId,
@@ -331,14 +308,12 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
       const reverseColumnId = column.reverseColumnId;
       doc.transact(() => {
         writeSheet(
-          () => deleteColumnInDoc(doc, sheetId, columnId),
           set,
           projectId,
           sheetId,
           (s) => removeColumnAndCells(s, columnId),
         );
         writeSheet(
-          () => deleteColumnInDoc(doc, linkedSheetId, reverseColumnId),
           set,
           projectId,
           linkedSheetId,
@@ -356,7 +331,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
       return;
     }
     writeSheet(
-      () => deleteColumnInDoc(doc, sheetId, columnId),
       set,
       projectId,
       sheetId,
@@ -367,7 +341,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
 
   reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => {
     writeSheet(
-      () => reorderColumnsInDoc(getProjectDoc(projectId), sheetId, columnIds),
       set,
       projectId,
       sheetId,
@@ -410,7 +383,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
 
     const row = { id, cells: { ...formulaCells, ...cells } };
     writeSheet(
-      () => addRowInDoc(getProjectDoc(projectId), sheetId, row),
       set,
       projectId,
       sheetId,
@@ -440,7 +412,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
 
     const row = { id, cells: { ...formulaCells, ...cells } };
     writeSheet(
-      () => insertRowInDoc(getProjectDoc(projectId), sheetId, row, atIndex),
       set,
       projectId,
       sheetId,
@@ -470,7 +441,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     updates: Partial<Row>
   ) => {
     writeSheet(
-      () => updateRowInDoc(getProjectDoc(projectId), sheetId, rowId, updates),
       set,
       projectId,
       sheetId,
@@ -558,7 +528,7 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
         const targetSheetId = column.linkedSheetId;
 
         doc.transact(() => {
-          writeCell(set, doc, projectId, sheetId, rowId, columnId, value);
+          writeCell(set, projectId, sheetId, rowId, columnId, value);
           if (!isRemote) emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value });
           recordChange();
           // 추가된 target row 의 reverse 컬럼에 현재 rowId 추가
@@ -571,7 +541,7 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
               .filter(Boolean);
             if (!currentLinks.includes(rowId)) {
               const next = [...currentLinks, rowId].join(',');
-              writeCell(set, doc, projectId, targetSheetId, targetRowId, reverseColId, next);
+              writeCell(set, projectId, targetSheetId, targetRowId, reverseColId, next);
               if (!isRemote) {
                 emitOp({
                   kind: 'cell.update',
@@ -592,7 +562,7 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
               .map((s) => s.trim())
               .filter(Boolean);
             const next = currentLinks.filter((x) => x !== rowId).join(',');
-            writeCell(set, doc, projectId, targetSheetId, targetRowId, reverseColId, next);
+            writeCell(set, projectId, targetSheetId, targetRowId, reverseColId, next);
             if (!isRemote) {
               emitOp({
                 kind: 'cell.update',
@@ -608,7 +578,7 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
       }
     }
 
-    writeCell(set, doc, projectId, sheetId, rowId, columnId, value);
+    writeCell(set, projectId, sheetId, rowId, columnId, value);
     if (!isRemote) emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value });
     recordChange();
   },
@@ -661,7 +631,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     options?: { origin?: 'local' | 'remote' }
   ) => {
     writeSheet(
-      () => deleteRowInDoc(getProjectDoc(projectId), sheetId, rowId),
       set,
       projectId,
       sheetId,
@@ -678,7 +647,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     options?: { origin?: 'local' | 'remote' }
   ) => {
     writeSheet(
-      () => reorderRowInDoc(getProjectDoc(projectId), sheetId, rowId, targetIndex),
       set,
       projectId,
       sheetId,
@@ -713,7 +681,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     }));
 
     writeSheet(
-      () => addMultipleRowsInDoc(getProjectDoc(projectId), sheetId, newRows),
       set,
       projectId,
       sheetId,
