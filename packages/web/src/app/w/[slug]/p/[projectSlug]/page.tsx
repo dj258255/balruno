@@ -41,6 +41,7 @@ import { useBackendAuthStore } from '@/stores/backendAuthStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
+import { ServerDocView } from '@/components/docs/ServerDocView';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
 import SheetTable from '@/components/sheet/SheetTable';
 import { TemplateImportModal } from '@/components/sheet/TemplateImportModal';
@@ -54,6 +55,18 @@ import type { TreeNode } from '@balruno/shared';
  * setState semantics); unaffected branches keep the same reference
  * so React subtrees don't churn.
  */
+/** DFS the tree for a node id, return its name (or null). */
+function findNodeName(tree: TreeNode[], nodeId: string): string | null {
+  for (const node of tree) {
+    if (node.id === nodeId) return node.name;
+    if (node.children && node.children.length > 0) {
+      const found = findNodeName(node.children, nodeId);
+      if (found !== null) return found;
+    }
+  }
+  return null;
+}
+
 function renameNodeInTree(tree: TreeNode[], nodeId: string, newName: string): TreeNode[] {
   return tree.map((node) => {
     if (node.id === nodeId) return { ...node, name: newName };
@@ -341,6 +354,11 @@ export default function ProjectDetailPage() {
       : undefined;
   const selectedSheetId = selection?.kind === 'sheet' ? selection.id : null;
   const selectedDocId = selection?.kind === 'doc' ? selection.id : null;
+  // Selected doc's title from the tree leaf — falls back to a
+  // generic label while the broadcast for a freshly-added doc races
+  // the user's leaf-click. ServerDocView only needs this for its
+  // header; the body lives entirely in the Y.Doc.
+  const selectedDocTitle = selectedDocId ? findNodeName(docTree, selectedDocId) ?? '제목 없음' : '';
 
   // Tree handlers are identical between sheet_tree and doc_tree
   // regions — only the treeKind on the emit and the Project field
@@ -567,19 +585,8 @@ export default function ProjectDetailPage() {
           >
             {selection?.kind === 'sheet' && selectedSheet ? (
               <SheetTable projectId={project.id} sheet={selectedSheet} />
-            ) : selection?.kind === 'doc' ? (
-              <div className="p-6 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                <p className="mb-2 font-medium" style={{ color: 'var(--text-primary)' }}>
-                  문서 에디터 (개발 중)
-                </p>
-                <p>
-                  문서 본문은 Hocuspocus + y-indexeddb 로 동기화 예정입니다. 현재는 트리에서
-                  rename / add / delete / drag-drop 만 작동.
-                </p>
-                <p className="mt-2 font-mono text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  doc id: {selection.id}
-                </p>
-              </div>
+            ) : selection?.kind === 'doc' && selectedDocId ? (
+              <ServerDocView documentId={selectedDocId} title={selectedDocTitle} />
             ) : (
               <p className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 시트나 문서를 선택하세요.
