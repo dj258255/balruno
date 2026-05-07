@@ -29,7 +29,7 @@
   <img src="https://img.shields.io/badge/Turborepo-2-EF4444?logo=turborepo&logoColor=white" alt="Turborepo 2">
   <img src="https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css&logoColor=white" alt="Tailwind CSS">
   <img src="https://img.shields.io/badge/Frontend-MIT-green.svg" alt="Frontend: MIT">
-  <img src="https://img.shields.io/badge/Backend%20(planned)-AGPL%20v3-orange.svg" alt="Backend (planned): AGPL v3">
+  <img src="https://img.shields.io/badge/Backend-AGPL%20v3-orange.svg" alt="Backend: AGPL v3">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome">
 </p>
 
@@ -51,7 +51,7 @@ An integrated workspace for game studios — from solo creators to 30+ member te
 - **PMs**: Kanban sprints, bug tracker, Gantt epic roadmap
 - **Team**: Real-time collaboration (Yjs CRDT), AI-powered setup
 
-**Local-first. Browser-native. Open source (MIT for client, AGPL v3 for the planned backend).**
+**Server-canonical with offline-friendly doc bodies. Browser-native. Open source (MIT for client, AGPL v3 for backend).**
 
 ### Features
 
@@ -78,8 +78,8 @@ An integrated workspace for game studios — from solo creators to 30+ member te
 |----------|----------|
 | **Views** | Grid / Form / Kanban / Calendar / Gallery / Gantt |
 | **Field Types** | general / formula / checkbox / select / multiSelect / date / url / currency / rating / link / lookup / rollup |
-| **Collaboration** | Yjs CRDT, y-indexeddb, y-webrtc (infrastructure) |
-| **Storage** | Local-first (IndexedDB), no server required in free tier |
+| **Collaboration** | Server-canonical wss op log + presence (sheet) · Yjs over Hocuspocus (doc bodies) · y-indexeddb offline cache |
+| **Storage** | Server-first (PostgreSQL 18 + JSONB) · y-indexeddb cache for doc bodies · in-memory zustand for sheet view |
 | **Desktop** | Native Mac / Windows / Linux app (Electron) with auto-update |
 
 ### Quick Start
@@ -123,13 +123,17 @@ cd packages/desktop && npm run dev
 Monorepo             Turborepo + npm workspaces
 Web frontend         Next.js 16 (App Router, Turbopack) · React 19 · TypeScript strict
 State                Zustand 5
-Local storage        IndexedDB (idb)
+Doc body cache       y-indexeddb (Outline / AFFiNE pattern, offline-friendly)
 Styling              Tailwind CSS 3.4
 Charts               Recharts
 Math engine          mathjs + @formulajs/formulajs
-i18n                 next-intl (en, ko — 5170 keys synced)
+i18n                 next-intl (en, ko — UI strings + 12-group starter pack catalog)
 Desktop              Electron 41 (ESM) + electron-builder + electron-updater
-Backend (planned)    Java 21 + Spring Boot 3 + PostgreSQL 15 (JSONB)
+Backend              Java 25 + Spring Boot 4 + PostgreSQL 18 (JSONB) · Hibernate 7
+Sync                 Wss op log (sheet/tree) + Hocuspocus (doc bodies, yjs CRDT)
+Auth                 OAuth2 (GitHub + Google) · JWT session cookie
+Observability        Sentry SaaS (env-gated, optional for self-host)
+Hosting              Vercel (web) + OCI (backend, $0 free tier) + Cloudflare (proxy + R2)
 ```
 
 ### Project Structure
@@ -145,7 +149,8 @@ balruno/
 │   │   └── src/{types,lib}   # formulaEngine, simulation, templates, formulas, ...
 │   ├── desktop/              # Electron app (MIT)
 │   │   └── src/{main,preload}
-│   └── backend/              # Spring Boot (planned, AGPL v3)
+│   ├── backend/              # Spring Boot 4 (AGPL v3) — auth, sync, sheet/tree mutations, template import
+│   └── collab/               # Hocuspocus server (AGPL v3) — yjs doc body sync
 ├── docs/                     # Public docs (MIT)
 ├── LICENSE                   # Repository license overview
 ├── LICENSING.md              # User-friendly licensing FAQ
@@ -170,38 +175,43 @@ We welcome contributions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before 
 - Spreadsheet engine (Grid + Form + Kanban + Calendar + Gallery + Gantt)
 - 70+ game formulas, Monte Carlo simulation
 - Game engine export (Unity / Godot / Unreal)
-- Yjs CRDT (real-time collab infrastructure)
 - 12 field types (general/formula/checkbox/select/multiSelect/date/url/currency/rating/link/lookup/rollup)
 - Sprint Board / Bug Tracker / Epic Roadmap templates
 - AI Setup (template-based, LLM fallback)
 - Command palette
 - Docked tool groups (9 categories)
-- **Monorepo migration** (Turborepo + packages/web/shared/desktop)
-- **Electron desktop app** (Mac/Windows/Linux + auto-update via GitHub Releases)
+- Monorepo (Turborepo + web/shared/desktop/backend/collab)
+- Electron desktop app (Mac/Windows/Linux + auto-update via GitHub Releases)
+- **Spring Boot 4 backend** (AGPL v3) — OAuth, JWT, workspace + project + sheet/tree CRUD
+- **Server-canonical wss sync** (4 regions: sheet cells, sheet tree, doc tree, doc body via Hocuspocus)
+- **Real-time presence** (sheet cell awareness via wss + doc cursor via Hocuspocus awareness)
+- **Workspace + project lifecycle** — create, list, delete with role-based access (owner/admin/editor/viewer)
+- **Member invites** + role management
+- **Starter pack** — 12 game-domain catalog groups (RPG / FPS / MOBA / RTS / Idle / Roguelike / Sprint / Bug Tracker / Roadmap / Playtest / Tutorial / Blank)
+- **Template import** — graft any starter group onto an existing project
+- **i18n** — UI + starter catalog fully translated (en, ko)
+- **Sentry observability** (env-gated, free tier)
 
-**Next (B2B Team Features)**
-- Comments & @mentions (Yjs)
-- Presence / cursors (awareness API)
-- Member invites, roles (owner/editor/viewer)
+**Next**
+- Comments & @mentions
 - Share links per view (read-only)
-- Full LLM integration (Anthropic / OpenAI)
+- Full LLM integration (Anthropic / OpenAI BYOK)
 - Git / Slack / Discord webhooks
 - Interface Designer (dashboard builder)
 - Automations (n8n-style node editor)
-- **Spring Boot backend (AGPL v3) — auth, cloud sync, quota**
 
 **Pricing (tentative — finalized after beta)**
 - **Free / self-host** — unlimited (MIT for client + AGPL v3 for backend, run anywhere)
-- **Cloud Free** — strict quotas (3 workspaces · 5 projects/ws · 10 sheets/project · 10MB storage)
+- **Cloud Free** — strict quotas (rows/sheet 2k · history 14d · AI 0/BYOK)
 - **Cloud Pro** — quotas lifted (price TBD after beta validation)
-- **Team** (v1) — collaboration + members + SSO (price TBD)
+- **Team** — collaboration + members + SSO (price TBD)
 
 ### License
 
 This repository uses different licenses per directory. See [LICENSE](LICENSE) for the overview and [LICENSING.md](LICENSING.md) for a user-friendly FAQ.
 
 - `packages/web/`, `packages/shared/`, `packages/desktop/` — **MIT**
-- `packages/backend/` (planned) — **AGPL v3**
+- `packages/backend/`, `packages/collab/` — **AGPL v3**
 - Trademarks (PowerBalance / balruno / logo) — see [TRADEMARK.md](TRADEMARK.md)
 
 For commercial licensing inquiries: dj258255@naver.com
@@ -224,9 +234,9 @@ For commercial licensing inquiries: dj258255@naver.com
 
 - **기획자**: 70개+ 게임 수식, 몬테카를로 시뮬, 엔진 export (Unity/Godot/Unreal)
 - **PM**: 칸반 스프린트, 버그 트래커, Gantt 에픽 로드맵
-- **팀**: 실시간 협업 (Yjs CRDT), AI 자동 세팅
+- **팀**: 실시간 협업 (server-canonical wss + Hocuspocus), AI 자동 세팅
 
-**로컬 우선. 브라우저 네이티브. 오픈소스 (클라이언트 MIT · 백엔드 AGPL v3 예정).**
+**서버 canonical + 문서 본문은 오프라인 친화. 브라우저 네이티브. 오픈소스 (클라이언트 MIT · 백엔드 AGPL v3).**
 
 ### 주요 기능
 
@@ -253,8 +263,8 @@ For commercial licensing inquiries: dj258255@naver.com
 |----------|------|
 | **뷰** | Grid / Form / Kanban / Calendar / Gallery / Gantt |
 | **필드 타입** | general / formula / checkbox / select / multiSelect / date / url / currency / rating / link / lookup / rollup (12종) |
-| **협업** | Yjs CRDT, y-indexeddb, y-webrtc (인프라) |
-| **저장** | 로컬 우선 (IndexedDB), 무료 플랜 서버 불필요 |
+| **협업** | 서버 canonical wss op log + presence (시트) · Hocuspocus 위 Yjs (문서 본문) · y-indexeddb 오프라인 캐시 |
+| **저장** | 서버 우선 (PostgreSQL 18 + JSONB) · y-indexeddb (문서 본문 캐시) · zustand (시트 뷰 인메모리) |
 | **데스크톱** | Mac / Windows / Linux 네이티브 앱 (Electron) + 자동 업데이트 |
 
 ### 빠른 시작
@@ -321,7 +331,7 @@ cd packages/desktop && npm run dev
 본 저장소는 디렉토리별로 다른 라이센스를 사용합니다. [LICENSE](LICENSE) 와 [LICENSING.md](LICENSING.md) 를 참조하세요.
 
 - `packages/web/`, `packages/shared/`, `packages/desktop/` — **MIT**
-- `packages/backend/` (예정) — **AGPL v3**
+- `packages/backend/`, `packages/collab/` — **AGPL v3**
 - 트레이드마크 (PowerBalance / balruno / 로고) — [TRADEMARK.md](TRADEMARK.md) 참조
 
 상용 라이센스 문의: dj258255@naver.com
