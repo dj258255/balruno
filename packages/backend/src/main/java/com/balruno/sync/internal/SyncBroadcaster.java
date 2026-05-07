@@ -90,6 +90,18 @@ class SyncBroadcaster {
         }
     }
 
+    /**
+     * Broadcast a payload to every session of a project — no sender to
+     * exclude. Used by REST-origin paths like UndoService where the
+     * trigger came in over HTTP, not wss. The originating user's *own*
+     * tabs receive the broadcast too (Cmd+Z fires from one tab; their
+     * other open tabs of the same project should see the resulting
+     * state change).
+     */
+    void broadcastFromRest(UUID projectId, String payload) {
+        broadcastQuietly(projectId, payload);
+    }
+
     private void broadcastQuietly(UUID projectId, String payload) {
         var msg = new TextMessage(payload);
         var recipients = sessions.sessionsFor(projectId);

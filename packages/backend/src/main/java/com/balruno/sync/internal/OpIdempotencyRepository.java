@@ -2,9 +2,68 @@
 package com.balruno.sync.internal;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
-/** PK lookup is the only hot path — handler reads on every op write. */
+/**
+ * PK lookup is the V8 idempotency hot path — handler reads on every op
+ * write. V14 (ADR 0021 v2.3 Phase 5) added the undo + redo queries —
+ * latest reversible / redoable action for a user in a session, served
+ * by partial indexes.
+ */
 interface OpIdempotencyRepository extends JpaRepository<OpIdempotencyEntity, UUID> {
+
+    /**
+     * Latest reversible non-undone action for a user in a project,
+     * scoped to a single browser tab (clientSessionId). Used by
+     * UndoServiceImpl.undo. Filters out:
+     *   - rows without inverse_payload (V8 idempotency-only)
+     *   - rows past their reversibleUntil (Cmd+Z window expired)
+     *   - rows already undone (waiting in redo stack)
+     *
+     * The partial index op_idempotency_undo_lookup (V14) serves this
+     * query in O(log n).
+     */
+    @Query("""
+        SELECT o FROM OpIdempotencyEntity o
+        WHERE o.userId = :userId
+          AND o.projectId = :projectId
+          AND o.clientSessionId = :clientSessionId
+          AND o.undone = false
+          AND o.inversePayload IS NOT NULL
+          AND o.reversibleUntil > :now
+        ORDER BY o.createdAt DESC
+        LIMIT 1
+    """)
+    Optional<OpIdempotencyEntity> findLatestReversible(
+            @Param("userId") UUID userId,
+            @Param("projectId") UUID projectId,
+            @Param("clientSessionId") UUID clientSessionId,
+            @Param("now") OffsetDateTime now);
+
+    /**
+     * Latest already-undone action ready to redo. Mirrors the undo
+     * query — same filters except undone = true. Cmd+Shift+Z pops this
+     * and re-applies forward_payload.
+     */
+    @Query("""
+        SELECT o FROM OpIdempotencyEntity o
+        WHERE o.userId = :userId
+          AND o.projectId = :projectId
+          AND o.clientSessionId = :clientSessionId
+          AND o.undone = true
+          AND o.forwardPayload IS NOT NULL
+          AND o.reversibleUntil > :now
+        ORDER BY o.undoneAt DESC
+        LIMIT 1
+    """)
+    Optional<OpIdempotencyEntity> findLatestRedoable(
+            @Param("userId") UUID userId,
+            @Param("projectId") UUID projectId,
+            @Param("clientSessionId") UUID clientSessionId,
+            @Param("now") OffsetDateTime now);
 }
