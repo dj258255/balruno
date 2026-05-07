@@ -590,7 +590,11 @@ export default function ProjectDetailPage() {
             {selection?.kind === 'sheet' && selectedSheet ? (
               <SheetTable projectId={project.id} sheet={selectedSheet} />
             ) : selection?.kind === 'doc' && selectedDocId ? (
-              <ServerDocView documentId={selectedDocId} title={selectedDocTitle} />
+              <ServerDocView
+                documentId={selectedDocId}
+                title={selectedDocTitle}
+                onTitleChange={(next) => docTreeOps.rename(selectedDocId, next)}
+              />
             ) : (
               <p className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 시트나 문서를 선택하세요.

@@ -17,6 +17,7 @@
  * via Y.Doc updates.
  */
 
+import { useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -25,13 +26,15 @@ import { useDocCollab } from '@/hooks/useDocCollab';
 
 interface ServerDocViewProps {
   documentId: string;
-  /** The doc tree leaf's name — rendered as a read-only header so
-   *  the user has visual context. Edits flow through tree.rename in
-   *  the sidebar. */
+  /** The doc tree leaf's name. Inline-editable in the header — Enter
+   *  or blur commits via onTitleChange; Escape reverts. */
   title: string;
+  /** Commit a renamed title — page wires this to docTreeOps.rename
+   *  so the change emits tree.rename and propagates to peers. */
+  onTitleChange?: (next: string) => void;
 }
 
-export function ServerDocView({ documentId, title }: ServerDocViewProps) {
+export function ServerDocView({ documentId, title, onTitleChange }: ServerDocViewProps) {
   const { extensions: collabExtensions, doc, status } = useDocCollab(documentId);
 
   // Tiptap editor — StarterKit + Placeholder + collab extensions.
@@ -72,9 +75,7 @@ export function ServerDocView({ documentId, title }: ServerDocViewProps) {
         className="border-b px-6 py-4"
         style={{ borderColor: 'var(--border-primary)' }}
       >
-        <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-          {title}
-        </h1>
+        <DocTitleEditor title={title} onTitleChange={onTitleChange} />
         <p className="mt-1 text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
           collab status: {status}
         </p>
@@ -86,5 +87,80 @@ export function ServerDocView({ documentId, title }: ServerDocViewProps) {
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * Inline-editable title. Click switches to an input; Enter or blur
+ * commits via onTitleChange; Escape reverts. Static h1 falls back
+ * when no onTitleChange is supplied (read-only mount).
+ */
+interface DocTitleEditorProps {
+  title: string;
+  onTitleChange?: (next: string) => void;
+}
+
+function DocTitleEditor({ title, onTitleChange }: DocTitleEditorProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(title);
+
+  // Sync draft on external title change (e.g. peer rename arrives
+  // while we're not editing). Stays put while we're typing so a
+  // simultaneous peer broadcast doesn't yank the cursor.
+  useEffect(() => {
+    if (!editing) setDraft(title);
+  }, [title, editing]);
+
+  if (!onTitleChange) {
+    return (
+      <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+        {title}
+      </h1>
+    );
+  }
+
+  const commit = () => {
+    setEditing(false);
+    const next = draft.trim();
+    if (!next || next === title) {
+      setDraft(title);
+      return;
+    }
+    onTitleChange(next);
+  };
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          else if (e.key === 'Escape') {
+            setEditing(false);
+            setDraft(title);
+          }
+        }}
+        className="w-full rounded-md border bg-transparent px-2 py-0.5 text-xl font-semibold outline-none"
+        style={{
+          borderColor: 'var(--border-primary)',
+          color: 'var(--text-primary)',
+        }}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className="w-full rounded-md px-2 py-0.5 text-left text-xl font-semibold hover:bg-[var(--bg-hover)]"
+      style={{ color: 'var(--text-primary)' }}
+      title="클릭해서 제목 편집"
+    >
+      {title}
+    </button>
   );
 }
