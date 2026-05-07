@@ -3,7 +3,6 @@ package com.balruno.comment.internal;
 
 import com.balruno.comment.Comment;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -25,11 +24,18 @@ import java.util.UUID;
 class CommentRepository {
 
     private final JdbcTemplate jdbc;
-    private final ObjectMapper json;
+    /**
+     * Tree-mutation helper. Spring Boot 4 autowires {@code
+     * tools.jackson.databind.ObjectMapper}, but JsonNode lives in
+     * com.fasterxml — same dual-mapper pattern as SheetCellOpService
+     * (memory: project_sb4_abstractions). nodeMapper is constructed
+     * locally so the row mapper can readTree on the JSONB column.
+     */
+    private final com.fasterxml.jackson.databind.ObjectMapper nodeMapper =
+            new com.fasterxml.jackson.databind.ObjectMapper();
 
-    CommentRepository(JdbcTemplate jdbc, ObjectMapper json) {
+    CommentRepository(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
-        this.json = json;
     }
 
     private static final String BASE_SELECT =
@@ -44,7 +50,7 @@ class CommentRepository {
         public Comment mapRow(ResultSet rs, int rowNum) throws SQLException {
             JsonNode body;
             try {
-                body = json.readTree(rs.getString("body_json_text"));
+                body = nodeMapper.readTree(rs.getString("body_json_text"));
             } catch (Exception e) {
                 throw new SQLException("malformed body_json", e);
             }
