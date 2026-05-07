@@ -27,6 +27,9 @@ import * as Y from 'yjs';
 
 import { collabBaseUrl, fetchCollabToken, isBackendConfigured, isCollabConfigured } from '@/lib/backend';
 import { useConnectionStore } from '@/stores/connectionStore';
+import { makeLog } from '@/lib/log';
+
+const log = makeLog('sync.doc');
 
 export type SyncStatus = 'idle' | 'connecting' | 'connected' | 'offline' | 'error';
 
@@ -145,8 +148,7 @@ export function useDocYjsCloudSync({
         if (cancelled) return;
         setStatus('error');
         reportToStore(documentId, 'error');
-        // eslint-disable-next-line no-console
-        console.warn('[useDocYjsCloudSync] connect failed', e);
+        log.warn('connect failed', e);
       }
     };
 

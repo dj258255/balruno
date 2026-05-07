@@ -23,6 +23,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { backendBaseUrl, isBackendConfigured } from '@/lib/backend';
 import { useConnectionStore } from '@/stores/connectionStore';
+import { makeLog } from '@/lib/log';
+
+const log = makeLog('sync.ws');
 
 export type ProjectSyncStatus = 'idle' | 'connecting' | 'connected' | 'offline' | 'error';
 
@@ -175,8 +178,7 @@ export function useProjectSync({
       } catch (e) {
         setStatus('error');
         reportToStore(projectId, 'error');
-        // eslint-disable-next-line no-console
-        console.warn('[useProjectSync] WebSocket constructor failed', e);
+        log.warn('WebSocket constructor failed', e);
         scheduleRetry();
         return;
       }
