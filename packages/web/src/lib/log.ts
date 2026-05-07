@@ -43,6 +43,30 @@ function emit(level: Level, tag: string, msg: string, rest: unknown[]): void {
   const prefix = `[${tag}]`;
   const fn = console[level] ?? console.log;
   fn(prefix, msg, ...rest);
+
+  // Forward error frames to Sentry when configured. The dynamic import
+  // keeps @sentry/nextjs out of the bundle when the DSN is empty —
+  // the inert sentry.*.config.ts paths skip Sentry.init in that case
+  // so this call would be a no-op anyway, but skipping the import
+  // entirely is cheaper.
+  if (level === 'error' && isProd) {
+    void forwardToSentry(tag, msg, rest);
+  }
+}
+
+async function forwardToSentry(tag: string, msg: string, rest: unknown[]): Promise<void> {
+  try {
+    const Sentry = await import('@sentry/nextjs');
+    const err = rest.find((r): r is Error => r instanceof Error);
+    if (err) {
+      Sentry.captureException(err, { tags: { tag }, extra: { msg } });
+    } else {
+      Sentry.captureMessage(`[${tag}] ${msg}`, { level: 'error', extra: { rest } });
+    }
+  } catch {
+    // Sentry not installed / not configured — silently drop. The console
+    // line already landed above so the local DevTools view is intact.
+  }
 }
 
 export function makeLog(tag: string): TaggedLog {
