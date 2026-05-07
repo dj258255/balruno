@@ -1,14 +1,13 @@
 /**
- * 에러 리포팅 어댑터 — Sentry/PostHog/LogRocket 연동 준비.
+ * 에러 리포팅 어댑터 — tagged reportError 진입점.
  *
- * 현재는 no-op (콘솔 로그만 + localStorage 50개 보관).
- * Sentry 활성화는 **2 스텝**:
- *   1. `npm i @sentry/nextjs`
- *   2. `NEXT_PUBLIC_SENTRY_DSN` 환경변수 설정
- *   → 앱 로드 시 `initErrorReporting()` 가 자동 감지해서 init.
+ * Sentry SDK init 은 `instrumentation-client.ts` (Next.js 16 / @sentry/nextjs v10
+ * 권장 path) 에서 한 번 처리. 이 파일은 *tagged report* 만 담당:
+ *   - console
+ *   - Sentry.captureException (전역 init 끝나 있을 때 자동 동작)
+ *   - localStorage 최근 50건 (오프라인 재전송용)
  *
- * 컴포넌트/바운더리가 `reportError(err)` 호출만 하면 Sentry / console / kvStorage
- * 어디로 갈지 결정은 이 파일이 일원화.
+ * `initErrorReporting()` 는 호환성 stub — 호출해도 무해 (이미 init 된 상태).
  */
 
 import { kvStorage } from './kvStorage';
@@ -22,39 +21,18 @@ export interface ErrorContext {
   extra?: Record<string, unknown>;
 }
 
-let initialized = false;
-let sentryAvailable = false;
+const sentryAvailable = typeof process !== 'undefined'
+  && !!process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 /**
- * 환경변수 `NEXT_PUBLIC_SENTRY_DSN` 이 설정돼 있으면 Sentry 를 동적 import 로 초기화.
- * 미설치 시 graceful no-op (try/catch).
- * 앱 entry (layout.tsx 또는 page.tsx) 에서 1회 호출.
+ * Compatibility shim — Sentry SDK 의 init 은 instrumentation-client.ts
+ * 가 *앱 부팅 시* 한 번 처리하므로 이 함수는 no-op 으로 유지.
+ * 기존 호출 site (`app/page.tsx` 의 `initErrorReporting()`) 는 그대로 두고
+ * 점진 정리.
  */
-export async function initErrorReporting(dsn?: string): Promise<void> {
-  if (initialized) return;
-  const effectiveDsn = dsn ?? (typeof process !== 'undefined'
-    ? process.env.NEXT_PUBLIC_SENTRY_DSN
-    : undefined);
-  if (!effectiveDsn) {
-    initialized = true;
-    return;
-  }
-
-  try {
-    const sentry = await import('@sentry/nextjs');
-    sentry.init({
-      dsn: effectiveDsn,
-      tracesSampleRate: 0.1,
-      environment: typeof process !== 'undefined' ? process.env.NODE_ENV : 'production',
-    });
-    sentryAvailable = true;
-    console.info('[errorReporting] Sentry 초기화 완료');
-  } catch (e) {
-    // @sentry/nextjs 미설치 — no-op 로 fallback
-    console.warn('[errorReporting] Sentry 패키지 없음. `npm i @sentry/nextjs` 필요.');
-    void e;
-  }
-  initialized = true;
+export async function initErrorReporting(_dsn?: string): Promise<void> {
+  void _dsn;
+  // no-op — kept so existing call sites don't break.
 }
 
 export function reportError(error: Error | unknown, context: ErrorContext): void {
