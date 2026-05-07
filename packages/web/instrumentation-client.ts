@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Sentry browser-side init. Activated only when NEXT_PUBLIC_SENTRY_DSN
-// is set — empty DSN keeps the SDK inert (no init, no network calls)
-// so a self-host operator without a Sentry account isn't forced to
-// register one.
+// Next.js 16 / @sentry/nextjs v10 client instrumentation hook. The
+// older `sentry.client.config.ts` auto-discovery was webpack-only;
+// Turbopack (Next.js 16 default) requires the explicit
+// `instrumentation-client.ts` filename to bundle the init into the
+// client runtime. Same env gate as the other sentry.*.config files
+// — empty DSN means SDK init is skipped, no network calls, no perf
+// cost.
 
 import * as Sentry from '@sentry/nextjs';
 
@@ -19,9 +22,8 @@ if (dsn) {
     replaysSessionSampleRate: process.env.NEXT_PUBLIC_SENTRY_REPLAY === '1' ? 0.1 : 0,
     replaysOnErrorSampleRate: process.env.NEXT_PUBLIC_SENTRY_REPLAY === '1' ? 1.0 : 0,
     environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? 'development',
-    // Strip URLs to avoid leaking customer data via referrers; the
-    // session id is the same one the WS handshake uses, no PII.
     beforeSend(event) {
+      // Strip URLs to avoid leaking customer data via referrers.
       if (event.request) {
         delete event.request.headers;
         delete event.request.cookies;
@@ -30,3 +32,7 @@ if (dsn) {
     },
   });
 }
+
+// Tracks client-side route transitions as Sentry transactions so a
+// slow page load or a routing error gets attached to the right span.
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
