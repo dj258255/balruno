@@ -221,7 +221,7 @@
               {
                 "id": "019dfedb-a9e3-729e-9bb3-74d804ba7297",
                 "cells": {
-                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "캐릭터 1차 밸런스",
+                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "Character balance pass 1",
                   "019dfedb-a9e3-729e-9bb3-5bbb0f980fc9": "doing",
                   "019dfedb-a9e3-729e-9bb3-5fea83fc2edd": "p0",
                   "019dfedb-a9e3-729e-9bb3-62d4871261ff": 5,
@@ -243,7 +243,7 @@
               {
                 "id": "019dfedb-a9e3-729e-9bb3-7c8ff002d4ee",
                 "cells": {
-                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "인플레이션 검토",
+                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "Inflation review",
                   "019dfedb-a9e3-729e-9bb3-5bbb0f980fc9": "todo",
                   "019dfedb-a9e3-729e-9bb3-5fea83fc2edd": "p1",
                   "019dfedb-a9e3-729e-9bb3-62d4871261ff": 2,
@@ -254,7 +254,7 @@
               {
                 "id": "019dfedb-a9e3-729e-9bb3-8312dc852dd8",
                 "cells": {
-                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "튜토리얼 텍스트",
+                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "Tutorial copy",
                   "019dfedb-a9e3-729e-9bb3-5bbb0f980fc9": "done",
                   "019dfedb-a9e3-729e-9bb3-5fea83fc2edd": "p2",
                   "019dfedb-a9e3-729e-9bb3-62d4871261ff": 1,
@@ -272,7 +272,7 @@
           {
             "id": "019dfedb-a9e3-729e-9bb3-868771f552d9",
             "name": "Welcome",
-            "content": "<h1>튜토리얼 시작 팩</h1>\n<p>튜토리얼 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>캐릭터</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li><li><strong>스프린트</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "content": "<h1>Tutorial Starter Pack</h1>\n<p>Tutorial sheets are pre-loaded. Start with live data instead of a blank canvas.</p>\n<h2>What's in this workspace</h2>\n<ul><li><strong>Characters</strong> sheet — click any cell to change the value</li><li><strong>Sprint</strong> sheet — click any cell to change the value</li></ul>\n<h2>Try it in 30 seconds</h2>\n<ol>\n<li><strong>Click</strong> any cell to edit the value</li>\n<li>Type <code>=</code> in a cell → formula autocomplete popover</li>\n<li>Type <code>/</code> in a regular cell → quick commands like <code>/today</code> <code>/uuid</code></li>\n<li>Right-click a row → \"Run simulation with this row\" (when hp/atk columns exist)</li>\n<li>Press <code>?</code> for shortcuts, <code>⌘K</code> for global search</li>\n</ol>\n\n<p>Step-by-step guides are also available in the coach-mark card at the bottom right.</p>",
             "createdAt": 1778097301987,
             "updatedAt": 1778097301987
           }
@@ -413,22 +413,22 @@
                 "selectOptions": [
                   {
                     "id": "sword",
-                    "label": "검",
+                    "label": "Sword",
                     "color": "#3b82f6"
                   },
                   {
                     "id": "bow",
-                    "label": "활",
+                    "label": "Bow",
                     "color": "#10b981"
                   },
                   {
                     "id": "staff",
-                    "label": "지팡이",
+                    "label": "Staff",
                     "color": "#a855f7"
                   },
                   {
                     "id": "gun",
-                    "label": "총",
+                    "label": "Gun",
                     "color": "#ef4444"
                   }
                 ]
@@ -581,7 +581,7 @@
                   "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 5,
                   "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 174,
                   "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 674,
-                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "스킬 포인트 + 1"
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "Skill Point + 1"
                 }
               },
               {
@@ -626,7 +626,7 @@
                   "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 10,
                   "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 351,
                   "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 2030,
-                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "스킬 포인트 + 1"
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "Skill Point + 1"
                 }
               },
               {
@@ -671,7 +671,7 @@
                   "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 15,
                   "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 707,
                   "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 4758,
-                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "스킬 포인트 + 1"
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "Skill Point + 1"
                 }
               },
               {
@@ -716,7 +716,7 @@
                   "019dfedb-a9e3-729e-9bb3-eb2c288be44f": 20,
                   "019dfedb-a9e3-729e-9bb3-eff11e33e76f": 1423,
                   "019dfedb-a9e3-729e-9bb3-f33e2b39eff6": 10244,
-                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "스킬 포인트 + 1"
+                  "019dfedb-a9e3-729e-9bb3-f6d9c8d13abc": "Skill Point + 1"
                 }
               }
             ],
@@ -800,7 +800,7 @@
           {
             "id": "019dfedb-a9e3-729e-9bb4-714ec344c621",
             "name": "Welcome",
-            "content": "<h1>RPG 시작 팩</h1>\n<p>RPG 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>캐릭터</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li><li><strong>무기</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li><li><strong>EXP 곡선</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li><li><strong>가챠 확률</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>EXP 곡선의 base/rate 만 바꾸면 1-20렙 자동 재계산. 무기는 등급(별점)으로 정렬해 보세요.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "content": "<h1>RPG Starter Pack</h1>\n<p>Sheets tailored to the RPG domain are pre-loaded. Start with live data instead of a blank canvas.</p>\n<h2>What's in this workspace</h2>\n<ul><li><strong>Characters</strong> sheet — click any cell to change the value</li><li><strong>Weapons</strong> sheet — click any cell to change the value</li><li><strong>EXP Curve</strong> sheet — click any cell to change the value</li><li><strong>Gacha Rates</strong> sheet — click any cell to change the value</li></ul>\n<h2>Try it in 30 seconds</h2>\n<ol>\n<li><strong>Click</strong> any cell to edit the value</li>\n<li>Type <code>=</code> in a cell → formula autocomplete popover</li>\n<li>Type <code>/</code> in a regular cell → quick commands like <code>/today</code> <code>/uuid</code></li>\n<li>Right-click a row → \"Run simulation with this row\" (when hp/atk columns exist)</li>\n<li>Press <code>?</code> for shortcuts, <code>⌘K</code> for global search</li>\n</ol>\n<p>Tweaking just base/rate on the EXP Curve auto-recalculates levels 1-20. Try sorting weapons by tier (stars).</p>\n<p>Step-by-step guides are also available in the coach-mark card at the bottom right.</p>",
             "createdAt": 1778097301987,
             "updatedAt": 1778097301987
           }
@@ -849,12 +849,12 @@
                   },
                   {
                     "id": "sniper",
-                    "label": "저격",
+                    "label": "Sniper",
                     "color": "#a855f7"
                   },
                   {
                     "id": "shotgun",
-                    "label": "샷건",
+                    "label": "Shotgun",
                     "color": "#ef4444"
                   }
                 ]
@@ -950,7 +950,7 @@
           {
             "id": "019dfedb-a9e3-729e-9bb4-a8eae5c4336f",
             "name": "Welcome",
-            "content": "<h1>FPS 슈터 시작 팩</h1>\n<p>FPS 슈터 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>FPS 무기</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>TTK = 1000 / (DPS / target_hp). 카테고리별 평균 TTK 가 비슷해야 균형. PM 작업은 별도 \"스프린트 보드\" 프로젝트 사용.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "content": "<h1>FPS Shooter Starter Pack</h1>\n<p>Sheets tailored to the FPS shooter domain are pre-loaded. Start with live data instead of a blank canvas.</p>\n<h2>What's in this workspace</h2>\n<ul><li><strong>FPS Weapons</strong> sheet — click any cell to change the value</li></ul>\n<h2>Try it in 30 seconds</h2>\n<ol>\n<li><strong>Click</strong> any cell to edit the value</li>\n<li>Type <code>=</code> in a cell → formula autocomplete popover</li>\n<li>Type <code>/</code> in a regular cell → quick commands like <code>/today</code> <code>/uuid</code></li>\n<li>Right-click a row → \"Run simulation with this row\" (when hp/atk columns exist)</li>\n<li>Press <code>?</code> for shortcuts, <code>⌘K</code> for global search</li>\n</ol>\n<p>TTK = 1000 / (DPS / target_hp). Average TTK across categories should be roughly equal for balance. Use a separate \"Sprint Board\" project for PM tasks.</p>\n<p>Step-by-step guides are also available in the coach-mark card at the bottom right.</p>",
             "createdAt": 1778097301987,
             "updatedAt": 1778097301987
           }
@@ -989,27 +989,27 @@
                 "selectOptions": [
                   {
                     "id": "top",
-                    "label": "탑",
+                    "label": "Top",
                     "color": "#dc2626"
                   },
                   {
                     "id": "jungle",
-                    "label": "정글",
+                    "label": "Jungle",
                     "color": "#16a34a"
                   },
                   {
                     "id": "mid",
-                    "label": "미드",
+                    "label": "Mid",
                     "color": "#7c3aed"
                   },
                   {
                     "id": "adc",
-                    "label": "원딜",
+                    "label": "ADC",
                     "color": "#ea580c"
                   },
                   {
                     "id": "sup",
-                    "label": "서포터",
+                    "label": "Support",
                     "color": "#0ea5e9"
                   }
                 ]
@@ -1128,7 +1128,7 @@
           {
             "id": "019dfedb-a9e3-729e-9bb4-e97e29c50bdd",
             "name": "Welcome",
-            "content": "<h1>MOBA 시작 팩</h1>\n<p>MOBA 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>챔피언</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>난이도 별점은 1=쉬움 5=어려움. 같은 포지션 끼리 ad/ap/hp 평균 비교. PM 작업은 별도 \"스프린트 보드\" 프로젝트 사용.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "content": "<h1>MOBA Starter Pack</h1>\n<p>Sheets tailored to the MOBA domain are pre-loaded. Start with live data instead of a blank canvas.</p>\n<h2>What's in this workspace</h2>\n<ul><li><strong>Champions</strong> sheet — click any cell to change the value</li></ul>\n<h2>Try it in 30 seconds</h2>\n<ol>\n<li><strong>Click</strong> any cell to edit the value</li>\n<li>Type <code>=</code> in a cell → formula autocomplete popover</li>\n<li>Type <code>/</code> in a regular cell → quick commands like <code>/today</code> <code>/uuid</code></li>\n<li>Right-click a row → \"Run simulation with this row\" (when hp/atk columns exist)</li>\n<li>Press <code>?</code> for shortcuts, <code>⌘K</code> for global search</li>\n</ol>\n<p>Difficulty stars: 1 = easy, 5 = hard. Compare ad/ap/hp averages within the same role. Use a separate \"Sprint Board\" project for PM tasks.</p>\n<p>Step-by-step guides are also available in the coach-mark card at the bottom right.</p>",
             "createdAt": 1778097301987,
             "updatedAt": 1778097301987
           }
@@ -1255,7 +1255,7 @@
           {
             "id": "019dfedb-a9e3-729e-9bb5-22a411ea1321",
             "name": "Welcome",
-            "content": "<h1>RTS 시작 팩</h1>\n<p>RTS 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>RTS 유닛</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>카운터 컬럼은 가위바위보. 보병 → 기병 → 궁수 → 보병 같은 순환이 핵심. PM 작업은 별도 \"스프린트 보드\" 프로젝트 사용.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "content": "<h1>RTS Starter Pack</h1>\n<p>Sheets tailored to the RTS domain are pre-loaded. Start with live data instead of a blank canvas.</p>\n<h2>What's in this workspace</h2>\n<ul><li><strong>RTS Units</strong> sheet — click any cell to change the value</li></ul>\n<h2>Try it in 30 seconds</h2>\n<ol>\n<li><strong>Click</strong> any cell to edit the value</li>\n<li>Type <code>=</code> in a cell → formula autocomplete popover</li>\n<li>Type <code>/</code> in a regular cell → quick commands like <code>/today</code> <code>/uuid</code></li>\n<li>Right-click a row → \"Run simulation with this row\" (when hp/atk columns exist)</li>\n<li>Press <code>?</code> for shortcuts, <code>⌘K</code> for global search</li>\n</ol>\n<p>The Counter column is rock-paper-scissors. The cycle Infantry → Cavalry → Archer → Infantry is the core idea. Use a separate \"Sprint Board\" project for PM tasks.</p>\n<p>Step-by-step guides are also available in the coach-mark card at the bottom right.</p>",
             "createdAt": 1778097301987,
             "updatedAt": 1778097301987
           }
@@ -1451,7 +1451,7 @@
           {
             "id": "019dfedb-a9e3-729e-9bb5-7a59752881d2",
             "name": "Welcome",
-            "content": "<h1>Idle 클리커 시작 팩</h1>\n<p>Idle 클리커 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>Idle 업그레이드</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>회수 시간(s) 가 일정하게 늘어야 진행 곡선 부드러움. 비용 1.5배수 / 수익 1.3배수 가 기본. PM 작업은 별도 \"스프린트 보드\" 프로젝트 사용.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "content": "<h1>Idle Clicker Starter Pack</h1>\n<p>Sheets tailored to the idle-clicker domain are pre-loaded. Start with live data instead of a blank canvas.</p>\n<h2>What's in this workspace</h2>\n<ul><li><strong>Idle Upgrades</strong> sheet — click any cell to change the value</li></ul>\n<h2>Try it in 30 seconds</h2>\n<ol>\n<li><strong>Click</strong> any cell to edit the value</li>\n<li>Type <code>=</code> in a cell → formula autocomplete popover</li>\n<li>Type <code>/</code> in a regular cell → quick commands like <code>/today</code> <code>/uuid</code></li>\n<li>Right-click a row → \"Run simulation with this row\" (when hp/atk columns exist)</li>\n<li>Press <code>?</code> for shortcuts, <code>⌘K</code> for global search</li>\n</ol>\n<p>A steadily increasing payback (s) keeps the progression curve smooth. The defaults: cost 1.5x, income 1.3x. Use a separate \"Sprint Board\" project for PM tasks.</p>\n<p>Step-by-step guides are also available in the coach-mark card at the bottom right.</p>",
             "createdAt": 1778097301987,
             "updatedAt": 1778097301987
           }
@@ -1490,17 +1490,17 @@
                 "selectOptions": [
                   {
                     "id": "attack",
-                    "label": "공격",
+                    "label": "Attack",
                     "color": "#ef4444"
                   },
                   {
                     "id": "skill",
-                    "label": "스킬",
+                    "label": "Skill",
                     "color": "#3b82f6"
                   },
                   {
                     "id": "power",
-                    "label": "파워",
+                    "label": "Power",
                     "color": "#a855f7"
                   }
                 ]
@@ -1525,22 +1525,22 @@
                 "selectOptions": [
                   {
                     "id": "starter",
-                    "label": "시작",
+                    "label": "Start",
                     "color": "#94a3b8"
                   },
                   {
                     "id": "common",
-                    "label": "커먼",
+                    "label": "Common",
                     "color": "#64748b"
                   },
                   {
                     "id": "uncommon",
-                    "label": "언커먼",
+                    "label": "Uncommon",
                     "color": "#3b82f6"
                   },
                   {
                     "id": "rare",
-                    "label": "레어",
+                    "label": "Rare",
                     "color": "#f59e0b"
                   }
                 ]
@@ -1553,7 +1553,7 @@
                   "019dfedb-a9e4-7023-bda9-8f40ee5f6db9": "Strike",
                   "019dfedb-a9e4-7023-bda9-91735803f728": "attack",
                   "019dfedb-a9e4-7023-bda9-962d6828ac4b": 1,
-                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "6 데미지",
+                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "6 Damage",
                   "019dfedb-a9e4-7023-bda9-9fb49d0800ff": "starter"
                 }
               },
@@ -1563,7 +1563,7 @@
                   "019dfedb-a9e4-7023-bda9-8f40ee5f6db9": "Defend",
                   "019dfedb-a9e4-7023-bda9-91735803f728": "skill",
                   "019dfedb-a9e4-7023-bda9-962d6828ac4b": 1,
-                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "5 방어",
+                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "5 Defense",
                   "019dfedb-a9e4-7023-bda9-9fb49d0800ff": "starter"
                 }
               },
@@ -1573,7 +1573,7 @@
                   "019dfedb-a9e4-7023-bda9-8f40ee5f6db9": "Bash",
                   "019dfedb-a9e4-7023-bda9-91735803f728": "attack",
                   "019dfedb-a9e4-7023-bda9-962d6828ac4b": 2,
-                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "8 데미지 + 취약 2",
+                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "8 Damage + Vulnerable 2",
                   "019dfedb-a9e4-7023-bda9-9fb49d0800ff": "starter"
                 }
               },
@@ -1583,7 +1583,7 @@
                   "019dfedb-a9e4-7023-bda9-8f40ee5f6db9": "Cleave",
                   "019dfedb-a9e4-7023-bda9-91735803f728": "attack",
                   "019dfedb-a9e4-7023-bda9-962d6828ac4b": 1,
-                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "8 광역 데미지",
+                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "8 AoE Damage",
                   "019dfedb-a9e4-7023-bda9-9fb49d0800ff": "common"
                 }
               },
@@ -1593,7 +1593,7 @@
                   "019dfedb-a9e4-7023-bda9-8f40ee5f6db9": "Inflame",
                   "019dfedb-a9e4-7023-bda9-91735803f728": "power",
                   "019dfedb-a9e4-7023-bda9-962d6828ac4b": 1,
-                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "근력 + 2",
+                  "019dfedb-a9e4-7023-bda9-9b784d3c083a": "Strength + 2",
                   "019dfedb-a9e4-7023-bda9-9fb49d0800ff": "uncommon"
                 }
               }
@@ -1607,7 +1607,7 @@
           {
             "id": "019dfedb-a9e4-7023-bda9-b9256dd304af",
             "name": "Welcome",
-            "content": "<h1>로그라이크 덱빌더 시작 팩</h1>\n<p>로그라이크 덱빌더 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>카드 덱</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>희귀도별 평균 데미지/방어 비율 점검. starter 카드는 약하지만 시너지 기반. PM 작업은 별도 \"스프린트 보드\" 프로젝트 사용.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "content": "<h1>Roguelike Deckbuilder Starter Pack</h1>\n<p>Sheets tailored to the roguelike deckbuilder domain are pre-loaded. Start with live data instead of a blank canvas.</p>\n<h2>What's in this workspace</h2>\n<ul><li><strong>Card Deck</strong> sheet — click any cell to change the value</li></ul>\n<h2>Try it in 30 seconds</h2>\n<ol>\n<li><strong>Click</strong> any cell to edit the value</li>\n<li>Type <code>=</code> in a cell → formula autocomplete popover</li>\n<li>Type <code>/</code> in a regular cell → quick commands like <code>/today</code> <code>/uuid</code></li>\n<li>Right-click a row → \"Run simulation with this row\" (when hp/atk columns exist)</li>\n<li>Press <code>?</code> for shortcuts, <code>⌘K</code> for global search</li>\n</ol>\n<p>Check average damage/defense ratios per rarity. Starter cards are weak but synergy-driven. Use a separate \"Sprint Board\" project for PM tasks.</p>\n<p>Step-by-step guides are also available in the coach-mark card at the bottom right.</p>",
             "createdAt": 1778097301988,
             "updatedAt": 1778097301988
           }
@@ -1736,7 +1736,7 @@
               {
                 "id": "019dfedb-a9e4-7023-bda9-e263d535b528",
                 "cells": {
-                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "캐릭터 1차 밸런스",
+                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "Character balance pass 1",
                   "019dfedb-a9e4-7023-bda9-c6765d47b7fb": "doing",
                   "019dfedb-a9e4-7023-bda9-c9d9fde0d50c": "p0",
                   "019dfedb-a9e4-7023-bda9-ccd4fd71369f": 5,
@@ -1758,7 +1758,7 @@
               {
                 "id": "019dfedb-a9e4-7023-bda9-eaa48cdae640",
                 "cells": {
-                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "인플레이션 검토",
+                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "Inflation review",
                   "019dfedb-a9e4-7023-bda9-c6765d47b7fb": "todo",
                   "019dfedb-a9e4-7023-bda9-c9d9fde0d50c": "p1",
                   "019dfedb-a9e4-7023-bda9-ccd4fd71369f": 2,
@@ -1769,7 +1769,7 @@
               {
                 "id": "019dfedb-a9e4-7023-bda9-ef0df4c9c045",
                 "cells": {
-                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "튜토리얼 텍스트",
+                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "Tutorial copy",
                   "019dfedb-a9e4-7023-bda9-c6765d47b7fb": "done",
                   "019dfedb-a9e4-7023-bda9-c9d9fde0d50c": "p2",
                   "019dfedb-a9e4-7023-bda9-ccd4fd71369f": 1,
@@ -1787,7 +1787,7 @@
           {
             "id": "019dfedb-a9e4-7023-bda9-f33eb4939c7e",
             "name": "Welcome",
-            "content": "<h1>스프린트 보드 시작 팩</h1>\n<p>스프린트 보드 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>스프린트</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>칸반 뷰 (단축키 K) 로 status 별 카드. 다른 status 로 drag.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "content": "<h1>Sprint Board Starter Pack</h1>\n<p>Sheets tailored to sprint planning are pre-loaded. Start with live data instead of a blank canvas.</p>\n<h2>What's in this workspace</h2>\n<ul><li><strong>Sprint</strong> sheet — click any cell to change the value</li></ul>\n<h2>Try it in 30 seconds</h2>\n<ol>\n<li><strong>Click</strong> any cell to edit the value</li>\n<li>Type <code>=</code> in a cell → formula autocomplete popover</li>\n<li>Type <code>/</code> in a regular cell → quick commands like <code>/today</code> <code>/uuid</code></li>\n<li>Right-click a row → \"Run simulation with this row\" (when hp/atk columns exist)</li>\n<li>Press <code>?</code> for shortcuts, <code>⌘K</code> for global search</li>\n</ol>\n<p>Kanban view (shortcut K) lays cards out by status. Drag a card to a different status to move it.</p>\n<p>Step-by-step guides are also available in the coach-mark card at the bottom right.</p>",
             "createdAt": 1778097301988,
             "updatedAt": 1778097301988
           }
@@ -1928,12 +1928,12 @@
               {
                 "id": "019dfedb-a9e4-7023-bdaa-249d801a01ea",
                 "cells": {
-                  "019dfedb-a9e4-7023-bda9-fb7981c6da01": "도적 크리율 100% 시 데미지 이상",
+                  "019dfedb-a9e4-7023-bda9-fb7981c6da01": "Rogue crit-rate 100% damage anomaly",
                   "019dfedb-a9e4-7023-bda9-fcbc03728d67": "major",
                   "019dfedb-a9e4-7023-bdaa-0089a4e366d0": "p1",
                   "019dfedb-a9e4-7023-bdaa-04037021cb50": "open",
-                  "019dfedb-a9e4-7023-bdaa-087a23c5c1de": "도적 크리율을 100%로 설정하면 일반 공격에 critDamage 배율이 적용되지 않음",
-                  "019dfedb-a9e4-7023-bdaa-0d6105841424": "1) 도적 선택 2) critRate=1, critDamage=2 설정 3) 일반 공격 시 데미지 = base * 1 (예상: base * 2)",
+                  "019dfedb-a9e4-7023-bdaa-087a23c5c1de": "When the Rogue's crit rate is set to 100% the critDamage multiplier isn't applied on normal attacks",
+                  "019dfedb-a9e4-7023-bdaa-0d6105841424": "1) Pick Rogue 2) Set critRate=1, critDamage=2 3) Normal attack deals base * 1 (expected: base * 2)",
                   "019dfedb-a9e4-7023-bdaa-16decfbfef50": "QA1",
                   "019dfedb-a9e4-7023-bdaa-19ba88093670": "Me"
                 }
@@ -1941,12 +1941,12 @@
               {
                 "id": "019dfedb-a9e4-7023-bdaa-29634df1dd11",
                 "cells": {
-                  "019dfedb-a9e4-7023-bda9-fb7981c6da01": "경제 시뮬 9999일 시 NaN",
+                  "019dfedb-a9e4-7023-bda9-fb7981c6da01": "Economy sim returns NaN at day 9999",
                   "019dfedb-a9e4-7023-bda9-fcbc03728d67": "minor",
                   "019dfedb-a9e4-7023-bdaa-0089a4e366d0": "p2",
                   "019dfedb-a9e4-7023-bdaa-04037021cb50": "fixing",
-                  "019dfedb-a9e4-7023-bdaa-087a23c5c1de": "시뮬레이션 일수가 10000을 넘으면 supplyOverTime 차트에 NaN 값 표시",
-                  "019dfedb-a9e4-7023-bdaa-0d6105841424": "경제 설계 → 시뮬 일수 10000 입력 → 차트 보면 후반부 NaN",
+                  "019dfedb-a9e4-7023-bdaa-087a23c5c1de": "When sim days exceed 10000 the supplyOverTime chart shows NaN",
+                  "019dfedb-a9e4-7023-bdaa-0d6105841424": "Economy design → enter 10000 sim days → chart shows NaN in the late portion",
                   "019dfedb-a9e4-7023-bdaa-16decfbfef50": "Me",
                   "019dfedb-a9e4-7023-bdaa-19ba88093670": "Me"
                 }
@@ -1961,7 +1961,7 @@
           {
             "id": "019dfedb-a9e4-7023-bdaa-2d07f51d5078",
             "name": "Welcome",
-            "content": "<h1>버그 트래커 시작 팩</h1>\n<p>버그 트래커 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>버그 트래커</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "content": "<h1>Bug Tracker Starter Pack</h1>\n<p>Sheets tailored to bug tracking are pre-loaded. Start with live data instead of a blank canvas.</p>\n<h2>What's in this workspace</h2>\n<ul><li><strong>Bug Tracker</strong> sheet — click any cell to change the value</li></ul>\n<h2>Try it in 30 seconds</h2>\n<ol>\n<li><strong>Click</strong> any cell to edit the value</li>\n<li>Type <code>=</code> in a cell → formula autocomplete popover</li>\n<li>Type <code>/</code> in a regular cell → quick commands like <code>/today</code> <code>/uuid</code></li>\n<li>Right-click a row → \"Run simulation with this row\" (when hp/atk columns exist)</li>\n<li>Press <code>?</code> for shortcuts, <code>⌘K</code> for global search</li>\n</ol>\n\n<p>Step-by-step guides are also available in the coach-mark card at the bottom right.</p>",
             "createdAt": 1778097301988,
             "updatedAt": 1778097301988
           }
@@ -2079,7 +2079,7 @@
               {
                 "id": "019dfedb-a9e4-7023-bdaa-5b44ecaf901c",
                 "cells": {
-                  "019dfedb-a9e4-7023-bdaa-3504559267ad": "경제 시스템 v2",
+                  "019dfedb-a9e4-7023-bdaa-3504559267ad": "Economy system v2",
                   "019dfedb-a9e4-7023-bdaa-3b6185715da9": "q2",
                   "019dfedb-a9e4-7023-bdaa-3dca40bb8447": "building",
                   "019dfedb-a9e4-7023-bdaa-4308327e7c27": "2026-04-01",
@@ -2105,7 +2105,7 @@
               {
                 "id": "019dfedb-a9e4-7023-bdaa-61f5fce6a28b",
                 "cells": {
-                  "019dfedb-a9e4-7023-bdaa-3504559267ad": "튜토리얼 개편",
+                  "019dfedb-a9e4-7023-bdaa-3504559267ad": "Tutorial revamp",
                   "019dfedb-a9e4-7023-bdaa-3b6185715da9": "q1",
                   "019dfedb-a9e4-7023-bdaa-3dca40bb8447": "shipped",
                   "019dfedb-a9e4-7023-bdaa-4308327e7c27": "2026-01-15",
@@ -2125,7 +2125,7 @@
           {
             "id": "019dfedb-a9e4-7023-bdaa-67577f2b7d33",
             "name": "Welcome",
-            "content": "<h1>에픽 로드맵 시작 팩</h1>\n<p>에픽 로드맵 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>에픽 로드맵</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>간트 뷰 (단축키 T) 로 분기별 일정 시각화.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "content": "<h1>Epic Roadmap Starter Pack</h1>\n<p>Sheets tailored to epic-roadmap planning are pre-loaded. Start with live data instead of a blank canvas.</p>\n<h2>What's in this workspace</h2>\n<ul><li><strong>Epic Roadmap</strong> sheet — click any cell to change the value</li></ul>\n<h2>Try it in 30 seconds</h2>\n<ol>\n<li><strong>Click</strong> any cell to edit the value</li>\n<li>Type <code>=</code> in a cell → formula autocomplete popover</li>\n<li>Type <code>/</code> in a regular cell → quick commands like <code>/today</code> <code>/uuid</code></li>\n<li>Right-click a row → \"Run simulation with this row\" (when hp/atk columns exist)</li>\n<li>Press <code>?</code> for shortcuts, <code>⌘K</code> for global search</li>\n</ol>\n<p>Gantt view (shortcut T) visualises the schedule by quarter.</p>\n<p>Step-by-step guides are also available in the coach-mark card at the bottom right.</p>",
             "createdAt": 1778097301988,
             "updatedAt": 1778097301988
           }
@@ -2207,22 +2207,22 @@
                 "selectOptions": [
                   {
                     "id": "pending",
-                    "label": "검토 중",
+                    "label": "In review",
                     "color": "#94a3b8"
                   },
                   {
                     "id": "inprogress",
-                    "label": "반영 중",
+                    "label": "In progress",
                     "color": "#3b82f6"
                   },
                   {
                     "id": "done",
-                    "label": "반영 완료",
+                    "label": "Done",
                     "color": "#10b981"
                   },
                   {
                     "id": "wontfix",
-                    "label": "미반영",
+                    "label": "Not started",
                     "color": "#71717a"
                   }
                 ]
@@ -2237,8 +2237,8 @@
                   "019dfedb-a9e4-7023-bdaa-787449942601": "Internal (5)",
                   "019dfedb-a9e4-7023-bdaa-7facbcf75e9e": "Me",
                   "019dfedb-a9e4-7023-bdaa-82b195901e30": 7,
-                  "019dfedb-a9e4-7023-bdaa-8748e51425d5": "핵심 루프 재미있음. 캐릭터 디자인 호평.",
-                  "019dfedb-a9e4-7023-bdaa-8819c9fb15de": "튜토리얼 너무 김 (15분+). 보스 1번이 너무 어려움.",
+                  "019dfedb-a9e4-7023-bdaa-8748e51425d5": "Core loop is fun. Character design well-received.",
+                  "019dfedb-a9e4-7023-bdaa-8819c9fb15de": "Tutorial too long (15+ min). Boss 1 too hard.",
                   "019dfedb-a9e4-7023-bdaa-8fdac50855ab": "inprogress"
                 }
               },
@@ -2250,8 +2250,8 @@
                   "019dfedb-a9e4-7023-bdaa-787449942601": "External",
                   "019dfedb-a9e4-7023-bdaa-7facbcf75e9e": "Me",
                   "019dfedb-a9e4-7023-bdaa-82b195901e30": 8,
-                  "019dfedb-a9e4-7023-bdaa-8748e51425d5": "튜토리얼 짧아져서 진입 부드러움.",
-                  "019dfedb-a9e4-7023-bdaa-8819c9fb15de": "경제 후반 인플레. 가챠 박애심 (소프트 피티) 부족.",
+                  "019dfedb-a9e4-7023-bdaa-8748e51425d5": "Tutorial is shorter now, smoother onboarding.",
+                  "019dfedb-a9e4-7023-bdaa-8819c9fb15de": "Late-game inflation. Gacha pity (soft pity) feels lacking.",
                   "019dfedb-a9e4-7023-bdaa-8fdac50855ab": "pending"
                 }
               }
@@ -2265,7 +2265,7 @@
           {
             "id": "019dfedb-a9e4-7023-bdaa-9cf931c512ad",
             "name": "Welcome",
-            "content": "<h1>플레이테스트 시작 팩</h1>\n<p>플레이테스트 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>\n<h2>이 워크스페이스에 든 것</h2>\n<ul><li><strong>플레이테스트</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li></ul>\n<h2>30초 안에 해 볼 것</h2>\n<ol>\n<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>\n<li>셀에 <code>=</code> → 함수 자동완성 popover</li>\n<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>\n<li>행 우클릭 → \"이 행으로 시뮬 실행\" (hp/atk 컬럼이 있으면)</li>\n<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>\n</ol>\n<p>재미도 별점 평균 + 핵심 피드백 텍스트로 회고.</p>\n<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>",
+            "content": "<h1>Playtest Starter Pack</h1>\n<p>Sheets tailored to playtest logging are pre-loaded. Start with live data instead of a blank canvas.</p>\n<h2>What's in this workspace</h2>\n<ul><li><strong>Playtest</strong> sheet — click any cell to change the value</li></ul>\n<h2>Try it in 30 seconds</h2>\n<ol>\n<li><strong>Click</strong> any cell to edit the value</li>\n<li>Type <code>=</code> in a cell → formula autocomplete popover</li>\n<li>Type <code>/</code> in a regular cell → quick commands like <code>/today</code> <code>/uuid</code></li>\n<li>Right-click a row → \"Run simulation with this row\" (when hp/atk columns exist)</li>\n<li>Press <code>?</code> for shortcuts, <code>⌘K</code> for global search</li>\n</ol>\n<p>Use the average fun-score plus key feedback text for the retrospective.</p>\n<p>Step-by-step guides are also available in the coach-mark card at the bottom right.</p>",
             "createdAt": 1778097301988,
             "updatedAt": 1778097301988
           }
