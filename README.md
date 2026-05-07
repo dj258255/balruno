@@ -220,9 +220,9 @@ We welcome contributions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before 
 
 **Pricing (tentative — finalized after beta)**
 - **Free / self-host** — unlimited (MIT for client + AGPL v3 for backend, run anywhere)
-- **Cloud Free** — strict quotas (rows/sheet 2k · history 14d · AI 0/BYOK · 2-hour server-backed undo, matching Baserow community)
-- **Cloud Pro** — quotas lifted, 7-day persistent undo + history viewer, optional cloud-paid AI pool (price TBD after beta validation)
-- **Team** — collaboration + members + SSO + 30-day persistent undo + audit log export (price TBD)
+- **Cloud Free** — strict quotas (rows/sheet 2k · history 14d · AI 0/BYOK · 120-min server-backed undo, matching Baserow community)
+- **Cloud Pro** — quotas lifted, optional cloud-paid AI pool, undo retention same as Free (Baserow pattern: undo isn't tier-gated) (price TBD after beta validation)
+- **Team** — collaboration + members + SSO + 30-day audit log retention (row history viewer) + audit log export (price TBD)
 
 ### License
 
