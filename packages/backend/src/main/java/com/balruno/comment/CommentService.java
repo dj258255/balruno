@@ -55,6 +55,7 @@ public interface CommentService {
             UUID columnId,
             UUID documentId,
             Integer anchorPosition,
+            Integer anchorLength,
             UUID parentId,
             JsonNode bodyJson
     ) {}

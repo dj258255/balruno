@@ -17,16 +17,22 @@
  * via Y.Doc updates.
  */
 
-import { useEffect, useState } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEffect, useMemo, useState } from 'react';
+import { useEditor, EditorContent, Extension } from '@tiptap/react';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Loader2, MessageSquarePlus } from 'lucide-react';
 import { useDocCollab } from '@/hooks/useDocCollab';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
+import { listCommentsForDoc } from '@/lib/backend';
 
 interface ServerDocViewProps {
   documentId: string;
+  /** Project the doc belongs to — needed for range-highlight comment
+   *  fetch (Comment F.2) and panel refetch on broadcast. */
+  projectId: string;
   /** The doc tree leaf's name. Inline-editable in the header — Enter
    *  or blur commits via onTitleChange; Escape reverts. */
   title: string;
@@ -35,7 +41,7 @@ interface ServerDocViewProps {
   onTitleChange?: (next: string) => void;
 }
 
-export function ServerDocView({ documentId, title, onTitleChange }: ServerDocViewProps) {
+export function ServerDocView({ documentId, projectId, title, onTitleChange }: ServerDocViewProps) {
   const { extensions: collabExtensions, doc, status } = useDocCollab(documentId);
 
   // Tracks the user's current text selection inside the editor —
@@ -46,12 +52,75 @@ export function ServerDocView({ documentId, title, onTitleChange }: ServerDocVie
   const setCommentSelection = useCommentSelectionStore((s) => s.setSelection);
   const setCommentPanelOpen = useCommentSelectionStore((s) => s.setPanelOpen);
 
+  // Range-anchored comments for the active doc — fed into the
+  // CommentHighlight plugin so the editor underlines every range.
+  // Re-fetches on mount + on every comment-event broadcast (same
+  // shape as the panel's refetch — both ways stay in sync).
+  const [highlights, setHighlights] = useState<
+    Array<{ commentId: string; from: number; to: number; resolved: boolean }>
+  >([]);
+  useEffect(() => {
+    let cancelled = false;
+    const refetch = async () => {
+      try {
+        const list = await listCommentsForDoc(projectId, documentId);
+        if (cancelled) return;
+        const ranges = list
+          .filter((c) => typeof c.anchorPosition === 'number'
+                        && typeof c.anchorLength === 'number'
+                        && c.anchorLength > 0)
+          .map((c) => ({
+            commentId: c.id,
+            from: c.anchorPosition as number,
+            to: (c.anchorPosition as number) + (c.anchorLength as number),
+            resolved: c.resolved,
+          }));
+        setHighlights(ranges);
+      } catch {
+        /* best-effort */
+      }
+    };
+    void refetch();
+    const onPeer = (e: Event) => {
+      const detail = (e as CustomEvent<{ projectId?: string }>).detail;
+      if (!detail) return;
+      void refetch();
+    };
+    window.addEventListener('balruno:comment-event', onPeer);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('balruno:comment-event', onPeer);
+    };
+  }, [documentId, projectId]);
+
   // Tiptap editor — StarterKit + Placeholder + collab extensions.
   // The Tiptap @collaboration extension manages undo via Y.Doc, but
   // StarterKit's bundled history is harmless when collab extensions
   // overlay it (collab takes precedence on the same keys). Keeping
   // StarterKit's default config avoids the option-shape mismatch
   // between StarterKit versions.
+  // CommentHighlight extension — emits an inline Decoration over
+  // every range-pinned comment so the user sees an orange underline
+  // at the anchored span. The extension is recreated per render only
+  // when `highlights` changes (memoized below) so selection / IME
+  // typing doesn't churn through plugin instantiation.
+  const commentHighlightExt = useMemo(
+    () => createCommentHighlightExtension(highlights, (commentId) => {
+      // Click on a highlight → bring the matching comment into the
+      // panel selection. The panel reads commentSelection.anchorPosition
+      // to know which thread to scroll to.
+      const target = highlights.find((h) => h.commentId === commentId);
+      if (!target) return;
+      setCommentSelection({
+        kind: 'doc-body',
+        documentId,
+        anchorPosition: target.from,
+      });
+      setCommentPanelOpen(true);
+    }),
+    [highlights, documentId, setCommentSelection, setCommentPanelOpen],
+  );
+
   const editor = useEditor(
     {
       extensions: [
@@ -59,6 +128,7 @@ export function ServerDocView({ documentId, title, onTitleChange }: ServerDocVie
         Placeholder.configure({
           placeholder: '내용을 입력하세요.',
         }),
+        commentHighlightExt,
         ...collabExtensions,
       ],
       // ProseMirror tries to recreate state on the server during SSR
@@ -70,7 +140,7 @@ export function ServerDocView({ documentId, title, onTitleChange }: ServerDocVie
         setSelRange(empty ? null : { from, to });
       },
     },
-    [documentId, collabExtensions],
+    [documentId, collabExtensions, commentHighlightExt],
   );
 
   const handleCommentSelection = () => {
@@ -79,6 +149,7 @@ export function ServerDocView({ documentId, title, onTitleChange }: ServerDocVie
       kind: 'doc-body',
       documentId,
       anchorPosition: selRange.from,
+      anchorLength: selRange.to - selRange.from,
     });
     setCommentPanelOpen(true);
   };
@@ -199,4 +270,68 @@ function DocTitleEditor({ title, onTitleChange }: DocTitleEditorProps) {
       {title}
     </button>
   );
+}
+
+/**
+ * Tiptap Extension that emits inline Decoration over every
+ * range-pinned comment (Comment F.2). Each highlight gets a
+ * `comment-highlight` class — the global stylesheet provides the
+ * orange underline. Click handler dispatches via the supplied
+ * onClick callback so the panel can scroll to the matched thread.
+ *
+ * Idempotent on highlight set churn: the plugin spec carries
+ * highlights in plugin state via apply/init, but the React side
+ * recreates the extension when `highlights` changes, which
+ * triggers a fresh ProseMirror plugin replacement (Tiptap rebinds
+ * the editor). Cheap because the plugin only stores a
+ * DecorationSet — no persistent state across editor instances.
+ */
+function createCommentHighlightExtension(
+  highlights: Array<{ commentId: string; from: number; to: number; resolved: boolean }>,
+  onClick: (commentId: string) => void,
+) {
+  const pluginKey = new PluginKey('comment-highlight');
+  return Extension.create({
+    name: 'commentHighlight',
+    addProseMirrorPlugins() {
+      return [
+        new Plugin({
+          key: pluginKey,
+          props: {
+            decorations(state) {
+              const docSize = state.doc.content.size;
+              const decos: Decoration[] = [];
+              for (const h of highlights) {
+                // Clamp to current doc bounds — the user may have
+                // edited the doc since the comment was anchored,
+                // shrinking it. Out-of-bound ranges are skipped
+                // rather than crashing the plugin.
+                const from = Math.max(0, Math.min(h.from, docSize));
+                const to = Math.max(from, Math.min(h.to, docSize));
+                if (to <= from) continue;
+                decos.push(
+                  Decoration.inline(from, to, {
+                    class: h.resolved
+                      ? 'comment-highlight comment-highlight-resolved'
+                      : 'comment-highlight',
+                    'data-comment-id': h.commentId,
+                  }),
+                );
+              }
+              return DecorationSet.create(state.doc, decos);
+            },
+            handleClick(view, _pos, event) {
+              const target = event.target as HTMLElement | null;
+              const span = target?.closest('[data-comment-id]') as HTMLElement | null;
+              if (!span) return false;
+              const commentId = span.getAttribute('data-comment-id');
+              if (!commentId) return false;
+              onClick(commentId);
+              return true;
+            },
+          },
+        }),
+      ];
+    },
+  });
 }

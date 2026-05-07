@@ -35,6 +35,10 @@ interface DocCommentPanelProps {
    *  undefined the panel falls back to doc-level threading
    *  (Comment F MVP — anchorPosition stays null on create). */
   anchorPosition?: number;
+  /** Length of the Tiptap-anchored range. Combined with
+   *  anchorPosition gives [from..from+length] for the highlight
+   *  decoration. Both NULL = doc-level. */
+  anchorLength?: number;
   onClose: () => void;
 }
 
@@ -43,6 +47,7 @@ export function DocCommentPanel({
   documentId,
   docTitle,
   anchorPosition,
+  anchorLength,
   onClose,
 }: DocCommentPanelProps) {
   const [comments, setComments] = useState<BackendComment[] | null>(null);
@@ -85,6 +90,7 @@ export function DocCommentPanel({
         scopeKind: 'DOC_BODY',
         documentId,
         anchorPosition,
+        anchorLength,
         bodyJson: {
           type: 'doc',
           content: [{ type: 'paragraph', content: [{ type: 'text', text: body }] }],

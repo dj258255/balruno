@@ -11,7 +11,7 @@ import { create } from 'zustand';
 
 export type CommentSelection =
   | { kind: 'sheet-cell'; sheetId: string; rowId: string; columnId: string }
-  | { kind: 'doc-body'; documentId: string; anchorPosition?: number }
+  | { kind: 'doc-body'; documentId: string; anchorPosition?: number; anchorLength?: number }
   | null;
 
 interface CommentSelectionState {

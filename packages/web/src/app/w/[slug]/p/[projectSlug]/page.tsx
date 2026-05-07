@@ -638,6 +638,7 @@ export default function ProjectDetailPage() {
             ) : selection?.kind === 'doc' && selectedDocId ? (
               <ServerDocView
                 documentId={selectedDocId}
+                projectId={project.id}
                 title={selectedDocTitle}
                 onTitleChange={(next) => docTreeOps.rename(selectedDocId, next)}
               />
@@ -667,6 +668,7 @@ export default function ProjectDetailPage() {
               documentId={commentSelection.documentId}
               docTitle={selectedDocTitle || '문서'}
               anchorPosition={commentSelection.anchorPosition}
+              anchorLength={commentSelection.anchorLength}
               onClose={() => setCommentPanelOpen(false)}
             />
           )}

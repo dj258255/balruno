@@ -1805,3 +1805,24 @@ textarea,
 select {
   touch-action: manipulation;
 }
+
+/* ============================================================================
+ * Comment range highlight (ADR 0024 stage F.2)
+ * ============================================================================
+ * ProseMirror Decoration emits a span with class .comment-highlight at the
+ * anchored range [from..from+anchor_length]. Resolved comments fade out
+ * (.comment-highlight-resolved) — same shade family as the panel's resolved
+ * card so the user can tell at a glance which threads need action. */
+.comment-highlight {
+  background: rgba(255, 159, 64, 0.18);
+  border-bottom: 2px solid rgba(255, 159, 64, 0.7);
+  cursor: pointer;
+  transition: background-color 120ms;
+}
+.comment-highlight:hover {
+  background: rgba(255, 159, 64, 0.32);
+}
+.comment-highlight-resolved {
+  background: rgba(148, 163, 184, 0.12);
+  border-bottom-color: rgba(148, 163, 184, 0.5);
+}

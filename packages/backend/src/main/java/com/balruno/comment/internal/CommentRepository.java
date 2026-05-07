@@ -40,7 +40,7 @@ class CommentRepository {
 
     private static final String BASE_SELECT =
             "SELECT id, project_id, scope_kind, sheet_id, row_id, column_id, "
-          + "document_id, anchor_position, parent_id, author_user_id, "
+          + "document_id, anchor_position, anchor_length, parent_id, author_user_id, "
           + "body_json::text AS body_json_text, resolved, resolved_by, "
           + "resolved_at, created_at, updated_at "
           + "FROM comments";
@@ -63,6 +63,7 @@ class CommentRepository {
                     nullableUuid(rs.getString("column_id")),
                     nullableUuid(rs.getString("document_id")),
                     rs.getObject("anchor_position") == null ? null : rs.getInt("anchor_position"),
+                    rs.getObject("anchor_length") == null ? null : rs.getInt("anchor_length"),
                     nullableUuid(rs.getString("parent_id")),
                     UUID.fromString(rs.getString("author_user_id")),
                     body,
@@ -79,12 +80,12 @@ class CommentRepository {
         jdbc.update(
                 "INSERT INTO comments ("
               + "  id, project_id, scope_kind, sheet_id, row_id, column_id, "
-              + "  document_id, anchor_position, parent_id, author_user_id, "
-              + "  body_json"
-              + ") VALUES (?, ?, ?::comment_scope_kind, ?, ?, ?, ?, ?, ?, ?, ?::jsonb)",
+              + "  document_id, anchor_position, anchor_length, parent_id, "
+              + "  author_user_id, body_json"
+              + ") VALUES (?, ?, ?::comment_scope_kind, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb)",
                 c.id(), c.projectId(), c.scopeKind().name(),
                 c.sheetId(), c.rowId(), c.columnId(),
-                c.documentId(), c.anchorPosition(), c.parentId(),
+                c.documentId(), c.anchorPosition(), c.anchorLength(), c.parentId(),
                 c.authorUserId(), bodyText);
         return findByIdOrThrow(c.id());
     }

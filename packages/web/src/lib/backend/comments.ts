@@ -11,6 +11,7 @@ export interface BackendComment {
   columnId: string | null;
   documentId: string | null;
   anchorPosition: number | null;
+  anchorLength: number | null;
   parentId: string | null;
   authorUserId: string;
   bodyJson: unknown; // Tiptap JSON
@@ -29,6 +30,7 @@ export interface CreateCommentInput {
   columnId?: string;
   documentId?: string;
   anchorPosition?: number;
+  anchorLength?: number;
   parentId?: string;
   bodyJson: unknown;
 }

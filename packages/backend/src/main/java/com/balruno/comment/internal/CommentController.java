@@ -58,6 +58,7 @@ class CommentController {
                 body.columnId(),
                 body.documentId(),
                 body.anchorPosition(),
+                body.anchorLength(),
                 body.parentId(),
                 body.bodyJson()));
     }
@@ -127,6 +128,7 @@ class CommentController {
             UUID columnId,
             UUID documentId,
             Integer anchorPosition,
+            Integer anchorLength,
             UUID parentId,
             @NotNull JsonNode bodyJson
     ) {}

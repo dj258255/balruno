@@ -88,6 +88,7 @@ class CommentServiceImpl implements CommentService {
                 req.columnId(),
                 req.documentId(),
                 req.anchorPosition(),
+                req.anchorLength(),
                 req.parentId(),
                 callerUserId,
                 req.bodyJson(),
