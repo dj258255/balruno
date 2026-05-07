@@ -4,9 +4,12 @@ package com.balruno.comment.internal;
 import com.balruno.comment.Comment;
 import com.balruno.comment.CommentService;
 import com.balruno.project.ProjectService;
+import com.balruno.sync.ProjectSyncApi;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -30,10 +33,42 @@ class CommentServiceImpl implements CommentService {
 
     private final CommentRepository repo;
     private final ProjectService projects;
+    private final ProjectSyncApi sync;
 
-    CommentServiceImpl(CommentRepository repo, ProjectService projects) {
+    CommentServiceImpl(CommentRepository repo, ProjectService projects, ProjectSyncApi sync) {
         this.repo = repo;
         this.projects = projects;
+        this.sync = sync;
+    }
+
+    /**
+     * Schedules a wss broadcast after the current transaction
+     * commits — a rolled-back tx can't push a misleading event to
+     * peers. Failure inside the broadcast is swallowed
+     * (ProjectSyncApi logs internally) so the surrounding HTTP
+     * response stays successful.
+     */
+    private void broadcastAfterCommit(UUID projectId, String type, Comment payload) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        sync.broadcastEvent(projectId, type, payload);
+                    }
+                });
+    }
+
+    private void broadcastDeleteAfterCommit(UUID projectId, UUID commentId) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        sync.broadcastEvent(
+                                projectId,
+                                "comment.deleted",
+                                java.util.Map.of("commentId", commentId.toString()));
+                    }
+                });
     }
 
     @Override
@@ -60,6 +95,7 @@ class CommentServiceImpl implements CommentService {
                 now, now);
         var saved = repo.insert(draft);
         repo.insertMentions(saved.id(), MentionExtractor.parse(req.bodyJson()));
+        broadcastAfterCommit(saved.projectId(), "comment.added", saved);
         return saved;
     }
 
@@ -77,6 +113,7 @@ class CommentServiceImpl implements CommentService {
         // Re-extract mentions; new entries get inserted (existing
         // (comment_id, user) pairs are no-op via ON CONFLICT DO NOTHING).
         repo.insertMentions(commentId, MentionExtractor.parse(bodyJson));
+        broadcastAfterCommit(updated.projectId(), "comment.updated", updated);
         return updated;
     }
 
@@ -88,7 +125,9 @@ class CommentServiceImpl implements CommentService {
         // Author-or-admin check is done in production via WorkspaceRole;
         // for now, any project member can resolve (matches Linear /
         // Notion default — restrictive flag lands in Stage G).
-        return repo.setResolved(commentId, resolved, resolved ? callerUserId : null);
+        var updated = repo.setResolved(commentId, resolved, resolved ? callerUserId : null);
+        broadcastAfterCommit(updated.projectId(), "comment.updated", updated);
+        return updated;
     }
 
     @Override
@@ -100,6 +139,7 @@ class CommentServiceImpl implements CommentService {
         }
         projects.findById(existing.projectId(), callerUserId);
         repo.softDelete(commentId);
+        broadcastDeleteAfterCommit(existing.projectId(), commentId);
     }
 
     @Override

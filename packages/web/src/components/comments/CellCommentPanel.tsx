@@ -56,18 +56,32 @@ export function CellCommentPanel({
 
   const me = useAuthStore((s) => s.user);
 
+  // Initial fetch + re-fetch on peer broadcast. The wss bridge
+  // dispatches 'balruno:comment-event' on every comment.added /
+  // comment.updated / comment.deleted that arrives. We refetch
+  // wholesale instead of patching in-place — the event volume is
+  // low and the simpler shape avoids race against the local
+  // mutation path. (ADR 0024 Stage C.)
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
+    const refetch = async () => {
       try {
         const list = await listCommentsForCell({ projectId, sheetId, rowId, columnId });
         if (!cancelled) setComments(list);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : '코멘트 로드 실패');
       }
-    })();
+    };
+    void refetch();
+    const onPeer = (e: Event) => {
+      const detail = (e as CustomEvent<{ projectId: string }>).detail;
+      if (detail?.projectId !== projectId) return;
+      void refetch();
+    };
+    window.addEventListener('balruno:comment-event', onPeer);
     return () => {
       cancelled = true;
+      window.removeEventListener('balruno:comment-event', onPeer);
     };
   }, [projectId, sheetId, rowId, columnId]);
 

@@ -35,4 +35,23 @@ public interface ProjectSyncApi {
      * see the new sheets until their next reconnect.
      */
     void broadcastFullStateSnapshot(UUID projectId);
+
+    /**
+     * Broadcast an arbitrary event envelope to every session of the
+     * given project. The envelope is a plain Map → JSON; callers
+     * supply the {@code type} (e.g. "comment.added", "comment.deleted")
+     * and the payload as a Java object the JSON mapper can serialise.
+     *
+     * Unlike op-log broadcasts (cell.update etc.), these don't go
+     * through op_idempotency or version columns — they're used for
+     * lightweight peer notifications where loss tolerance is high
+     * (worst case the peer re-fetches on next interaction).
+     *
+     * Sender exclusion is *not* applied here — the caller is HTTP,
+     * not a WebSocket session, so every wss session needs the
+     * notification. The local user gets it too and dedupes on its
+     * own (REST response provides the canonical row before the
+     * broadcast arrives).
+     */
+    void broadcastEvent(UUID projectId, String type, Object payload);
 }

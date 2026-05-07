@@ -73,9 +73,31 @@ function handleServerMsg(msg: ServerMsg, projectId: string): void {
     case 'presence':
       handlePresence(msg, projectId);
       break;
-    default:
+    default: {
+      // ADR 0024 Stage C: comment.* events ride the same channel
+      // but don't go through the op log path — dispatch them as
+      // window events so CellCommentPanel can listen without
+      // pulling in a sync dependency. The msg.type is narrowed to
+      // BroadcastPayload's union by this point, so cast through
+      // string for the comment dispatch.
+      const t = msg.type as string;
+      if (
+        t === 'comment.added' ||
+        t === 'comment.updated' ||
+        t === 'comment.deleted'
+      ) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('balruno:comment-event', {
+              detail: { projectId, type: t, payload: (msg as unknown as { payload?: unknown }).payload },
+            }),
+          );
+        }
+        break;
+      }
       handleBroadcast(msg, projectId);
       break;
+    }
   }
 }
 
