@@ -124,9 +124,11 @@ class CommentServiceIntegrationTest {
 
         var documentId = UUID.randomUUID();
         jdbc.update(
-                "INSERT INTO documents (id, project_id, created_by, name, kind) "
+                "INSERT INTO documents (id, project_id, slug, title, ydoc_state) "
               + "VALUES (?, ?, ?, ?, ?)",
-                documentId, ctx.projectId, ctx.userId, "test doc", "DOCUMENT");
+                documentId, ctx.projectId,
+                "test-" + documentId.toString().substring(0, 8),
+                "test doc", new byte[0]);
 
         // anchorPosition + anchorLength both null = doc-level (V12
         // CHECK accepts). V11 already accepts null/null on the older
