@@ -340,16 +340,20 @@ export default function ProjectDetailPage() {
   // whether to render the SheetTable or the doc editor placeholder.
   //
   // Default selection (first sheet) is computed *during render* from
-  // the live sheets array — no effect-driven setState. The selector
-  // returns a stable object reference unless either the explicit
-  // selection or the first-sheet id changes, which is exactly the
-  // dependency set that should cause the main panel to re-render.
-  // Avoids the react-hooks/set-state-in-effect lint and the
-  // cascading-render warning the previous useEffect path triggered.
+  // the live sheets array — no effect-driven setState. Invalidation
+  // is handled by the same derive: if the explicit selection points
+  // at an id that no longer exists (peer deleted the sheet, doc
+  // moved out of view, etc.) we fall through to the first sheet.
   type Selection = { kind: 'sheet' | 'doc'; id: string } | null;
   const [explicitSelection, setExplicitSelection] = useState<Selection>(null);
+  const explicitStillValid =
+    explicitSelection &&
+    (explicitSelection.kind === 'sheet'
+      ? sheets.some((s) => s.id === explicitSelection.id)
+      : findNodeName(docTree, explicitSelection.id) !== null);
   const selection: Selection =
-    explicitSelection ?? (sheets[0] ? { kind: 'sheet', id: sheets[0].id } : null);
+    (explicitStillValid ? explicitSelection : null) ??
+    (sheets[0] ? { kind: 'sheet', id: sheets[0].id } : null);
   const setSelection = setExplicitSelection;
 
   const selectedSheet =

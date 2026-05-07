@@ -70,12 +70,13 @@ const DICT: Record<string, string> = {
   '버그 트래커': 'Bug Tracker',
   '버그 관리': 'Bug tracking',
   '로드맵': 'Roadmap',
-  '에픽 로드맵': 'Epic roadmap',
   '플레이테스트': 'Playtest',
   '플레이테스트 세션 기록': 'Playtest session log',
   '새 프로젝트': 'New Project',
 
-  // Sheet names
+  // Sheet names. '에픽 로드맵' below doubles as a project description
+  // for the roadmap starter group — same Korean string maps to the
+  // same English on both sides.
   '캐릭터': 'Characters',
   '스프린트': 'Sprint',
   '무기': 'Weapons',
