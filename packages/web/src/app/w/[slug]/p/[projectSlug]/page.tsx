@@ -320,98 +320,115 @@ export default function ProjectDetailPage() {
   );
   const sheets = localProject?.sheets ?? [];
   const sheetTree = localProject?.sheetTree ?? [];
+  const docTree = localProject?.docTree ?? [];
 
-  // Selected sheet — defaults to the first available sheet once the
-  // store hydrate lands. The user picks via the sheet_tree sidebar
-  // (Stage D minimal — folder expand/collapse + sheet leaf click).
-  const [selectedSheetId, setSelectedSheetId] = useState<string | null>(null);
+  // Selection is polymorphic — at most one of {sheet leaf, doc leaf}
+  // is active. Keep a discriminated union so the main panel knows
+  // whether to render the SheetTable or the doc editor placeholder.
+  // Defaults to the first available sheet on first hydrate so the
+  // page doesn't sit on a blank panel.
+  type Selection = { kind: 'sheet' | 'doc'; id: string } | null;
+  const [selection, setSelection] = useState<Selection>(null);
   useEffect(() => {
-    if (selectedSheetId !== null) return;
+    if (selection !== null) return;
     if (sheets.length === 0) return;
-    setSelectedSheetId(sheets[0].id);
-  }, [selectedSheetId, sheets]);
+    setSelection({ kind: 'sheet', id: sheets[0].id });
+  }, [selection, sheets]);
 
-  const selectedSheet = sheets.find((s) => s.id === selectedSheetId);
+  const selectedSheet =
+    selection?.kind === 'sheet'
+      ? sheets.find((s) => s.id === selection.id)
+      : undefined;
+  const selectedSheetId = selection?.kind === 'sheet' ? selection.id : null;
+  const selectedDocId = selection?.kind === 'doc' ? selection.id : null;
 
-  // Inline rename — sheet_tree node (folder OR sheet leaf). Direct
-  // setState on the store (Y.Doc bypass; same pattern as the
-  // broadcast cell.update apply path) + writeQueue.emitOp so peers
-  // pick up the rename via tree.rename broadcast. ADR 0018 paired
-  // pattern, sheet_tree region.
-  const handleRenameNode = (nodeId: string, newName: string) => {
-    if (!project) return;
-    useProjectStore.setState((state) => ({
-      projects: state.projects.map((p) =>
-        p.id !== project.id
-          ? p
-          : { ...p, sheetTree: renameNodeInTree(p.sheetTree ?? [], nodeId, newName) },
-      ),
-    }));
-    emitOp({
-      kind: 'tree.rename',
-      treeKind: 'SHEET',
-      nodeId,
-      newName,
-    });
-  };
-
-  // Add a new root-level sheet leaf. Backend's applyTreeAdd recognises
-  // node.type === 'sheet' and atomically appends an empty Sheet shell
-  // to projects.data in the same transaction (ADR 0008 v2.1). The
-  // broadcast handler then materialises the shell into our local
-  // sheets[]; we don't predict it here so the source of truth stays
-  // server-side.
-  const handleAddSheet = () => {
-    if (!project) return;
-    const sheetId = newId();
-    const newLeaf: TreeNode = {
-      id: sheetId,
-      type: 'sheet',
-      name: '새 시트',
+  // Tree handlers are identical between sheet_tree and doc_tree
+  // regions — only the treeKind on the emit and the Project field
+  // they mutate differ. Build them via a factory so the doc handlers
+  // stay in lockstep with the sheet handlers automatically. Direct
+  // setState on the store (Y.Doc bypass) + writeQueue.emitOp so peers
+  // pick up the change via the matching broadcast. ADR 0018 paired
+  // pattern.
+  const makeTreeHandlers = (treeKind: 'SHEET' | 'DOC') => {
+    const treeField: 'sheetTree' | 'docTree' =
+      treeKind === 'SHEET' ? 'sheetTree' : 'docTree';
+    const setTree = (mutator: (tree: TreeNode[]) => TreeNode[]) => {
+      if (!project) return;
+      useProjectStore.setState((state) => ({
+        projects: state.projects.map((p) =>
+          p.id !== project.id
+            ? p
+            : { ...p, [treeField]: mutator(p[treeField] ?? []) },
+        ),
+      }));
     };
-    const position = (localProject?.sheetTree?.length ?? 0);
-    useProjectStore.setState((state) => ({
-      projects: state.projects.map((p) =>
-        p.id !== project.id
-          ? p
-          : { ...p, sheetTree: [...(p.sheetTree ?? []), newLeaf] },
-      ),
-    }));
-    emitOp({
-      kind: 'tree.add',
-      treeKind: 'SHEET',
-      parentId: null,
-      position,
-      node: newLeaf,
-    });
-    setSelectedSheetId(sheetId);
+
+    return {
+      rename: (nodeId: string, newName: string) => {
+        setTree((tree) => renameNodeInTree(tree, nodeId, newName));
+        emitOp({ kind: 'tree.rename', treeKind, nodeId, newName });
+      },
+      addFolder: () => {
+        if (!project) return;
+        const newFolder: TreeNode = {
+          id: newId(),
+          type: 'folder',
+          name: '새 폴더',
+          children: [],
+        };
+        const position = (localProject?.[treeField]?.length ?? 0);
+        setTree((tree) => [...tree, newFolder]);
+        emitOp({
+          kind: 'tree.add',
+          treeKind,
+          parentId: null,
+          position,
+          node: newFolder,
+        });
+      },
+      addLeaf: () => {
+        if (!project) return;
+        const leafId = newId();
+        const leafType: 'sheet' | 'doc' = treeKind === 'SHEET' ? 'sheet' : 'doc';
+        const newLeaf: TreeNode = {
+          id: leafId,
+          type: leafType,
+          name: leafType === 'sheet' ? '새 시트' : '새 문서',
+        };
+        const position = (localProject?.[treeField]?.length ?? 0);
+        setTree((tree) => [...tree, newLeaf]);
+        emitOp({
+          kind: 'tree.add',
+          treeKind,
+          parentId: null,
+          position,
+          node: newLeaf,
+        });
+        setSelection({ kind: leafType, id: leafId });
+      },
+      deleteNode: (nodeId: string) => {
+        setTree((tree) => removeNodeFromTree(tree, nodeId));
+        emitOp({ kind: 'tree.delete', treeKind, nodeId });
+      },
+      move: (nodeId: string, newParentId: string | null, newPosition: number) => {
+        const current = localProject?.[treeField] ?? [];
+        // Cycle guard: dropping into self/descendant would orphan
+        // the subtree. Root drop (null parent) is always safe.
+        if (newParentId !== null && isDescendant(current, nodeId, newParentId)) return;
+        setTree((tree) => moveNodeInTree(tree, nodeId, newParentId, newPosition));
+        emitOp({
+          kind: 'tree.move',
+          treeKind,
+          nodeId,
+          newParentId,
+          newPosition,
+        });
+      },
+    };
   };
 
-  // Add a new root-level folder.
-  const handleAddFolder = () => {
-    if (!project) return;
-    const newFolder: TreeNode = {
-      id: newId(),
-      type: 'folder',
-      name: '새 폴더',
-      children: [],
-    };
-    const position = (localProject?.sheetTree?.length ?? 0);
-    useProjectStore.setState((state) => ({
-      projects: state.projects.map((p) =>
-        p.id !== project.id
-          ? p
-          : { ...p, sheetTree: [...(p.sheetTree ?? []), newFolder] },
-      ),
-    }));
-    emitOp({
-      kind: 'tree.add',
-      treeKind: 'SHEET',
-      parentId: null,
-      position,
-      node: newFolder,
-    });
-  };
+  const sheetTreeOps = makeTreeHandlers('SHEET');
+  const docTreeOps = makeTreeHandlers('DOC');
 
   // Stage F — "Add from template" modal state. Backend mutates +
   // broadcasts sync.full so we don't predict / mutate the local
@@ -421,55 +438,6 @@ export default function ProjectDetailPage() {
   const handlePickTemplate = async (group: CatalogGroupSummary) => {
     if (!project) return;
     await importTemplate(project.id, group.id);
-  };
-
-  // Drag-and-drop reorder. Local mutation via moveNodeInTree (cycle
-  // guard + same-parent off-by-one inside the helper); emit tree.move
-  // for the server to canonicalise + broadcast to peers.
-  const handleMoveNode = (
-    nodeId: string,
-    newParentId: string | null,
-    newPosition: number,
-  ) => {
-    if (!project) return;
-    const current = localProject?.sheetTree ?? [];
-    // Cycle guard: dropping a folder *into itself or its descendant*
-    // would orphan the dragged subtree. Root drop (newParentId=null)
-    // can never form a cycle.
-    if (newParentId !== null && isDescendant(current, nodeId, newParentId)) return;
-    useProjectStore.setState((state) => ({
-      projects: state.projects.map((p) =>
-        p.id !== project.id
-          ? p
-          : { ...p, sheetTree: moveNodeInTree(p.sheetTree ?? [], nodeId, newParentId, newPosition) },
-      ),
-    }));
-    emitOp({
-      kind: 'tree.move',
-      treeKind: 'SHEET',
-      nodeId,
-      newParentId,
-      newPosition,
-    });
-  };
-
-  // Delete a folder + its descendants (cascade). Backend's
-  // TreeOpService.applyTreeDelete handles the cascade in JSONB; we
-  // mirror by removing the subtree from local state.
-  const handleDeleteFolder = (nodeId: string) => {
-    if (!project) return;
-    useProjectStore.setState((state) => ({
-      projects: state.projects.map((p) =>
-        p.id !== project.id
-          ? p
-          : { ...p, sheetTree: removeNodeFromTree(p.sheetTree ?? [], nodeId) },
-      ),
-    }));
-    emitOp({
-      kind: 'tree.delete',
-      treeKind: 'SHEET',
-      nodeId,
-    });
   };
 
   if (loading) {
@@ -555,21 +523,40 @@ export default function ProjectDetailPage() {
             </h2>
             <ServerSheetTree
               tree={sheetTree}
+              leafKind="sheet"
               selectedSheetId={selectedSheetId}
-              onSelectSheet={setSelectedSheetId}
-              onRenameNode={handleRenameNode}
-              onAddFolder={handleAddFolder}
-              onAddSheet={handleAddSheet}
+              onSelectSheet={(id) => setSelection({ kind: 'sheet', id })}
+              onRenameNode={sheetTreeOps.rename}
+              onAddFolder={sheetTreeOps.addFolder}
+              onAddSheet={sheetTreeOps.addLeaf}
               onAddFromTemplate={() => setTemplateModalOpen(true)}
-              onDeleteFolder={handleDeleteFolder}
-              onMoveNode={handleMoveNode}
+              onDeleteFolder={sheetTreeOps.deleteNode}
+              onMoveNode={sheetTreeOps.move}
+            />
+
+            <h2
+              className="mt-4 px-2 py-1.5 text-xs font-medium uppercase tracking-wide"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              문서
+            </h2>
+            <ServerSheetTree
+              tree={docTree}
+              leafKind="doc"
+              selectedSheetId={selectedDocId}
+              onSelectSheet={(id) => setSelection({ kind: 'doc', id })}
+              onRenameNode={docTreeOps.rename}
+              onAddFolder={docTreeOps.addFolder}
+              onAddSheet={docTreeOps.addLeaf}
+              onDeleteFolder={docTreeOps.deleteNode}
+              onMoveNode={docTreeOps.move}
             />
           </aside>
 
-          {/* Main — full SheetTable for the selected sheet. Store
-              actions (updateCell / addRow / addColumn / …) are
-              already wired through cellSlice's emitOp, so every edit
-              flows through the paired-commit path automatically. */}
+          {/* Main — SheetTable for sheet selection, doc placeholder
+              for doc selection (real Tiptap editor wiring lands in a
+              follow-up phase — needs server-canonical version of
+              updateDoc / setCurrentDoc + HocuspocusProvider mount). */}
           <section
             className="rounded-lg border overflow-hidden"
             style={{
@@ -578,11 +565,24 @@ export default function ProjectDetailPage() {
               minHeight: '500px',
             }}
           >
-            {selectedSheet ? (
+            {selection?.kind === 'sheet' && selectedSheet ? (
               <SheetTable projectId={project.id} sheet={selectedSheet} />
+            ) : selection?.kind === 'doc' ? (
+              <div className="p-6 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                <p className="mb-2 font-medium" style={{ color: 'var(--text-primary)' }}>
+                  문서 에디터 (개발 중)
+                </p>
+                <p>
+                  문서 본문은 Hocuspocus + y-indexeddb 로 동기화 예정입니다. 현재는 트리에서
+                  rename / add / delete / drag-drop 만 작동.
+                </p>
+                <p className="mt-2 font-mono text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  doc id: {selection.id}
+                </p>
+              </div>
             ) : (
               <p className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                시트를 선택하세요.
+                시트나 문서를 선택하세요.
               </p>
             )}
           </section>

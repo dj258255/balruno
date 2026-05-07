@@ -14,25 +14,42 @@
  * (react-arborist) is the standard upgrade.
  */
 
-import { useState } from 'react';
-import { ChevronRight, ChevronDown, FilePlus, FileSpreadsheet, Folder, FolderPlus, LayoutTemplate, Trash2 } from 'lucide-react';
+import { useState, type ComponentType } from 'react';
+import { ChevronRight, ChevronDown, FilePlus, FileSpreadsheet, FileText, Folder, FolderPlus, LayoutTemplate, Trash2 } from 'lucide-react';
 import type { TreeNode } from '@balruno/shared';
+
+/**
+ * Both sheet_tree and doc_tree share the same shape (folders +
+ * leaves) and the same mutation surface (rename / add / delete /
+ * move). One component renders both regions; leafKind picks the
+ * leaf icon and labels.
+ */
+type LeafKind = 'sheet' | 'doc';
+
+const LEAF_CONFIG: Record<LeafKind, { Icon: ComponentType<{ className?: string; style?: React.CSSProperties }>; addLabel: string; addTitle: string }> = {
+  sheet: { Icon: FileSpreadsheet, addLabel: '시트', addTitle: '새 시트' },
+  doc: { Icon: FileText, addLabel: '문서', addTitle: '새 문서' },
+};
 
 interface ServerSheetTreeProps {
   tree: TreeNode[];
+  /** Region the tree belongs to. Defaults to 'sheet' for back-compat
+   *  with callers that haven't been updated to the doc tree wiring. */
+  leafKind?: LeafKind;
   selectedSheetId: string | null;
   onSelectSheet: (sheetId: string) => void;
   /** Double-click on a node enters rename mode; commit via Enter or blur. */
   onRenameNode?: (nodeId: string, newName: string) => void;
   /** Click "+ 폴더" header button to add a root-level folder. */
   onAddFolder?: () => void;
-  /** Click "+ 시트" header button to add a root-level sheet leaf.
-   *  Backend's tree.add(type=sheet) creates the matching empty
-   *  Sheet body in the same transaction (ADR 0008 v2.1). */
+  /** Click "+ 시트" / "+ 문서" header button to add a root-level leaf.
+   *  Backend's tree.add(type=sheet) atomically creates a matching
+   *  empty Sheet body (ADR 0008 v2.1); doc leaves have no
+   *  cross-region side effect (body lives on Hocuspocus). */
   onAddSheet?: () => void;
   /** Click "+ 템플릿" header button to open the starter pack picker.
    *  Backend mutates atomically + broadcasts sync.full, so the bridge
-   *  handles the re-hydrate (ADR 0020 Stage F). */
+   *  handles the re-hydrate (ADR 0020 Stage F). Sheet tree only. */
   onAddFromTemplate?: () => void;
   /** Click trash icon on a folder row to delete it (cascade descendants). */
   onDeleteFolder?: (nodeId: string) => void;
@@ -51,6 +68,7 @@ const DRAG_MIME = 'application/x-balruno-treenode';
 
 export function ServerSheetTree({
   tree,
+  leafKind = 'sheet',
   selectedSheetId,
   onSelectSheet,
   onRenameNode,
@@ -60,6 +78,7 @@ export function ServerSheetTree({
   onDeleteFolder,
   onMoveNode,
 }: ServerSheetTreeProps) {
+  const leafCfg = LEAF_CONFIG[leafKind];
   const showHeader = onAddFolder || onAddSheet || onAddFromTemplate;
   return (
     <div>
@@ -83,10 +102,10 @@ export function ServerSheetTree({
               onClick={onAddSheet}
               className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-[var(--bg-hover)]"
               style={{ color: 'var(--text-tertiary)' }}
-              title="새 시트"
+              title={leafCfg.addTitle}
             >
               <FilePlus className="h-3 w-3" />
-              시트
+              {leafCfg.addLabel}
             </button>
           )}
           {onAddFolder && (
@@ -105,7 +124,7 @@ export function ServerSheetTree({
       )}
       {tree.length === 0 ? (
         <p className="px-3 py-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          시트 트리가 비어있습니다.
+          {leafKind === 'doc' ? '문서가 없습니다.' : '시트 트리가 비어있습니다.'}
         </p>
       ) : (
         <ul className="space-y-0.5 text-sm">
@@ -116,6 +135,7 @@ export function ServerSheetTree({
               depth={0}
               parentId={null}
               indexInParent={idx}
+              leafIcon={leafCfg.Icon}
               selectedSheetId={selectedSheetId}
               onSelectSheet={onSelectSheet}
               onRenameNode={onRenameNode}
@@ -134,6 +154,7 @@ interface TreeNodeRowProps {
   depth: number;
   parentId: string | null;
   indexInParent: number;
+  leafIcon: ComponentType<{ className?: string; style?: React.CSSProperties }>;
   selectedSheetId: string | null;
   onSelectSheet: (sheetId: string) => void;
   onRenameNode?: (nodeId: string, newName: string) => void;
@@ -148,6 +169,7 @@ function TreeNodeRow({
   depth,
   parentId,
   indexInParent,
+  leafIcon: LeafIcon,
   selectedSheetId,
   onSelectSheet,
   onRenameNode,
@@ -270,7 +292,7 @@ function TreeNodeRow({
               <Folder className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
             </>
           ) : (
-            <FileSpreadsheet
+            <LeafIcon
               className="h-3.5 w-3.5 shrink-0"
               style={{ color: 'var(--text-tertiary)', marginLeft: 14 }}
             />
@@ -323,6 +345,7 @@ function TreeNodeRow({
               depth={depth + 1}
               parentId={node.id}
               indexInParent={idx}
+              leafIcon={LeafIcon}
               selectedSheetId={selectedSheetId}
               onSelectSheet={onSelectSheet}
               onRenameNode={onRenameNode}

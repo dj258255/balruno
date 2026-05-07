@@ -53,6 +53,13 @@ export interface Project {
    * undefined and renders a flat sheet list.
    */
   sheetTree?: TreeNode[];
+  /**
+   * Document tree (mirrors sheetTree shape, leaves type='doc'). The
+   * doc body itself stays in yjs — the tree only carries id/name so
+   * the sidebar can list, rename, organise documents.
+   * Server-canonical mode hydrates from projects.doc_tree.
+   */
+  docTree?: TreeNode[];
   folders?: Folder[];       // 시트 폴더 (navigation only — ACL 없음)
   docs?: Doc[];             // GDD · 설계안 문서 (Phase A) — Notion 식 nested 트리 (Doc.parentId)
   changelog?: ChangeEntry[]; // Track변경 이력 (내부 기록)

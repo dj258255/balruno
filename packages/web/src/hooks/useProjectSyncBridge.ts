@@ -200,15 +200,23 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
         nodeId?: string;
         newName?: string;
       } | null;
-      if (op?.nodeId && op.newName && op.treeKind === 'SHEET') {
-        useProjectStore.setState((state) => ({
-          projects: state.projects.map((p) =>
-            p.id !== projectId
-              ? p
-              : { ...p, sheetTree: renameNodeInTreeBroadcast(p.sheetTree ?? [], op.nodeId!, op.newName!) },
-          ),
-        }));
-      }
+      if (!op?.nodeId || !op.newName || !op.treeKind) break;
+      const treeKey = treeFieldFor(op.treeKind);
+      if (!treeKey) break;
+      useProjectStore.setState((state) => ({
+        projects: state.projects.map((p) =>
+          p.id !== projectId
+            ? p
+            : {
+                ...p,
+                [treeKey]: renameNodeInTreeBroadcast(
+                  (p[treeKey] as TreeNode[] | undefined) ?? [],
+                  op.nodeId!,
+                  op.newName!,
+                ),
+              },
+        ),
+      }));
       break;
     }
     case 'tree.add': {
@@ -220,38 +228,40 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
         // Cross-region cargo (ADR 0008 v2.1): when node.type === 'sheet'
         // backend appends an empty Sheet shell to projects.data and
         // ships it inline so peers can grow sheets[] in the same
-        // setState as the leaf insertion.
+        // setState as the leaf insertion. Doc leaves have no analogue
+        // — the document body lives on the Hocuspocus channel.
         sheetShell?: Sheet;
         newDataVersion?: number;
       } | null;
-      if (op?.treeKind === 'SHEET' && op.node?.id) {
-        const newNode = op.node;
-        const parentId = op.parentId ?? null;
-        const position = typeof op.position === 'number' ? op.position : 0;
-        const sheetShell = op.sheetShell ?? null;
-        useProjectStore.setState((state) => ({
-          projects: state.projects.map((p) => {
-            if (p.id !== projectId) return p;
-            const nextTree = insertNodeIntoTreeBroadcast(
-              p.sheetTree ?? [],
-              parentId,
-              position,
-              newNode,
-            );
-            // Echo dedup: if the sender's own broadcast comes back,
-            // p.sheets[] already has the shell. Skip the duplicate
-            // append so list ordering and reference identity stay
-            // stable.
-            const sheetAlreadyPresent =
-              !!sheetShell && p.sheets.some((s) => s.id === sheetShell.id);
-            const nextSheets =
-              sheetShell && !sheetAlreadyPresent
-                ? [...p.sheets, sheetShell]
-                : p.sheets;
-            return { ...p, sheetTree: nextTree, sheets: nextSheets };
-          }),
-        }));
-      }
+      if (!op?.treeKind || !op.node?.id) break;
+      const treeKey = treeFieldFor(op.treeKind);
+      if (!treeKey) break;
+      const newNode = op.node;
+      const parentId = op.parentId ?? null;
+      const position = typeof op.position === 'number' ? op.position : 0;
+      const sheetShell = op.treeKind === 'SHEET' ? op.sheetShell ?? null : null;
+      useProjectStore.setState((state) => ({
+        projects: state.projects.map((p) => {
+          if (p.id !== projectId) return p;
+          const nextTree = insertNodeIntoTreeBroadcast(
+            (p[treeKey] as TreeNode[] | undefined) ?? [],
+            parentId,
+            position,
+            newNode,
+          );
+          // Echo dedup: if the sender's own broadcast comes back,
+          // p.sheets[] already has the shell. Skip the duplicate
+          // append so list ordering and reference identity stay
+          // stable. Doc leaves have no body to inject here.
+          const sheetAlreadyPresent =
+            !!sheetShell && p.sheets.some((s) => s.id === sheetShell.id);
+          const nextSheets =
+            sheetShell && !sheetAlreadyPresent
+              ? [...p.sheets, sheetShell]
+              : p.sheets;
+          return { ...p, [treeKey]: nextTree, sheets: nextSheets };
+        }),
+      }));
       break;
     }
     case 'tree.delete': {
@@ -259,15 +269,22 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
         treeKind?: 'SHEET' | 'DOC';
         nodeId?: string;
       } | null;
-      if (op?.treeKind === 'SHEET' && op.nodeId) {
-        useProjectStore.setState((state) => ({
-          projects: state.projects.map((p) =>
-            p.id !== projectId
-              ? p
-              : { ...p, sheetTree: removeNodeFromTreeBroadcast(p.sheetTree ?? [], op.nodeId!) },
-          ),
-        }));
-      }
+      if (!op?.nodeId || !op.treeKind) break;
+      const treeKey = treeFieldFor(op.treeKind);
+      if (!treeKey) break;
+      useProjectStore.setState((state) => ({
+        projects: state.projects.map((p) =>
+          p.id !== projectId
+            ? p
+            : {
+                ...p,
+                [treeKey]: removeNodeFromTreeBroadcast(
+                  (p[treeKey] as TreeNode[] | undefined) ?? [],
+                  op.nodeId!,
+                ),
+              },
+        ),
+      }));
       break;
     }
     case 'tree.move': {
@@ -277,31 +294,43 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
         newParentId?: string | null;
         newPosition?: number;
       } | null;
-      if (op?.treeKind === 'SHEET' && op.nodeId) {
-        const newParentId = op.newParentId ?? null;
-        const newPosition = typeof op.newPosition === 'number' ? op.newPosition : 0;
-        useProjectStore.setState((state) => ({
-          projects: state.projects.map((p) =>
-            p.id !== projectId
-              ? p
-              : {
-                  ...p,
-                  sheetTree: moveNodeInTreeBroadcast(
-                    p.sheetTree ?? [],
-                    op.nodeId!,
-                    newParentId,
-                    newPosition,
-                  ),
-                },
-          ),
-        }));
-      }
+      if (!op?.nodeId || !op.treeKind) break;
+      const treeKey = treeFieldFor(op.treeKind);
+      if (!treeKey) break;
+      const newParentId = op.newParentId ?? null;
+      const newPosition = typeof op.newPosition === 'number' ? op.newPosition : 0;
+      useProjectStore.setState((state) => ({
+        projects: state.projects.map((p) =>
+          p.id !== projectId
+            ? p
+            : {
+                ...p,
+                [treeKey]: moveNodeInTreeBroadcast(
+                  (p[treeKey] as TreeNode[] | undefined) ?? [],
+                  op.nodeId!,
+                  newParentId,
+                  newPosition,
+                ),
+              },
+        ),
+      }));
       break;
     }
     default:
-      // doc tree branches land with Stage G.
       break;
   }
+}
+
+/**
+ * Map an ADR 0008 treeKind onto the matching Project field name. The
+ * tree.* broadcast handlers use this to dispatch one shared mutation
+ * helper across both regions instead of duplicating the case body.
+ */
+type TreeFieldKey = 'sheetTree' | 'docTree';
+function treeFieldFor(kind: 'SHEET' | 'DOC' | undefined): TreeFieldKey | null {
+  if (kind === 'SHEET') return 'sheetTree';
+  if (kind === 'DOC') return 'docTree';
+  return null;
 }
 
 function renameNodeInTreeBroadcast(
@@ -481,18 +510,21 @@ export function hydrateProjectFromSyncFull(
   const sheetTree: TreeNode[] = Array.isArray(msg.sheetTree)
     ? (msg.sheetTree as TreeNode[])
     : [];
+  const docTree: TreeNode[] = Array.isArray(msg.docTree)
+    ? (msg.docTree as TreeNode[])
+    : [];
   useProjectStore.setState((state) => {
     const idx = state.projects.findIndex((p) => p.id === projectId);
     if (idx >= 0) {
       const next = [...state.projects];
-      next[idx] = { ...next[idx], sheets, sheetTree };
+      next[idx] = { ...next[idx], sheets, sheetTree, docTree };
       return { projects: next };
     }
     const now = Date.now();
     return {
       projects: [
         ...state.projects,
-        { id: projectId, name: '', sheets, sheetTree, createdAt: now, updatedAt: now },
+        { id: projectId, name: '', sheets, sheetTree, docTree, createdAt: now, updatedAt: now },
       ],
     };
   });
