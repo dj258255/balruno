@@ -28,6 +28,12 @@ import { setSyncSender, setVersions, bumpVersion } from '@/lib/sync/writeQueue';
 import { useProjectStore } from '@/stores/projectStore';
 import { usePresenceStore } from '@/stores/presenceStore';
 import type { CellValue, Column, Row, Sheet, TreeNode } from '@balruno/shared';
+import {
+  renameNodeInTree,
+  removeNodeFromTree,
+  moveNodeInTreeRaw,
+  insertNodeAt,
+} from '@/lib/tree';
 
 interface UseProjectSyncBridgeOptions {
   projectId: string | null;
@@ -267,7 +273,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
             ? p
             : {
                 ...p,
-                [treeKey]: renameNodeInTreeBroadcast(
+                [treeKey]: renameNodeInTree(
                   (p[treeKey] as TreeNode[] | undefined) ?? [],
                   op.nodeId!,
                   op.newName!,
@@ -301,7 +307,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       useProjectStore.setState((state) => ({
         projects: state.projects.map((p) => {
           if (p.id !== projectId) return p;
-          const nextTree = insertNodeIntoTreeBroadcast(
+          const nextTree = insertNodeAt(
             (p[treeKey] as TreeNode[] | undefined) ?? [],
             parentId,
             position,
@@ -336,7 +342,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
             ? p
             : {
                 ...p,
-                [treeKey]: removeNodeFromTreeBroadcast(
+                [treeKey]: removeNodeFromTree(
                   (p[treeKey] as TreeNode[] | undefined) ?? [],
                   op.nodeId!,
                 ),
@@ -363,7 +369,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
             ? p
             : {
                 ...p,
-                [treeKey]: moveNodeInTreeBroadcast(
+                [treeKey]: moveNodeInTreeRaw(
                   (p[treeKey] as TreeNode[] | undefined) ?? [],
                   op.nodeId!,
                   newParentId,
@@ -389,149 +395,6 @@ function treeFieldFor(kind: 'SHEET' | 'DOC' | undefined): TreeFieldKey | null {
   if (kind === 'SHEET') return 'sheetTree';
   if (kind === 'DOC') return 'docTree';
   return null;
-}
-
-function renameNodeInTreeBroadcast(
-  tree: TreeNode[],
-  nodeId: string,
-  newName: string,
-): TreeNode[] {
-  return tree.map((node) => {
-    if (node.id === nodeId) return { ...node, name: newName };
-    if (node.children && node.children.length > 0) {
-      const renamed = renameNodeInTreeBroadcast(node.children, nodeId, newName);
-      if (renamed !== node.children) return { ...node, children: renamed };
-    }
-    return node;
-  });
-}
-
-function insertNodeIntoTreeBroadcast(
-  tree: TreeNode[],
-  parentId: string | null,
-  position: number,
-  node: TreeNode,
-): TreeNode[] {
-  // sender's own echo — drop the duplicate to keep idempotency.
-  if (containsNodeId(tree, node.id)) return tree;
-  if (parentId === null) {
-    const next = [...tree];
-    const clamped = Math.max(0, Math.min(next.length, position));
-    next.splice(clamped, 0, node);
-    return next;
-  }
-  return tree.map((n) => {
-    if (n.id === parentId) {
-      const children = n.children ?? [];
-      const clamped = Math.max(0, Math.min(children.length, position));
-      const next = [...children];
-      next.splice(clamped, 0, node);
-      return { ...n, children: next };
-    }
-    if (n.children && n.children.length > 0) {
-      const updated = insertNodeIntoTreeBroadcast(n.children, parentId, position, node);
-      if (updated !== n.children) return { ...n, children: updated };
-    }
-    return n;
-  });
-}
-
-function removeNodeFromTreeBroadcast(tree: TreeNode[], nodeId: string): TreeNode[] {
-  const next: TreeNode[] = [];
-  let changed = false;
-  for (const node of tree) {
-    if (node.id === nodeId) {
-      changed = true;
-      continue;
-    }
-    if (node.children && node.children.length > 0) {
-      const filtered = removeNodeFromTreeBroadcast(node.children, nodeId);
-      if (filtered !== node.children) {
-        next.push({ ...node, children: filtered });
-        changed = true;
-        continue;
-      }
-    }
-    next.push(node);
-  }
-  return changed ? next : tree;
-}
-
-/**
- * Apply a tree.move broadcast: extract the subtree by nodeId, then
- * insert under newParentId at newPosition. Naturally idempotent for
- * the sender's own echo (the subtree is already at the target slot,
- * so extract+insert lands in the same place). Cycle guard for safety
- * even though the server has already validated.
- */
-function moveNodeInTreeBroadcast(
-  tree: TreeNode[],
-  nodeId: string,
-  newParentId: string | null,
-  newPosition: number,
-): TreeNode[] {
-  const subtree = findTreeNode(tree, nodeId);
-  if (!subtree) return tree;
-  if (newParentId !== null && (newParentId === nodeId || containsNodeId(subtree.children ?? [], newParentId))) {
-    return tree;
-  }
-  const without = removeNodeFromTreeBroadcast(tree, nodeId);
-  return insertNodeRawIntoTree(without, newParentId, newPosition, subtree);
-}
-
-function findTreeNode(tree: TreeNode[], nodeId: string): TreeNode | null {
-  for (const node of tree) {
-    if (node.id === nodeId) return node;
-    if (node.children && node.children.length > 0) {
-      const found = findTreeNode(node.children, nodeId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-/**
- * Insert a subtree at parentId/position without the echo-dedup that
- * insertNodeIntoTreeBroadcast does — used by the tree.move path
- * where the subtree was just removed by removeNodeFromTreeBroadcast,
- * so containsNodeId would falsely block re-insertion.
- */
-function insertNodeRawIntoTree(
-  tree: TreeNode[],
-  parentId: string | null,
-  position: number,
-  node: TreeNode,
-): TreeNode[] {
-  if (parentId === null) {
-    const next = [...tree];
-    const clamped = Math.max(0, Math.min(next.length, position));
-    next.splice(clamped, 0, node);
-    return next;
-  }
-  return tree.map((n) => {
-    if (n.id === parentId) {
-      const children = n.children ?? [];
-      const clamped = Math.max(0, Math.min(children.length, position));
-      const next = [...children];
-      next.splice(clamped, 0, node);
-      return { ...n, children: next };
-    }
-    if (n.children && n.children.length > 0) {
-      const updated = insertNodeRawIntoTree(n.children, parentId, position, node);
-      if (updated !== n.children) return { ...n, children: updated };
-    }
-    return n;
-  });
-}
-
-function containsNodeId(tree: TreeNode[], nodeId: string): boolean {
-  for (const node of tree) {
-    if (node.id === nodeId) return true;
-    if (node.children && node.children.length > 0 && containsNodeId(node.children, nodeId)) {
-      return true;
-    }
-  }
-  return false;
 }
 
 /**

@@ -17,7 +17,7 @@ import type { UndoableOp } from './undoStack';
 import {
   renameNodeInTree,
   removeNodeFromTree,
-  moveNodeInTree,
+  moveNodeInTreeRaw,
   insertNodeAt,
 } from '@/lib/tree';
 import { emitOp } from '@/lib/sync/writeQueue';
@@ -178,7 +178,7 @@ function applyTreeOp(projectId: string, op: UndoableOp): void {
     case 'tree.move': {
       const newParentId = op.newParentId ?? null;
       const newPosition = typeof op.newPosition === 'number' ? op.newPosition : 0;
-      setTree((tree) => moveNodeInTree(tree, op.nodeId, newParentId, newPosition));
+      setTree((tree) => moveNodeInTreeRaw(tree, op.nodeId, newParentId, newPosition));
       emitOp({
         kind: 'tree.move',
         treeKind: op.treeKind,

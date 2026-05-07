@@ -157,9 +157,12 @@ export function insertNodeAt(
 }
 
 /** Move a node within the tree: extract from current parent, then
- *  re-insert under newParentId at newPosition. Cycle guard +
- *  same-parent off-by-one + no-op echo as documented above. */
-export function moveNodeInTree(
+ *  re-insert under newParentId at newPosition. The `Raw` variant
+ *  skips the same-parent off-by-one — use it when the caller has
+ *  a *canonical* position (server broadcast apply, undo replay).
+ *  The non-Raw `moveNodeInTree` is for outbound page handlers
+ *  where newPosition is the user's visual drop slot. */
+export function moveNodeInTreeRaw(
   tree: TreeNode[],
   nodeId: string,
   newParentId: string | null,
@@ -171,18 +174,28 @@ export function moveNodeInTree(
 
   const located = locateNodeParent(tree, nodeId);
   if (!located) return tree;
-  const { parent: currentParent, index: currentIndex } = located;
-
-  if (currentParent === newParentId && currentIndex === newPosition) return tree;
+  if (located.parent === newParentId && located.index === newPosition) return tree;
 
   const without = removeNodeFromTree(tree, nodeId);
+  return insertNodeAt(without, newParentId, newPosition, subtree);
+}
+
+/** Outbound move from a page handler. newPosition is the user's
+ *  visual drop slot — when source is in the same parent and
+ *  earlier than the drop slot, removing source first shifts every
+ *  later sibling left by 1, so the visual slot is now position-1
+ *  (Notion / VSCode / dnd-kit convention). */
+export function moveNodeInTree(
+  tree: TreeNode[],
+  nodeId: string,
+  newParentId: string | null,
+  newPosition: number,
+): TreeNode[] {
+  const located = locateNodeParent(tree, nodeId);
+  if (!located) return moveNodeInTreeRaw(tree, nodeId, newParentId, newPosition);
   const adjusted =
-    currentParent === newParentId && currentIndex < newPosition
+    located.parent === newParentId && located.index < newPosition
       ? newPosition - 1
       : newPosition;
-  // insertNodeAt's containsNodeId guard would no-op the
-  // re-insertion (subtree was just removed, but its id existed in
-  // the tree we passed). Use the without-tree instead so the guard
-  // sees the absent id.
-  return insertNodeAt(without, newParentId, adjusted, subtree);
+  return moveNodeInTreeRaw(tree, nodeId, newParentId, adjusted);
 }
