@@ -43,6 +43,9 @@ import { useProjectHistory } from '@/hooks';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { useAuthStore } from '@/stores/authStore';
 import { setActiveStack, pushUndo, type UndoableOp } from '@/lib/undo/undoStack';
+import type { UndoMeta } from '@/hooks/useProjectSync';
+import { getClientSessionId } from '@/lib/undo/sessionId';
+import { nextActionGroupId } from '@/lib/undo/actionGroup';
 import {
   renameNodeInTree,
   removeNodeFromTree,
@@ -268,15 +271,24 @@ export default function ProjectDetailPage() {
     label: string,
     forward: UndoableOp[],
     inverse: UndoableOp[],
-  ) => {
+  ): UndoMeta | null => {
     const userId = useAuthStore.getState().user?.id;
-    if (!userId || !project) return;
+    if (!userId || !project) return null;
     pushUndo(userId, project.id, {
       label,
       forward,
       inverse,
       timestamp: Date.now(),
     });
+    // Pattern C wire metadata (ADR 0021 v2.3 Phase 5) — same shape
+    // as cellSlice's metaOf helper. Local stack already pushed; this
+    // is the parallel server-side persistence envelope.
+    return {
+      forward,
+      inverse,
+      actionGroupId: nextActionGroupId(),
+      clientSessionId: getClientSessionId(),
+    };
   };
 
   const makeTreeHandlers = (treeKind: 'SHEET' | 'DOC') => {
@@ -299,14 +311,14 @@ export default function ProjectDetailPage() {
         const node = findNodeInTree(current, nodeId);
         const oldName = node?.name ?? '';
         setTree((tree) => renameNodeInTree(tree, nodeId, newName));
-        emitOp({ kind: 'tree.rename', treeKind, nodeId, newName });
-        if (node && oldName !== newName) {
-          pushTreeUndo(
-            'Tree rename',
-            [{ type: 'tree.rename', treeKind, nodeId, newName, baseVersion: 0, clientMsgId: '' }],
-            [{ type: 'tree.rename', treeKind, nodeId, newName: oldName, baseVersion: 0, clientMsgId: '' }],
-          );
-        }
+        const renameMeta = node && oldName !== newName
+          ? pushTreeUndo(
+              'Tree rename',
+              [{ type: 'tree.rename', treeKind, nodeId, newName, baseVersion: 0, clientMsgId: '' }],
+              [{ type: 'tree.rename', treeKind, nodeId, newName: oldName, baseVersion: 0, clientMsgId: '' }],
+            )
+          : null;
+        emitOp({ kind: 'tree.rename', treeKind, nodeId, newName }, renameMeta);
       },
       addFolder: () => {
         if (!project) return;
@@ -318,18 +330,18 @@ export default function ProjectDetailPage() {
         };
         const position = (localProject?.[treeField]?.length ?? 0);
         setTree((tree) => [...tree, newFolder]);
+        const addFolderMeta = pushTreeUndo(
+          'Tree add',
+          [{ type: 'tree.add', treeKind, parentId: null, position, node: newFolder, baseVersion: 0, clientMsgId: '' }],
+          [{ type: 'tree.delete', treeKind, nodeId: newFolder.id, baseVersion: 0, clientMsgId: '' }],
+        );
         emitOp({
           kind: 'tree.add',
           treeKind,
           parentId: null,
           position,
           node: newFolder,
-        });
-        pushTreeUndo(
-          'Tree add',
-          [{ type: 'tree.add', treeKind, parentId: null, position, node: newFolder, baseVersion: 0, clientMsgId: '' }],
-          [{ type: 'tree.delete', treeKind, nodeId: newFolder.id, baseVersion: 0, clientMsgId: '' }],
-        );
+        }, addFolderMeta);
       },
       addLeaf: () => {
         if (!project) return;
@@ -342,45 +354,45 @@ export default function ProjectDetailPage() {
         };
         const position = (localProject?.[treeField]?.length ?? 0);
         setTree((tree) => [...tree, newLeaf]);
+        const addLeafMeta = pushTreeUndo(
+          'Tree add',
+          [{ type: 'tree.add', treeKind, parentId: null, position, node: newLeaf, baseVersion: 0, clientMsgId: '' }],
+          [{ type: 'tree.delete', treeKind, nodeId: leafId, baseVersion: 0, clientMsgId: '' }],
+        );
         emitOp({
           kind: 'tree.add',
           treeKind,
           parentId: null,
           position,
           node: newLeaf,
-        });
+        }, addLeafMeta);
         setSelection({ kind: leafType, id: leafId });
-        pushTreeUndo(
-          'Tree add',
-          [{ type: 'tree.add', treeKind, parentId: null, position, node: newLeaf, baseVersion: 0, clientMsgId: '' }],
-          [{ type: 'tree.delete', treeKind, nodeId: leafId, baseVersion: 0, clientMsgId: '' }],
-        );
       },
       deleteNode: (nodeId: string) => {
         const current = localProject?.[treeField] ?? [];
         const node = findNodeInTree(current, nodeId);
         const located = locateNodeParent(current, nodeId);
         setTree((tree) => removeNodeFromTree(tree, nodeId));
-        emitOp({ kind: 'tree.delete', treeKind, nodeId });
         // Inverse needs the full subtree + its original parent /
         // position so we can re-insert it. If the node wasn't
-        // present before deletion (peer race) we skip the push —
+        // present before deletion (peer race) skip the push —
         // there's nothing meaningful to restore.
-        if (node && located) {
-          pushTreeUndo(
-            'Tree delete',
-            [{ type: 'tree.delete', treeKind, nodeId, baseVersion: 0, clientMsgId: '' }],
-            [{
-              type: 'tree.add',
-              treeKind,
-              parentId: located.parent,
-              position: located.index,
-              node,
-              baseVersion: 0,
-              clientMsgId: '',
-            }],
-          );
-        }
+        const deleteMeta = node && located
+          ? pushTreeUndo(
+              'Tree delete',
+              [{ type: 'tree.delete', treeKind, nodeId, baseVersion: 0, clientMsgId: '' }],
+              [{
+                type: 'tree.add',
+                treeKind,
+                parentId: located.parent,
+                position: located.index,
+                node,
+                baseVersion: 0,
+                clientMsgId: '',
+              }],
+            )
+          : null;
+        emitOp({ kind: 'tree.delete', treeKind, nodeId }, deleteMeta);
       },
       move: (nodeId: string, newParentId: string | null, newPosition: number) => {
         const current = localProject?.[treeField] ?? [];
@@ -390,29 +402,29 @@ export default function ProjectDetailPage() {
         // Snapshot original location for the inverse op.
         const located = locateNodeParent(current, nodeId);
         setTree((tree) => moveNodeInTree(tree, nodeId, newParentId, newPosition));
+        const moveMeta = located
+            && (located.parent !== newParentId || located.index !== newPosition)
+          ? pushTreeUndo(
+              'Tree move',
+              [{ type: 'tree.move', treeKind, nodeId, newParentId, newPosition, baseVersion: 0, clientMsgId: '' }],
+              [{
+                type: 'tree.move',
+                treeKind,
+                nodeId,
+                newParentId: located.parent,
+                newPosition: located.index,
+                baseVersion: 0,
+                clientMsgId: '',
+              }],
+            )
+          : null;
         emitOp({
           kind: 'tree.move',
           treeKind,
           nodeId,
           newParentId,
           newPosition,
-        });
-        if (located
-            && (located.parent !== newParentId || located.index !== newPosition)) {
-          pushTreeUndo(
-            'Tree move',
-            [{ type: 'tree.move', treeKind, nodeId, newParentId, newPosition, baseVersion: 0, clientMsgId: '' }],
-            [{
-              type: 'tree.move',
-              treeKind,
-              nodeId,
-              newParentId: located.parent,
-              newPosition: located.index,
-              baseVersion: 0,
-              clientMsgId: '',
-            }],
-          );
-        }
+        }, moveMeta);
       },
     };
   };
