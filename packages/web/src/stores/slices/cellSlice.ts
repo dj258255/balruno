@@ -337,6 +337,147 @@ function pushUpdateColumnUndo(
 }
 
 /**
+ * Push an undo entry for a *bidirectional* link column add. The
+ * forward sequence creates both the forward + reverse columns
+ * (single Cmd+Shift+Z restores both); the inverse sequence
+ * deletes them in reverse order. Stays on a single UndoEntry so
+ * one Cmd+Z press unwinds the cascade — the alternative (two
+ * separate entries) would require two Cmd+Z presses and could
+ * leave a half-state if the user only undid one.
+ *
+ * Phase 2c — addColumn's link-cascade path skipped Phase 2a
+ * because a single UndoableOp couldn't represent the pair.
+ * Phase 2b promoted UndoEntry.forward / inverse to UndoableOp[];
+ * this helper just consumes that capability.
+ */
+function pushAddLinkColumnsUndo(
+  projectId: string,
+  forwardSheetId: string,
+  forwardCol: Column,
+  reverseSheetId: string,
+  reverseCol: Column,
+): void {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  pushUndo(userId, projectId, {
+    label: 'Link columns add',
+    forward: [
+      {
+        type: 'column.add',
+        sheetId: forwardSheetId,
+        column: forwardCol,
+        baseVersion: 0,
+        clientMsgId: '',
+      },
+      {
+        type: 'column.add',
+        sheetId: reverseSheetId,
+        column: reverseCol,
+        baseVersion: 0,
+        clientMsgId: '',
+      },
+    ],
+    inverse: [
+      {
+        type: 'column.delete',
+        sheetId: reverseSheetId,
+        columnId: reverseCol.id,
+        baseVersion: 0,
+        clientMsgId: '',
+      },
+      {
+        type: 'column.delete',
+        sheetId: forwardSheetId,
+        columnId: forwardCol.id,
+        baseVersion: 0,
+        clientMsgId: '',
+      },
+    ],
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Push an undo entry for a *bidirectional* link column delete.
+ * Inverse re-creates both columns + restores all cell values per
+ * row on both sides. Order matters for the inverse: reverse
+ * column.add lands first (so the forward column.add can include
+ * reverseColumnId pointing at the just-restored target), then the
+ * forward column.add, then the cell.update[]s.
+ */
+function pushDeleteLinkColumnsUndo(
+  projectId: string,
+  forwardSheetId: string,
+  forwardCol: Column,
+  forwardCells: Array<{ rowId: string; value: CellValue }>,
+  reverseSheetId: string,
+  reverseCol: Column,
+  reverseCells: Array<{ rowId: string; value: CellValue }>,
+): void {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  const inverse: UndoableOp[] = [
+    {
+      type: 'column.add',
+      sheetId: reverseSheetId,
+      column: reverseCol,
+      baseVersion: 0,
+      clientMsgId: '',
+    },
+    {
+      type: 'column.add',
+      sheetId: forwardSheetId,
+      column: forwardCol,
+      baseVersion: 0,
+      clientMsgId: '',
+    },
+  ];
+  for (const { rowId, value } of forwardCells) {
+    inverse.push({
+      type: 'cell.update',
+      sheetId: forwardSheetId,
+      rowId,
+      columnId: forwardCol.id,
+      value,
+      baseVersion: 0,
+      clientMsgId: '',
+    });
+  }
+  for (const { rowId, value } of reverseCells) {
+    inverse.push({
+      type: 'cell.update',
+      sheetId: reverseSheetId,
+      rowId,
+      columnId: reverseCol.id,
+      value,
+      baseVersion: 0,
+      clientMsgId: '',
+    });
+  }
+  pushUndo(userId, projectId, {
+    label: 'Link columns delete',
+    forward: [
+      {
+        type: 'column.delete',
+        sheetId: forwardSheetId,
+        columnId: forwardCol.id,
+        baseVersion: 0,
+        clientMsgId: '',
+      },
+      {
+        type: 'column.delete',
+        sheetId: reverseSheetId,
+        columnId: reverseCol.id,
+        baseVersion: 0,
+        clientMsgId: '',
+      },
+    ],
+    inverse,
+    timestamp: Date.now(),
+  });
+}
+
+/**
  * Push an undo entry for a cell.update — captures the (forward,
  * inverse) pair the user just performed. Reads the current user
  * from authStore at call time; missing user (anonymous / pre-auth
@@ -472,6 +613,15 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
             });
           }
         });
+        if (!isRemote && !skipUndoPush) {
+          pushAddLinkColumnsUndo(
+            projectId,
+            sheetId,
+            forwardCol,
+            linkedSheetId,
+            reverseCol,
+          );
+        }
         return id;
       }
     }
@@ -657,6 +807,32 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     if (column?.type === 'link' && column.linkedSheetId && column.reverseColumnId) {
       const linkedSheetId = column.linkedSheetId;
       const reverseColumnId = column.reverseColumnId;
+
+      // Snapshot reverse-side column metadata + cell values for the
+      // multi-sheet undo. Forward + reverse columns + their cells
+      // get one shared UndoEntry — Cmd+Z restores both sheets in
+      // one Cmd+Z press.
+      const targetSheet = project?.sheets.find((s) => s.id === linkedSheetId);
+      const reverseColumn = targetSheet?.columns.find((c) => c.id === reverseColumnId);
+      const forwardCells: Array<{ rowId: string; value: CellValue }> = [];
+      if (sourceSheet) {
+        for (const row of sourceSheet.rows) {
+          const v = row.cells[columnId];
+          if (v !== undefined && v !== null && v !== '') {
+            forwardCells.push({ rowId: row.id, value: v });
+          }
+        }
+      }
+      const reverseCells: Array<{ rowId: string; value: CellValue }> = [];
+      if (targetSheet) {
+        for (const row of targetSheet.rows) {
+          const v = row.cells[reverseColumnId];
+          if (v !== undefined && v !== null && v !== '') {
+            reverseCells.push({ rowId: row.id, value: v });
+          }
+        }
+      }
+
       doc.transact(() => {
         writeSheet(
           set,
@@ -679,6 +855,17 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
           });
         }
       });
+      if (!isRemote && !skipUndoPush && column && reverseColumn) {
+        pushDeleteLinkColumnsUndo(
+          projectId,
+          sheetId,
+          column,
+          forwardCells,
+          linkedSheetId,
+          reverseColumn,
+          reverseCells,
+        );
+      }
       return;
     }
     writeSheet(
