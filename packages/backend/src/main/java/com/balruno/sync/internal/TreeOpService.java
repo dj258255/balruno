@@ -199,9 +199,21 @@ class TreeOpService {
         // 5. broadcast payload + idempotency cache.
         var broadcast = buildBroadcastPayload(op, newVersion, userId,
                 createdSheetShell, newDataVersion);
+
+        // Pull undo metadata (ADR 0021 v2.3 Phase 5). Null = client did
+        // not enable undo, row gets persisted as idempotency cache only.
+        var undoMeta = SheetCellOpService.undoOf(op);
+        var forwardJson = undoMeta != null && undoMeta.forward() != null
+                ? undoMeta.forward().toString() : null;
+        var inverseJson = undoMeta != null && undoMeta.inverse() != null
+                ? undoMeta.inverse().toString() : null;
+        var actionGroupId = undoMeta != null ? undoMeta.actionGroupId() : null;
+        var clientSessionId = undoMeta != null ? undoMeta.clientSessionId() : null;
+
         try {
             idempotency.save(new OpIdempotencyEntity(
-                    clientMsgId, userId, columns.scopeKind, projectId, newVersion, broadcast));
+                    clientMsgId, userId, columns.scopeKind, projectId, newVersion, broadcast,
+                    projectId, forwardJson, inverseJson, actionGroupId, clientSessionId));
         } catch (DataIntegrityViolationException e) {
             var winning = idempotency.findById(clientMsgId).orElseThrow(() -> e);
             return new SyncResult.Cached(winning.getResultVersion(), winning.getResultPayload());

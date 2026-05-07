@@ -128,9 +128,20 @@ class SheetCellOpService {
         // 5. broadcast payload + idempotency cache.
         var broadcast = buildBroadcastPayload(op, newVersion, userId);
 
+        // Pull undo metadata if the client attached it. Null = client did
+        // not yet enable Pattern C undo, op stays non-undoable.
+        var undoMeta = undoOf(op);
+        var forwardJson = undoMeta != null && undoMeta.forward() != null
+                ? undoMeta.forward().toString() : null;
+        var inverseJson = undoMeta != null && undoMeta.inverse() != null
+                ? undoMeta.inverse().toString() : null;
+        var actionGroupId = undoMeta != null ? undoMeta.actionGroupId() : null;
+        var clientSessionId = undoMeta != null ? undoMeta.clientSessionId() : null;
+
         try {
             idempotency.save(new OpIdempotencyEntity(
-                    clientMsgId, userId, OpScopeKind.SHEET_CELL, projectId, newVersion, broadcast));
+                    clientMsgId, userId, OpScopeKind.SHEET_CELL, projectId, newVersion, broadcast,
+                    projectId, forwardJson, inverseJson, actionGroupId, clientSessionId));
         } catch (DataIntegrityViolationException e) {
             // Same clientMsgId raced through under another connection's
             // FOR UPDATE wait. The earlier transaction's row is canonical
@@ -399,6 +410,26 @@ class SheetCellOpService {
             case SyncMessage.ColumnUpdate u  -> u.baseVersion();
             case SyncMessage.ColumnDelete u  -> u.baseVersion();
             default -> throw new IllegalStateException("not a sheet-cell op: " + op.getClass());
+        };
+    }
+
+    /** Extract the optional UndoMeta from any sheet-cell op. Null if the
+     *  client did not attach undo metadata (older client, or op without
+     *  inverse). ADR 0021 v2.3 Phase 5. */
+    static SyncMessage.UndoMeta undoOf(SyncMessage op) {
+        return switch (op) {
+            case SyncMessage.CellUpdate u    -> u.undo();
+            case SyncMessage.RowAdd u        -> u.undo();
+            case SyncMessage.RowDelete u     -> u.undo();
+            case SyncMessage.RowMove u       -> u.undo();
+            case SyncMessage.ColumnAdd u     -> u.undo();
+            case SyncMessage.ColumnUpdate u  -> u.undo();
+            case SyncMessage.ColumnDelete u  -> u.undo();
+            case SyncMessage.TreeAdd u       -> u.undo();
+            case SyncMessage.TreeMove u      -> u.undo();
+            case SyncMessage.TreeDelete u    -> u.undo();
+            case SyncMessage.TreeRename u    -> u.undo();
+            default -> null;
         };
     }
 
