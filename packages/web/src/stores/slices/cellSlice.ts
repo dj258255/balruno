@@ -31,6 +31,26 @@ function isSameValue(a: CellValue, b: CellValue): boolean {
   if ((a === null || a === '') && (b === null || b === '')) return true;
   return false;
 }
+
+/**
+ * Build the UndoMeta wire envelope for an UndoEntry that the local
+ * stack already records (ADR 0021 v2.3 Phase 5 — Pattern C). Each
+ * pushXxxUndo helper returns the meta to its caller; the caller
+ * passes it as the second argument to emitOp so the server gets
+ * the same forward + inverse arrays the local stack just kept.
+ *
+ * actionGroupId rotates per Baserow's MAX_UNDOABLE_ACTIONS_PER_ACTION_GROUP
+ * + 30s idle heuristic; clientSessionId is tab-stable from
+ * sessionStorage (ADR 0021 v2.3 §4.4).
+ */
+function metaOf(entry: { forward: UndoableOp[]; inverse: UndoableOp[] }): UndoMeta {
+  return {
+    forward: entry.forward,
+    inverse: entry.inverse,
+    actionGroupId: nextActionGroupId(),
+    clientSessionId: getClientSessionId(),
+  };
+}
 import {
   getProjectDoc,
   // sheet-cell + tree mutations no longer go through Y.Doc — cellSlice
@@ -103,27 +123,30 @@ function pushAddRowUndo(
   sheetId: string,
   rowId: string,
   cells: Record<string, CellValue>,
-): void {
+): UndoMeta | null {
   const userId = useAuthStore.getState().user?.id;
-  if (!userId) return;
+  if (!userId) return null;
+  const forward: UndoableOp[] = [{
+    type: 'row.add',
+    sheetId,
+    row: { id: rowId, cells },
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
+  const inverse: UndoableOp[] = [{
+    type: 'row.delete',
+    sheetId,
+    rowId,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
   pushUndo(userId, projectId, {
     label: 'Row add',
-    forward: [{
-      type: 'row.add',
-      sheetId,
-      row: { id: rowId, cells },
-      baseVersion: 0,
-      clientMsgId: '',
-    }],
-    inverse: [{
-      type: 'row.delete',
-      sheetId,
-      rowId,
-      baseVersion: 0,
-      clientMsgId: '',
-    }],
+    forward,
+    inverse,
     timestamp: Date.now(),
   });
+  return metaOf({ forward, inverse });
 }
 
 /**
@@ -143,37 +166,40 @@ function pushDeleteRowUndo(
   rowId: string,
   cells: Record<string, CellValue>,
   originalIndex: number,
-): void {
+): UndoMeta | null {
   const userId = useAuthStore.getState().user?.id;
-  if (!userId) return;
-  pushUndo(userId, projectId, {
-    label: 'Row delete',
-    forward: [{
-      type: 'row.delete',
+  if (!userId) return null;
+  const forward: UndoableOp[] = [{
+    type: 'row.delete',
+    sheetId,
+    rowId,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
+  const inverse: UndoableOp[] = [
+    {
+      type: 'row.add',
       sheetId,
-      rowId,
+      row: { id: rowId, cells },
       baseVersion: 0,
       clientMsgId: '',
-    }],
-    inverse: [
-      {
-        type: 'row.add',
-        sheetId,
-        row: { id: rowId, cells },
-        baseVersion: 0,
-        clientMsgId: '',
-      },
-      {
-        type: 'row.move',
-        sheetId,
-        rowId,
-        toIndex: originalIndex,
-        baseVersion: 0,
-        clientMsgId: '',
-      },
-    ],
+    },
+    {
+      type: 'row.move',
+      sheetId,
+      rowId,
+      toIndex: originalIndex,
+      baseVersion: 0,
+      clientMsgId: '',
+    },
+  ];
+  pushUndo(userId, projectId, {
+    label: 'Row delete',
+    forward,
+    inverse,
     timestamp: Date.now(),
   });
+  return metaOf({ forward, inverse });
 }
 
 /**
@@ -187,30 +213,33 @@ function pushReorderRowUndo(
   rowId: string,
   fromIndex: number,
   toIndex: number,
-): void {
+): UndoMeta | null {
   const userId = useAuthStore.getState().user?.id;
-  if (!userId) return;
-  if (fromIndex === toIndex) return;
+  if (!userId) return null;
+  if (fromIndex === toIndex) return null;
+  const forward: UndoableOp[] = [{
+    type: 'row.move',
+    sheetId,
+    rowId,
+    toIndex,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
+  const inverse: UndoableOp[] = [{
+    type: 'row.move',
+    sheetId,
+    rowId,
+    toIndex: fromIndex,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
   pushUndo(userId, projectId, {
     label: 'Row move',
-    forward: [{
-      type: 'row.move',
-      sheetId,
-      rowId,
-      toIndex,
-      baseVersion: 0,
-      clientMsgId: '',
-    }],
-    inverse: [{
-      type: 'row.move',
-      sheetId,
-      rowId,
-      toIndex: fromIndex,
-      baseVersion: 0,
-      clientMsgId: '',
-    }],
+    forward,
+    inverse,
     timestamp: Date.now(),
   });
+  return metaOf({ forward, inverse });
 }
 
 /**
@@ -226,27 +255,30 @@ function pushAddColumnUndo(
   projectId: string,
   sheetId: string,
   column: Column,
-): void {
+): UndoMeta | null {
   const userId = useAuthStore.getState().user?.id;
-  if (!userId) return;
+  if (!userId) return null;
+  const forward: UndoableOp[] = [{
+    type: 'column.add',
+    sheetId,
+    column,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
+  const inverse: UndoableOp[] = [{
+    type: 'column.delete',
+    sheetId,
+    columnId: column.id,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
   pushUndo(userId, projectId, {
     label: 'Column add',
-    forward: [{
-      type: 'column.add',
-      sheetId,
-      column,
-      baseVersion: 0,
-      clientMsgId: '',
-    }],
-    inverse: [{
-      type: 'column.delete',
-      sheetId,
-      columnId: column.id,
-      baseVersion: 0,
-      clientMsgId: '',
-    }],
+    forward,
+    inverse,
     timestamp: Date.now(),
   });
+  return metaOf({ forward, inverse });
 }
 
 /**
@@ -267,9 +299,9 @@ function pushDeleteColumnUndo(
   sheetId: string,
   column: Column,
   cellValues: Array<{ rowId: string; value: CellValue }>,
-): void {
+): UndoMeta | null {
   const userId = useAuthStore.getState().user?.id;
-  if (!userId) return;
+  if (!userId) return null;
   const forward: UndoableOp[] = [{
     type: 'column.delete',
     sheetId,
@@ -301,6 +333,7 @@ function pushDeleteColumnUndo(
     inverse,
     timestamp: Date.now(),
   });
+  return metaOf({ forward, inverse });
 }
 
 /**
@@ -314,29 +347,32 @@ function pushUpdateColumnUndo(
   columnId: string,
   prevPatch: Record<string, unknown>,
   newPatch: Record<string, unknown>,
-): void {
+): UndoMeta | null {
   const userId = useAuthStore.getState().user?.id;
-  if (!userId) return;
+  if (!userId) return null;
+  const forward: UndoableOp[] = [{
+    type: 'column.update',
+    sheetId,
+    columnId,
+    patch: newPatch,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
+  const inverse: UndoableOp[] = [{
+    type: 'column.update',
+    sheetId,
+    columnId,
+    patch: prevPatch,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
   pushUndo(userId, projectId, {
     label: 'Column update',
-    forward: [{
-      type: 'column.update',
-      sheetId,
-      columnId,
-      patch: newPatch,
-      baseVersion: 0,
-      clientMsgId: '',
-    }],
-    inverse: [{
-      type: 'column.update',
-      sheetId,
-      columnId,
-      patch: prevPatch,
-      baseVersion: 0,
-      clientMsgId: '',
-    }],
+    forward,
+    inverse,
     timestamp: Date.now(),
   });
+  return metaOf({ forward, inverse });
 }
 
 /**
@@ -359,45 +395,48 @@ function pushAddLinkColumnsUndo(
   forwardCol: Column,
   reverseSheetId: string,
   reverseCol: Column,
-): void {
+): UndoMeta | null {
   const userId = useAuthStore.getState().user?.id;
-  if (!userId) return;
+  if (!userId) return null;
+  const forward: UndoableOp[] = [
+    {
+      type: 'column.add',
+      sheetId: forwardSheetId,
+      column: forwardCol,
+      baseVersion: 0,
+      clientMsgId: '',
+    },
+    {
+      type: 'column.add',
+      sheetId: reverseSheetId,
+      column: reverseCol,
+      baseVersion: 0,
+      clientMsgId: '',
+    },
+  ];
+  const inverse: UndoableOp[] = [
+    {
+      type: 'column.delete',
+      sheetId: reverseSheetId,
+      columnId: reverseCol.id,
+      baseVersion: 0,
+      clientMsgId: '',
+    },
+    {
+      type: 'column.delete',
+      sheetId: forwardSheetId,
+      columnId: forwardCol.id,
+      baseVersion: 0,
+      clientMsgId: '',
+    },
+  ];
   pushUndo(userId, projectId, {
     label: 'Link columns add',
-    forward: [
-      {
-        type: 'column.add',
-        sheetId: forwardSheetId,
-        column: forwardCol,
-        baseVersion: 0,
-        clientMsgId: '',
-      },
-      {
-        type: 'column.add',
-        sheetId: reverseSheetId,
-        column: reverseCol,
-        baseVersion: 0,
-        clientMsgId: '',
-      },
-    ],
-    inverse: [
-      {
-        type: 'column.delete',
-        sheetId: reverseSheetId,
-        columnId: reverseCol.id,
-        baseVersion: 0,
-        clientMsgId: '',
-      },
-      {
-        type: 'column.delete',
-        sheetId: forwardSheetId,
-        columnId: forwardCol.id,
-        baseVersion: 0,
-        clientMsgId: '',
-      },
-    ],
+    forward,
+    inverse,
     timestamp: Date.now(),
   });
+  return metaOf({ forward, inverse });
 }
 
 /**
@@ -416,9 +455,25 @@ function pushDeleteLinkColumnsUndo(
   reverseSheetId: string,
   reverseCol: Column,
   reverseCells: Array<{ rowId: string; value: CellValue }>,
-): void {
+): UndoMeta | null {
   const userId = useAuthStore.getState().user?.id;
-  if (!userId) return;
+  if (!userId) return null;
+  const forward: UndoableOp[] = [
+    {
+      type: 'column.delete',
+      sheetId: forwardSheetId,
+      columnId: forwardCol.id,
+      baseVersion: 0,
+      clientMsgId: '',
+    },
+    {
+      type: 'column.delete',
+      sheetId: reverseSheetId,
+      columnId: reverseCol.id,
+      baseVersion: 0,
+      clientMsgId: '',
+    },
+  ];
   const inverse: UndoableOp[] = [
     {
       type: 'column.add',
@@ -459,25 +514,11 @@ function pushDeleteLinkColumnsUndo(
   }
   pushUndo(userId, projectId, {
     label: 'Link columns delete',
-    forward: [
-      {
-        type: 'column.delete',
-        sheetId: forwardSheetId,
-        columnId: forwardCol.id,
-        baseVersion: 0,
-        clientMsgId: '',
-      },
-      {
-        type: 'column.delete',
-        sheetId: reverseSheetId,
-        columnId: reverseCol.id,
-        baseVersion: 0,
-        clientMsgId: '',
-      },
-    ],
+    forward,
     inverse,
     timestamp: Date.now(),
   });
+  return metaOf({ forward, inverse });
 }
 
 /**
@@ -495,31 +536,34 @@ function pushCellUpdateUndo(
   columnId: string,
   prevValue: CellValue,
   newValue: CellValue,
-): void {
+): UndoMeta | null {
   const userId = useAuthStore.getState().user?.id;
-  if (!userId) return;
+  if (!userId) return null;
+  const forward: UndoableOp[] = [{
+    type: 'cell.update',
+    sheetId,
+    rowId,
+    columnId,
+    value: newValue,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
+  const inverse: UndoableOp[] = [{
+    type: 'cell.update',
+    sheetId,
+    rowId,
+    columnId,
+    value: prevValue,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
   pushUndo(userId, projectId, {
     label: 'Cell update',
-    forward: [{
-      type: 'cell.update',
-      sheetId,
-      rowId,
-      columnId,
-      value: newValue,
-      baseVersion: 0,
-      clientMsgId: '',
-    }],
-    inverse: [{
-      type: 'cell.update',
-      sheetId,
-      rowId,
-      columnId,
-      value: prevValue,
-      baseVersion: 0,
-      clientMsgId: '',
-    }],
+    forward,
+    inverse,
     timestamp: Date.now(),
   });
+  return metaOf({ forward, inverse });
 }
 
 /** writeCell — narrow case for cell.update (most frequent op). */
@@ -607,8 +651,23 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
                 ? s
                 : { ...s, columns: [...s.columns, reverseCol] },
           );
+          // Cascade UndoMeta rides on the FIRST emit only — server
+          // gets one op_idempotency row with both ops in the forward
+          // + inverse arrays. The SECOND emit goes out as a normal
+          // (non-undoable) op so the cascade collapses to a single
+          // Cmd+Z press. (op_idempotency_undo_lookup partial index
+          // filters NULL inverse_payload rows out of the lookup.)
+          const linkAddMeta = !isRemote && !skipUndoPush
+            ? pushAddLinkColumnsUndo(
+                projectId,
+                sheetId,
+                forwardCol,
+                linkedSheetId,
+                reverseCol,
+              )
+            : null;
           if (!isRemote) {
-            emitOp({ kind: 'column.add', sheetId, column: forwardCol });
+            emitOp({ kind: 'column.add', sheetId, column: forwardCol }, linkAddMeta);
             emitOp({
               kind: 'column.add',
               sheetId: linkedSheetId,
@@ -616,15 +675,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
             });
           }
         });
-        if (!isRemote && !skipUndoPush) {
-          pushAddLinkColumnsUndo(
-            projectId,
-            sheetId,
-            forwardCol,
-            linkedSheetId,
-            reverseCol,
-          );
-        }
         return id;
       }
     }
@@ -639,10 +689,10 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
           ? s
           : { ...s, columns: [...s.columns, fullColumn] },
     );
-    if (!isRemote) emitOp({ kind: 'column.add', sheetId, column: fullColumn });
-    if (!isRemote && !skipUndoPush) {
-      pushAddColumnUndo(projectId, sheetId, fullColumn);
-    }
+    const addColumnMeta = !isRemote && !skipUndoPush
+      ? pushAddColumnUndo(projectId, sheetId, fullColumn)
+      : null;
+    if (!isRemote) emitOp({ kind: 'column.add', sheetId, column: fullColumn }, addColumnMeta);
 
     // Trackfix: formula 타입 컬럼 추가 시 기존 행들에 formula 값 prefill
     // (addRow 에서는 이미 처리됨, addColumn 경로에서는 누락되어 있었음)
@@ -745,17 +795,17 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
         ),
       }),
     );
+    const updateColumnMeta = prevPatch
+      ? pushUpdateColumnUndo(
+          projectId,
+          sheetId,
+          columnId,
+          prevPatch,
+          updates as Record<string, unknown>,
+        )
+      : null;
     if (!isRemote) {
-      emitOp({ kind: 'column.update', sheetId, columnId, patch: updates });
-    }
-    if (prevPatch) {
-      pushUpdateColumnUndo(
-        projectId,
-        sheetId,
-        columnId,
-        prevPatch,
-        updates as Record<string, unknown>,
-      );
+      emitOp({ kind: 'column.update', sheetId, columnId, patch: updates }, updateColumnMeta);
     }
   },
 
@@ -849,8 +899,22 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
           linkedSheetId,
           (s) => removeColumnAndCells(s, reverseColumnId),
         );
+        // Cascade UndoMeta on the FIRST emit only (same pattern as
+        // addColumn link branch — server gets one op_idempotency row
+        // covering both column deletes for atomic Cmd+Z).
+        const linkDeleteMeta = !isRemote && !skipUndoPush && column && reverseColumn
+          ? pushDeleteLinkColumnsUndo(
+              projectId,
+              sheetId,
+              column,
+              forwardCells,
+              linkedSheetId,
+              reverseColumn,
+              reverseCells,
+            )
+          : null;
         if (!isRemote) {
-          emitOp({ kind: 'column.delete', sheetId, columnId });
+          emitOp({ kind: 'column.delete', sheetId, columnId }, linkDeleteMeta);
           emitOp({
             kind: 'column.delete',
             sheetId: linkedSheetId,
@@ -858,17 +922,6 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
           });
         }
       });
-      if (!isRemote && !skipUndoPush && column && reverseColumn) {
-        pushDeleteLinkColumnsUndo(
-          projectId,
-          sheetId,
-          column,
-          forwardCells,
-          linkedSheetId,
-          reverseColumn,
-          reverseCells,
-        );
-      }
       return;
     }
     writeSheet(
@@ -877,10 +930,10 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
       sheetId,
       (s) => removeColumnAndCells(s, columnId),
     );
-    if (!isRemote) emitOp({ kind: 'column.delete', sheetId, columnId });
-    if (snapshotCells && column) {
-      pushDeleteColumnUndo(projectId, sheetId, column, snapshotCells);
-    }
+    const deleteColumnMeta = snapshotCells && column
+      ? pushDeleteColumnUndo(projectId, sheetId, column, snapshotCells)
+      : null;
+    if (!isRemote) emitOp({ kind: 'column.delete', sheetId, columnId }, deleteColumnMeta);
   },
 
   reorderColumns: (projectId: string, sheetId: string, columnIds: string[]) => {
@@ -933,10 +986,10 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
       sheetId,
       (s) => (s.rows.some((r) => r.id === id) ? s : { ...s, rows: [...s.rows, row] }),
     );
-    if (!isRemote) emitOp({ kind: 'row.add', sheetId, row });
-    if (!isRemote && !skipUndoPush) {
-      pushAddRowUndo(projectId, sheetId, id, row.cells);
-    }
+    const addRowMeta = !isRemote && !skipUndoPush
+      ? pushAddRowUndo(projectId, sheetId, id, row.cells)
+      : null;
+    if (!isRemote) emitOp({ kind: 'row.add', sheetId, row }, addRowMeta);
     return id;
   },
 
@@ -1132,10 +1185,10 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
 
     writeCell(set, projectId, sheetId, rowId, columnId, value);
     if (!isRemote) {
-      emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value });
-      if (!skipUndoPush) {
-        pushCellUpdateUndo(projectId, sheetId, rowId, columnId, prevValue, value);
-      }
+      const cellUpdateMeta = !skipUndoPush
+        ? pushCellUpdateUndo(projectId, sheetId, rowId, columnId, prevValue, value)
+        : null;
+      emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value }, cellUpdateMeta);
     }
     recordChange();
   },
@@ -1210,10 +1263,10 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
       sheetId,
       (s) => ({ ...s, rows: s.rows.filter((r) => r.id !== rowId) }),
     );
-    if (!isRemote) emitOp({ kind: 'row.delete', sheetId, rowId });
-    if (snapshot) {
-      pushDeleteRowUndo(projectId, sheetId, rowId, snapshot.cells, snapshot.index);
-    }
+    const deleteRowMeta = snapshot
+      ? pushDeleteRowUndo(projectId, sheetId, rowId, snapshot.cells, snapshot.index)
+      : null;
+    if (!isRemote) emitOp({ kind: 'row.delete', sheetId, rowId }, deleteRowMeta);
   },
 
   reorderRow: (
@@ -1250,11 +1303,11 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
         return { ...s, rows: next };
       },
     );
+    const reorderRowMeta = fromIndex >= 0
+      ? pushReorderRowUndo(projectId, sheetId, rowId, fromIndex, targetIndex)
+      : null;
     if (!isRemote) {
-      emitOp({ kind: 'row.move', sheetId, rowId, toIndex: targetIndex });
-    }
-    if (fromIndex >= 0) {
-      pushReorderRowUndo(projectId, sheetId, rowId, fromIndex, targetIndex);
+      emitOp({ kind: 'row.move', sheetId, rowId, toIndex: targetIndex }, reorderRowMeta);
     }
   },
 

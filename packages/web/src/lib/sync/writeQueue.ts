@@ -98,10 +98,10 @@ export function getVersion(region: Region): number {
  * for ops the user shouldn't be able to undo (none today, but the
  * shape is forward-compatible).
  */
-export function emitOp(intent: StoreActionIntent, undo?: UndoMeta): boolean {
+export function emitOp(intent: StoreActionIntent, undo?: UndoMeta | null): boolean {
   if (!currentSender) return false;
   const region = regionOf(intent);
-  const op = mapStoreActionToOp(intent, versions[region], undo);
+  const op = mapStoreActionToOp(intent, versions[region], undo ?? undefined);
   return currentSender(op);
 }
 
