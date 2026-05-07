@@ -12,11 +12,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
   BackendError,
   createWorkspace,
+  deleteWorkspace,
   fetchUserQuota,
   listWorkspaces,
   type UserQuota,
@@ -32,6 +34,7 @@ export default function WorkspacesPage() {
   const [creating, setCreating] = useState(false);
   const [slug, setSlug] = useState('');
   const [name, setName] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +81,35 @@ export default function WorkspacesPage() {
     }
   };
 
+  // Workspace delete — only the owner role can; backend returns 403
+  // for member / admin. Stronger confirm than project delete because
+  // the cascade includes every project, sheet, doc and member invite.
+  // Typed-name confirm forces the user to acknowledge what's being
+  // deleted before the destructive call fires.
+  const handleDeleteWorkspace = async (ws: Workspace) => {
+    const typed = window.prompt(
+      `워크스페이스 "${ws.name}" 을(를) 영구 삭제합니다.\n\n포함된 모든 프로젝트, 시트, 문서, 멤버가 함께 사라집니다. 되돌릴 수 없습니다.\n\n계속하려면 워크스페이스 이름 "${ws.name}" 을 그대로 입력하세요:`,
+    );
+    if (typed === null) return;
+    if (typed.trim() !== ws.name) {
+      toast.error('이름이 일치하지 않습니다. 삭제 취소.');
+      return;
+    }
+    setDeletingId(ws.id);
+    try {
+      await deleteWorkspace(ws.id);
+      setWorkspaces((prev) => prev?.filter((w) => w.id !== ws.id) ?? null);
+      const q = await fetchUserQuota();
+      setQuota(q);
+      toast.success(`"${ws.name}" 삭제됨`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '워크스페이스를 삭제하지 못했습니다.';
+      toast.error(msg);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
       <h1 className="text-2xl font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>
@@ -103,11 +135,14 @@ export default function WorkspacesPage() {
       ) : (
         <ul className="mb-8 space-y-2">
           {workspaces.map((ws) => (
-            <li key={ws.id}>
+            <li
+              key={ws.id}
+              className="group flex items-center rounded-lg border hover:bg-[var(--bg-hover)]"
+              style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+            >
               <Link
                 href={`/w/${ws.slug}`}
-                className="flex items-center justify-between rounded-lg border px-4 py-3 hover:bg-[var(--bg-hover)]"
-                style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+                className="flex flex-1 items-center justify-between px-4 py-3"
               >
                 <div className="flex items-center gap-2">
                   <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -119,6 +154,20 @@ export default function WorkspacesPage() {
                   /{ws.slug}
                 </span>
               </Link>
+              <button
+                type="button"
+                onClick={() => handleDeleteWorkspace(ws)}
+                disabled={deletingId === ws.id}
+                className="mr-3 rounded p-1.5 opacity-0 transition group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-30"
+                style={{ color: 'var(--text-tertiary)' }}
+                title="워크스페이스 삭제"
+              >
+                {deletingId === ws.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </button>
             </li>
           ))}
         </ul>
