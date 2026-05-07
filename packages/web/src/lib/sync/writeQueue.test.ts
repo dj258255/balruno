@@ -13,7 +13,7 @@ import {
   getVersion,
   __resetWriteQueueForTests,
 } from './writeQueue';
-import type { MappedClientOp } from './opMapper';
+import type { ClientOp } from '@/hooks/useProjectSync';
 
 describe('writeQueue', () => {
   beforeEach(() => {
@@ -33,7 +33,7 @@ describe('writeQueue', () => {
   });
 
   it('routes cell.update through data baseVersion', () => {
-    const calls: MappedClientOp[] = [];
+    const calls: ClientOp[] = [];
     setSyncSender((op) => {
       calls.push(op);
       return true;
@@ -47,7 +47,7 @@ describe('writeQueue', () => {
   });
 
   it('routes tree.add(SHEET) through sheetTree baseVersion', () => {
-    const calls: MappedClientOp[] = [];
+    const calls: ClientOp[] = [];
     setSyncSender((op) => {
       calls.push(op);
       return true;
@@ -66,7 +66,7 @@ describe('writeQueue', () => {
   });
 
   it('routes tree.delete(DOC) through docTree baseVersion', () => {
-    const calls: MappedClientOp[] = [];
+    const calls: ClientOp[] = [];
     setSyncSender((op) => {
       calls.push(op);
       return true;

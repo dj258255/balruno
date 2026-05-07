@@ -26,6 +26,7 @@ import { useEffect } from 'react';
 import { useProjectSync, type ServerMsg, type SyncFullPayload } from './useProjectSync';
 import { setSyncSender, setVersions, bumpVersion } from '@/lib/sync/writeQueue';
 import { useProjectStore } from '@/stores/projectStore';
+import { usePresenceStore } from '@/stores/presenceStore';
 import type { CellValue, Column, Row, Sheet, TreeNode } from '@balruno/shared';
 
 interface UseProjectSyncBridgeOptions {
@@ -69,10 +70,45 @@ function handleServerMsg(msg: ServerMsg, projectId: string): void {
       break;
     case 'conflict':
       break;
+    case 'presence':
+      handlePresence(msg, projectId);
+      break;
     default:
       handleBroadcast(msg, projectId);
       break;
   }
+}
+
+/**
+ * Presence broadcast → presenceStore upsert. The cursor payload
+ * carries an optional {scope, cellKey?, displayName?, color?} so
+ * the same frame works for both sheet and doc focus surfaces.
+ * Empty / unknown cursor shapes degrade gracefully (skip).
+ */
+function handlePresence(msg: { userId: string; cursor: unknown }, projectId: string): void {
+  void projectId; // scope is encoded in the cursor; future hooks can route per-project if needed.
+  const cursor = msg.cursor as
+    | {
+        scope?: string;
+        cellKey?: { rowId?: string; columnId?: string };
+        cursor?: { x: number; y: number };
+        displayName?: string;
+        color?: string;
+      }
+    | null;
+  const scope = cursor?.scope;
+  if (!scope) return;
+  const cellKey =
+    cursor?.cellKey?.rowId && cursor?.cellKey?.columnId
+      ? { rowId: cursor.cellKey.rowId, columnId: cursor.cellKey.columnId }
+      : undefined;
+  usePresenceStore.getState().upsert(scope, {
+    userId: msg.userId,
+    displayName: cursor?.displayName ?? 'Anonymous',
+    color: cursor?.color ?? '#94a3b8',
+    cellKey,
+    cursor: cursor?.cursor,
+  });
 }
 
 function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked' | 'conflict' }>,

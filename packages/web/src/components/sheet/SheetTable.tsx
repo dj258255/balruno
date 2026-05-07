@@ -71,6 +71,7 @@ import { cellKey, rafThrottle, formatDisplayValue, formatForFormulaBar } from '.
 import { evaluateFormula } from '@/lib/formulaEngine';
 import { cn } from '@/lib/utils';
 import { usePresence } from '@/hooks/usePresence';
+import { emitPresence } from '@/lib/sync/writeQueue';
 
 export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTableProps) {
   const t = useTranslations();
@@ -269,12 +270,23 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
     selectAllCells,
   } = useSheetSelection({ projectId, sheet, computedRows });
 
-  // selectedCell 변경 시 peer 에게 publish
+  // selectedCell 변경 시 peer 에게 publish.
+  //
+  // Two paths run side-by-side: publishActiveCell rides the local-
+  // mode WebRTC awareness (legacy), emitPresence rides the
+  // server-canonical wss broadcast (Stage B.5). When the backend is
+  // not configured, emitPresence is a no-op (returns false) so the
+  // local-only desktop build keeps working unchanged.
   useEffect(() => {
     if (selectedCell) {
       publishActiveCell({ sheetId: sheet.id, rowId: selectedCell.rowId, columnId: selectedCell.columnId });
+      emitPresence({
+        scope: `sheet:${sheet.id}`,
+        cellKey: { rowId: selectedCell.rowId, columnId: selectedCell.columnId },
+      });
     } else {
       publishActiveCell(null);
+      emitPresence({ scope: `sheet:${sheet.id}` });
     }
     // unmount 시 cleanup
     return () => publishActiveCell(null);

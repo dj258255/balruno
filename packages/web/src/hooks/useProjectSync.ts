@@ -86,7 +86,26 @@ export interface BroadcastPayload {
   op: unknown;
 }
 
-export type ServerMsg = SyncFullPayload | OpAckedPayload | ConflictPayload | BroadcastPayload;
+/**
+ * Presence broadcast — fire-and-forget peer cursor update. No
+ * version, no op envelope. cursor is whatever the sender packed
+ * (sheet cell focus, doc selection range, …); shape is open so
+ * future presence channels (file editor, kanban, …) can ride the
+ * same frame without a backend schema change.
+ */
+export interface PresencePayload {
+  type: 'presence';
+  userId: string;
+  ts: number;
+  cursor: unknown;
+}
+
+export type ServerMsg =
+  | SyncFullPayload
+  | OpAckedPayload
+  | ConflictPayload
+  | BroadcastPayload
+  | PresencePayload;
 
 interface UseProjectSyncOptions {
   projectId: string | null;

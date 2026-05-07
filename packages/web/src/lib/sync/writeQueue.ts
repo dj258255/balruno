@@ -29,9 +29,15 @@
  */
 
 import { mapStoreActionToOp, type StoreActionIntent, type MappedClientOp } from './opMapper';
+import type { ClientOp } from '@/hooks/useProjectSync';
 
-/** Sender contract — useProjectSync.send has this exact shape. */
-type Sender = (op: MappedClientOp) => boolean;
+/**
+ * Sender contract. useProjectSync.send takes the full ClientOp
+ * union (including presence). emitOp narrows to MappedClientOp via
+ * the op mapper; emitPresence sidesteps the mapper for fire-and-
+ * forget frames so the writeQueue stays the single emit edge.
+ */
+type Sender = (op: ClientOp) => boolean;
 
 /** Region key — matches the three baseVersion columns in projects. */
 type Region = 'data' | 'sheetTree' | 'docTree';
@@ -91,6 +97,18 @@ export function emitOp(intent: StoreActionIntent): boolean {
   const region = regionOf(intent);
   const op = mapStoreActionToOp(intent, versions[region]);
   return currentSender(op);
+}
+
+/**
+ * Fire-and-forget presence frame. Skips the op mapper / version /
+ * idempotency path used by emitOp — backend's Presence handler
+ * doesn't persist or version. The userId field on the wire is a
+ * placeholder; backend overrides with the authenticated session
+ * subject (see ProjectWebSocketHandler.resolveUserId).
+ */
+export function emitPresence(cursor: unknown): boolean {
+  if (!currentSender) return false;
+  return currentSender({ type: 'presence', userId: 'self', cursor });
 }
 
 /** Test-only — reset module state between cases. */
