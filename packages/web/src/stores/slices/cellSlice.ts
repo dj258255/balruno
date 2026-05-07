@@ -85,6 +85,85 @@ function writeSheet(
 }
 
 /**
+ * Push an undo entry for a row.add — the inverse is a row.delete
+ * by id. Captures the cells the row was created with so a redo
+ * (re-applying the forward) restores those values; the undo path
+ * just deletes by id since the row's full state already lives in
+ * the local store + every peer.
+ *
+ * MVP scope: addRow append-only at end of sheet. Restoring at the
+ * original index after a deletion needs Phase 2b (snapshot-based
+ * inverse with row.add + row.move).
+ */
+function pushAddRowUndo(
+  projectId: string,
+  sheetId: string,
+  rowId: string,
+  cells: Record<string, CellValue>,
+): void {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  const forward: UndoableOp = {
+    type: 'row.add',
+    sheetId,
+    row: { id: rowId, cells },
+    baseVersion: 0,
+    clientMsgId: '',
+  };
+  const inverse: UndoableOp = {
+    type: 'row.delete',
+    sheetId,
+    rowId,
+    baseVersion: 0,
+    clientMsgId: '',
+  };
+  pushUndo(userId, projectId, {
+    label: 'Row add',
+    forward,
+    inverse,
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Push an undo entry for a column.add — inverse is column.delete.
+ * Linked-column bidirectional creation (link + reverse) bypasses
+ * this helper because the addColumn path returns early before
+ * reaching the simple bottom-of-function emit. That's deliberate:
+ * undoing a bidirectional link requires deleting *two* columns
+ * across two sheets, which Phase 2a's single-op inverse can't
+ * express. Phase 2b extends UndoEntry to carry UndoableOp[].
+ */
+function pushAddColumnUndo(
+  projectId: string,
+  sheetId: string,
+  column: Column,
+): void {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  const forward: UndoableOp = {
+    type: 'column.add',
+    sheetId,
+    column,
+    baseVersion: 0,
+    clientMsgId: '',
+  };
+  const inverse: UndoableOp = {
+    type: 'column.delete',
+    sheetId,
+    columnId: column.id,
+    baseVersion: 0,
+    clientMsgId: '',
+  };
+  pushUndo(userId, projectId, {
+    label: 'Column add',
+    forward,
+    inverse,
+    timestamp: Date.now(),
+  });
+}
+
+/**
  * Push an undo entry for a cell.update — captures the (forward,
  * inverse) pair the user just performed. Reads the current user
  * from authStore at call time; missing user (anonymous / pre-auth
@@ -152,9 +231,10 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     projectId: string,
     sheetId: string,
     column: Omit<Column, 'id'>,
-    options?: { origin?: 'local' | 'remote'; columnId?: string }
+    options?: { origin?: 'local' | 'remote'; columnId?: string; skipUndoPush?: boolean }
   ): string => {
     const isRemote = options?.origin === 'remote';
+    const skipUndoPush = options?.skipUndoPush ?? false;
     const id = options?.columnId ?? newId();
     const doc = getProjectDoc(projectId);
 
@@ -236,6 +316,9 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
           : { ...s, columns: [...s.columns, fullColumn] },
     );
     if (!isRemote) emitOp({ kind: 'column.add', sheetId, column: fullColumn });
+    if (!isRemote && !skipUndoPush) {
+      pushAddColumnUndo(projectId, sheetId, fullColumn);
+    }
 
     // Trackfix: formula 타입 컬럼 추가 시 기존 행들에 formula 값 prefill
     // (addRow 에서는 이미 처리됨, addColumn 경로에서는 누락되어 있었음)
@@ -413,9 +496,10 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     projectId: string,
     sheetId: string,
     cells: Record<string, CellValue> = {},
-    options?: { origin?: 'local' | 'remote'; rowId?: string }
+    options?: { origin?: 'local' | 'remote'; rowId?: string; skipUndoPush?: boolean }
   ): string => {
     const isRemote = options?.origin === 'remote';
+    const skipUndoPush = options?.skipUndoPush ?? false;
     const id = options?.rowId ?? newId();
     const sheet = get().getSheet(projectId, sheetId);
 
@@ -435,6 +519,9 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
       (s) => (s.rows.some((r) => r.id === id) ? s : { ...s, rows: [...s.rows, row] }),
     );
     if (!isRemote) emitOp({ kind: 'row.add', sheetId, row });
+    if (!isRemote && !skipUndoPush) {
+      pushAddRowUndo(projectId, sheetId, id, row.cells);
+    }
     return id;
   },
 

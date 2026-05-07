@@ -114,7 +114,7 @@ export interface ProjectState {
     projectId: string,
     sheetId: string,
     column: Omit<Column, 'id'>,
-    options?: { origin?: 'local' | 'remote'; columnId?: string }
+    options?: { origin?: 'local' | 'remote'; columnId?: string; skipUndoPush?: boolean }
   ) => string;
   insertColumn: (
     projectId: string,
@@ -142,7 +142,7 @@ export interface ProjectState {
     projectId: string,
     sheetId: string,
     cells?: Record<string, CellValue>,
-    options?: { origin?: 'local' | 'remote'; rowId?: string }
+    options?: { origin?: 'local' | 'remote'; rowId?: string; skipUndoPush?: boolean }
   ) => string;
   insertRow: (
     projectId: string,
