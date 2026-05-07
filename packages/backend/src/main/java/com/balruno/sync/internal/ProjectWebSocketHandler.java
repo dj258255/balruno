@@ -115,8 +115,9 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
         // Sealed switch — every concrete record routes to exactly one
         // service, and missing a new variant becomes a compile error.
         var result = switch (op) {
-            case SyncMessage.CellUpdate    msg -> sheetCellOps.apply(projectId, userId, msg);
-            case SyncMessage.RowAdd        msg -> sheetCellOps.apply(projectId, userId, msg);
+            case SyncMessage.CellUpdate      msg -> sheetCellOps.apply(projectId, userId, msg);
+            case SyncMessage.CellStyleUpdate msg -> sheetCellOps.apply(projectId, userId, msg);
+            case SyncMessage.RowAdd          msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.RowDelete     msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.RowMove       msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.ColumnAdd     msg -> sheetCellOps.apply(projectId, userId, msg);
@@ -152,21 +153,22 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
         // request. Presence carries no clientMsgId; we synthesise a
         // throwaway uuid so the switch stays exhaustive.
         return switch (op) {
-            case SyncMessage.CellUpdate u    -> u.clientMsgId();
-            case SyncMessage.RowAdd u        -> u.clientMsgId();
-            case SyncMessage.RowDelete u     -> u.clientMsgId();
-            case SyncMessage.RowMove u       -> u.clientMsgId();
-            case SyncMessage.ColumnAdd u     -> u.clientMsgId();
-            case SyncMessage.ColumnUpdate u  -> u.clientMsgId();
-            case SyncMessage.ColumnDelete u  -> u.clientMsgId();
-            case SyncMessage.TreeAdd u       -> u.clientMsgId();
-            case SyncMessage.TreeMove u      -> u.clientMsgId();
-            case SyncMessage.TreeDelete u    -> u.clientMsgId();
-            case SyncMessage.TreeRename u    -> u.clientMsgId();
-            case SyncMessage.Presence ignored -> new UUID(0L, 0L);
-            case SyncMessage.SyncFull ignored -> new UUID(0L, 0L);
-            case SyncMessage.Conflict ignored -> new UUID(0L, 0L);
-            case SyncMessage.OpAcked ignored  -> new UUID(0L, 0L);
+            case SyncMessage.CellUpdate u      -> u.clientMsgId();
+            case SyncMessage.CellStyleUpdate u -> u.clientMsgId();
+            case SyncMessage.RowAdd u          -> u.clientMsgId();
+            case SyncMessage.RowDelete u       -> u.clientMsgId();
+            case SyncMessage.RowMove u         -> u.clientMsgId();
+            case SyncMessage.ColumnAdd u       -> u.clientMsgId();
+            case SyncMessage.ColumnUpdate u    -> u.clientMsgId();
+            case SyncMessage.ColumnDelete u    -> u.clientMsgId();
+            case SyncMessage.TreeAdd u         -> u.clientMsgId();
+            case SyncMessage.TreeMove u        -> u.clientMsgId();
+            case SyncMessage.TreeDelete u      -> u.clientMsgId();
+            case SyncMessage.TreeRename u      -> u.clientMsgId();
+            case SyncMessage.Presence ignored  -> new UUID(0L, 0L);
+            case SyncMessage.SyncFull ignored  -> new UUID(0L, 0L);
+            case SyncMessage.Conflict ignored  -> new UUID(0L, 0L);
+            case SyncMessage.OpAcked ignored   -> new UUID(0L, 0L);
         };
     }
 

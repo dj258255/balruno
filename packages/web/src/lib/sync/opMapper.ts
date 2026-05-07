@@ -19,7 +19,7 @@
  * pattern B).
  */
 
-import type { Column, Row, CellValue } from '@balruno/shared';
+import type { Column, Row, CellValue, CellStyle } from '@balruno/shared';
 import { randomId } from '@/lib/uuid';
 import type { ClientOp, UndoMeta } from '@/hooks/useProjectSync';
 
@@ -41,6 +41,7 @@ export type MappedClientOp = Exclude<ClientOp, { type: 'presence' }>;
  */
 export type StoreActionIntent =
   | { kind: 'cell.update'; sheetId: string; rowId: string; columnId: string; value: CellValue }
+  | { kind: 'cell.style.update'; sheetId: string; rowId: string; columnId: string; style: CellStyle }
   | { kind: 'row.add'; sheetId: string; row: Row }
   | { kind: 'row.delete'; sheetId: string; rowId: string }
   | { kind: 'row.move'; sheetId: string; rowId: string; toIndex: number }
@@ -75,6 +76,16 @@ export function mapStoreActionToOp(
         rowId: intent.rowId,
         columnId: intent.columnId,
         value: intent.value,
+        baseVersion,
+        clientMsgId,
+      });
+    case 'cell.style.update':
+      return withUndo({
+        type: 'cell.style.update',
+        sheetId: intent.sheetId,
+        rowId: intent.rowId,
+        columnId: intent.columnId,
+        style: intent.style,
         baseVersion,
         clientMsgId,
       });

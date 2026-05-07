@@ -31,6 +31,7 @@ import java.util.UUID;
 @JsonSubTypes({
         // ── client → server ──────────────────────────────────────────
         @JsonSubTypes.Type(value = SyncMessage.CellUpdate.class,    name = "cell.update"),
+        @JsonSubTypes.Type(value = SyncMessage.CellStyleUpdate.class, name = "cell.style.update"),
         @JsonSubTypes.Type(value = SyncMessage.RowAdd.class,        name = "row.add"),
         @JsonSubTypes.Type(value = SyncMessage.RowDelete.class,     name = "row.delete"),
         @JsonSubTypes.Type(value = SyncMessage.RowMove.class,       name = "row.move"),
@@ -87,6 +88,29 @@ public sealed interface SyncMessage {
         public CellUpdate(UUID sheetId, UUID rowId, UUID columnId, Object value,
                           long baseVersion, UUID clientMsgId) {
             this(sheetId, rowId, columnId, value, baseVersion, clientMsgId, null);
+        }
+    }
+
+    /**
+     * Cell style mutation (ADR 0008 v2.2 / Phase A — server-canonical
+     * cell style migration). Frontend has merged the user's partial
+     * patch with the existing style + DEFAULT_CELL_STYLE, so {@code
+     * style} is the *full* CellStyle object that should land at
+     * {@code data.sheets[sheetId].rows[rowId].cellStyles[columnId]}.
+     *
+     * Same data_version region as cell.update — both mutate
+     * projects.data JSONB. baseVersion + clientMsgId follow the
+     * standard sheet-cell op envelope.
+     */
+    record CellStyleUpdate(
+            UUID sheetId, UUID rowId, UUID columnId,
+            Object style,
+            long baseVersion, UUID clientMsgId,
+            UndoMeta undo
+    ) implements SyncMessage {
+        public CellStyleUpdate(UUID sheetId, UUID rowId, UUID columnId, Object style,
+                               long baseVersion, UUID clientMsgId) {
+            this(sheetId, rowId, columnId, style, baseVersion, clientMsgId, null);
         }
     }
 

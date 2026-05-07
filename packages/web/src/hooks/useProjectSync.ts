@@ -54,6 +54,8 @@ export interface UndoMeta {
 export type ClientOp =
   | { type: 'cell.update'; sheetId: string; rowId: string; columnId: string; value: unknown;
       baseVersion: number; clientMsgId: string; undo?: UndoMeta }
+  | { type: 'cell.style.update'; sheetId: string; rowId: string; columnId: string; style: unknown;
+      baseVersion: number; clientMsgId: string; undo?: UndoMeta }
   | { type: 'row.add'; sheetId: string; row: unknown; baseVersion: number; clientMsgId: string;
       undo?: UndoMeta }
   | { type: 'row.delete'; sheetId: string; rowId: string; baseVersion: number; clientMsgId: string;
@@ -100,7 +102,7 @@ export interface ConflictPayload {
 
 export interface BroadcastPayload {
   type:
-    | 'cell.update' | 'row.add' | 'row.delete' | 'row.move'
+    | 'cell.update' | 'cell.style.update' | 'row.add' | 'row.delete' | 'row.move'
     | 'column.add' | 'column.update' | 'column.delete'
     | 'tree.add' | 'tree.move' | 'tree.delete' | 'tree.rename';
   version: number;

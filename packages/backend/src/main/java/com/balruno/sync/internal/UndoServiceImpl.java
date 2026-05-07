@@ -167,8 +167,9 @@ class UndoServiceImpl implements UndoService {
 
     private SyncResult dispatchToService(UUID projectId, UUID userId, SyncMessage op) {
         return switch (op) {
-            case SyncMessage.CellUpdate    msg -> sheetCellOps.apply(projectId, userId, msg);
-            case SyncMessage.RowAdd        msg -> sheetCellOps.apply(projectId, userId, msg);
+            case SyncMessage.CellUpdate      msg -> sheetCellOps.apply(projectId, userId, msg);
+            case SyncMessage.CellStyleUpdate msg -> sheetCellOps.apply(projectId, userId, msg);
+            case SyncMessage.RowAdd          msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.RowDelete     msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.RowMove       msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.ColumnAdd     msg -> sheetCellOps.apply(projectId, userId, msg);
@@ -193,7 +194,7 @@ class UndoServiceImpl implements UndoService {
     private long currentVersionForOp(ObjectNode op, UUID projectId) {
         var type = op.path("type").asText();
         var column = switch (type) {
-            case "cell.update", "row.add", "row.delete", "row.move",
+            case "cell.update", "cell.style.update", "row.add", "row.delete", "row.move",
                  "column.add", "column.update", "column.delete" -> "data_version";
             case "tree.add", "tree.move", "tree.delete", "tree.rename" -> {
                 var treeKind = op.path("treeKind").asText();

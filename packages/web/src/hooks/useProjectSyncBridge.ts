@@ -176,6 +176,28 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       }
       break;
     }
+    case 'cell.style.update': {
+      // ADR 0008 v2.2 — server-canonical cell style. Mirror of cell.update,
+      // but writes to row.cellStyles map instead of row.cells. Peers see
+      // the bold / color / background apply in real-time.
+      const op = msg.op as {
+        sheetId?: string;
+        rowId?: string;
+        columnId?: string;
+        style?: Record<string, unknown>;
+      } | null;
+      if (op?.sheetId && op.rowId && op.columnId) {
+        applyToSheet(projectId, op.sheetId, (sheet) => ({
+          ...sheet,
+          rows: sheet.rows.map((r) =>
+            r.id !== op.rowId
+              ? r
+              : { ...r, cellStyles: { ...(r.cellStyles ?? {}), [op.columnId!]: op.style as never } },
+          ),
+        }));
+      }
+      break;
+    }
     case 'row.add': {
       const op = msg.op as {
         sheetId?: string;

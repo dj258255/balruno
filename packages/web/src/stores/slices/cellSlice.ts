@@ -53,14 +53,10 @@ function metaOf(entry: { forward: UndoableOp[]; inverse: UndoableOp[] }): UndoMe
 }
 import {
   getProjectDoc,
-  // sheet-cell + tree mutations no longer go through Y.Doc — cellSlice
-  // does direct setState (post v0.6 cleanup). The remaining Y.Doc
-  // helpers below cover features (style / sticker / changelog) that
-  // haven't migrated yet and silently no-op on server-canonical pages
-  // (Y.Doc has no observer mounted there). Future stages migrate
-  // these too and the import block goes to 0.
-  updateCellStyleInDoc,
-  updateCellsStyleInDoc,
+  // Cell style migrated to server-canonical (ADR 0008 v2.2 — wire
+  // op cell.style.update). Remaining Y.Doc helpers cover sticker +
+  // changelog which still live local-only; their server migration
+  // is the rest of v0.6 ζ.
   addStickerInDoc,
   updateStickerInDoc,
   deleteStickerInDoc,
@@ -1198,28 +1194,51 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     sheetId: string,
     rowId: string,
     columnId: string,
-    style: Partial<CellStyle>
+    style: Partial<CellStyle>,
   ) => {
-    // 기존 스타일과 기본값을 머지한 최종 스타일을 한 번에 Y.Doc 에 설정
-    const existing =
-      get().getCellStyle(projectId, sheetId, rowId, columnId) ?? {};
+    // ADR 0008 v2.2 — server-canonical cell style. Direct setState +
+    // emitOp, mirroring updateCell. No Y.Doc fallback (post v0.6 ζ).
+    const existing = get().getCellStyle(projectId, sheetId, rowId, columnId) ?? {};
     const merged: CellStyle = { ...DEFAULT_CELL_STYLE, ...existing, ...style };
-    updateCellStyleInDoc(getProjectDoc(projectId), sheetId, rowId, columnId, merged);
+    writeSheet(set, projectId, sheetId, (sheet) => ({
+      ...sheet,
+      rows: sheet.rows.map((r) =>
+        r.id !== rowId
+          ? r
+          : { ...r, cellStyles: { ...(r.cellStyles ?? {}), [columnId]: merged } },
+      ),
+    }));
+    emitOp({ kind: 'cell.style.update', sheetId, rowId, columnId, style: merged });
   },
 
   updateCellsStyle: (
     projectId: string,
     sheetId: string,
     cells: Array<{ rowId: string; columnId: string }>,
-    style: Partial<CellStyle>
+    style: Partial<CellStyle>,
   ) => {
+    // Build the merged styles first, then apply locally + emit per-cell
+    // (one cell.style.update op per target). Multi-cell select-and-bold
+    // = N ops. Server's idempotency cache + version_++ semantics stay
+    // unchanged — same as multi-cell pastes already work.
     const targets = cells.map(({ rowId, columnId }) => {
-      const existing =
-        get().getCellStyle(projectId, sheetId, rowId, columnId) ?? {};
+      const existing = get().getCellStyle(projectId, sheetId, rowId, columnId) ?? {};
       const merged: CellStyle = { ...DEFAULT_CELL_STYLE, ...existing, ...style };
       return { rowId, columnId, style: merged };
     });
-    updateCellsStyleInDoc(getProjectDoc(projectId), sheetId, targets);
+    writeSheet(set, projectId, sheetId, (sheet) => ({
+      ...sheet,
+      rows: sheet.rows.map((r) => {
+        const matches = targets.filter((t) => t.rowId === r.id);
+        if (matches.length === 0) return r;
+        const nextStyles = { ...(r.cellStyles ?? {}) };
+        for (const m of matches) nextStyles[m.columnId] = m.style;
+        return { ...r, cellStyles: nextStyles };
+      }),
+    }));
+    for (const { rowId, columnId, style: merged } of targets) {
+      emitOp({ kind: 'cell.style.update', sheetId, rowId, columnId, style: merged });
+    }
   },
 
   getCellStyle: (

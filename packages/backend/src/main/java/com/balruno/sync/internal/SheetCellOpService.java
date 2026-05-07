@@ -160,16 +160,44 @@ class SheetCellOpService {
 
     private void applyToData(ObjectNode data, SyncMessage op) {
         switch (op) {
-            case SyncMessage.CellUpdate u   -> applyCellUpdate(data, u);
-            case SyncMessage.RowAdd u       -> applyRowAdd(data, u);
-            case SyncMessage.RowDelete u    -> applyRowDelete(data, u);
-            case SyncMessage.RowMove u      -> applyRowMove(data, u);
-            case SyncMessage.ColumnAdd u    -> applyColumnAdd(data, u);
-            case SyncMessage.ColumnUpdate u -> applyColumnUpdate(data, u);
-            case SyncMessage.ColumnDelete u -> applyColumnDelete(data, u);
+            case SyncMessage.CellUpdate u      -> applyCellUpdate(data, u);
+            case SyncMessage.CellStyleUpdate u -> applyCellStyleUpdate(data, u);
+            case SyncMessage.RowAdd u          -> applyRowAdd(data, u);
+            case SyncMessage.RowDelete u       -> applyRowDelete(data, u);
+            case SyncMessage.RowMove u         -> applyRowMove(data, u);
+            case SyncMessage.ColumnAdd u       -> applyColumnAdd(data, u);
+            case SyncMessage.ColumnUpdate u    -> applyColumnUpdate(data, u);
+            case SyncMessage.ColumnDelete u    -> applyColumnDelete(data, u);
             default -> throw new UnsupportedOperationException(
                     "not a sheet-cell op: " + op.getClass().getSimpleName());
         }
+    }
+
+    private void applyCellStyleUpdate(ObjectNode data, SyncMessage.CellStyleUpdate u) {
+        var sheet = sheetOrThrow(data, u.sheetId());
+        var rows = ensureArray(sheet, "rows");
+        var rowNode = findById(rows, u.rowId());
+        if (rowNode == null) {
+            throw new IllegalArgumentException("row not found: " + u.rowId());
+        }
+        if (!(rowNode instanceof ObjectNode rowObj) || rowObj.get("id") == null) {
+            throw new IllegalArgumentException("row not a valid object: " + u.rowId());
+        }
+        // cellStyles is a {columnId: CellStyle} map at the row level —
+        // matches the shared Row.cellStyles shape the frontend reads.
+        // Create the map if absent (older rows might not have one).
+        var stylesNode = rowObj.get("cellStyles");
+        ObjectNode stylesMap;
+        if (stylesNode instanceof ObjectNode existing) {
+            stylesMap = existing;
+        } else {
+            stylesMap = nodeMapper.createObjectNode();
+            rowObj.set("cellStyles", stylesMap);
+        }
+        // Frontend has already merged the partial patch with the prior
+        // style + DEFAULT_CELL_STYLE, so set the full CellStyle object
+        // verbatim. Empty object {} = "no style" (idempotent delete).
+        stylesMap.set(u.columnId().toString(), nodeMapper.valueToTree(u.style()));
     }
 
     private void applyCellUpdate(ObjectNode data, SyncMessage.CellUpdate u) {
@@ -328,13 +356,14 @@ class SheetCellOpService {
 
     private static String typeNameOf(SyncMessage op) {
         return switch (op) {
-            case SyncMessage.CellUpdate ignored   -> "cell.update";
-            case SyncMessage.RowAdd ignored       -> "row.add";
-            case SyncMessage.RowDelete ignored    -> "row.delete";
-            case SyncMessage.RowMove ignored      -> "row.move";
-            case SyncMessage.ColumnAdd ignored    -> "column.add";
-            case SyncMessage.ColumnUpdate ignored -> "column.update";
-            case SyncMessage.ColumnDelete ignored -> "column.delete";
+            case SyncMessage.CellUpdate ignored      -> "cell.update";
+            case SyncMessage.CellStyleUpdate ignored -> "cell.style.update";
+            case SyncMessage.RowAdd ignored          -> "row.add";
+            case SyncMessage.RowDelete ignored       -> "row.delete";
+            case SyncMessage.RowMove ignored         -> "row.move";
+            case SyncMessage.ColumnAdd ignored       -> "column.add";
+            case SyncMessage.ColumnUpdate ignored    -> "column.update";
+            case SyncMessage.ColumnDelete ignored    -> "column.delete";
             default -> throw new IllegalStateException("not a sheet-cell op: " + op.getClass());
         };
     }
@@ -349,6 +378,11 @@ class SheetCellOpService {
                     "rowId",    u.rowId().toString(),
                     "columnId", u.columnId().toString(),
                     "value",    u.value());
+            case SyncMessage.CellStyleUpdate u -> mapOf(
+                    "sheetId",  u.sheetId().toString(),
+                    "rowId",    u.rowId().toString(),
+                    "columnId", u.columnId().toString(),
+                    "style",    u.style());
             case SyncMessage.RowAdd u -> mapOf(
                     "sheetId", u.sheetId().toString(),
                     "row",     u.row());
@@ -389,26 +423,28 @@ class SheetCellOpService {
 
     private static UUID clientMsgIdOf(SyncMessage op) {
         return switch (op) {
-            case SyncMessage.CellUpdate u    -> u.clientMsgId();
-            case SyncMessage.RowAdd u        -> u.clientMsgId();
-            case SyncMessage.RowDelete u     -> u.clientMsgId();
-            case SyncMessage.RowMove u       -> u.clientMsgId();
-            case SyncMessage.ColumnAdd u     -> u.clientMsgId();
-            case SyncMessage.ColumnUpdate u  -> u.clientMsgId();
-            case SyncMessage.ColumnDelete u  -> u.clientMsgId();
+            case SyncMessage.CellUpdate u      -> u.clientMsgId();
+            case SyncMessage.CellStyleUpdate u -> u.clientMsgId();
+            case SyncMessage.RowAdd u          -> u.clientMsgId();
+            case SyncMessage.RowDelete u       -> u.clientMsgId();
+            case SyncMessage.RowMove u         -> u.clientMsgId();
+            case SyncMessage.ColumnAdd u       -> u.clientMsgId();
+            case SyncMessage.ColumnUpdate u    -> u.clientMsgId();
+            case SyncMessage.ColumnDelete u    -> u.clientMsgId();
             default -> throw new IllegalStateException("not a sheet-cell op: " + op.getClass());
         };
     }
 
     private static long baseVersionOf(SyncMessage op) {
         return switch (op) {
-            case SyncMessage.CellUpdate u    -> u.baseVersion();
-            case SyncMessage.RowAdd u        -> u.baseVersion();
-            case SyncMessage.RowDelete u     -> u.baseVersion();
-            case SyncMessage.RowMove u       -> u.baseVersion();
-            case SyncMessage.ColumnAdd u     -> u.baseVersion();
-            case SyncMessage.ColumnUpdate u  -> u.baseVersion();
-            case SyncMessage.ColumnDelete u  -> u.baseVersion();
+            case SyncMessage.CellUpdate u      -> u.baseVersion();
+            case SyncMessage.CellStyleUpdate u -> u.baseVersion();
+            case SyncMessage.RowAdd u          -> u.baseVersion();
+            case SyncMessage.RowDelete u       -> u.baseVersion();
+            case SyncMessage.RowMove u         -> u.baseVersion();
+            case SyncMessage.ColumnAdd u       -> u.baseVersion();
+            case SyncMessage.ColumnUpdate u    -> u.baseVersion();
+            case SyncMessage.ColumnDelete u    -> u.baseVersion();
             default -> throw new IllegalStateException("not a sheet-cell op: " + op.getClass());
         };
     }
@@ -418,8 +454,9 @@ class SheetCellOpService {
      *  inverse). ADR 0021 v2.3 Phase 5. */
     static SyncMessage.UndoMeta undoOf(SyncMessage op) {
         return switch (op) {
-            case SyncMessage.CellUpdate u    -> u.undo();
-            case SyncMessage.RowAdd u        -> u.undo();
+            case SyncMessage.CellUpdate u      -> u.undo();
+            case SyncMessage.CellStyleUpdate u -> u.undo();
+            case SyncMessage.RowAdd u          -> u.undo();
             case SyncMessage.RowDelete u     -> u.undo();
             case SyncMessage.RowMove u       -> u.undo();
             case SyncMessage.ColumnAdd u     -> u.undo();
