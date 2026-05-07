@@ -15,7 +15,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -109,36 +108,45 @@ class TemplateImportServiceIntegrationTest {
             .hasMessageContaining("starter pack group not found");
     }
 
-    /** Insert a minimal project row matching V10's default-project shape. */
+    /** Insert minimal users + workspaces + projects rows matching the
+     *  schemas in V1 / V2 / V4 / V5 / V8 migrations. The auth path
+     *  through ProjectService.findById is @MockitoBean'd, so role +
+     *  membership rows aren't needed — the FK chain just has to be
+     *  satisfiable. */
     private void seedProject(UUID projectId, UUID workspaceId) {
-        // workspaces.id is a foreign key target; insert a stub row so
-        // the project insert satisfies the constraint. Plan + role
-        // tables aren't touched — the auth path is mocked, so the
-        // workspace just needs to exist as a row.
+        // 1. user row — workspaces.created_by + projects.created_by
+        //    are NOT NULL FKs to users(id).
+        var userId = UUID.randomUUID();
         jdbc.update(
-                "INSERT INTO workspaces (id, slug, name, plan, owner_user_id, created_at) "
-              + "VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO users (id, email) VALUES (?, ?)",
+                userId,
+                "test-" + userId.toString().substring(0, 8) + "@example.com");
+
+        // 2. workspaces — schema in V2 (created_by NOT NULL) + V5
+        //    (plan NOT NULL DEFAULT 'FREE'). Plan defaults so we can
+        //    omit it from the INSERT.
+        jdbc.update(
+                "INSERT INTO workspaces (id, slug, name, created_by) "
+              + "VALUES (?, ?, ?, ?)",
                 workspaceId,
                 "test-" + workspaceId.toString().substring(0, 8),
                 "test workspace",
-                "FREE",
-                UUID.randomUUID(),
-                OffsetDateTime.now());
+                userId);
 
+        // 3. projects — base columns from V4 + JSONB sync columns from
+        //    V8. Versions default to 0; data/sheet_tree/doc_tree
+        //    default to '[]'::jsonb on the schema side.
         jdbc.update(
                 "INSERT INTO projects ("
-              + "  id, workspace_id, slug, name, description, "
-              + "  data, data_version, sheet_tree, sheet_tree_version, "
-              + "  doc_tree, doc_tree_version, created_at, updated_at"
-              + ") VALUES (?, ?, ?, ?, ?, "
-              + "  '[]'::jsonb, 0, '[]'::jsonb, 0, '[]'::jsonb, 0, ?, ?)",
+              + "  id, workspace_id, slug, name, description, created_by, "
+              + "  data, sheet_tree, doc_tree"
+              + ") VALUES (?, ?, ?, ?, ?, ?, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)",
                 projectId,
                 workspaceId,
                 "test-project",
                 "Test Project",
                 null,
-                OffsetDateTime.now(),
-                OffsetDateTime.now());
+                userId);
     }
 
 }
