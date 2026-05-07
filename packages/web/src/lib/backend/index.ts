@@ -69,3 +69,19 @@ export type { CreateProjectInput } from './projects';
 
 export { listCatalog, importTemplate } from './catalog';
 export type { CatalogGroupSummary } from './catalog';
+
+export {
+  createComment,
+  updateCommentBody,
+  setCommentResolved,
+  deleteComment,
+  listCommentsForCell,
+  listCommentsForDoc,
+  listInbox,
+} from './comments';
+export type {
+  BackendComment,
+  CommentScopeKind,
+  CreateCommentInput,
+  ListCommentsForCellInput,
+} from './comments';
