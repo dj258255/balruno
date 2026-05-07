@@ -75,23 +75,30 @@ import { usePresence } from '@/hooks/usePresence';
 export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTableProps) {
   const t = useTranslations();
 
-  // Store actions
-  const {
-    updateCell,
-    updateCellsStyle,
-    addRow,
-    insertRow,
-    addColumn,
-    insertColumn,
-    deleteColumn,
-    deleteRow,
-    updateColumn,
-    updateRow,
-    cellSelectionMode,
-    cancelCellSelection,
-    completeCellSelection,
-    projects,
-  } = useProjectStore();
+  // Store actions — destructured via individual selectors so the
+  // whole-store subscription anti-pattern doesn't re-render this
+  // component on every paired-commit broadcast (memory:
+  // project_adr0018_server_canonical "React #185 함정").
+  // Action references are stable in zustand; subscribing to the
+  // function field returns the same reference unless replaced.
+  const updateCell = useProjectStore((s) => s.updateCell);
+  const updateCellsStyle = useProjectStore((s) => s.updateCellsStyle);
+  const addRow = useProjectStore((s) => s.addRow);
+  const insertRow = useProjectStore((s) => s.insertRow);
+  const addColumn = useProjectStore((s) => s.addColumn);
+  const insertColumn = useProjectStore((s) => s.insertColumn);
+  const deleteColumn = useProjectStore((s) => s.deleteColumn);
+  const deleteRow = useProjectStore((s) => s.deleteRow);
+  const updateColumn = useProjectStore((s) => s.updateColumn);
+  const updateRow = useProjectStore((s) => s.updateRow);
+  const cancelCellSelection = useProjectStore((s) => s.cancelCellSelection);
+  const completeCellSelection = useProjectStore((s) => s.completeCellSelection);
+  // Fine-grained selectors so cellSelectionMode + the project's own
+  // mutation don't cascade through every other zustand subscriber.
+  const cellSelectionMode = useProjectStore((s) => s.cellSelectionMode);
+  const currentProject = useProjectStore((s) =>
+    s.projects.find((p) => p.id === projectId),
+  );
 
   const { pushState } = useHistoryStore();
 
@@ -108,8 +115,8 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
   const overlayInputRef = useRef<HTMLInputElement>(null);
   const inlineAutocompleteRef = useRef<FormulaAutocompleteRef>(null);
 
-  // 현재 프로젝트
-  const currentProject = projects.find((p) => p.id === projectId);
+  // currentProject is now a selector subscription above — the local
+  // const it replaced was recomputed on every render via projects.find.
 
   // PM 빠른 필터 — 현재 시트에 활성된 assignee/priority 값과 맞지 않는 행은 dim.
   // detectPmSheet 로 assignee 컬럼 id 를 얻고, priority 는 이름 패턴 매칭.
@@ -507,10 +514,12 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
   const handleStyleChange = useCallback(
     (style: Partial<CellStyle>) => {
       if (selectedCells.length === 0) return;
-      pushState(projects, t('table.styleChange'));
+      // Read projects on demand via getState() instead of subscribing
+      // — undo only needs the snapshot at the moment of the change.
+      pushState(useProjectStore.getState().projects, t('table.styleChange'));
       updateCellsStyle(projectId, sheet.id, selectedCells, style);
     },
-    [selectedCells, updateCellsStyle, projectId, sheet.id, pushState, projects]
+    [selectedCells, updateCellsStyle, projectId, sheet.id, pushState, t]
   );
 
   // 메모 툴팁 핸들러 - 셀 진입 시 바로 표시, 셀 기준 아래에 위치

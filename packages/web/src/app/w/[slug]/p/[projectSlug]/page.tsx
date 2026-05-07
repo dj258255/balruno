@@ -24,7 +24,7 @@
  * placeholder so each phase ships behind a green CI run.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 
@@ -42,6 +42,7 @@ import { useProjectStore } from '@/stores/projectStore';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
+import SheetTable from '@/components/sheet/SheetTable';
 import { TemplateImportModal } from '@/components/sheet/TemplateImportModal';
 import { emitOp } from '@/lib/sync/writeQueue';
 import { newId } from '@/lib/uuid';
@@ -317,7 +318,6 @@ export default function ProjectDetailPage() {
   const localProject = useProjectStore((state) =>
     project ? state.projects.find((p) => p.id === project.id) : undefined,
   );
-  const updateCellAction = useProjectStore((state) => state.updateCell);
   const sheets = localProject?.sheets ?? [];
   const sheetTree = localProject?.sheetTree ?? [];
 
@@ -332,25 +332,6 @@ export default function ProjectDetailPage() {
   }, [selectedSheetId, sheets]);
 
   const selectedSheet = sheets.find((s) => s.id === selectedSheetId);
-  const firstColumn = selectedSheet?.columns[0];
-  const firstRow = selectedSheet?.rows[0];
-  const cellValue =
-    firstRow && firstColumn ? String(firstRow.cells[firstColumn.id] ?? '') : '';
-
-  // Controlled input + draft state. Without this, the broadcast-driven
-  // store update never reaches the visible <input value> (uncontrolled
-  // inputs ignore prop changes after the initial mount), so peer edits
-  // were silently invisible. The focus check protects the local user's
-  // in-progress typing — store updates only re-sync the draft when the
-  // input isn't currently focused, otherwise an incoming broadcast
-  // would yank the cursor mid-keystroke.
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [draft, setDraft] = useState(cellValue);
-  useEffect(() => {
-    if (document.activeElement !== inputRef.current) {
-      setDraft(cellValue);
-    }
-  }, [cellValue]);
 
   // Inline rename — sheet_tree node (folder OR sheet leaf). Direct
   // setState on the store (Y.Doc bypass; same pattern as the
@@ -585,56 +566,22 @@ export default function ProjectDetailPage() {
             />
           </aside>
 
-          {/* Main — minimal cell editor for the selected sheet */}
+          {/* Main — full SheetTable for the selected sheet. Store
+              actions (updateCell / addRow / addColumn / …) are
+              already wired through cellSlice's emitOp, so every edit
+              flows through the paired-commit path automatically. */}
           <section
-            className="rounded-lg border p-4"
-            style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+            className="rounded-lg border overflow-hidden"
+            style={{
+              borderColor: 'var(--border-primary)',
+              background: 'var(--bg-primary)',
+              minHeight: '500px',
+            }}
           >
-            {selectedSheet && firstColumn && firstRow ? (
-              <>
-                <h2 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {selectedSheet.name}
-                </h2>
-                <label
-                  className="flex items-center gap-3 text-sm"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  <span className="w-24 truncate" title={firstColumn.name}>
-                    {firstColumn.name}:
-                  </span>
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onBlur={() => {
-                      if (draft !== cellValue) {
-                        updateCellAction(
-                          project.id,
-                          selectedSheet.id,
-                          firstRow.id,
-                          firstColumn.id,
-                          draft,
-                        );
-                      }
-                    }}
-                    className="flex-1 rounded-md border px-3 py-2 font-mono text-sm"
-                    style={{
-                      borderColor: 'var(--border-primary)',
-                      background: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                    }}
-                    placeholder="값 입력 후 다른 곳 클릭하면 동기화"
-                  />
-                </label>
-                <p className="mt-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  blur 시 cell.update 가 <code>/ws/projects/{project.id}</code> 로 emit. 다른
-                  사용자가 같은 프로젝트를 열고 있으면 broadcast 로 화면 자동 반영. 풀 SheetTable
-                  통합은 다음 phase.
-                </p>
-              </>
+            {selectedSheet ? (
+              <SheetTable projectId={project.id} sheet={selectedSheet} />
             ) : (
-              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 시트를 선택하세요.
               </p>
             )}
