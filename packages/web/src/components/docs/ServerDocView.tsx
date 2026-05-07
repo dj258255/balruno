@@ -27,6 +27,7 @@ import { Loader2, MessageSquarePlus } from 'lucide-react';
 import { useDocCollab } from '@/hooks/useDocCollab';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
 import { listCommentsForDoc } from '@/lib/backend';
+import { MobileTiptapToolbar } from './MobileTiptapToolbar';
 
 interface ServerDocViewProps {
   documentId: string;
@@ -187,12 +188,16 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
           collab status: {status}
         </p>
       </header>
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 pb-16 md:pb-6">
         <EditorContent
           editor={editor}
           className="prose prose-sm dark:prose-invert max-w-none focus:outline-none"
         />
       </div>
+      {/* Mobile-only sticky toolbar (ADR 0022 v1.2 stage C). md:hidden
+          inside the component itself; pb-16 above leaves room so the
+          editor content doesn't end behind the toolbar. */}
+      <MobileTiptapToolbar editor={editor} />
     </div>
   );
 }

@@ -12,8 +12,8 @@
  * anchor metadata.
  */
 
-import { useEffect, useState } from 'react';
-import { Loader2, X, Check, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Loader2, X, Check, Trash2, MessageSquareReply } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -54,8 +54,28 @@ export function DocCommentPanel({
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [posting, setPosting] = useState(false);
+  // Reply thread state — Stage H. See CellCommentPanel for the
+  // detailed comment.
+  const [replyToId, setReplyToId] = useState<string | null>(null);
 
   const me = useAuthStore((s) => s.user);
+
+  const threads = useMemo(() => {
+    if (!comments) return null;
+    const roots = comments.filter((c) => !c.parentId);
+    const repliesByParent = new Map<string, BackendComment[]>();
+    for (const c of comments) {
+      if (c.parentId) {
+        const arr = repliesByParent.get(c.parentId) ?? [];
+        arr.push(c);
+        repliesByParent.set(c.parentId, arr);
+      }
+    }
+    return roots.map((root) => ({
+      root,
+      replies: repliesByParent.get(root.id) ?? [],
+    }));
+  }, [comments]);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,6 +111,7 @@ export function DocCommentPanel({
         documentId,
         anchorPosition,
         anchorLength,
+        parentId: replyToId ?? undefined,
         bodyJson: {
           type: 'doc',
           content: [{ type: 'paragraph', content: [{ type: 'text', text: body }] }],
@@ -98,6 +119,7 @@ export function DocCommentPanel({
       });
       setComments((prev) => (prev ? [...prev, created] : [created]));
       setDraft('');
+      setReplyToId(null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : '코멘트 작성 실패');
     } finally {
@@ -171,59 +193,39 @@ export function DocCommentPanel({
             {error}
           </p>
         )}
-        {comments && comments.length === 0 && (
+        {threads && threads.length === 0 && (
           <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
             아직 코멘트가 없습니다.
           </p>
         )}
-        {comments && comments.length > 0 && (
+        {threads && threads.length > 0 && (
           <ul className="space-y-3">
-            {comments.map((c) => (
-              <li
-                key={c.id}
-                className="rounded-md border p-3"
-                style={{
-                  borderColor: 'var(--border-primary)',
-                  background: c.resolved ? 'var(--bg-secondary)' : 'transparent',
-                  opacity: c.resolved ? 0.6 : 1,
-                }}
-              >
-                <div className="mb-1 flex items-center justify-between text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  <span className="font-mono">{c.authorUserId.slice(0, 8)}</span>
-                  <div className="flex items-center gap-1">
-                    {typeof c.anchorPosition === 'number' && (
-                      <span className="font-mono" title={`Anchored at doc offset ${c.anchorPosition}`}>
-                        @{c.anchorPosition}
-                      </span>
-                    )}
-                    <span>{new Date(c.createdAt).toLocaleString()}</span>
-                  </div>
-                </div>
-                <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                  {extractPlainText(c.bodyJson)}
-                </p>
-                <div className="mt-2 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleResolve(c)}
-                    className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-[var(--bg-hover)]"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
-                    <Check className="h-3 w-3" />
-                    {c.resolved ? '해결됨' : '해결'}
-                  </button>
-                  {me?.id === c.authorUserId && (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(c)}
-                      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-red-50 dark:hover:bg-red-950/30"
-                      style={{ color: 'var(--text-tertiary)' }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      삭제
-                    </button>
-                  )}
-                </div>
+            {threads.map(({ root, replies }) => (
+              <li key={root.id} className="space-y-2">
+                <DocCommentItem
+                  c={root}
+                  isMe={me?.id === root.authorUserId}
+                  onResolve={handleResolve}
+                  onDelete={handleDelete}
+                  onReply={() => setReplyToId(root.id)}
+                  isReplying={replyToId === root.id}
+                />
+                {replies.length > 0 && (
+                  <ul className="ml-4 space-y-2 border-l-2 pl-3" style={{ borderColor: 'var(--border-primary)' }}>
+                    {replies.map((r) => (
+                      <li key={r.id}>
+                        <DocCommentItem
+                          c={r}
+                          isMe={me?.id === r.authorUserId}
+                          onResolve={handleResolve}
+                          onDelete={handleDelete}
+                          onReply={null}
+                          isReplying={false}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
@@ -234,12 +236,30 @@ export function DocCommentPanel({
         className="border-t p-3"
         style={{ borderColor: 'var(--border-primary)' }}
       >
+        {replyToId && (
+          <div
+            className="mb-2 flex items-center justify-between rounded px-2 py-1 text-xs"
+            style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+          >
+            <span>답글 작성 중</span>
+            <button
+              type="button"
+              onClick={() => setReplyToId(null)}
+              className="rounded p-0.5 hover:bg-[var(--bg-hover)]"
+              aria-label="답글 취소"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        )}
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={typeof anchorPosition === 'number'
-            ? '선택한 부분에 대한 의견...'
-            : '이 문서에 대한 의견...'}
+          placeholder={replyToId
+            ? '답글...'
+            : typeof anchorPosition === 'number'
+              ? '선택한 부분에 대한 의견...'
+              : '이 문서에 대한 의견...'}
           rows={3}
           disabled={posting}
           className="w-full rounded-md border px-2 py-1.5 text-sm disabled:opacity-50"
@@ -255,10 +275,80 @@ export function DocCommentPanel({
           disabled={!draft.trim() || posting}
           className="mt-2 w-full rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
         >
-          {posting ? '전송 중...' : '코멘트 추가'}
+          {posting ? '전송 중...' : replyToId ? '답글 추가' : '코멘트 추가'}
         </button>
       </footer>
     </aside>
+  );
+}
+
+interface DocCommentItemProps {
+  c: BackendComment;
+  isMe: boolean;
+  onResolve: (c: BackendComment) => void;
+  onDelete: (c: BackendComment) => void;
+  onReply: (() => void) | null;
+  isReplying: boolean;
+}
+
+function DocCommentItem({ c, isMe, onResolve, onDelete, onReply, isReplying }: DocCommentItemProps) {
+  return (
+    <div
+      className="rounded-md border p-3"
+      style={{
+        borderColor: isReplying ? 'var(--accent)' : 'var(--border-primary)',
+        background: c.resolved ? 'var(--bg-secondary)' : 'transparent',
+        opacity: c.resolved ? 0.6 : 1,
+      }}
+    >
+      <div className="mb-1 flex items-center justify-between text-xs" style={{ color: 'var(--text-tertiary)' }}>
+        <span className="font-mono">{c.authorUserId.slice(0, 8)}</span>
+        <div className="flex items-center gap-1">
+          {typeof c.anchorPosition === 'number' && (
+            <span className="font-mono" title={`Anchored at doc offset ${c.anchorPosition}`}>
+              @{c.anchorPosition}
+            </span>
+          )}
+          <span>{new Date(c.createdAt).toLocaleString()}</span>
+        </div>
+      </div>
+      <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
+        {extractPlainText(c.bodyJson)}
+      </p>
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onResolve(c)}
+          className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-[var(--bg-hover)]"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          <Check className="h-3 w-3" />
+          {c.resolved ? '해결됨' : '해결'}
+        </button>
+        {onReply && (
+          <button
+            type="button"
+            onClick={onReply}
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            <MessageSquareReply className="h-3 w-3" />
+            답글
+          </button>
+        )}
+        {isMe && (
+          <button
+            type="button"
+            onClick={() => onDelete(c)}
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-red-50 dark:hover:bg-red-950/30"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            <Trash2 className="h-3 w-3" />
+            삭제
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
