@@ -14,16 +14,18 @@ split and ADR 0017 for the deploy plan.
 
 AGPL-3.0-or-later — same as the rest of the backend stack.
 
-## Stage status
+## Stage status (2026-05-08)
 
-ADR 0017 § Stage A.
+ADR 0017 § Stage A through F shipped.
 
 - [x] V7 migration: `documents` table.
 - [x] Hocuspocus skeleton (server.ts + auth.ts).
-- [ ] Dockerfile validated against `prod-app` ARM64 build.
-- [ ] GitHub Actions deploy workflow.
-- [ ] Ansible role + docker-compose entry on `prod-app`.
-- [ ] nginx vhost re-test (`collab.balruno.com.conf` already present).
+- [x] Dockerfile validated against `prod-app` ARM64 build.
+- [x] GitHub Actions deploy workflow.
+- [x] Ansible role + docker-compose entry on `prod-app`.
+- [x] nginx vhost (`collab.balruno.com.conf`) live.
+- [x] ServerDocView (frontend) connects via `useDocCollab` hook with `@tiptap/extension-collaboration-cursor` for presence.
+- [x] `@tiptap/extension-collaboration-cursor` real-awareness wiring (real cursor presence, not stub).
 
 ## Local development
 

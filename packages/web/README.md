@@ -40,7 +40,7 @@ npm run start
 참조 문법 (한글 컬럼명·`PREV.Column`·`Sheet.RowID.Column`·`{Link}.Column`) 은
 `convertKoreanToScope` 가 평탄화 → 변수 치환 → mathjs scope 로 전달.
 
-통합 테스트: `src/lib/formula/excelCompat.test.ts` 에서 3개 레이어 + 참조 해석 결합 검증.
+통합 테스트: `packages/shared/src/lib/formulaEngine.test.ts` + 게임 도메인은 `packages/shared/src/lib/formulas/economy.test.ts` 등 카테고리별. 3개 레이어 + 참조 해석 결합 검증.
 
 ## Icons
 

@@ -45,42 +45,61 @@
 
 ### What is Balruno?
 
-An integrated workspace for game studios — from solo creators to 30+ member teams. **Balance data + agile project management in a single tool** — manage your spreadsheets, sprint boards, bug trackers, and epic roadmaps together.
+An open-source collaborative spreadsheet + doc workspace, focused on **game balancing**. Real-time sync, doc threads with @mentions, full undo/redo, mobile-aware. Solo creators today, planned ML/AI differentiation for game-balance specific use cases.
 
-- **Designers**: 70+ game formulas, Monte Carlo simulation, engine export (Unity/Godot/Unreal)
-- **PMs**: Kanban sprints, bug tracker, Gantt epic roadmap
-- **Team**: Real-time collaboration (Yjs CRDT), AI-powered setup
+- **Real-time spreadsheet** — server-canonical wss op log with version-vector reconciliation
+- **Tiptap doc bodies** — Hocuspocus (yjs CRDT) + y-indexeddb offline cache
+- **Comments + @mentions** — sheet cells + doc body range-anchored highlights, inbox bell
+- **Full undo/redo** — every op type (cell.update / row.* / column.* / tree.*) with multi-user isolation
 
-**Server-canonical with offline-friendly doc bodies. Browser-native. Open source (MIT for client, AGPL v3 for backend).**
+**Open source: client MIT, backend AGPL v3. Self-host friendly (single Postgres + JVM + Hocuspocus). Cloud SaaS planned.**
 
-### Features
+### Shipped Features
 
-#### Balancing (Designer)
+#### Spreadsheet
 | Category | Features |
 |----------|----------|
-| **Formulas** | 70+ game-specific (DPS, EHP, TTK, SCALE, GACHA_PITY, DIMINISH) |
-| **Simulation** | Monte Carlo (1K~100K iterations, 95% CI) |
-| **Analysis** | Z-score outlier detection, power curve, imbalance detector |
-| **Economy** | Faucet/Sink model, inflation calculator |
-| **Curve Fitting** | Draw graphs → auto-generate formulas |
-| **Export** | Unity / Godot / Unreal code + JSON/CSV |
+| **Field Types** | 12 — text · formula · checkbox · select · multi-select · date · url · currency · rating · link · lookup · rollup |
+| **Grid View** | Virtualized rows (TanStack Virtual), sticky header + first column on mobile, drag-drop column reorder |
+| **Formula Engine** | mathjs + @formulajs — game-specific (DPS, EHP, TTK, SCALE, DIMINISH, etc.) |
+| **Linked Records** | Bidirectional links across sheets with reverse column auto-creation |
+| **Undo/Redo** | Cmd+Z / Cmd+Shift+Z covers cell.update / row.* / column.* / tree.* — ADR 0021 |
 
-#### Project Management (Studio)
+#### Document
 | Category | Features |
 |----------|----------|
-| **Sprint Board** | 5-stage Kanban (Backlog→Todo→Doing→Review→Done) with priority/role/assignee |
-| **Bug Tracker** | Severity (S1-S4) × Status × Platform (PC/Console/Mobile) |
-| **Epic Roadmap** | Gantt with phases (Pre-prod → Production → Beta → Launch) |
-| **AI Setup** | Describe requirements → auto-generate initial balance sheets |
+| **Editor** | Tiptap + StarterKit + Placeholder + collaboration (yjs) |
+| **Real-time** | Hocuspocus server + collaboration-cursor extension |
+| **Offline** | y-indexeddb cache (Outline / AFFiNE pattern) |
+| **Tree** | Sheet tree + Doc tree (separate hierarchies, drag-drop, cycle guard) |
+
+#### Collaboration
+| Category | Features |
+|----------|----------|
+| **Sync** | Server-canonical wss op log (sheet/tree) + Hocuspocus (doc bodies, yjs CRDT) — ADR 0008 |
+| **Presence** | Sheet cell awareness via wss + doc cursor via Hocuspocus awareness |
+| **Comments** | Sheet cell + doc body (range-anchored highlights) — ADR 0024 |
+| **@mentions** | Tiptap mention extension + inbox bell + per-mention notification — ADR 0024 |
 
 #### Platform
 | Category | Features |
 |----------|----------|
-| **Views** | Grid / Form / Kanban / Calendar / Gallery / Gantt |
-| **Field Types** | general / formula / checkbox / select / multiSelect / date / url / currency / rating / link / lookup / rollup |
-| **Collaboration** | Server-canonical wss op log + presence (sheet) · Yjs over Hocuspocus (doc bodies) · y-indexeddb offline cache |
-| **Storage** | Server-first (PostgreSQL 18 + JSONB) · y-indexeddb cache for doc bodies · in-memory zustand for sheet view |
-| **Desktop** | Native Mac / Windows / Linux app (Electron) with auto-update |
+| **Auth** | OAuth-only (GitHub + Google) + JWT session cookie — no SMTP dependency |
+| **Workspaces** | Multi-tenant with role-based access (Owner / Admin / Editor / Viewer) |
+| **Projects** | Per-workspace, with member invites + role management |
+| **Mobile** | Sidebar drawer + sticky first column + iOS 16px input + 44px hit targets — ADR 0022 |
+| **Desktop** | Native Mac / Windows / Linux app (Electron 41 + auto-update via GitHub Releases) |
+| **i18n** | UI + 12-group starter pack catalog fully translated (en, ko) |
+| **Observability** | Sentry SaaS (env-gated, optional for self-host) |
+
+### Planned (next 6 months)
+
+| ADR | Feature | Status |
+|---|---|---|
+| **0023** | AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama) | Accepted, Stage 1 = Spring AI 본진 module |
+| **0025** | ML capabilities — outlier detection, cluster visualization, curve fit, TrueSkill, embedding similarity | Draft |
+| **0008 v2.2** | Cell style sync (currently Y.Doc local-only) | TBD |
+| (TBD) | Re-introduce additional views (Kanban / Calendar / Gantt) on top of server-canonical sync | TBD |
 
 ### Quick Start
 
@@ -172,38 +191,34 @@ We welcome contributions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before 
 ### Roadmap
 
 **Done**
-- Spreadsheet engine (Grid + Form + Kanban + Calendar + Gallery + Gantt)
-- 70+ game formulas, Monte Carlo simulation
-- Game engine export (Unity / Godot / Unreal)
-- 12 field types (general/formula/checkbox/select/multiSelect/date/url/currency/rating/link/lookup/rollup)
-- Sprint Board / Bug Tracker / Epic Roadmap templates
-- AI Setup (template-based, LLM fallback)
-- Command palette
-- Docked tool groups (9 categories)
-- Monorepo (Turborepo + web/shared/desktop/backend/collab)
-- Electron desktop app (Mac/Windows/Linux + auto-update via GitHub Releases)
-- **Spring Boot 4 backend** (AGPL v3) — OAuth, JWT, workspace + project + sheet/tree CRUD
-- **Server-canonical wss sync** (4 regions: sheet cells, sheet tree, doc tree, doc body via Hocuspocus)
-- **Real-time presence** (sheet cell awareness via wss + doc cursor via Hocuspocus awareness)
-- **Workspace + project lifecycle** — create, list, delete with role-based access (owner/admin/editor/viewer)
-- **Member invites** + role management
-- **Starter pack** — 12 game-domain catalog groups (RPG / FPS / MOBA / RTS / Idle / Roguelike / Sprint / Bug Tracker / Roadmap / Playtest / Tutorial / Blank)
-- **Template import** — graft any starter group onto an existing project
-- **i18n** — UI + starter catalog fully translated (en, ko)
-- **Sentry observability** (env-gated, free tier)
+- Monorepo (Turborepo + web / shared / desktop / backend / collab)
+- Electron desktop app (Mac / Windows / Linux + auto-update via GitHub Releases)
+- Spring Boot 4 backend (AGPL v3) — OAuth, JWT, workspace + project + sheet/tree CRUD
+- Server-canonical wss sync (4 regions: sheet cells, sheet tree, doc tree, doc body via Hocuspocus) — ADR 0008
+- Real-time presence (sheet cell awareness via wss + doc cursor via Hocuspocus awareness)
+- Workspace + project lifecycle — create, list, delete with role-based access (Owner / Admin / Editor / Viewer)
+- Member invites + role management
+- Starter pack — 12 game-domain catalog groups (RPG / FPS / MOBA / RTS / Idle / Roguelike / Sprint / Bug Tracker / Roadmap / Playtest / Tutorial / Blank)
+- Template import — graft any starter group onto an existing project
+- i18n — UI + starter catalog fully translated (en, ko)
+- Sentry observability (env-gated, free tier)
+- **Undo / redo** — full op coverage (cell / row / column / tree) — ADR 0021
+- **Comments + @mentions** — sheet cells + doc body (range-anchored highlights via Tiptap Decoration plugin), inbox bell — ADR 0024
+- **Mobile UX** — sidebar drawer + sticky first column + iOS 16px input + 44px hit targets — ADR 0022 (Stage A / B partial / E)
+- **v0.6 Y.Doc cleanup** — legacy local-mode + 294 dead files removed (-77K lines), only server-canonical mode remains — ADR 0008 §10
 
-**Next**
-- Comments & @mentions
+**Next (planned, ~6 months)**
+- AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) — ADR 0023
+- ML capabilities — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity — ADR 0025
+- Cell style sync (server-canonical migration of remaining Y.Doc-local cell styling)
+- Re-introduce additional views (Kanban / Calendar / Gantt) on top of server-canonical sync
 - Share links per view (read-only)
-- Full LLM integration (Anthropic / OpenAI BYOK)
-- Git / Slack / Discord webhooks
-- Interface Designer (dashboard builder)
-- Automations (n8n-style node editor)
+- Webhook integrations (GitHub / Discord)
 
 **Pricing (tentative — finalized after beta)**
 - **Free / self-host** — unlimited (MIT for client + AGPL v3 for backend, run anywhere)
 - **Cloud Free** — strict quotas (rows/sheet 2k · history 14d · AI 0/BYOK)
-- **Cloud Pro** — quotas lifted (price TBD after beta validation)
+- **Cloud Pro** — quotas lifted, optional cloud-paid AI pool (price TBD after beta validation)
 - **Team** — collaboration + members + SSO (price TBD)
 
 ### License
@@ -220,8 +235,8 @@ For commercial licensing inquiries: dj258255@naver.com
 
 - [Live Demo](https://balruno.com)
 - [Self-hosting Guide](docs/SELF_HOSTING.md)
-- [Documentation (English)](docs/DESIGN_EN.md)
-- [Documentation (한국어)](docs/DESIGN_KO.md)
+- [Backend overview](docs/backend/00-overview.md)
+- [Architecture decisions (ADRs)](docs/backend/decisions/)
 - [Report Bug](https://github.com/dj258255/balruno/issues/new?template=bug_report.md)
 - [Request Feature](https://github.com/dj258255/balruno/issues/new?template=feature_request.md)
 
@@ -231,42 +246,61 @@ For commercial licensing inquiries: dj258255@naver.com
 
 ### Balruno란?
 
-게임 스튜디오를 위한 **통합 워크스페이스** — 1인 개발자부터 30명+ 팀까지. 밸런싱 데이터와 애자일 프로젝트 관리를 **한 툴**에서 — 스프레드시트, 스프린트 보드, 버그 트래커, 에픽 로드맵을 함께 관리합니다.
+오픈소스 협업 스프레드시트 + 문서 워크스페이스. **게임 밸런싱 도메인 특화**. 실시간 동기화, 코멘트 + @멘션 (범위 핀 하이라이트), 풀 undo/redo, 모바일 친화. 1인 개발자가 진행 중이며 ML / AI 차별화를 게임 밸런싱에 맞춰 계획 중.
 
-- **기획자**: 70개+ 게임 수식, 몬테카를로 시뮬, 엔진 export (Unity/Godot/Unreal)
-- **PM**: 칸반 스프린트, 버그 트래커, Gantt 에픽 로드맵
-- **팀**: 실시간 협업 (server-canonical wss + Hocuspocus), AI 자동 세팅
+- **실시간 스프레드시트** — server-canonical wss op log + version-vector 충돌 해결
+- **Tiptap 문서 본문** — Hocuspocus (yjs CRDT) + y-indexeddb 오프라인 캐시
+- **코멘트 + @멘션** — 시트 셀 + 문서 본문 *범위 핀 하이라이트*, 인박스 종 아이콘
+- **풀 undo/redo** — 모든 op 타입 (cell.update / row.* / column.* / tree.*) + 멀티 유저 isolation
 
-**서버 canonical + 문서 본문은 오프라인 친화. 브라우저 네이티브. 오픈소스 (클라이언트 MIT · 백엔드 AGPL v3).**
+**오픈소스: 클라이언트 MIT, 백엔드 AGPL v3. 셀프호스트 친화 (단일 Postgres + JVM + Hocuspocus). 클라우드 SaaS 계획 중.**
 
-### 주요 기능
+### 출하된 기능
 
-#### 밸런싱 (Designer)
+#### 스프레드시트
 | 카테고리 | 기능 |
 |----------|------|
-| **수식** | 70개+ 게임 특화 (DPS, EHP, TTK, SCALE, GACHA_PITY, DIMINISH) |
-| **시뮬레이션** | 몬테카를로 (1천~10만회, 95% 신뢰구간) |
-| **분석** | Z-score 이상치 탐지, 파워 커브, 불균형 탐지기 |
-| **경제** | Faucet/Sink, 인플레이션 계산기 |
-| **커브 피팅** | 그래프 → 수식 자동 생성 |
-| **내보내기** | Unity / Godot / Unreal 코드 + JSON/CSV |
+| **필드 타입** | 12종 — text · formula · checkbox · select · multi-select · date · url · currency · rating · link · lookup · rollup |
+| **Grid 뷰** | 가상화 행 (TanStack Virtual), 모바일에선 sticky header + 첫 컬럼, drag-drop 컬럼 재배치 |
+| **수식 엔진** | mathjs + @formulajs — 게임 특화 (DPS, EHP, TTK, SCALE, DIMINISH 등) |
+| **링크 레코드** | 시트 간 양방향 link + reverse 컬럼 자동 생성 |
+| **Undo/Redo** | Cmd+Z / Cmd+Shift+Z 가 cell.update / row.* / column.* / tree.* 모두 커버 — ADR 0021 |
 
-#### 프로젝트 관리 (Studio)
+#### 문서
 | 카테고리 | 기능 |
 |----------|------|
-| **스프린트 보드** | 5단 칸반 (Backlog→Todo→Doing→Review→Done) + 우선순위/역할/담당자 |
-| **버그 트래커** | 심각도 (S1-S4) × 상태 × 플랫폼 (PC/Console/Mobile) |
-| **에픽 로드맵** | Gantt + 페이즈 (Pre-production → Production → Beta → Launch) |
-| **AI 자동 세팅** | 요구사항 자연어 → 초기 밸런스 시트 자동 생성 |
+| **에디터** | Tiptap + StarterKit + Placeholder + collaboration (yjs) |
+| **실시간** | Hocuspocus 서버 + collaboration-cursor 확장 |
+| **오프라인** | y-indexeddb 캐시 (Outline / AFFiNE 패턴) |
+| **트리** | 시트 트리 + 문서 트리 (별 계층, drag-drop, cycle 가드) |
+
+#### 협업
+| 카테고리 | 기능 |
+|----------|------|
+| **동기화** | Server-canonical wss op log (시트/트리) + Hocuspocus (문서 본문, yjs CRDT) — ADR 0008 |
+| **Presence** | 시트 셀 awareness via wss + 문서 커서 via Hocuspocus awareness |
+| **코멘트** | 시트 셀 + 문서 본문 (범위 핀 하이라이트) — ADR 0024 |
+| **@멘션** | Tiptap mention 확장 + 인박스 종 + per-mention 알림 — ADR 0024 |
 
 #### 플랫폼
 | 카테고리 | 기능 |
 |----------|------|
-| **뷰** | Grid / Form / Kanban / Calendar / Gallery / Gantt |
-| **필드 타입** | general / formula / checkbox / select / multiSelect / date / url / currency / rating / link / lookup / rollup (12종) |
-| **협업** | 서버 canonical wss op log + presence (시트) · Hocuspocus 위 Yjs (문서 본문) · y-indexeddb 오프라인 캐시 |
-| **저장** | 서버 우선 (PostgreSQL 18 + JSONB) · y-indexeddb (문서 본문 캐시) · zustand (시트 뷰 인메모리) |
-| **데스크톱** | Mac / Windows / Linux 네이티브 앱 (Electron) + 자동 업데이트 |
+| **인증** | OAuth 만 (GitHub + Google) + JWT 세션 쿠키 — SMTP 의존성 0 |
+| **워크스페이스** | 멀티 테넌트 + 역할 (Owner / Admin / Editor / Viewer) |
+| **프로젝트** | 워크스페이스 별, 멤버 초대 + 역할 관리 |
+| **모바일** | 사이드바 드로어 + 첫 컬럼 sticky + iOS 16px input + 44px hit target — ADR 0022 |
+| **데스크톱** | Mac / Windows / Linux 네이티브 (Electron 41 + GitHub Releases 자동 업데이트) |
+| **i18n** | UI + 12-그룹 스타터 팩 카탈로그 영/한 번역 |
+| **관측** | Sentry SaaS (env-gated, 셀프호스트는 선택) |
+
+### 계획 중 (다음 6 개월)
+
+| ADR | 기능 | 상태 |
+|---|---|---|
+| **0023** | AI 통합 (BYOK Anthropic / OpenAI / Gemini / Ollama) | Accepted, Stage 1 = Spring AI 본진 모듈 |
+| **0025** | ML 능력 — 아웃라이어 탐지, 클러스터 시각화, 곡선 피팅, TrueSkill, 임베딩 유사도 | Draft |
+| **0008 v2.2** | 셀 스타일 동기화 (현재 Y.Doc 로컬 only) | TBD |
+| (TBD) | 추가 뷰 재도입 (Kanban / Calendar / Gantt) — server-canonical sync 위에 | TBD |
 
 ### 빠른 시작
 

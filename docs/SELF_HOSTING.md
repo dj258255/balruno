@@ -9,16 +9,22 @@ deployment of the same codebase, not a privileged variant.
 
 ## What you get
 
-- Game-balancing workspace (sheets + 12-group starter pack catalog)
-- Real-time multi-user collaboration (cells + tree + doc bodies)
-- Workspace + project + member CRUD with role-based access
+- Game-balancing spreadsheet workspace (Grid view + 12 field types + formula engine + linked records)
+- Document body editor (Tiptap + Hocuspocus + offline cache via y-indexeddb)
+- Real-time multi-user collaboration (sheet cells + sheet tree + doc tree + doc body)
+- Comments + @mentions on both scopes (range-anchored highlights for doc bodies)
+- Inbox bell for received mentions
+- Full undo/redo — every op (cell.update / row.* / column.* / tree.*) with multi-user isolation
+- Mobile UX — sidebar drawer + sticky first column + iOS-friendly inputs
+- Workspace + project + member CRUD with role-based access (Owner / Admin / Editor / Viewer)
+- 12-group starter pack catalog (RPG / FPS / MOBA / RTS / Idle / Roguelike / Sprint / Bug Tracker / Roadmap / Playtest / Tutorial / Blank) with template import
 - OAuth login (GitHub + Google) — no SMTP required
 - 100% local data (your PostgreSQL, your Hocuspocus, your Spring Boot)
 
 What you don't need to run:
 
 - Sentry — env-gated, leave `NEXT_PUBLIC_SENTRY_DSN` blank
-- AI providers — BYOK at the user level, no operator infra
+- AI providers — BYOK at the workspace level (V13 — once ADR 0023 ships), or skip AI features entirely
 - Email (SMTP) — OAuth-only auth means no password reset emails
 
 ---
@@ -180,6 +186,35 @@ Both GitHub and Google accept multiple callback URLs. Add:
 - **Or self-host** — point the same DSN at GlitchTip running on
   your infrastructure (Sentry-compatible, MIT licensed).
 - **Or no observability** — leave the env blank; logs only.
+
+### AI provider keys (optional, ADR 0023 — once shipped)
+
+When AI features ship, configuration is per-workspace BYOK. The
+operator does **not** pay for end-user AI usage. Each workspace
+admin pastes their own provider key in workspace settings; the
+backend stores it AES-GCM encrypted.
+
+Required env (only if you want to enable the encryption layer):
+
+```bash
+# 32-byte hex secret used to encrypt workspace_ai_credentials.api_key_enc
+BALRUNO_AI_SECRET_KEY=$(openssl rand -hex 32)
+```
+
+Lose this and every encrypted key in the database becomes
+unreadable — keys are re-entered, not recoverable. Treat the
+secret like a database master password.
+
+Supported providers (planned):
+
+- Anthropic (Claude) — recommended for game balance analysis
+- OpenAI (GPT-4o family)
+- Google Gemini (per-user free tier)
+- Ollama (self-hosted local LLM, no API key)
+- OpenRouter (multi-provider gateway)
+
+To skip AI entirely, leave `BALRUNO_AI_SECRET_KEY` unset — the
+feature surfaces hide themselves.
 
 ---
 
