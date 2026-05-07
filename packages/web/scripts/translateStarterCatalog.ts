@@ -157,6 +157,56 @@ const DICT: Record<string, string> = {
   'Pros (좋은 점)': 'Pros',
   'Cons (안 좋은 점)': 'Cons',
   '조치': 'Actions',
+
+  // ── Sample cell values — character classes, items, enums.
+  //
+  // Only short, context-free terms make this list. Long descriptive
+  // strings ("튜토리얼 너무 김 (15분+). 보스 1번이 너무 어려움.")
+  // need context-aware translation and are left as-is — a future
+  // LLM-aided pipeline can extend cell-value coverage without
+  // changing the surrounding script.
+
+  // RPG character classes
+  '전사': 'Warrior',
+  '마법사': 'Mage',
+  '도적': 'Rogue',
+  '궁수': 'Archer',
+  '성기사': 'Paladin',
+
+  // Tutorial weapons
+  '롱소드': 'Longsword',
+  '아이스 스태프': 'Ice Staff',
+  '엘븐 보우': 'Elven Bow',
+  '신성 검': 'Holy Sword',
+
+  // Item rarity / shorthand
+  '일반 재료': 'Common Material',
+  '레어 재료': 'Rare Material',
+  '에픽 무기': 'Epic Weapon',
+  '전설 무기': 'Legendary Weapon',
+  '신규 무기 데이터': 'New weapon data',
+  '신규 챔피언 5종': '5 new champions',
+
+  // MOBA roles / enums
+  '근접': 'Melee',
+  '원거리': 'Ranged',
+  '균형형 탱커': 'Balanced Tank',
+  '빠른 딜러': 'Fast Carry',
+  '유리대포': 'Glass Cannon',
+  '최고 방어': 'Top Defense',
+  '원거리 균형': 'Ranged Balanced',
+
+  // RTS unit families
+  '보병': 'Infantry',
+  '기병': 'Cavalry',
+  '공성탑': 'Siege Tower',
+
+  // Misc enum-like values
+  '나': 'Me',
+  '외부': 'External',
+  '내부 5명': 'Internal (5)',
+  '1차 클로즈드 베타': '1st Closed Beta',
+  '2차 친구 5명': '2nd Friends (5)',
 };
 
 function translate(value: string): string {
@@ -174,8 +224,28 @@ function translateSheet(sheet: Sheet): Sheet {
       // status enums (To Do / Doing / …) that are already English
       // or game-specific terms that need design-level translation.
     })),
-    // rows kept verbatim — sample data, see file header.
+    rows: (sheet.rows as Array<{ id: string; cells: Record<string, unknown> }>).map((row) => ({
+      ...row,
+      cells: Object.fromEntries(
+        Object.entries(row.cells).map(([k, v]) => [k, translateCellValue(v)]),
+      ),
+    })),
   };
+}
+
+/**
+ * Translate a single cell value. Only short string values that match
+ * a dictionary key are translated; numbers, booleans, long
+ * descriptive strings, and HTML / formula content fall through
+ * unchanged. The DICT lookup means an unmatched string is a no-op,
+ * which keeps the output safe when a new cell value type appears.
+ */
+function translateCellValue(value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+  // Skip HTML / formula content — translating these mechanically
+  // breaks the surrounding markup or expression.
+  if (value.startsWith('<') || value.startsWith('=')) return value;
+  return translate(value);
 }
 
 function translateStarter(starter: Starter): Starter {

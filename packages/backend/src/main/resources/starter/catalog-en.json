@@ -56,56 +56,56 @@
               {
                 "id": "019dfedb-a9e2-769a-8aab-bed6740b378b",
                 "cells": {
-                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "전사",
+                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "Warrior",
                   "019dfedb-a9e2-769a-8aab-a466466838d1": 200,
                   "019dfedb-a9e2-769a-8aab-a8b5875a8f88": 30,
                   "019dfedb-a9e2-769a-8aab-aef17207188c": 20,
                   "019dfedb-a9e2-769a-8aab-b3fea09d4ec8": 1,
-                  "019dfedb-a9e2-769a-8aab-b785be124294": "균형형 탱커"
+                  "019dfedb-a9e2-769a-8aab-b785be124294": "Balanced Tank"
                 }
               },
               {
                 "id": "019dfedb-a9e2-769a-8aab-c2afdd627a82",
                 "cells": {
-                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "도적",
+                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "Rogue",
                   "019dfedb-a9e2-769a-8aab-a466466838d1": 120,
                   "019dfedb-a9e2-769a-8aab-a8b5875a8f88": 45,
                   "019dfedb-a9e2-769a-8aab-aef17207188c": 8,
                   "019dfedb-a9e2-769a-8aab-b3fea09d4ec8": 1.6,
-                  "019dfedb-a9e2-769a-8aab-b785be124294": "빠른 딜러"
+                  "019dfedb-a9e2-769a-8aab-b785be124294": "Fast Carry"
                 }
               },
               {
                 "id": "019dfedb-a9e2-769a-8aab-c5db835d6850",
                 "cells": {
-                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "마법사",
+                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "Mage",
                   "019dfedb-a9e2-769a-8aab-a466466838d1": 100,
                   "019dfedb-a9e2-769a-8aab-a8b5875a8f88": 50,
                   "019dfedb-a9e2-769a-8aab-aef17207188c": 5,
                   "019dfedb-a9e2-769a-8aab-b3fea09d4ec8": 0.9,
-                  "019dfedb-a9e2-769a-8aab-b785be124294": "유리대포"
+                  "019dfedb-a9e2-769a-8aab-b785be124294": "Glass Cannon"
                 }
               },
               {
                 "id": "019dfedb-a9e2-769a-8aab-c871bbe38193",
                 "cells": {
-                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "성기사",
+                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "Paladin",
                   "019dfedb-a9e2-769a-8aab-a466466838d1": 220,
                   "019dfedb-a9e2-769a-8aab-a8b5875a8f88": 25,
                   "019dfedb-a9e2-769a-8aab-aef17207188c": 28,
                   "019dfedb-a9e2-769a-8aab-b3fea09d4ec8": 0.8,
-                  "019dfedb-a9e2-769a-8aab-b785be124294": "최고 방어"
+                  "019dfedb-a9e2-769a-8aab-b785be124294": "Top Defense"
                 }
               },
               {
                 "id": "019dfedb-a9e2-769a-8aab-cc3401524ec7",
                 "cells": {
-                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "궁수",
+                  "019dfedb-a9e2-769a-8aab-a26c1b9d0cc9": "Archer",
                   "019dfedb-a9e2-769a-8aab-a466466838d1": 130,
                   "019dfedb-a9e2-769a-8aab-a8b5875a8f88": 38,
                   "019dfedb-a9e2-769a-8aab-aef17207188c": 10,
                   "019dfedb-a9e2-769a-8aab-b3fea09d4ec8": 1.3,
-                  "019dfedb-a9e2-769a-8aab-b785be124294": "원거리 균형"
+                  "019dfedb-a9e2-769a-8aab-b785be124294": "Ranged Balanced"
                 }
               }
             ],
@@ -226,18 +226,18 @@
                   "019dfedb-a9e3-729e-9bb3-5fea83fc2edd": "p0",
                   "019dfedb-a9e3-729e-9bb3-62d4871261ff": 5,
                   "019dfedb-a9e3-729e-9bb3-6751581c62be": "design",
-                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "나"
+                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "Me"
                 }
               },
               {
                 "id": "019dfedb-a9e3-729e-9bb3-7a51dad19857",
                 "cells": {
-                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "신규 무기 데이터",
+                  "019dfedb-a9e2-769a-8aab-d1c39668486c": "New weapon data",
                   "019dfedb-a9e3-729e-9bb3-5bbb0f980fc9": "todo",
                   "019dfedb-a9e3-729e-9bb3-5fea83fc2edd": "p1",
                   "019dfedb-a9e3-729e-9bb3-62d4871261ff": 3,
                   "019dfedb-a9e3-729e-9bb3-6751581c62be": "feature",
-                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "나"
+                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "Me"
                 }
               },
               {
@@ -248,7 +248,7 @@
                   "019dfedb-a9e3-729e-9bb3-5fea83fc2edd": "p1",
                   "019dfedb-a9e3-729e-9bb3-62d4871261ff": 2,
                   "019dfedb-a9e3-729e-9bb3-6751581c62be": "design",
-                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "나"
+                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "Me"
                 }
               },
               {
@@ -259,7 +259,7 @@
                   "019dfedb-a9e3-729e-9bb3-5fea83fc2edd": "p2",
                   "019dfedb-a9e3-729e-9bb3-62d4871261ff": 1,
                   "019dfedb-a9e3-729e-9bb3-6751581c62be": "chore",
-                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "나"
+                  "019dfedb-a9e3-729e-9bb3-6bae095149d7": "Me"
                 }
               }
             ],
@@ -338,56 +338,56 @@
               {
                 "id": "019dfedb-a9e3-729e-9bb3-ab9f2173593c",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "전사",
+                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "Warrior",
                   "019dfedb-a9e3-729e-9bb3-92a9dd3b1fa0": 200,
                   "019dfedb-a9e3-729e-9bb3-9718fff25b91": 30,
                   "019dfedb-a9e3-729e-9bb3-9bfc076ac382": 20,
                   "019dfedb-a9e3-729e-9bb3-9d2a9d9481f2": 1,
-                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "균형형 탱커"
+                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "Balanced Tank"
                 }
               },
               {
                 "id": "019dfedb-a9e3-729e-9bb3-ad1cabdae179",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "도적",
+                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "Rogue",
                   "019dfedb-a9e3-729e-9bb3-92a9dd3b1fa0": 120,
                   "019dfedb-a9e3-729e-9bb3-9718fff25b91": 45,
                   "019dfedb-a9e3-729e-9bb3-9bfc076ac382": 8,
                   "019dfedb-a9e3-729e-9bb3-9d2a9d9481f2": 1.6,
-                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "빠른 딜러"
+                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "Fast Carry"
                 }
               },
               {
                 "id": "019dfedb-a9e3-729e-9bb3-b2c862e90784",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "마법사",
+                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "Mage",
                   "019dfedb-a9e3-729e-9bb3-92a9dd3b1fa0": 100,
                   "019dfedb-a9e3-729e-9bb3-9718fff25b91": 50,
                   "019dfedb-a9e3-729e-9bb3-9bfc076ac382": 5,
                   "019dfedb-a9e3-729e-9bb3-9d2a9d9481f2": 0.9,
-                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "유리대포"
+                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "Glass Cannon"
                 }
               },
               {
                 "id": "019dfedb-a9e3-729e-9bb3-b48becd78160",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "성기사",
+                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "Paladin",
                   "019dfedb-a9e3-729e-9bb3-92a9dd3b1fa0": 220,
                   "019dfedb-a9e3-729e-9bb3-9718fff25b91": 25,
                   "019dfedb-a9e3-729e-9bb3-9bfc076ac382": 28,
                   "019dfedb-a9e3-729e-9bb3-9d2a9d9481f2": 0.8,
-                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "최고 방어"
+                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "Top Defense"
                 }
               },
               {
                 "id": "019dfedb-a9e3-729e-9bb3-b8463b17a6be",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "궁수",
+                  "019dfedb-a9e3-729e-9bb3-8f54f7962ace": "Archer",
                   "019dfedb-a9e3-729e-9bb3-92a9dd3b1fa0": 130,
                   "019dfedb-a9e3-729e-9bb3-9718fff25b91": 38,
                   "019dfedb-a9e3-729e-9bb3-9bfc076ac382": 10,
                   "019dfedb-a9e3-729e-9bb3-9d2a9d9481f2": 1.3,
-                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "원거리 균형"
+                  "019dfedb-a9e3-729e-9bb3-a2a742ff84d9": "Ranged Balanced"
                 }
               }
             ],
@@ -463,7 +463,7 @@
               {
                 "id": "019dfedb-a9e3-729e-9bb3-d987b3e1a15c",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "롱소드",
+                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "Longsword",
                   "019dfedb-a9e3-729e-9bb3-c0500d994008": "sword",
                   "019dfedb-a9e3-729e-9bb3-c622af10b2c1": 35,
                   "019dfedb-a9e3-729e-9bb3-c8444a80764e": 2,
@@ -474,7 +474,7 @@
               {
                 "id": "019dfedb-a9e3-729e-9bb3-df19ca37e129",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "엘븐 보우",
+                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "Elven Bow",
                   "019dfedb-a9e3-729e-9bb3-c0500d994008": "bow",
                   "019dfedb-a9e3-729e-9bb3-c622af10b2c1": 28,
                   "019dfedb-a9e3-729e-9bb3-c8444a80764e": 12,
@@ -485,7 +485,7 @@
               {
                 "id": "019dfedb-a9e3-729e-9bb3-e1d447998e71",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "아이스 스태프",
+                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "Ice Staff",
                   "019dfedb-a9e3-729e-9bb3-c0500d994008": "staff",
                   "019dfedb-a9e3-729e-9bb3-c622af10b2c1": 50,
                   "019dfedb-a9e3-729e-9bb3-c8444a80764e": 8,
@@ -496,7 +496,7 @@
               {
                 "id": "019dfedb-a9e3-729e-9bb3-e432b8292785",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "신성 검",
+                  "019dfedb-a9e3-729e-9bb3-bc5576676bf3": "Holy Sword",
                   "019dfedb-a9e3-729e-9bb3-c0500d994008": "sword",
                   "019dfedb-a9e3-729e-9bb3-c622af10b2c1": 60,
                   "019dfedb-a9e3-729e-9bb3-c8444a80764e": 2,
@@ -760,7 +760,7 @@
                   "019dfedb-a9e3-729e-9bb4-4f70a8c21787": "SSR",
                   "019dfedb-a9e3-729e-9bb4-522c4c21f239": 0.6,
                   "019dfedb-a9e3-729e-9bb4-5769a493a4d6": 80,
-                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "전설 무기"
+                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "Legendary Weapon"
                 }
               },
               {
@@ -769,7 +769,7 @@
                   "019dfedb-a9e3-729e-9bb4-4f70a8c21787": "SR",
                   "019dfedb-a9e3-729e-9bb4-522c4c21f239": 5.1,
                   "019dfedb-a9e3-729e-9bb4-5769a493a4d6": 10,
-                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "에픽 무기"
+                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "Epic Weapon"
                 }
               },
               {
@@ -778,7 +778,7 @@
                   "019dfedb-a9e3-729e-9bb4-4f70a8c21787": "R",
                   "019dfedb-a9e3-729e-9bb4-522c4c21f239": 30,
                   "019dfedb-a9e3-729e-9bb4-5769a493a4d6": 0,
-                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "레어 재료"
+                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "Rare Material"
                 }
               },
               {
@@ -787,7 +787,7 @@
                   "019dfedb-a9e3-729e-9bb4-4f70a8c21787": "N",
                   "019dfedb-a9e3-729e-9bb4-522c4c21f239": 64.3,
                   "019dfedb-a9e3-729e-9bb4-5769a493a4d6": 0,
-                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "일반 재료"
+                  "019dfedb-a9e3-729e-9bb4-59d5555a656e": "Common Material"
                 }
               }
             ],
@@ -1200,49 +1200,49 @@
               {
                 "id": "019dfedb-a9e3-729e-9bb5-100b7f298482",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "보병",
+                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "Infantry",
                   "019dfedb-a9e3-729e-9bb4-f6ea023d2450": 50,
                   "019dfedb-a9e3-729e-9bb4-f9680f2109fa": 0,
                   "019dfedb-a9e3-729e-9bb4-fe2db643b8e2": 17,
                   "019dfedb-a9e3-729e-9bb5-0180e4e7d9b7": 60,
                   "019dfedb-a9e3-729e-9bb5-05970b4ae060": 8,
-                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "기병"
+                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "Cavalry"
                 }
               },
               {
                 "id": "019dfedb-a9e3-729e-9bb5-16d279d1211d",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "궁수",
+                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "Archer",
                   "019dfedb-a9e3-729e-9bb4-f6ea023d2450": 40,
                   "019dfedb-a9e3-729e-9bb4-f9680f2109fa": 30,
                   "019dfedb-a9e3-729e-9bb4-fe2db643b8e2": 23,
                   "019dfedb-a9e3-729e-9bb5-0180e4e7d9b7": 35,
                   "019dfedb-a9e3-729e-9bb5-05970b4ae060": 10,
-                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "보병"
+                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "Infantry"
                 }
               },
               {
                 "id": "019dfedb-a9e3-729e-9bb5-19eae1bb5b4f",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "기병",
+                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "Cavalry",
                   "019dfedb-a9e3-729e-9bb4-f6ea023d2450": 80,
                   "019dfedb-a9e3-729e-9bb4-f9680f2109fa": 0,
                   "019dfedb-a9e3-729e-9bb4-fe2db643b8e2": 30,
                   "019dfedb-a9e3-729e-9bb5-0180e4e7d9b7": 100,
                   "019dfedb-a9e3-729e-9bb5-05970b4ae060": 9,
-                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "궁수"
+                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "Archer"
                 }
               },
               {
                 "id": "019dfedb-a9e3-729e-9bb5-1cf4fd3f5847",
                 "cells": {
-                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "공성탑",
+                  "019dfedb-a9e3-729e-9bb4-f35da1d577fe": "Siege Tower",
                   "019dfedb-a9e3-729e-9bb4-f6ea023d2450": 0,
                   "019dfedb-a9e3-729e-9bb4-f9680f2109fa": 200,
                   "019dfedb-a9e3-729e-9bb4-fe2db643b8e2": 50,
                   "019dfedb-a9e3-729e-9bb5-0180e4e7d9b7": 200,
                   "019dfedb-a9e3-729e-9bb5-05970b4ae060": 30,
-                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "근접"
+                  "019dfedb-a9e3-729e-9bb5-08ec9a85a66b": "Melee"
                 }
               }
             ],
@@ -1741,18 +1741,18 @@
                   "019dfedb-a9e4-7023-bda9-c9d9fde0d50c": "p0",
                   "019dfedb-a9e4-7023-bda9-ccd4fd71369f": 5,
                   "019dfedb-a9e4-7023-bda9-d3d62f1d3d8f": "design",
-                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "나"
+                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "Me"
                 }
               },
               {
                 "id": "019dfedb-a9e4-7023-bda9-e4aa287669ea",
                 "cells": {
-                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "신규 무기 데이터",
+                  "019dfedb-a9e4-7023-bda9-c2e0a5ae43a8": "New weapon data",
                   "019dfedb-a9e4-7023-bda9-c6765d47b7fb": "todo",
                   "019dfedb-a9e4-7023-bda9-c9d9fde0d50c": "p1",
                   "019dfedb-a9e4-7023-bda9-ccd4fd71369f": 3,
                   "019dfedb-a9e4-7023-bda9-d3d62f1d3d8f": "feature",
-                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "나"
+                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "Me"
                 }
               },
               {
@@ -1763,7 +1763,7 @@
                   "019dfedb-a9e4-7023-bda9-c9d9fde0d50c": "p1",
                   "019dfedb-a9e4-7023-bda9-ccd4fd71369f": 2,
                   "019dfedb-a9e4-7023-bda9-d3d62f1d3d8f": "design",
-                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "나"
+                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "Me"
                 }
               },
               {
@@ -1774,7 +1774,7 @@
                   "019dfedb-a9e4-7023-bda9-c9d9fde0d50c": "p2",
                   "019dfedb-a9e4-7023-bda9-ccd4fd71369f": 1,
                   "019dfedb-a9e4-7023-bda9-d3d62f1d3d8f": "chore",
-                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "나"
+                  "019dfedb-a9e4-7023-bda9-d4344a7973bc": "Me"
                 }
               }
             ],
@@ -1935,7 +1935,7 @@
                   "019dfedb-a9e4-7023-bdaa-087a23c5c1de": "도적 크리율을 100%로 설정하면 일반 공격에 critDamage 배율이 적용되지 않음",
                   "019dfedb-a9e4-7023-bdaa-0d6105841424": "1) 도적 선택 2) critRate=1, critDamage=2 설정 3) 일반 공격 시 데미지 = base * 1 (예상: base * 2)",
                   "019dfedb-a9e4-7023-bdaa-16decfbfef50": "QA1",
-                  "019dfedb-a9e4-7023-bdaa-19ba88093670": "나"
+                  "019dfedb-a9e4-7023-bdaa-19ba88093670": "Me"
                 }
               },
               {
@@ -1947,8 +1947,8 @@
                   "019dfedb-a9e4-7023-bdaa-04037021cb50": "fixing",
                   "019dfedb-a9e4-7023-bdaa-087a23c5c1de": "시뮬레이션 일수가 10000을 넘으면 supplyOverTime 차트에 NaN 값 표시",
                   "019dfedb-a9e4-7023-bdaa-0d6105841424": "경제 설계 → 시뮬 일수 10000 입력 → 차트 보면 후반부 NaN",
-                  "019dfedb-a9e4-7023-bdaa-16decfbfef50": "나",
-                  "019dfedb-a9e4-7023-bdaa-19ba88093670": "나"
+                  "019dfedb-a9e4-7023-bdaa-16decfbfef50": "Me",
+                  "019dfedb-a9e4-7023-bdaa-19ba88093670": "Me"
                 }
               }
             ],
@@ -2085,20 +2085,20 @@
                   "019dfedb-a9e4-7023-bdaa-4308327e7c27": "2026-04-01",
                   "019dfedb-a9e4-7023-bdaa-46dfe42795a1": "2026-06-30",
                   "019dfedb-a9e4-7023-bdaa-497086e06db4": 45,
-                  "019dfedb-a9e4-7023-bdaa-4d89e3499bc5": "나",
+                  "019dfedb-a9e4-7023-bdaa-4d89e3499bc5": "Me",
                   "019dfedb-a9e4-7023-bdaa-52a7dbc5905c": 5
                 }
               },
               {
                 "id": "019dfedb-a9e4-7023-bdaa-5de22fbfc474",
                 "cells": {
-                  "019dfedb-a9e4-7023-bdaa-3504559267ad": "신규 챔피언 5종",
+                  "019dfedb-a9e4-7023-bdaa-3504559267ad": "5 new champions",
                   "019dfedb-a9e4-7023-bdaa-3b6185715da9": "q3",
                   "019dfedb-a9e4-7023-bdaa-3dca40bb8447": "planning",
                   "019dfedb-a9e4-7023-bdaa-4308327e7c27": "2026-07-01",
                   "019dfedb-a9e4-7023-bdaa-46dfe42795a1": "2026-09-30",
                   "019dfedb-a9e4-7023-bdaa-497086e06db4": 0,
-                  "019dfedb-a9e4-7023-bdaa-4d89e3499bc5": "나",
+                  "019dfedb-a9e4-7023-bdaa-4d89e3499bc5": "Me",
                   "019dfedb-a9e4-7023-bdaa-52a7dbc5905c": 4
                 }
               },
@@ -2111,7 +2111,7 @@
                   "019dfedb-a9e4-7023-bdaa-4308327e7c27": "2026-01-15",
                   "019dfedb-a9e4-7023-bdaa-46dfe42795a1": "2026-03-15",
                   "019dfedb-a9e4-7023-bdaa-497086e06db4": 100,
-                  "019dfedb-a9e4-7023-bdaa-4d89e3499bc5": "나",
+                  "019dfedb-a9e4-7023-bdaa-4d89e3499bc5": "Me",
                   "019dfedb-a9e4-7023-bdaa-52a7dbc5905c": 3
                 }
               }
@@ -2232,10 +2232,10 @@
               {
                 "id": "019dfedb-a9e4-7023-bdaa-952ab0fdb6e0",
                 "cells": {
-                  "019dfedb-a9e4-7023-bdaa-6fbc79fda6cc": "1차 클로즈드 베타",
+                  "019dfedb-a9e4-7023-bdaa-6fbc79fda6cc": "1st Closed Beta",
                   "019dfedb-a9e4-7023-bdaa-7640abc598ca": "v0.3.0",
-                  "019dfedb-a9e4-7023-bdaa-787449942601": "내부 5명",
-                  "019dfedb-a9e4-7023-bdaa-7facbcf75e9e": "나",
+                  "019dfedb-a9e4-7023-bdaa-787449942601": "Internal (5)",
+                  "019dfedb-a9e4-7023-bdaa-7facbcf75e9e": "Me",
                   "019dfedb-a9e4-7023-bdaa-82b195901e30": 7,
                   "019dfedb-a9e4-7023-bdaa-8748e51425d5": "핵심 루프 재미있음. 캐릭터 디자인 호평.",
                   "019dfedb-a9e4-7023-bdaa-8819c9fb15de": "튜토리얼 너무 김 (15분+). 보스 1번이 너무 어려움.",
@@ -2245,10 +2245,10 @@
               {
                 "id": "019dfedb-a9e4-7023-bdaa-9a5731932ef4",
                 "cells": {
-                  "019dfedb-a9e4-7023-bdaa-6fbc79fda6cc": "2차 친구 5명",
+                  "019dfedb-a9e4-7023-bdaa-6fbc79fda6cc": "2nd Friends (5)",
                   "019dfedb-a9e4-7023-bdaa-7640abc598ca": "v0.4.1",
-                  "019dfedb-a9e4-7023-bdaa-787449942601": "외부",
-                  "019dfedb-a9e4-7023-bdaa-7facbcf75e9e": "나",
+                  "019dfedb-a9e4-7023-bdaa-787449942601": "External",
+                  "019dfedb-a9e4-7023-bdaa-7facbcf75e9e": "Me",
                   "019dfedb-a9e4-7023-bdaa-82b195901e30": 8,
                   "019dfedb-a9e4-7023-bdaa-8748e51425d5": "튜토리얼 짧아져서 진입 부드러움.",
                   "019dfedb-a9e4-7023-bdaa-8819c9fb15de": "경제 후반 인플레. 가챠 박애심 (소프트 피티) 부족.",
