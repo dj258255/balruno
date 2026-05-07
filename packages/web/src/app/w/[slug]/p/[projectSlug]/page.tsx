@@ -42,7 +42,15 @@ import { useProjectStore } from '@/stores/projectStore';
 import { useProjectHistory } from '@/hooks';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { useAuthStore } from '@/stores/authStore';
-import { setActiveStack } from '@/lib/undo/undoStack';
+import { setActiveStack, pushUndo, type UndoableOp } from '@/lib/undo/undoStack';
+import {
+  renameNodeInTree,
+  removeNodeFromTree,
+  moveNodeInTree,
+  isDescendant,
+  locateNodeParent,
+  findNodeInTree,
+} from '@/lib/tree';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { CellCommentPanel } from '@/components/comments/CellCommentPanel';
 import { DocCommentPanel } from '@/components/comments/DocCommentPanel';
@@ -92,172 +100,9 @@ function findNodeName(tree: TreeNode[], nodeId: string): string | null {
   return null;
 }
 
-function renameNodeInTree(tree: TreeNode[], nodeId: string, newName: string): TreeNode[] {
-  return tree.map((node) => {
-    if (node.id === nodeId) return { ...node, name: newName };
-    if (node.children && node.children.length > 0) {
-      const renamedChildren = renameNodeInTree(node.children, nodeId, newName);
-      if (renamedChildren !== node.children) {
-        return { ...node, children: renamedChildren };
-      }
-    }
-    return node;
-  });
-}
-
-/**
- * Find a node in the tree (DFS). Returns null if not found. Used by
- * moveNodeInTree to extract the dragged subtree before re-insertion,
- * and by isDescendant to block cycles (folder dropped into itself).
- */
-function findNodeInTree(tree: TreeNode[], nodeId: string): TreeNode | null {
-  for (const node of tree) {
-    if (node.id === nodeId) return node;
-    if (node.children && node.children.length > 0) {
-      const found = findNodeInTree(node.children, nodeId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-/**
- * Returns true if `candidateAncestorId` is the ancestor of (or equal
- * to) `nodeId` in the given tree. Used to block dropping a folder
- * into its own descendant — that would orphan the dragged subtree
- * because removing it from its old parent would also remove its new
- * parent (which is inside it). Standard tree-DnD cycle guard.
- */
-function isDescendant(tree: TreeNode[], candidateAncestorId: string, nodeId: string): boolean {
-  if (candidateAncestorId === nodeId) return true;
-  const ancestor = findNodeInTree(tree, candidateAncestorId);
-  if (!ancestor) return false;
-  return findNodeInTree(ancestor.children ?? [], nodeId) !== null;
-}
-
-/**
- * Locate a node's current parent + sibling index. parent === null
- * means the node lives at root. Returns null when the id is missing
- * (caller treats as no-op). Used by moveNodeInTree to detect same-
- * parent reorder + decide off-by-one adjustment.
- */
-function locateNodeParent(
-  tree: TreeNode[],
-  nodeId: string,
-  parent: string | null = null,
-): { parent: string | null; index: number } | null {
-  for (let i = 0; i < tree.length; i++) {
-    const node = tree[i];
-    if (node.id === nodeId) return { parent, index: i };
-    if (node.children && node.children.length > 0) {
-      const found = locateNodeParent(node.children, nodeId, node.id);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-/**
- * Move a node within the sheet_tree: remove it from its current
- * parent, then insert it under newParentId at newPosition. Returns
- * a new array (immutable setState), or the same reference if the
- * move is a no-op / illegal (cycle).
- *
- * Three design points (all applied):
- *
- *  1. Cycle guard — drop into self/descendant short-circuits to the
- *     same reference. Both outbound (handleMoveNode) and inbound
- *     (broadcast apply) call this helper, so receivers stay safe
- *     even if their local state momentarily diverges before another
- *     op lands.
- *
- *  2. Off-by-one — when source and target share a parent and source
- *     index is *less than* the drop position, removing source first
- *     shifts every later sibling left by 1, so the visual drop slot
- *     is now at position-1. Without this adjustment the node lands
- *     one slot past where the user pointed (Notion/VSCode/dnd-kit
- *     all apply this correction).
- *
- *  3. No-op echo — when sender receives its own broadcast, the tree
- *     is already in the target state. extract+reinsert would yield
- *     the same content but fresh array references, causing the
- *     sidebar to re-render. Detect via locateNodeParent and bail.
- */
-function moveNodeInTree(
-  tree: TreeNode[],
-  nodeId: string,
-  newParentId: string | null,
-  newPosition: number,
-): TreeNode[] {
-  if (newParentId !== null && isDescendant(tree, nodeId, newParentId)) return tree;
-  const subtree = findNodeInTree(tree, nodeId);
-  if (!subtree) return tree;
-
-  const located = locateNodeParent(tree, nodeId);
-  if (!located) return tree;
-  const { parent: currentParent, index: currentIndex } = located;
-
-  if (currentParent === newParentId && currentIndex === newPosition) return tree;
-
-  const without = removeNodeFromTree(tree, nodeId);
-  const adjusted =
-    currentParent === newParentId && currentIndex < newPosition
-      ? newPosition - 1
-      : newPosition;
-  return insertNodeAt(without, newParentId, adjusted, subtree);
-}
-
-/** Insert a subtree into the tree at parentId/position. parentId=null
- *  means root level. Returns new array. */
-function insertNodeAt(
-  tree: TreeNode[],
-  newParentId: string | null,
-  position: number,
-  subtree: TreeNode,
-): TreeNode[] {
-  if (newParentId === null) {
-    const next = tree.slice();
-    next.splice(Math.max(0, Math.min(position, next.length)), 0, subtree);
-    return next;
-  }
-  return tree.map((node) => {
-    if (node.id === newParentId) {
-      const children = node.children ? node.children.slice() : [];
-      children.splice(Math.max(0, Math.min(position, children.length)), 0, subtree);
-      return { ...node, children };
-    }
-    if (node.children && node.children.length > 0) {
-      const inserted = insertNodeAt(node.children, newParentId, position, subtree);
-      if (inserted !== node.children) {
-        return { ...node, children: inserted };
-      }
-    }
-    return node;
-  });
-}
-
-/** Remove the node with the given id and its descendants. Returns a
- *  new array if anything changed, the same reference otherwise. */
-function removeNodeFromTree(tree: TreeNode[], nodeId: string): TreeNode[] {
-  const next: TreeNode[] = [];
-  let changed = false;
-  for (const node of tree) {
-    if (node.id === nodeId) {
-      changed = true;
-      continue;
-    }
-    if (node.children && node.children.length > 0) {
-      const filtered = removeNodeFromTree(node.children, nodeId);
-      if (filtered !== node.children) {
-        next.push({ ...node, children: filtered });
-        changed = true;
-        continue;
-      }
-    }
-    next.push(node);
-  }
-  return changed ? next : tree;
-}
+// Tree mutators live in /lib/tree — same helpers used by the wss
+// broadcast handler + applyUndoableOps for tree.* undo (ADR 0021
+// phase 3).
 
 export default function ProjectDetailPage() {
   const params = useParams<{ slug: string; projectSlug: string }>();
@@ -414,6 +259,26 @@ export default function ProjectDetailPage() {
   // setState on the store (Y.Doc bypass) + writeQueue.emitOp so peers
   // pick up the change via the matching broadcast. ADR 0018 paired
   // pattern.
+  // Push a tree.* undo entry into the per-project stack. Bound at
+  // makeTreeHandlers time so each handler can call `pushTreeUndo`
+  // with just (label, forward, inverse). Anonymous / pre-auth users
+  // (no userId) drop the push silently — same defensive shape as
+  // cellSlice's undo helpers.
+  const pushTreeUndo = (
+    label: string,
+    forward: UndoableOp[],
+    inverse: UndoableOp[],
+  ) => {
+    const userId = useAuthStore.getState().user?.id;
+    if (!userId || !project) return;
+    pushUndo(userId, project.id, {
+      label,
+      forward,
+      inverse,
+      timestamp: Date.now(),
+    });
+  };
+
   const makeTreeHandlers = (treeKind: 'SHEET' | 'DOC') => {
     const treeField: 'sheetTree' | 'docTree' =
       treeKind === 'SHEET' ? 'sheetTree' : 'docTree';
@@ -430,8 +295,18 @@ export default function ProjectDetailPage() {
 
     return {
       rename: (nodeId: string, newName: string) => {
+        const current = localProject?.[treeField] ?? [];
+        const node = findNodeInTree(current, nodeId);
+        const oldName = node?.name ?? '';
         setTree((tree) => renameNodeInTree(tree, nodeId, newName));
         emitOp({ kind: 'tree.rename', treeKind, nodeId, newName });
+        if (node && oldName !== newName) {
+          pushTreeUndo(
+            'Tree rename',
+            [{ type: 'tree.rename', treeKind, nodeId, newName, baseVersion: 0, clientMsgId: '' }],
+            [{ type: 'tree.rename', treeKind, nodeId, newName: oldName, baseVersion: 0, clientMsgId: '' }],
+          );
+        }
       },
       addFolder: () => {
         if (!project) return;
@@ -450,6 +325,11 @@ export default function ProjectDetailPage() {
           position,
           node: newFolder,
         });
+        pushTreeUndo(
+          'Tree add',
+          [{ type: 'tree.add', treeKind, parentId: null, position, node: newFolder, baseVersion: 0, clientMsgId: '' }],
+          [{ type: 'tree.delete', treeKind, nodeId: newFolder.id, baseVersion: 0, clientMsgId: '' }],
+        );
       },
       addLeaf: () => {
         if (!project) return;
@@ -470,16 +350,45 @@ export default function ProjectDetailPage() {
           node: newLeaf,
         });
         setSelection({ kind: leafType, id: leafId });
+        pushTreeUndo(
+          'Tree add',
+          [{ type: 'tree.add', treeKind, parentId: null, position, node: newLeaf, baseVersion: 0, clientMsgId: '' }],
+          [{ type: 'tree.delete', treeKind, nodeId: leafId, baseVersion: 0, clientMsgId: '' }],
+        );
       },
       deleteNode: (nodeId: string) => {
+        const current = localProject?.[treeField] ?? [];
+        const node = findNodeInTree(current, nodeId);
+        const located = locateNodeParent(current, nodeId);
         setTree((tree) => removeNodeFromTree(tree, nodeId));
         emitOp({ kind: 'tree.delete', treeKind, nodeId });
+        // Inverse needs the full subtree + its original parent /
+        // position so we can re-insert it. If the node wasn't
+        // present before deletion (peer race) we skip the push —
+        // there's nothing meaningful to restore.
+        if (node && located) {
+          pushTreeUndo(
+            'Tree delete',
+            [{ type: 'tree.delete', treeKind, nodeId, baseVersion: 0, clientMsgId: '' }],
+            [{
+              type: 'tree.add',
+              treeKind,
+              parentId: located.parent,
+              position: located.index,
+              node,
+              baseVersion: 0,
+              clientMsgId: '',
+            }],
+          );
+        }
       },
       move: (nodeId: string, newParentId: string | null, newPosition: number) => {
         const current = localProject?.[treeField] ?? [];
         // Cycle guard: dropping into self/descendant would orphan
         // the subtree. Root drop (null parent) is always safe.
         if (newParentId !== null && isDescendant(current, nodeId, newParentId)) return;
+        // Snapshot original location for the inverse op.
+        const located = locateNodeParent(current, nodeId);
         setTree((tree) => moveNodeInTree(tree, nodeId, newParentId, newPosition));
         emitOp({
           kind: 'tree.move',
@@ -488,6 +397,22 @@ export default function ProjectDetailPage() {
           newParentId,
           newPosition,
         });
+        if (located
+            && (located.parent !== newParentId || located.index !== newPosition)) {
+          pushTreeUndo(
+            'Tree move',
+            [{ type: 'tree.move', treeKind, nodeId, newParentId, newPosition, baseVersion: 0, clientMsgId: '' }],
+            [{
+              type: 'tree.move',
+              treeKind,
+              nodeId,
+              newParentId: located.parent,
+              newPosition: located.index,
+              baseVersion: 0,
+              clientMsgId: '',
+            }],
+          );
+        }
       },
     };
   };

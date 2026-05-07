@@ -12,8 +12,15 @@
  */
 
 import { useProjectStore } from '@/stores/projectStore';
-import type { CellValue, Column } from '@/types';
+import type { CellValue, Column, Project, TreeNode } from '@/types';
 import type { UndoableOp } from './undoStack';
+import {
+  renameNodeInTree,
+  removeNodeFromTree,
+  moveNodeInTree,
+  insertNodeAt,
+} from '@/lib/tree';
+import { emitOp } from '@/lib/sync/writeQueue';
 
 /**
  * Apply a sequence of UndoableOps in order. Phase 2b promoted the
@@ -104,10 +111,82 @@ function applySingle(op: UndoableOp): void {
       });
       break;
     }
-    // tree.* paths require access to the page-local tree mutators
-    // (renameNodeInTree / moveNodeInTree / etc.). Phase 3 extracts
-    // those into /lib/tree.ts so applyUndoableOps can dispatch them.
+    case 'tree.rename':
+    case 'tree.add':
+    case 'tree.delete':
+    case 'tree.move': {
+      // The page handlers do (setTree + emitOp). Mirror that here:
+      // mutate the active project's sheetTree / docTree slot, then
+      // re-emit the op so peers see the undo. Idempotent helpers
+      // in /lib/tree (insertNodeAt's containsNodeId guard, etc.)
+      // make replays safe even if the broadcast echo races.
+      applyTreeOp(projectId, op);
+      break;
+    }
     default:
       break;
+  }
+}
+
+function treeFieldFor(treeKind: 'SHEET' | 'DOC'): 'sheetTree' | 'docTree' {
+  return treeKind === 'SHEET' ? 'sheetTree' : 'docTree';
+}
+
+function applyTreeOp(projectId: string, op: UndoableOp): void {
+  if (
+    op.type !== 'tree.add'
+    && op.type !== 'tree.delete'
+    && op.type !== 'tree.rename'
+    && op.type !== 'tree.move'
+  ) {
+    return;
+  }
+  const treeField = treeFieldFor(op.treeKind);
+  const setTree = (mutator: (tree: TreeNode[]) => TreeNode[]) => {
+    useProjectStore.setState((state) => ({
+      projects: state.projects.map((p: Project) =>
+        p.id !== projectId
+          ? p
+          : { ...p, [treeField]: mutator((p[treeField] as TreeNode[] | undefined) ?? []) },
+      ),
+    }));
+  };
+  switch (op.type) {
+    case 'tree.rename':
+      setTree((tree) => renameNodeInTree(tree, op.nodeId, op.newName));
+      emitOp({ kind: 'tree.rename', treeKind: op.treeKind, nodeId: op.nodeId, newName: op.newName });
+      break;
+    case 'tree.add': {
+      const node = op.node as TreeNode | null;
+      if (!node || !node.id) return;
+      const parentId = (op.parentId as string | null) ?? null;
+      const position = typeof op.position === 'number' ? op.position : 0;
+      setTree((tree) => insertNodeAt(tree, parentId, position, node));
+      emitOp({
+        kind: 'tree.add',
+        treeKind: op.treeKind,
+        parentId,
+        position,
+        node,
+      });
+      break;
+    }
+    case 'tree.delete':
+      setTree((tree) => removeNodeFromTree(tree, op.nodeId));
+      emitOp({ kind: 'tree.delete', treeKind: op.treeKind, nodeId: op.nodeId });
+      break;
+    case 'tree.move': {
+      const newParentId = op.newParentId ?? null;
+      const newPosition = typeof op.newPosition === 'number' ? op.newPosition : 0;
+      setTree((tree) => moveNodeInTree(tree, op.nodeId, newParentId, newPosition));
+      emitOp({
+        kind: 'tree.move',
+        treeKind: op.treeKind,
+        nodeId: op.nodeId,
+        newParentId,
+        newPosition,
+      });
+      break;
+    }
   }
 }
