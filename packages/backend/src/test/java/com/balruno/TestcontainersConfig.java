@@ -14,7 +14,7 @@ import org.testcontainers.utility.DockerImageName;
  * regression breaks tests before the deploy pipeline ever sees it.
  */
 @TestConfiguration(proxyBeanMethods = false)
-class TestcontainersConfig {
+public class TestcontainersConfig {
 
     @Bean
     @ServiceConnection
