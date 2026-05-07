@@ -26,7 +26,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, MessageSquare } from 'lucide-react';
 
 import {
   BackendError,
@@ -44,10 +44,14 @@ import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { useAuthStore } from '@/stores/authStore';
 import { setActiveStack } from '@/lib/undo/undoStack';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
+import { CellCommentPanel } from '@/components/comments/CellCommentPanel';
 import { ServerDocView } from '@/components/docs/ServerDocView';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
 import SheetTable from '@/components/sheet/SheetTable';
 import { TemplateImportModal } from '@/components/sheet/TemplateImportModal';
+import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
+import type { CommentSelection } from '@/stores/commentSelectionStore';
+import type { Sheet } from '@balruno/shared';
 import { emitOp } from '@/lib/sync/writeQueue';
 import { newId } from '@/lib/uuid';
 import type { TreeNode } from '@balruno/shared';
@@ -58,6 +62,22 @@ import type { TreeNode } from '@balruno/shared';
  * setState semantics); unaffected branches keep the same reference
  * so React subtrees don't churn.
  */
+/**
+ * Build the cell-label string shown in CellCommentPanel's header —
+ * "{sheetName} · Row {n} · {columnName}". Best-effort lookup; an
+ * unknown id falls through to a short hex of the UUID so the panel
+ * still has something to render.
+ */
+function cellLabelFor(sel: CommentSelection, sheets: Sheet[]): string {
+  if (!sel || sel.kind !== 'sheet-cell') return '';
+  const sheet = sheets.find((s) => s.id === sel.sheetId);
+  if (!sheet) return sel.rowId.slice(0, 8);
+  const rowIdx = sheet.rows.findIndex((r) => r.id === sel.rowId);
+  const column = sheet.columns.find((c) => c.id === sel.columnId);
+  const colName = column?.name ?? sel.columnId.slice(0, 8);
+  return `${sheet.name} · Row ${rowIdx + 1} · ${colName}`;
+}
+
 /** DFS the tree for a node id, return its name (or null). */
 function findNodeName(tree: TreeNode[], nodeId: string): string | null {
   for (const node of tree) {
@@ -478,6 +498,12 @@ export default function ProjectDetailPage() {
   // store here; just hand off to importTemplate and the bridge
   // handles the re-hydrate.
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+
+  // Comment side panel — open/close + active selection. SheetTable's
+  // selectedCell effect mirrors the cell into the same store.
+  const commentPanelOpen = useCommentSelectionStore((s) => s.panelOpen);
+  const setCommentPanelOpen = useCommentSelectionStore((s) => s.setPanelOpen);
+  const commentSelection = useCommentSelectionStore((s) => s.selection);
   const handlePickTemplate = async (group: CatalogGroupSummary) => {
     if (!project) return;
     await importTemplate(project.id, group.id);
@@ -522,6 +548,21 @@ export default function ProjectDetailPage() {
           <ArrowLeft className="w-3.5 h-3.5" /> {workspace.name}
         </button>
         <div className="flex items-center gap-2 text-xs">
+          <button
+            type="button"
+            onClick={() => setCommentPanelOpen(!commentPanelOpen)}
+            className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-[var(--bg-hover)]"
+            style={{
+              color: commentPanelOpen ? 'var(--text-primary)' : 'var(--text-secondary)',
+              background: commentPanelOpen ? 'var(--bg-hover)' : undefined,
+            }}
+            title={commentSelection?.kind === 'sheet-cell'
+              ? '코멘트 패널 토글'
+              : '셀을 선택하면 활성화'}
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            코멘트
+          </button>
           <span style={{ color: 'var(--text-secondary)' }}>동기화:</span>
           <ConnectionStatus />
           <code className="font-mono" style={{ color: 'var(--text-tertiary)' }}>
@@ -547,7 +588,9 @@ export default function ProjectDetailPage() {
       {sheets.length > 0 ? (
         <div
           className="grid gap-4"
-          style={{ gridTemplateColumns: '260px 1fr' }}
+          style={{
+            gridTemplateColumns: commentPanelOpen ? '260px 1fr 320px' : '260px 1fr',
+          }}
         >
           {/* Sidebar — sheet_tree navigation (ADR 0020 Stage D minimal) */}
           <aside
@@ -622,6 +665,32 @@ export default function ProjectDetailPage() {
               </p>
             )}
           </section>
+
+          {/* Comment side panel — opens on commentPanelOpen toggle.
+              Reads the active cell from commentSelectionStore, which
+              SheetTable's selectedCell effect keeps in sync. */}
+          {commentPanelOpen && commentSelection?.kind === 'sheet-cell' && (
+            <CellCommentPanel
+              projectId={project.id}
+              sheetId={commentSelection.sheetId}
+              rowId={commentSelection.rowId}
+              columnId={commentSelection.columnId}
+              cellLabel={cellLabelFor(commentSelection, sheets)}
+              onClose={() => setCommentPanelOpen(false)}
+            />
+          )}
+          {commentPanelOpen && commentSelection?.kind !== 'sheet-cell' && (
+            <aside
+              className="rounded-lg border p-4 text-sm"
+              style={{
+                borderColor: 'var(--border-primary)',
+                background: 'var(--bg-primary)',
+                color: 'var(--text-tertiary)',
+              }}
+            >
+              코멘트를 달 셀을 먼저 선택하세요.
+            </aside>
+          )}
         </div>
       ) : (
         <section
