@@ -26,7 +26,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Loader2, Menu, MessageSquare } from 'lucide-react';
 
 import {
   BackendError,
@@ -504,6 +504,13 @@ export default function ProjectDetailPage() {
   const commentPanelOpen = useCommentSelectionStore((s) => s.panelOpen);
   const setCommentPanelOpen = useCommentSelectionStore((s) => s.setPanelOpen);
   const commentSelection = useCommentSelectionStore((s) => s.selection);
+
+  // Mobile sidebar drawer state — desktop (md+) ignores this and
+  // renders the sidebar inline. ADR 0022 stage A.
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  // Close the drawer once the user picks something inside (sheet
+  // leaf, doc leaf) so they don't have to manually dismiss.
+  const closeMobileSidebar = () => setMobileSidebarOpen(false);
   const handlePickTemplate = async (group: CatalogGroupSummary) => {
     if (!project) return;
     await importTemplate(project.id, group.id);
@@ -540,13 +547,26 @@ export default function ProjectDetailPage() {
   return (
     <main className="mx-auto max-w-7xl px-6 py-8">
       <div className="mb-4 flex items-center justify-between gap-4">
-        <button
-          onClick={() => router.push(`/w/${workspace.slug}`)}
-          className="inline-flex items-center gap-1 text-sm"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> {workspace.name}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Mobile hamburger — opens the sidebar drawer. md:hidden
+              keeps it off desktop (sidebar inline there). */}
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(true)}
+            className="rounded p-1.5 hover:bg-[var(--bg-hover)] md:hidden"
+            style={{ color: 'var(--text-secondary)' }}
+            aria-label="시트 사이드바 열기"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => router.push(`/w/${workspace.slug}`)}
+            className="inline-flex items-center gap-1 text-sm"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> {workspace.name}
+          </button>
+        </div>
         <div className="flex items-center gap-2 text-xs">
           <button
             type="button"
@@ -587,14 +607,31 @@ export default function ProjectDetailPage() {
 
       {sheets.length > 0 ? (
         <div
-          className="grid gap-4"
+          className="md:grid md:gap-4"
           style={{
             gridTemplateColumns: commentPanelOpen ? '260px 1fr 320px' : '260px 1fr',
           }}
         >
-          {/* Sidebar — sheet_tree navigation (ADR 0020 Stage D minimal) */}
+          {/* Mobile drawer backdrop — clicks outside the sidebar
+              dismiss the drawer. Hidden on desktop. */}
+          {mobileSidebarOpen && (
+            <div
+              className="fixed inset-0 z-30 bg-black/40 md:hidden"
+              onClick={closeMobileSidebar}
+              aria-hidden="true"
+            />
+          )}
+
+          {/* Sidebar — sheet_tree navigation (ADR 0020 Stage D minimal).
+              Desktop: grid column. Mobile: fixed off-canvas drawer
+              that slides in via translateX (ADR 0022 stage A). */}
           <aside
-            className="rounded-lg border p-2"
+            className={
+              'rounded-lg border p-2 transition-transform '
+              + 'md:static md:translate-x-0 md:w-auto '
+              + 'fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto '
+              + (mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full')
+            }
             style={{
               borderColor: 'var(--border-primary)',
               background: 'var(--bg-primary)',
@@ -611,7 +648,10 @@ export default function ProjectDetailPage() {
               tree={sheetTree}
               leafKind="sheet"
               selectedSheetId={selectedSheetId}
-              onSelectSheet={(id) => setSelection({ kind: 'sheet', id })}
+              onSelectSheet={(id) => {
+                setSelection({ kind: 'sheet', id });
+                closeMobileSidebar();
+              }}
               onRenameNode={sheetTreeOps.rename}
               onAddFolder={sheetTreeOps.addFolder}
               onAddSheet={sheetTreeOps.addLeaf}
@@ -630,7 +670,10 @@ export default function ProjectDetailPage() {
               tree={docTree}
               leafKind="doc"
               selectedSheetId={selectedDocId}
-              onSelectSheet={(id) => setSelection({ kind: 'doc', id })}
+              onSelectSheet={(id) => {
+                setSelection({ kind: 'doc', id });
+                closeMobileSidebar();
+              }}
               onRenameNode={docTreeOps.rename}
               onAddFolder={docTreeOps.addFolder}
               onAddSheet={docTreeOps.addLeaf}
