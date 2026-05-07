@@ -24,9 +24,9 @@
  * state machine treats both editors identically.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Check } from 'lucide-react';
+import { X, Check, Search } from 'lucide-react';
 import type { ColumnType, SelectOption, Sheet } from '@/types';
 
 interface MobileCellEditorProps {
@@ -62,6 +62,12 @@ export function MobileCellEditor({
   onChange,
 }: MobileCellEditorProps) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  // Link picker search — typing here filters the row list. The
+  // displayed slice is hard-capped at 100 (mobile viewport renders
+  // ~20 rows visible), so without filtering the user can't see
+  // anything past row 100 in a 1k+ row sheet. This input solves
+  // the correctness gap — empty query keeps the original slice.
+  const [linkSearch, setLinkSearch] = useState('');
 
   // Focus on mount + scroll the input into view above the keyboard.
   // iOS Safari needs the focus call inside a microtask after the
@@ -180,41 +186,17 @@ export function MobileCellEditor({
       );
     }
     if (columnType === 'link' && linkedSheet) {
-      // Lightweight mobile link picker — search + button list.
-      // Reuse the same lookup logic the desktop LinkRecordPicker uses,
-      // adapted for touch (44px rows, no dropdowns).
-      const labelOf = (row: typeof linkedSheet.rows[number]) =>
-        linkedDisplayColumnId
-          ? String(row.cells[linkedDisplayColumnId] ?? row.id.slice(0, 8))
-          : row.id.slice(0, 8);
       return (
-        <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto">
-          {linkedSheet.rows.slice(0, 100).map((row) => (
-            <button
-              key={row.id}
-              type="button"
-              onClick={() => {
-                if (linkedMultiple) {
-                  const selected = new Set(
-                    String(value || '').split(',').map((s) => s.trim()).filter(Boolean),
-                  );
-                  if (selected.has(row.id)) selected.delete(row.id);
-                  else selected.add(row.id);
-                  onChange?.(Array.from(selected).join(','));
-                } else {
-                  onCommit(row.id);
-                }
-              }}
-              className="rounded-md border px-4 py-3 text-left text-base"
-              style={{
-                borderColor: 'var(--border-primary)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              {labelOf(row) || '(빈 값)'}
-            </button>
-          ))}
-        </div>
+        <LinkPickerBody
+          linkedSheet={linkedSheet}
+          linkedDisplayColumnId={linkedDisplayColumnId}
+          linkedMultiple={linkedMultiple}
+          value={value}
+          search={linkSearch}
+          setSearch={setLinkSearch}
+          onCommit={onCommit}
+          onChange={onChange}
+        />
       );
     }
 
@@ -315,5 +297,125 @@ export function MobileCellEditor({
       </div>
     </>,
     document.body,
+  );
+}
+
+interface LinkPickerBodyProps {
+  linkedSheet: Sheet;
+  linkedDisplayColumnId?: string;
+  linkedMultiple?: boolean;
+  value: string;
+  search: string;
+  setSearch: (next: string) => void;
+  onCommit: (next: string) => void;
+  onChange?: (next: string) => void;
+}
+
+function LinkPickerBody({
+  linkedSheet,
+  linkedDisplayColumnId,
+  linkedMultiple,
+  value,
+  search,
+  setSearch,
+  onCommit,
+  onChange,
+}: LinkPickerBodyProps) {
+  const labelOf = (row: typeof linkedSheet.rows[number]) =>
+    linkedDisplayColumnId
+      ? String(row.cells[linkedDisplayColumnId] ?? row.id.slice(0, 8))
+      : row.id.slice(0, 8);
+
+  // Filter rows by case-insensitive substring on the display label.
+  // Hard-cap the rendered slice at 100 to keep the touch list snappy
+  // on mid-range Android (frame budget ~16ms, button rendering past
+  // 100 entries blows it). When a user has > 100 matching rows and
+  // the target isn't in the slice, the search input narrows it down.
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return linkedSheet.rows.slice(0, 100);
+    return linkedSheet.rows
+      .filter((r) => labelOf(r).toLowerCase().includes(q))
+      .slice(0, 100);
+    // labelOf depends on linkedDisplayColumnId only — listing it
+    // separately keeps the dep array stable across renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedSheet.rows, linkedDisplayColumnId, search]);
+
+  const truncated = !search.trim() && linkedSheet.rows.length > 100;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        className="flex items-center gap-2 rounded-md border px-3"
+        style={{ borderColor: 'var(--border-primary)' }}
+      >
+        <Search className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="검색..."
+          className="h-11 flex-1 bg-transparent outline-none text-base"
+          style={{ color: 'var(--text-primary)', fontSize: '16px' }}
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch('')}
+            className="inline-flex h-8 w-8 items-center justify-center rounded hover:bg-[var(--bg-hover)]"
+            aria-label="검색어 지우기"
+          >
+            <X className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+          </button>
+        )}
+      </div>
+      {truncated && (
+        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+          {linkedSheet.rows.length.toLocaleString()}개 중 100개 표시 — 검색으로 좁히세요
+        </p>
+      )}
+      {filtered.length === 0 && (
+        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          {search.trim() ? '일치하는 행이 없습니다' : '연결할 행이 없습니다'}
+        </p>
+      )}
+      <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto">
+        {filtered.map((row) => {
+          const isSelected = linkedMultiple
+            ? new Set(
+                String(value || '').split(',').map((s) => s.trim()).filter(Boolean),
+              ).has(row.id)
+            : value === row.id;
+          return (
+            <button
+              key={row.id}
+              type="button"
+              onClick={() => {
+                if (linkedMultiple) {
+                  const selected = new Set(
+                    String(value || '').split(',').map((s) => s.trim()).filter(Boolean),
+                  );
+                  if (selected.has(row.id)) selected.delete(row.id);
+                  else selected.add(row.id);
+                  onChange?.(Array.from(selected).join(','));
+                } else {
+                  onCommit(row.id);
+                }
+              }}
+              className="flex items-center gap-2 rounded-md border px-4 py-3 text-left text-base"
+              style={{
+                borderColor: isSelected ? 'var(--accent)' : 'var(--border-primary)',
+                background: isSelected ? 'var(--accent-light)' : 'transparent',
+                color: 'var(--text-primary)',
+              }}
+            >
+              <span className="flex-1">{labelOf(row) || '(빈 값)'}</span>
+              {isSelected && <Check className="h-4 w-4" />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
