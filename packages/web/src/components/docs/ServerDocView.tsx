@@ -21,8 +21,9 @@ import { useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MessageSquarePlus } from 'lucide-react';
 import { useDocCollab } from '@/hooks/useDocCollab';
+import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
 
 interface ServerDocViewProps {
   documentId: string;
@@ -36,6 +37,14 @@ interface ServerDocViewProps {
 
 export function ServerDocView({ documentId, title, onTitleChange }: ServerDocViewProps) {
   const { extensions: collabExtensions, doc, status } = useDocCollab(documentId);
+
+  // Tracks the user's current text selection inside the editor —
+  // used to enable the "comment on selection" header button (Comment
+  // F.2). When the selection is empty, the button is disabled and
+  // creating a comment falls back to doc-level (anchorPosition = null).
+  const [selRange, setSelRange] = useState<{ from: number; to: number } | null>(null);
+  const setCommentSelection = useCommentSelectionStore((s) => s.setSelection);
+  const setCommentPanelOpen = useCommentSelectionStore((s) => s.setPanelOpen);
 
   // Tiptap editor — StarterKit + Placeholder + collab extensions.
   // The Tiptap @collaboration extension manages undo via Y.Doc, but
@@ -56,9 +65,23 @@ export function ServerDocView({ documentId, title, onTitleChange }: ServerDocVie
       // and produces a hydration mismatch warning; immediatelyRender
       // false defers to the client-side first effect.
       immediatelyRender: false,
+      onSelectionUpdate: ({ editor: ed }) => {
+        const { from, to, empty } = ed.state.selection;
+        setSelRange(empty ? null : { from, to });
+      },
     },
     [documentId, collabExtensions],
   );
+
+  const handleCommentSelection = () => {
+    if (!selRange) return;
+    setCommentSelection({
+      kind: 'doc-body',
+      documentId,
+      anchorPosition: selRange.from,
+    });
+    setCommentPanelOpen(true);
+  };
 
   if (!doc) {
     return (
@@ -75,7 +98,20 @@ export function ServerDocView({ documentId, title, onTitleChange }: ServerDocVie
         className="border-b px-6 py-4"
         style={{ borderColor: 'var(--border-primary)' }}
       >
-        <DocTitleEditor title={title} onTitleChange={onTitleChange} />
+        <div className="flex items-start justify-between gap-3">
+          <DocTitleEditor title={title} onTitleChange={onTitleChange} />
+          <button
+            type="button"
+            onClick={handleCommentSelection}
+            disabled={!selRange}
+            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:hover:bg-transparent"
+            style={{ color: 'var(--text-secondary)' }}
+            title={selRange ? '선택한 부분에 코멘트 달기' : '먼저 텍스트를 선택하세요'}
+          >
+            <MessageSquarePlus className="h-3.5 w-3.5" />
+            선택한 부분에 코멘트
+          </button>
+        </div>
         <p className="mt-1 text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
           collab status: {status}
         </p>

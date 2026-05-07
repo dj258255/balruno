@@ -30,6 +30,11 @@ interface DocCommentPanelProps {
   documentId: string;
   /** Doc title shown in the panel header. */
   docTitle: string;
+  /** Tiptap selection start position. When set, new comments are
+   *  pinned to this offset (Comment F.2 selection-anchored). When
+   *  undefined the panel falls back to doc-level threading
+   *  (Comment F MVP — anchorPosition stays null on create). */
+  anchorPosition?: number;
   onClose: () => void;
 }
 
@@ -37,6 +42,7 @@ export function DocCommentPanel({
   projectId,
   documentId,
   docTitle,
+  anchorPosition,
   onClose,
 }: DocCommentPanelProps) {
   const [comments, setComments] = useState<BackendComment[] | null>(null);
@@ -78,6 +84,7 @@ export function DocCommentPanel({
         projectId,
         scopeKind: 'DOC_BODY',
         documentId,
+        anchorPosition,
         bodyJson: {
           type: 'doc',
           content: [{ type: 'paragraph', content: [{ type: 'text', text: body }] }],
@@ -128,6 +135,9 @@ export function DocCommentPanel({
           </h3>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
             {docTitle}
+            {typeof anchorPosition === 'number' && (
+              <span className="ml-1 font-mono">@{anchorPosition}</span>
+            )}
           </p>
         </div>
         <button
@@ -174,7 +184,14 @@ export function DocCommentPanel({
               >
                 <div className="mb-1 flex items-center justify-between text-xs" style={{ color: 'var(--text-tertiary)' }}>
                   <span className="font-mono">{c.authorUserId.slice(0, 8)}</span>
-                  <span>{new Date(c.createdAt).toLocaleString()}</span>
+                  <div className="flex items-center gap-1">
+                    {typeof c.anchorPosition === 'number' && (
+                      <span className="font-mono" title={`Anchored at doc offset ${c.anchorPosition}`}>
+                        @{c.anchorPosition}
+                      </span>
+                    )}
+                    <span>{new Date(c.createdAt).toLocaleString()}</span>
+                  </div>
                 </div>
                 <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
                   {extractPlainText(c.bodyJson)}
@@ -214,7 +231,9 @@ export function DocCommentPanel({
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="이 문서에 대한 의견..."
+          placeholder={typeof anchorPosition === 'number'
+            ? '선택한 부분에 대한 의견...'
+            : '이 문서에 대한 의견...'}
           rows={3}
           disabled={posting}
           className="w-full rounded-md border px-2 py-1.5 text-sm disabled:opacity-50"

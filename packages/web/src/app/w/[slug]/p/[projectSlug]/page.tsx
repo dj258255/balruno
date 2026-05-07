@@ -666,6 +666,7 @@ export default function ProjectDetailPage() {
               projectId={project.id}
               documentId={commentSelection.documentId}
               docTitle={selectedDocTitle || '문서'}
+              anchorPosition={commentSelection.anchorPosition}
               onClose={() => setCommentPanelOpen(false)}
             />
           )}
