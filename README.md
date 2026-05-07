@@ -94,12 +94,13 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 
 ### Planned (next 6 months)
 
-| ADR | Feature | Status |
-|---|---|---|
-| **0023** | AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama) | Accepted, Stage 1 = Spring AI 본진 module |
-| **0025** | ML capabilities — outlier detection, cluster visualization, curve fit, TrueSkill, embedding similarity | Draft |
-| **0008 v2.2** | Cell style sync (currently Y.Doc local-only) | TBD |
-| (TBD) | Re-introduce additional views (Kanban / Calendar / Gantt) on top of server-canonical sync | TBD |
+| ADR | Feature | Stack | Status |
+|---|---|---|---|
+| **0023 v3.0** | AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | Accepted |
+| **0025 v2.0** | ML — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity · RAG over comments | **Same Python sidecar** (`scikit-learn` / `scipy` / `trueskill` / `sentence-transformers`) | Accepted |
+| **0021 v2.1 phase 5** | Server-backed persistent undo with Baserow-style TTL (PRO = 2h, TEAM = 24h) | Spring backend extension (`op_idempotency` table) | Planned for paid tier launch |
+| **0008 v2.2** | Cell style sync (currently Y.Doc local-only) | Spring backend | TBD |
+| (TBD) | Re-introduce additional views (Kanban / Calendar / Gantt) on top of server-canonical sync | Frontend | TBD |
 
 ### Quick Start
 
@@ -149,6 +150,7 @@ Math engine          mathjs + @formulajs/formulajs
 i18n                 next-intl (en, ko — UI strings + 12-group starter pack catalog)
 Desktop              Electron 41 (ESM) + electron-builder + electron-updater
 Backend              Java 25 + Spring Boot 4 + PostgreSQL 18 (JSONB) · Hibernate 7
+AI / ML service      Python FastAPI · langchain · scikit-learn · scipy · trueskill (planned, ADR 0023 + 0025)
 Sync                 Wss op log (sheet/tree) + Hocuspocus (doc bodies, yjs CRDT)
 Auth                 OAuth2 (GitHub + Google) · JWT session cookie
 Observability        Sentry SaaS (env-gated, optional for self-host)
@@ -169,7 +171,8 @@ balruno/
 │   ├── desktop/              # Electron app (MIT)
 │   │   └── src/{main,preload}
 │   ├── backend/              # Spring Boot 4 (AGPL v3) — auth, sync, sheet/tree mutations, template import
-│   └── collab/               # Hocuspocus server (AGPL v3) — yjs doc body sync
+│   ├── collab/               # Hocuspocus server (AGPL v3) — yjs doc body sync
+│   └── ai-service/           # (planned) Python FastAPI (AGPL v3) — AI BYOK + ML statistics
 ├── docs/                     # Public docs (MIT)
 ├── LICENSE                   # Repository license overview
 ├── LICENSING.md              # User-friendly licensing FAQ
@@ -295,12 +298,13 @@ For commercial licensing inquiries: dj258255@naver.com
 
 ### 계획 중 (다음 6 개월)
 
-| ADR | 기능 | 상태 |
-|---|---|---|
-| **0023** | AI 통합 (BYOK Anthropic / OpenAI / Gemini / Ollama) | Accepted, Stage 1 = Spring AI 본진 모듈 |
-| **0025** | ML 능력 — 아웃라이어 탐지, 클러스터 시각화, 곡선 피팅, TrueSkill, 임베딩 유사도 | Draft |
-| **0008 v2.2** | 셀 스타일 동기화 (현재 Y.Doc 로컬 only) | TBD |
-| (TBD) | 추가 뷰 재도입 (Kanban / Calendar / Gantt) — server-canonical sync 위에 | TBD |
+| ADR | 기능 | 스택 | 상태 |
+|---|---|---|---|
+| **0023 v3.0** | AI 통합 (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | Accepted |
+| **0025 v2.0** | ML — outlier 탐지 · 클러스터 시각화 · curve fit · TrueSkill · 임베딩 유사도 · RAG | **같은 Python sidecar** (`scikit-learn` / `scipy` / `trueskill` / `sentence-transformers`) | Accepted |
+| **0021 v2.1 phase 5** | Server-backed persistent undo + Baserow TTL (PRO = 2 시간, TEAM = 24 시간) | Spring backend 확장 (`op_idempotency`) | paid tier 출시 시 |
+| **0008 v2.2** | 셀 스타일 동기화 (현재 Y.Doc 로컬 only) | Spring backend | TBD |
+| (TBD) | 추가 뷰 재도입 (Kanban / Calendar / Gantt) — server-canonical sync 위에 | Frontend | TBD |
 
 ### 빠른 시작
 

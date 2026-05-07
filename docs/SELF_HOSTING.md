@@ -24,7 +24,8 @@ deployment of the same codebase, not a privileged variant.
 What you don't need to run:
 
 - Sentry — env-gated, leave `NEXT_PUBLIC_SENTRY_DSN` blank
-- AI providers — BYOK at the workspace level (V13 — once ADR 0023 ships), or skip AI features entirely
+- **AI + ML sidecar** (`packages/ai-service`) — Python FastAPI service is optional. Skip the container if you don't want AI / ML features. Spring backend + Hocuspocus work standalone for spreadsheet + doc + comments
+- AI provider keys — BYOK at the workspace level (operator pays nothing)
 - Email (SMTP) — OAuth-only auth means no password reset emails
 
 ---
@@ -32,20 +33,24 @@ What you don't need to run:
 ## Architecture summary
 
 ```
-┌──────────────────┐    HTTPS / WSS    ┌────────────────────────┐
-│ user browser     │ ◄────────────────► │ nginx (reverse proxy)  │
-│ (Vercel-hosted   │                    │   ↓                    │
-│  static / SSR)   │                    │   ├─ Spring Boot 4     │
-└──────────────────┘                    │   │  /api/v1/* + /ws/  │
-                                        │   └─ Hocuspocus        │
-                                        │      /collab/*         │
-                                        └────────────────────────┘
+┌──────────────────┐    HTTPS / WSS    ┌────────────────────────────┐
+│ user browser     │ ◄────────────────► │ nginx (reverse proxy)      │
+│ (Vercel-hosted   │                    │   ↓                        │
+│  static / SSR)   │                    │   ├─ Spring Boot 4         │
+└──────────────────┘                    │   │   /api/v1/* + /ws/*    │
+                                        │   ├─ Hocuspocus            │
+                                        │   │   /collab/*            │
+                                        │   └─ Python ai-service     │
+                                        │       /api/v1/ai/*         │
+                                        │       /api/v1/ml/*         │
+                                        └────────────────────────────┘
                                                    │
                                                    ▼
-                                        ┌────────────────────────┐
-                                        │ PostgreSQL 18          │
-                                        │  + JSONB sync columns  │
-                                        └────────────────────────┘
+                                        ┌────────────────────────────┐
+                                        │ PostgreSQL 18              │
+                                        │  + JSONB sync columns      │
+                                        │  + pgvector (planned)      │
+                                        └────────────────────────────┘
 ```
 
 Components:
@@ -55,6 +60,7 @@ Components:
 | **packages/web** | Next.js 16 / TypeScript | MIT | Yes (frontend) |
 | **packages/backend** | Java 25 / Spring Boot 4.0.6 | AGPL v3 | Yes (auth + sync API) |
 | **packages/collab** | Node.js / Hocuspocus | AGPL v3 | Yes (doc bodies) |
+| **packages/ai-service** | Python 3.13 / FastAPI | AGPL v3 | Optional (AI + ML features, planned ADR 0023/0025) |
 | **PostgreSQL 18** | (external) | PostgreSQL License | Yes |
 | **packages/desktop** | Electron | MIT | Optional (Mac/Windows/Linux app) |
 
@@ -187,23 +193,48 @@ Both GitHub and Google accept multiple callback URLs. Add:
   your infrastructure (Sentry-compatible, MIT licensed).
 - **Or no observability** — leave the env blank; logs only.
 
-### AI provider keys (optional, ADR 0023 — once shipped)
+### AI + ML service (optional, ADR 0023 v3.0 + ADR 0025 v2.0 — planned)
 
-When AI features ship, configuration is per-workspace BYOK. The
-operator does **not** pay for end-user AI usage. Each workspace
-admin pastes their own provider key in workspace settings; the
-backend stores it AES-GCM encrypted.
+AI (LLM) and ML (statistical analytics — outlier / cluster /
+curve fit / TrueSkill / similarity / RAG) live in a **separate
+Python FastAPI sidecar** (`packages/ai-service`), not the Spring
+backend. Same Docker compose, separate container.
 
-Required env (only if you want to enable the encryption layer):
-
-```bash
-# 32-byte hex secret used to encrypt workspace_ai_credentials.api_key_enc
-BALRUNO_AI_SECRET_KEY=$(openssl rand -hex 32)
+```
+nginx routing
+  ├── /api/v1/* + /ws/*                 → Spring Boot (auth/sync/sheets/comments)
+  ├── /collab/*                         → Hocuspocus (doc body yjs)
+  └── /api/v1/ai/* + /api/v1/ml/*       → Python ai-service
 ```
 
-Lose this and every encrypted key in the database becomes
-unreadable — keys are re-entered, not recoverable. Treat the
-secret like a database master password.
+The Python sidecar is **optional**. Skip it if you don't want AI
+or ML — Spring backend works standalone for the spreadsheet +
+document + comment features. Just don't add the `ai-service`
+container to your compose file.
+
+#### BYOK key configuration (when ai-service is running)
+
+Configuration is per-workspace BYOK. The operator does **not**
+pay for end-user AI usage. Each workspace admin pastes their
+own provider key in workspace settings; the Spring backend
+stores it AES-GCM encrypted, and the Python sidecar reads +
+decrypts at request time.
+
+Required env (Spring **and** ai-service share both secrets so
+the sidecar can verify the JWT and decrypt credentials):
+
+```bash
+# 32-byte hex master key — encrypts workspace_ai_credentials.api_key_enc
+BALRUNO_AI_SECRET_KEY=$(openssl rand -hex 32)
+
+# JWT signing secret — same value as Spring's so the sidecar
+# can verify session tokens
+BALRUNO_JWT_SECRET=...
+```
+
+Lose `BALRUNO_AI_SECRET_KEY` and every encrypted key in the
+database becomes unreadable — keys are re-entered, not
+recoverable. Treat the secret like a database master password.
 
 Supported providers (planned):
 
@@ -213,8 +244,14 @@ Supported providers (planned):
 - Ollama (self-hosted local LLM, no API key)
 - OpenRouter (multi-provider gateway)
 
-To skip AI entirely, leave `BALRUNO_AI_SECRET_KEY` unset — the
-feature surfaces hide themselves.
+#### ML library stack (planned, in the same sidecar)
+
+- `scikit-learn` — outlier detection, clustering, regression
+- `scipy` — curve fitting, statistical tests
+- `statsmodels` — regression with p-values
+- `trueskill` — Microsoft Bayesian skill rating (matchup → power score)
+- `sentence-transformers` — local embeddings (no external API needed)
+- `langchain` + `pgvector` — RAG over comments / ADRs / git history
 
 ---
 

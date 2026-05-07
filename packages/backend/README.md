@@ -12,16 +12,17 @@
 
 ```
 com.balruno
-├── user        — OAuth (GitHub + Google) + JWT
-├── workspace   — Workspace + members + role-based access
-├── project     — Project CRUD + quota + template import (ADR 0020)
-├── sync        — /ws/projects/{id} WebSocket + op log + tree ops (ADR 0008/0017/0018)
-├── document    — Hocuspocus collab token + doc binary FK
-├── comment     — comments + mentions (ADR 0024) — 5번째 region, op log 없음
-├── ai          — (계획) Spring AI 본진 module — BYOK + 5 provider abstraction (ADR 0023 stage 1)
-├── ml          — (계획) 통계 ML — outlier / cluster / curve fit / TrueSkill / embedding (ADR 0025)
-└── shared      — UUIDv7 wrapper, common DTO
+├── user           — OAuth (GitHub + Google) + JWT
+├── workspace      — Workspace + members + role-based access
+├── project        — Project CRUD + quota + template import (ADR 0020)
+├── sync           — /ws/projects/{id} WebSocket + op log + tree ops (ADR 0008/0017/0018)
+├── document       — Hocuspocus collab token + doc binary FK
+├── comment        — comments + mentions (ADR 0024) — 5번째 region, op log 없음
+├── credentials    — (계획) workspace_ai_credentials write/decrypt for Python sidecar (ADR 0023)
+└── shared         — UUIDv7 wrapper, common DTO
 ```
+
+AI / ML 은 *이 backend 안* 이 아니라 **별도 Python FastAPI sidecar** (`packages/ai-service/`) 에 있음. Spring 은 *credentials 모듈* 만 owner — Python sidecar 가 read 만 (ADR 0023 v3.0 + 0025 v2.0).
 
 각 module 은 `@ApplicationModule` 명시. 다른 module 의 `internal` package 접근 시 빌드 실패 (`ArchitectureTest` 가 매 commit 검증).
 
