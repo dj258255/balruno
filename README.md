@@ -219,6 +219,7 @@ For commercial licensing inquiries: dj258255@naver.com
 ### Links
 
 - [Live Demo](https://balruno.com)
+- [Self-hosting Guide](docs/SELF_HOSTING.md)
 - [Documentation (English)](docs/DESIGN_EN.md)
 - [Documentation (한국어)](docs/DESIGN_KO.md)
 - [Report Bug](https://github.com/dj258255/balruno/issues/new?template=bug_report.md)
