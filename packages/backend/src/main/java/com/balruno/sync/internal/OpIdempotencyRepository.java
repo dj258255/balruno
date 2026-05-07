@@ -66,4 +66,31 @@ interface OpIdempotencyRepository extends JpaRepository<OpIdempotencyEntity, UUI
             @Param("projectId") UUID projectId,
             @Param("clientSessionId") UUID clientSessionId,
             @Param("now") OffsetDateTime now);
+
+    /**
+     * Hydrate query — last N reversible (or recently-undone) actions
+     * for a user in a session, newest first. Used by the
+     * GET /api/v1/projects/{id}/undo-stack endpoint to refill the
+     * client's local stack after a page refresh.
+     *
+     * Includes both is_undone = false (Cmd+Z eligible) and is_undone
+     * = true (Cmd+Shift+Z eligible) — the client decodes via the
+     * undone field on each entry to populate its own past + future
+     * stacks.
+     */
+    @Query("""
+        SELECT o FROM OpIdempotencyEntity o
+        WHERE o.userId = :userId
+          AND o.projectId = :projectId
+          AND o.clientSessionId = :clientSessionId
+          AND o.inversePayload IS NOT NULL
+          AND o.reversibleUntil > :now
+        ORDER BY o.createdAt DESC
+    """)
+    java.util.List<OpIdempotencyEntity> findRecentReversible(
+            @Param("userId") UUID userId,
+            @Param("projectId") UUID projectId,
+            @Param("clientSessionId") UUID clientSessionId,
+            @Param("now") OffsetDateTime now,
+            org.springframework.data.domain.Pageable pageable);
 }

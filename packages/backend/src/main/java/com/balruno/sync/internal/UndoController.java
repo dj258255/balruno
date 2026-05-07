@@ -7,11 +7,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -55,6 +58,22 @@ class UndoController {
             @PathVariable UUID projectId,
             @RequestHeader(name = "X-Client-Session-Id") @NotNull UUID clientSessionId) {
         return undo.redo(callerId(jwt), projectId, clientSessionId);
+    }
+
+    /**
+     * Hydrate the client's local undo stack after a page refresh
+     * (ADR 0021 v2.3 Phase 5.E). Returns the user's most recent
+     * reversible actions in this tab, newest first. The client
+     * decodes via the {@code undone} flag on each entry to populate
+     * past + future stacks separately.
+     */
+    @GetMapping(path = "/projects/{projectId}/undo-stack", version = "1")
+    List<UndoService.UndoStackEntry> stack(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID projectId,
+            @RequestHeader(name = "X-Client-Session-Id") @NotNull UUID clientSessionId,
+            @RequestParam(name = "limit", defaultValue = "50") int limit) {
+        return undo.recentReversible(callerId(jwt), projectId, clientSessionId, limit);
     }
 
     private static UUID callerId(Jwt jwt) {

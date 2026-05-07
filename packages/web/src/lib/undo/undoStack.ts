@@ -153,6 +153,30 @@ export function clearActiveStack(): void {
   notify();
 }
 
+/**
+ * Replace the active project's stacks wholesale with the supplied
+ * arrays — used by ADR 0021 v2.3 Phase 5.E hydrate-on-mount.
+ *
+ * Caller passes (userId, projectId) explicitly so this can run
+ * before setActiveStack (race with the auth bootstrap). undo[]
+ * is in *chronological order* (oldest first); the function pushes
+ * in order so the most recent action ends up at the top of the
+ * stack as Cmd+Z expects. Same convention for redo[].
+ */
+export function hydrateStack(
+  userId: string,
+  projectId: string,
+  undoEntries: UndoEntry[],
+  redoEntries: UndoEntry[],
+): void {
+  const key = makeKey(userId, projectId);
+  stacks.set(key, {
+    undo: undoEntries.slice(0, MAX_STACK_DEPTH),
+    redo: redoEntries.slice(0, MAX_STACK_DEPTH),
+  });
+  notify();
+}
+
 export function subscribe(fn: () => void): () => void {
   listeners.add(fn);
   return () => listeners.delete(fn);

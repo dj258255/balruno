@@ -42,10 +42,11 @@ import { useProjectStore } from '@/stores/projectStore';
 import { useProjectHistory } from '@/hooks';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { useAuthStore } from '@/stores/authStore';
-import { setActiveStack, pushUndo, type UndoableOp } from '@/lib/undo/undoStack';
+import { setActiveStack, pushUndo, hydrateStack, type UndoableOp, type UndoEntry } from '@/lib/undo/undoStack';
 import type { UndoMeta } from '@/hooks/useProjectSync';
 import { getClientSessionId } from '@/lib/undo/sessionId';
 import { nextActionGroupId } from '@/lib/undo/actionGroup';
+import { fetchUndoStack } from '@/lib/backend/undo';
 import {
   renameNodeInTree,
   removeNodeFromTree,
@@ -206,6 +207,44 @@ export default function ProjectDetailPage() {
     if (!project?.id || !userId) return;
     setActiveStack(userId, project.id);
     return () => setActiveStack(null, null);
+  }, [project?.id, userId]);
+
+  // Hydrate the local stack from server (ADR 0021 v2.3 Phase 5.E) —
+  // restores Cmd+Z across page refreshes within the 120-min Baserow
+  // window. Per-tab scoped via X-Client-Session-Id (sent inside
+  // fetchUndoStack), so opening a fresh tab still gets a clean
+  // history rather than picking up another tab's actions.
+  useEffect(() => {
+    if (!project?.id || !userId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const entries = await fetchUndoStack(project.id);
+        if (cancelled) return;
+        // Server returns newest first; we want oldest at the bottom
+        // of the stack (Cmd+Z pops the latest). hydrateStack pushes
+        // in array order, so reverse to get oldest-first.
+        const past: UndoEntry[] = [];
+        const future: UndoEntry[] = [];
+        for (let i = entries.length - 1; i >= 0; i--) {
+          const e = entries[i];
+          if (!e.forward || !e.inverse) continue;
+          const entry: UndoEntry = {
+            label: 'Server hydrated',
+            forward: e.forward as UndoableOp[],
+            inverse: e.inverse as UndoableOp[],
+            timestamp: new Date(e.createdAt).getTime(),
+          };
+          if (e.undone) future.push(entry); else past.push(entry);
+        }
+        hydrateStack(userId, project.id, past, future);
+      } catch {
+        // Hydrate is best-effort. Silent failure leaves the local
+        // stack empty; the user just doesn't get cross-refresh
+        // Cmd+Z, but the rest of the page works.
+      }
+    })();
+    return () => { cancelled = true; };
   }, [project?.id, userId]);
 
   // Bind Cmd+Z / Cmd+Shift+Z. The hook reads canUndo / canRedo

@@ -46,3 +46,27 @@ export async function callRedo(projectId: string): Promise<UndoResult> {
     },
   );
 }
+
+/**
+ * Hydrate the local stack after a page refresh
+ * (ADR 0021 v2.3 Phase 5.E). Returns the user's last N reversible
+ * actions in this tab, newest first. Frontend separates entries
+ * by `undone` to populate past (false) + future (true) stacks.
+ */
+export interface UndoStackEntry {
+  clientMsgId: string;
+  actionGroupId: string | null;
+  forward: unknown[] | null;
+  inverse: unknown[] | null;
+  undone: boolean;
+  createdAt: string;
+}
+
+export async function fetchUndoStack(projectId: string, limit = 50): Promise<UndoStackEntry[]> {
+  return request<UndoStackEntry[]>(
+    `/api/v1/projects/${projectId}/undo-stack?limit=${limit}`,
+    {
+      headers: { 'X-Client-Session-Id': getClientSessionId() },
+    },
+  );
+}

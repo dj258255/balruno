@@ -38,6 +38,29 @@ public interface UndoService {
     UndoResult redo(UUID callerUserId, UUID projectId, UUID clientSessionId);
 
     /**
+     * Frontend-mount hydrate. Returns the user's last N reversible
+     * actions in this tab, newest first, so the client can pre-fill
+     * its local Cmd+Z stack after a page refresh.
+     *
+     * Response items mirror the same UndoResult.Applied shape so the
+     * client can reuse a single decoder. Each entry is a self-
+     * contained record — clientMsgId for dedup, forward + inverse
+     * arrays, actionGroupId for grouping, createdAt for chronological
+     * display.
+     */
+    java.util.List<UndoStackEntry> recentReversible(
+            UUID callerUserId, UUID projectId, UUID clientSessionId, int limit);
+
+    record UndoStackEntry(
+            UUID clientMsgId,
+            UUID actionGroupId,
+            JsonNode forward,
+            JsonNode inverse,
+            boolean undone,
+            java.time.OffsetDateTime createdAt
+    ) {}
+
+    /**
      * Result envelope. {@code Applied} carries the action group + the
      * ops that were applied so the calling client can update its UI
      * (e.g. show a toast "Undid your last action"). {@code NothingToUndo}

@@ -16,7 +16,9 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.PageRequest;
 
 /**
  * Server-backed undo / redo (ADR 0021 v2.3 Phase 5, Pattern C).
@@ -206,6 +208,39 @@ class UndoServiceImpl implements UndoService {
             throw new IllegalStateException("project not found: " + projectId);
         }
         return version;
+    }
+
+    @Override
+    public List<UndoStackEntry> recentReversible(
+            UUID userId, UUID projectId, UUID clientSessionId, int limit) {
+        var rows = repo.findRecentReversible(
+                userId, projectId, clientSessionId,
+                OffsetDateTime.now(ZoneOffset.UTC),
+                PageRequest.of(0, Math.max(1, Math.min(limit, 200))));
+        var out = new ArrayList<UndoStackEntry>(rows.size());
+        for (var r : rows) {
+            JsonNode forward = null;
+            JsonNode inverse = null;
+            try {
+                if (r.getForwardPayload() != null) {
+                    forward = nodeMapper.readTree(r.getForwardPayload());
+                }
+                if (r.getInversePayload() != null) {
+                    inverse = nodeMapper.readTree(r.getInversePayload());
+                }
+            } catch (Exception e) {
+                // Skip malformed rows rather than failing the whole hydrate
+                continue;
+            }
+            out.add(new UndoStackEntry(
+                    r.getClientMsgId(),
+                    r.getActionGroupId(),
+                    forward,
+                    inverse,
+                    r.isUndone(),
+                    r.getCreatedAt()));
+        }
+        return out;
     }
 
     private JsonNode parseJsonArray(String raw, String fieldName) {
