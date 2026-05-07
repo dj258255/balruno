@@ -158,7 +158,7 @@ export interface ProjectState {
     rowId: string,
     columnId: string,
     value: CellValue,
-    options?: { origin?: 'local' | 'remote' }
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
   ) => void;
   updateCellStyle: (
     projectId: string,

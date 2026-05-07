@@ -1,21 +1,26 @@
 /**
- * History store — no-op stub during the v0.6 → ADR 0021 transition.
+ * History store — delegates to lib/undo/undoStack (ADR 0021).
  *
- * Earlier shape: a Y.UndoManager adapter that tracked CRDT
- * transactions per active project. v0.6 cleanup retired Y.Doc on
- * the sheet path, so the underlying UndoManager is gone — this
- * store now exposes the same API surface (pushState / undo / redo /
- * canUndo / canRedo / getHistory / jumpTo / deleteEntry / clear) but
- * every operation is a no-op. UI buttons stay rendered but disabled
- * (canUndo / canRedo always return false).
+ * Earlier shape: a Y.UndoManager adapter (v0.6 cleanup retired it
+ * to a no-op stub). This is the *real* implementation — backed by
+ * the inverse-op stack module. API surface unchanged so existing
+ * call sites (SheetTable / SheetToolbar / useSheetEditing /
+ * useHistory) keep compiling.
  *
- * Real undo/redo lands with ADR 0021 — inverse-op stack per user.
- * That phase will replace the stub with the real implementation
- * without changing any call site.
+ * Reactivity: subscribe to undoStack changes, bump tick so zustand
+ * selectors re-evaluate (canUndo / canRedo on every push).
  */
 
 import { create } from 'zustand';
 import type { Project } from '@/types';
+import {
+  canUndo as stackCanUndo,
+  canRedo as stackCanRedo,
+  popUndo,
+  popRedo,
+  subscribe as subscribeStack,
+} from '@/lib/undo/undoStack';
+import { applyUndoableOp } from '@/lib/undo/applyUndoable';
 
 export interface HistoryEntry {
   state: unknown;
@@ -24,8 +29,7 @@ export interface HistoryEntry {
 }
 
 interface HistoryState {
-  /** Reserved — bumps on undo/redo so selectors re-evaluate when the
-   *  ADR 0021 implementation lands. Stays at 0 in the stub. */
+  /** Bumps every time undoStack changes — selectors re-evaluate. */
   tick: number;
 
   pushState: (projects: Project[], label?: string) => void;
@@ -39,15 +43,46 @@ interface HistoryState {
   getHistory: () => { past: HistoryEntry[]; future: HistoryEntry[]; currentIndex: number };
 }
 
-export const useHistoryStore = create<HistoryState>(() => ({
-  tick: 0,
-  pushState: () => {},
-  undo: () => null,
-  redo: () => null,
-  clear: () => {},
-  jumpTo: () => null,
-  deleteEntry: () => {},
-  canUndo: () => false,
-  canRedo: () => false,
-  getHistory: () => ({ past: [], future: [], currentIndex: -1 }),
-}));
+export const useHistoryStore = create<HistoryState>((_set, get) => {
+  // Subscribe once at store creation; the cleanup is implicit because
+  // the store outlives any component.
+  if (typeof window !== 'undefined') {
+    subscribeStack(() => {
+      _set((s) => ({ tick: s.tick + 1 }));
+    });
+  }
+
+  return {
+    tick: 0,
+    /** Reserved for snapshot-based undo. The inverse-op stack
+     *  records on emit, so push from outside the action is a no-op. */
+    pushState: () => {},
+    undo: () => {
+      const entry = popUndo();
+      if (!entry) return null;
+      applyUndoableOp(entry.inverse);
+      return null;
+    },
+    redo: () => {
+      const entry = popRedo();
+      if (!entry) return null;
+      applyUndoableOp(entry.forward);
+      return null;
+    },
+    clear: () => {
+      // No global clear — resetting is per-project via undoStack.clearActiveStack
+      // at unmount. Calling clear from a UI action is intentionally a no-op.
+    },
+    jumpTo: () => null,
+    deleteEntry: () => {},
+    canUndo: () => {
+      void get().tick;
+      return stackCanUndo();
+    },
+    canRedo: () => {
+      void get().tick;
+      return stackCanRedo();
+    },
+    getHistory: () => ({ past: [], future: [], currentIndex: -1 }),
+  };
+});

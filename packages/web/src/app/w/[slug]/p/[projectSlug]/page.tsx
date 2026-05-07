@@ -39,7 +39,10 @@ import {
 } from '@/lib/backend';
 import { useBackendAuthStore } from '@/stores/backendAuthStore';
 import { useProjectStore } from '@/stores/projectStore';
+import { useProjectHistory } from '@/hooks';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
+import { useAuthStore } from '@/stores/authStore';
+import { setActiveStack } from '@/lib/undo/undoStack';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { ServerDocView } from '@/components/docs/ServerDocView';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
@@ -324,6 +327,20 @@ export default function ProjectDetailPage() {
     projectId: project?.id ?? null,
     enabled: Boolean(project),
   });
+
+  // Activate the per-(user, project) undo stack at mount; clear on
+  // unmount so peer sessions / project switches start fresh.
+  // ADR 0021 — historyStore reads from this same module.
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  useEffect(() => {
+    if (!project?.id || !userId) return;
+    setActiveStack(userId, project.id);
+    return () => setActiveStack(null, null);
+  }, [project?.id, userId]);
+
+  // Bind Cmd+Z / Cmd+Shift+Z. The hook reads canUndo / canRedo
+  // from historyStore which delegates to the active undo stack.
+  useProjectHistory();
 
   // Read the live sheet from the store — populated by hydrate from
   // sync.full. Falls back to undefined while the WS handshake races

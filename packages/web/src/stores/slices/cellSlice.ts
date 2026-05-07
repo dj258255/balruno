@@ -13,6 +13,8 @@ import type { ProjectState } from '../projectStore';
 import { wouldCreateCycle } from '@/lib/linkGraph';
 import { toast } from '@/components/ui/Toast';
 import { emitOp } from '@/lib/sync/writeQueue';
+import { pushUndo, type UndoableOp } from '@/lib/undo/undoStack';
+import { useAuthStore } from '@/stores/authStore';
 
 /** 현재 사용자 이름 읽기 (usePresence 가 쓰는 키). */
 function getCurrentUserName(): string {
@@ -80,6 +82,50 @@ function writeSheet(
           },
     ),
   }));
+}
+
+/**
+ * Push an undo entry for a cell.update — captures the (forward,
+ * inverse) pair the user just performed. Reads the current user
+ * from authStore at call time; missing user (anonymous / pre-auth
+ * race) drops the entry silently. baseVersion / clientMsgId on the
+ * stored ops are placeholders — writeQueue.emitOp fills them in
+ * when the inverse is later replayed.
+ */
+function pushCellUpdateUndo(
+  projectId: string,
+  sheetId: string,
+  rowId: string,
+  columnId: string,
+  prevValue: CellValue,
+  newValue: CellValue,
+): void {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  const forward: UndoableOp = {
+    type: 'cell.update',
+    sheetId,
+    rowId,
+    columnId,
+    value: newValue,
+    baseVersion: 0,
+    clientMsgId: '',
+  };
+  const inverse: UndoableOp = {
+    type: 'cell.update',
+    sheetId,
+    rowId,
+    columnId,
+    value: prevValue,
+    baseVersion: 0,
+    clientMsgId: '',
+  };
+  pushUndo(userId, projectId, {
+    label: 'Cell update',
+    forward,
+    inverse,
+    timestamp: Date.now(),
+  });
 }
 
 /** writeCell — narrow case for cell.update (most frequent op). */
@@ -457,12 +503,16 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     rowId: string,
     columnId: string,
     value: CellValue,
-    options?: { origin?: 'local' | 'remote' }
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
   ) => {
     // origin='remote' is set by the broadcast handler when applying
     // a peer's op back into the store; that path must not re-emit
     // the op or the sender would echo to itself indefinitely.
+    // skipUndoPush is set by the undo/redo replay path — emit must
+    // happen (peers see the undo) but we mustn't push *another*
+    // undo entry or Cmd+Z+Cmd+Z chases its tail.
     const isRemote = options?.origin === 'remote';
+    const skipUndoPush = options?.skipUndoPush ?? false;
     const doc = getProjectDoc(projectId);
     const state = get();
     const project = state.projects.find((p) => p.id === projectId);
@@ -579,7 +629,12 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     }
 
     writeCell(set, projectId, sheetId, rowId, columnId, value);
-    if (!isRemote) emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value });
+    if (!isRemote) {
+      emitOp({ kind: 'cell.update', sheetId, rowId, columnId, value });
+      if (!skipUndoPush) {
+        pushCellUpdateUndo(projectId, sheetId, rowId, columnId, prevValue, value);
+      }
+    }
     recordChange();
   },
 
