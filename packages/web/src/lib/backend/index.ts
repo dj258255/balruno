@@ -110,3 +110,30 @@ export type {
   CreateWebhookInput,
   WebhookEvent,
 } from './webhooks';
+
+export {
+  getNotificationPreference,
+  updateNotificationPreference,
+  fetchVapidPublicKey,
+  saveWebPushSubscription,
+  listWebPushSubscriptions,
+  deleteWebPushSubscription,
+} from './notification';
+export type {
+  NotificationPreference,
+  DigestFrequency,
+  UpdatePreferenceInput,
+  BackendWebPushSubscription,
+  SubscribeInput,
+} from './notification';
+
+export {
+  createInboundWebhook,
+  listInboundWebhooks,
+  deleteInboundWebhook,
+} from './inbound';
+export type {
+  InboundWebhook,
+  InboundProvider,
+  CreateInboundWebhookInput,
+} from './inbound';

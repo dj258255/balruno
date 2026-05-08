@@ -71,6 +71,38 @@ class SheetCellOpService {
         this.events = events;
     }
 
+    /**
+     * Inbound-webhook fast path: append a row without a baseVersion
+     * round-trip. Used by the inbound module's row-requested events
+     * (ADR 0029). Synthesises a {@code row.add} op against the
+     * current data_version + applies via the standard pipeline,
+     * which broadcasts to peers and bumps the version.
+     */
+    @Transactional
+    public void applyAppendRow(UUID projectId, UUID actorUserId, UUID sheetId,
+                                UUID rowId, com.fasterxml.jackson.databind.JsonNode rowJson) {
+        var current = jdbc.queryForObject(
+                "SELECT data_version FROM projects WHERE id = ? AND deleted_at IS NULL",
+                Long.class, projectId);
+        if (current == null) {
+            throw new IllegalStateException("project not found: " + projectId);
+        }
+        var op = new SyncMessage.RowAdd(sheetId, rowJson, current, java.util.UUID.randomUUID());
+        var result = apply(projectId, actorUserId, op);
+        if (result instanceof SyncResult.Conflict) {
+            // Race with a concurrent edit. Re-read + retry once. If
+            // still conflicting we give up — the inbound caller is
+            // a fire-and-forget HTTP, retrying further would risk
+            // duplicate rows on slow webhooks.
+            var nv = jdbc.queryForObject(
+                    "SELECT data_version FROM projects WHERE id = ?",
+                    Long.class, projectId);
+            if (nv == null) return;
+            var retry = new SyncMessage.RowAdd(sheetId, rowJson, nv, java.util.UUID.randomUUID());
+            apply(projectId, actorUserId, retry);
+        }
+    }
+
     @Transactional
     SyncResult apply(UUID projectId, UUID userId, SyncMessage op) {
         var clientMsgId = clientMsgIdOf(op);

@@ -69,7 +69,16 @@ class SecurityConfig {
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
                                 // Public share-link read (ADR 0027). Token-only auth
                                 // resolved inside ShareController; no JWT required.
-                                "/api/v1/share-public/**"
+                                "/api/v1/share-public/**",
+                                // VAPID public key for the frontend service-worker
+                                // bootstrap (ADR 0024 Stage I). Public on purpose —
+                                // anyone can ask for the public key, that's the
+                                // point of the asymmetric scheme.
+                                "/api/v1/notification/vapid-public-key",
+                                // Inbound webhooks (ADR 0029) — signature
+                                // verification (X-Hub-Signature-256 / X-Balruno-
+                                // Signature) inside the controller is the auth.
+                                "/api/v1/inbound-public/**"
                         ).permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())

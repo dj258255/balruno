@@ -111,13 +111,38 @@ class CommentServiceImpl implements CommentService {
         // Comment + each mention get separate events; receivers can
         // subscribe independently via the events[] column. ADR 0028.
         webhookHook(saved.projectId(), "comment.added", saved);
+        // Notification fanout — email + Web Push to mentioned users
+        // (ADR 0024 Stage I). The notification module listens via
+        // @EventListener so the comment module never imports it.
+        var bodyText = MentionExtractor.flatten(req.bodyJson());
         for (var mentionedUser : mentions) {
             webhookHook(saved.projectId(), "mention.created",
                     java.util.Map.of(
                             "commentId", saved.id().toString(),
                             "mentionedUser", mentionedUser.toString()));
+            mentionEventAfterCommit(saved.projectId(), mentionedUser, saved.id(),
+                    callerUserId, bodyText);
         }
         return saved;
+    }
+
+    private void mentionEventAfterCommit(
+            UUID projectId, UUID mentionedUser, UUID commentId,
+            UUID authorUserId, String bodyText) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            events.publishEvent(
+                                    new com.balruno.events.MentionCreatedEvent(
+                                            projectId, mentionedUser, commentId,
+                                            authorUserId, bodyText));
+                        } catch (Exception ignored) {
+                            // Notification failures must never bubble.
+                        }
+                    }
+                });
     }
 
     private void webhookHook(UUID projectId, String event, Object payload) {
@@ -218,6 +243,34 @@ class CommentServiceImpl implements CommentService {
             var out = new ArrayList<UUID>();
             walk(body, out);
             return out;
+        }
+
+        /** Flatten a Tiptap doc to plain text for the notification
+         *  email body / push body preview. Uses string concatenation;
+         *  the 200-char truncation lives at the call site. */
+        static String flatten(JsonNode body) {
+            var sb = new StringBuilder();
+            walkText(body, sb);
+            return sb.toString().trim();
+        }
+
+        private static void walkText(JsonNode node, StringBuilder out) {
+            if (node == null || node.isNull()) return;
+            if (node.isObject()) {
+                var type = node.get("type");
+                if (type != null && "text".equals(type.asText())) {
+                    var text = node.get("text");
+                    if (text != null && !text.isNull()) {
+                        out.append(text.asText()).append(' ');
+                    }
+                }
+                var content = node.get("content");
+                if (content != null && content.isArray()) {
+                    for (var child : content) walkText(child, out);
+                }
+            } else if (node.isArray()) {
+                for (var child : node) walkText(child, out);
+            }
         }
 
         private static void walk(JsonNode node, List<UUID> out) {

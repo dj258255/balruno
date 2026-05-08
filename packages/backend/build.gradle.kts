@@ -85,6 +85,19 @@ dependencies {
     // can index by field instead of regex-parsing free-form lines.
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
 
+    // SMTP email (ADR 0024 Stage I) — Spring's JavaMailSender wraps
+    // jakarta.mail. Admin brings their own SMTP creds via
+    // spring.mail.* properties; same pattern Outline / AFFiNE / Baserow
+    // use (no built-in delivery service).
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+
+    // Web Push notifications (RFC 8030 + 8292, VAPID auth) —
+    // martijndwars's library handles key management + payload
+    // encryption + ECDH key derivation. Free forever, no third-party
+    // beyond the browser-native push services. ADR 0024 Stage I.
+    implementation("nl.martijndwars:web-push:5.1.1")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
+
     // Spring Modulith — modular monolith with compile-time module boundaries (ADR 0014)
     implementation("org.springframework.modulith:spring-modulith-starter-core")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
