@@ -17,8 +17,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useParams } from 'next/navigation';
-import { Search, FileSpreadsheet, FileText, Settings, Inbox } from 'lucide-react';
+import { Search, FileSpreadsheet, FileText, Settings, Inbox, Hash, MessageSquare } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
+import { searchProject, type SearchHit } from '@/lib/backend';
 
 interface PaletteItem {
   id: string;
@@ -113,10 +114,59 @@ export function CommandPalette({ open, onClose }: Props) {
     return items.filter((i) => i.label.toLowerCase().includes(q) || (i.hint && i.hint.toLowerCase().includes(q)));
   }, [items, query]);
 
+  // Backend full-text search — kicks in once the query is 2+ chars.
+  // Debounced via the query state's natural settle time. Failed
+  // requests are swallowed silently; the local items[] still
+  // surfaces something useful.
+  const [hits, setHits] = useState<SearchHit[]>([]);
+  useEffect(() => {
+    if (!project) { setHits([]); return; }
+    const q = query.trim();
+    if (q.length < 2) { setHits([]); return; }
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      searchProject(project.id, q)
+        .then((r) => { if (!cancelled) setHits(r.hits); })
+        .catch(() => { if (!cancelled) setHits([]); });
+    }, 200);
+    return () => { cancelled = true; clearTimeout(handle); };
+  }, [project, query]);
+
+  const hitItems = useMemo<PaletteItem[]>(() => {
+    return hits.map((h) => {
+      const id = `hit-${h.kind}-${h.sheetId ?? ''}-${h.rowId ?? ''}-${h.columnId ?? ''}-${h.commentId ?? ''}-${h.nodeId ?? ''}`;
+      const Icon = h.kind === 'comment' ? MessageSquare
+                : h.kind === 'cell' || h.kind === 'column' ? Hash
+                : FileSpreadsheet;
+      const label = h.snippet;
+      const hint = h.kind === 'cell'
+        ? `cell · ${h.sheetName ?? 'sheet'}`
+        : h.kind === 'column'
+          ? `column · ${h.sheetName ?? 'sheet'}`
+          : h.kind;
+      return {
+        id,
+        label,
+        hint,
+        icon: Icon,
+        run: () => {
+          if (h.sheetId) {
+            useProjectStore.getState().setCurrentSheet(h.sheetId);
+          } else if (h.documentId) {
+            useProjectStore.setState({ currentDocId: h.documentId, currentSheetId: null });
+          }
+          onClose();
+        },
+      };
+    });
+  }, [hits, onClose]);
+
+  const combined = useMemo(() => [...filtered, ...hitItems], [filtered, hitItems]);
+
   // Keep activeIndex in range as the filter shrinks the list.
   useEffect(() => {
-    setActiveIndex((idx) => Math.max(0, Math.min(idx, Math.max(0, filtered.length - 1))));
-  }, [filtered.length]);
+    setActiveIndex((idx) => Math.max(0, Math.min(idx, Math.max(0, combined.length - 1))));
+  }, [combined.length]);
 
   if (!open) return null;
   if (typeof document === 'undefined') return null;
@@ -129,7 +179,7 @@ export function CommandPalette({ open, onClose }: Props) {
     }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+      setActiveIndex((i) => Math.min(i + 1, combined.length - 1));
       return;
     }
     if (e.key === 'ArrowUp') {
@@ -139,7 +189,7 @@ export function CommandPalette({ open, onClose }: Props) {
     }
     if (e.key === 'Enter') {
       e.preventDefault();
-      const item = filtered[activeIndex];
+      const item = combined[activeIndex];
       if (item) item.run();
     }
   };
@@ -170,12 +220,12 @@ export function CommandPalette({ open, onClose }: Props) {
           </kbd>
         </div>
         <ul className="max-h-[50vh] overflow-y-auto py-1">
-          {filtered.length === 0 && (
+          {combined.length === 0 && (
             <li className="px-4 py-6 text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
               결과 없음
             </li>
           )}
-          {filtered.map((item, idx) => {
+          {combined.map((item, idx) => {
             const Icon = item.icon;
             const active = idx === activeIndex;
             return (

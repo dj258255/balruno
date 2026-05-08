@@ -8,8 +8,9 @@
  */
 
 import { useState } from 'react';
-import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Filter, Flame, TrendingUp, GitFork, GitCompare, Share2, Plug, Inbox, Download } from 'lucide-react';
+import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Filter, Flame, TrendingUp, GitFork, GitCompare, Share2, Plug, Inbox, Download, Code2 } from 'lucide-react';
 import { downloadSheetCsv } from '@/lib/sheet/csvExport';
+import { downloadCSharpStruct } from '@/lib/sheet/csharpExport';
 import { useTranslations } from 'next-intl';
 import type { ViewType, Sheet, SavedView, FilterGroup } from '@/types';
 import { useProjectStore } from '@/stores/projectStore';
@@ -317,6 +318,19 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
         >
           <Download className="w-3 h-3" />
           CSV
+        </button>
+        {/* C# struct export — Unity / Godot game-balance pipeline.
+            Reads sheet.exportClassName + column types to render a
+            typed struct + readonly array. ADR 0033. */}
+        <button
+          type="button"
+          onClick={() => downloadCSharpStruct(sheet)}
+          className="ml-1 flex items-center gap-1 px-2 py-1 rounded-md text-xs hover:bg-[var(--bg-hover)] transition-colors flex-shrink-0"
+          style={{ color: 'var(--text-secondary)' }}
+          title="C# struct 으로 내보내기 (Unity)"
+        >
+          <Code2 className="w-3 h-3" />
+          C#
         </button>
       </div>
     </div>

@@ -159,3 +159,6 @@ export {
   openCustomerPortal,
 } from './billing';
 export type { Plan } from './billing';
+
+export { searchProject } from './search';
+export type { SearchHit } from './search';
