@@ -108,7 +108,12 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 - ✅ **ADR 0024 Stage I — email + Web Push notifications** — Spring's JavaMailSender (admin brings SMTP creds, Outline / AFFiNE / Baserow pattern, no built-in service) + VAPID Web Push (RFC 8030 + 8292, free forever, no third party). Per-user prefs (instant / daily / weekly / off) + per-device subscription list at `/settings/notifications`.
 - ✅ **ADR 0029 Inbound webhooks (GitHub)** — POST `/api/v1/inbound-public/:id/{github\|generic}` with HMAC-SHA256 (`X-Hub-Signature-256` for GitHub, `X-Balruno-Signature` for generic). PR / issue events auto-create rows on the target sheet (title / url / status mapped to chosen columns).
 - ✅ **Daily / weekly digest** — Spring `@Scheduled` aggregates per-user mentions for non-instant cadence picks (00:00 UTC daily / Monday weekly).
-- ✅ **ADR 0030 Discord slash commands** — Ed25519 verified `/v1/discord/interactions` endpoint. `/balruno bug <text>` adds a row to the workspace's default sheet. v1 is manual setup (paste 4 strings from Developer Portal); OAuth2 install URL is v2 polish.
+- ✅ **ADR 0030 Discord slash commands** — Ed25519 verified `/v1/discord/interactions` endpoint. `/balruno bug <text>` adds a row to the workspace's default sheet.
+- ✅ **ADR 0004 Stripe billing** — Checkout + Customer Portal + signature-verified webhook. V20 schema; global cards.
+- ✅ **ADR 0031 Project-wide search** — walks cells + tree nodes + comment bodies; wired into Cmd+K with 200ms debounce.
+- ✅ **ADR 0032 Workspace audit log** — `workspace_audit_log` + `AuditLogEvent` ApplicationEvent. Per-workspace activity feed surface.
+- ✅ **ADR 0033 Game engine export** — CSV (RFC 4180 + BOM) + C# `[Serializable]` struct + readonly array. Drop straight into Unity Assets/.
+- ✅ **ADR 0034 Cmd+K + GDPR + PWA** — quick switcher, data-export + account-delete self-service, manifest for Add to Home Screen.
 - ✅ **ADR 0024 v2.2** — comment reply threads (1-level nesting via `parentId`, Slack/Linear pattern)
 
 ### Planned (next 6 months)
@@ -336,7 +341,12 @@ For commercial licensing inquiries: dj258255@naver.com
 - ✅ ADR 0024 Stage I — email + Web Push (VAPID) 알림. SMTP 는 admin 이 spring.mail.* 로 가져옴 (Outline/AFFiNE/Baserow 패턴). Web Push 는 RFC 표준이라 영구 무료. `/settings/notifications` 에서 toggles + per-device 관리.
 - ✅ ADR 0029 Inbound webhooks (GitHub) — POST + HMAC-SHA256 검증. PR / issue 이벤트가 자동으로 row 추가. ViewSwitcher 의 "받기" 버튼으로 URL + secret 발급.
 - ✅ Daily / weekly digest — Spring `@Scheduled` 가 instant 가 아닌 사용자에게 mention 모음 1통 (00:00 UTC).
-- ✅ ADR 0030 Discord slash commands — Ed25519 검증 interaction endpoint. `/balruno bug <text>` 가 workspace 기본 시트에 row 추가. v1 = 5단계 manual setup (Developer Portal 4 string 복사), v2 = OAuth2 install.
+- ✅ ADR 0030 Discord slash commands — Ed25519 검증 interaction endpoint. `/balruno bug <text>` 가 workspace 기본 시트에 row 추가.
+- ✅ ADR 0004 Stripe billing — Checkout + Customer Portal + 서명 검증 webhook. V20 schema. 글로벌 + 한국 카드 수금.
+- ✅ ADR 0031 Project-wide search — 셀/트리/코멘트 본문 검색. Cmd+K 와 200ms debounce 로 통합.
+- ✅ ADR 0032 Workspace audit log — `workspace_audit_log` + `AuditLogEvent` ApplicationEvent. 활동 피드의 backing store.
+- ✅ ADR 0033 Game engine export — CSV + C# struct. Unity Assets/ 에 그대로 드롭.
+- ✅ ADR 0034 Cmd+K + GDPR + PWA — 빠른 점프, 데이터 내보내기 / 계정 삭제 자체-서비스, 홈 화면 추가.
 - ✅ ADR 0024 v2.2 — 코멘트 답글 스레드 (1단계 nesting, Slack/Linear 패턴)
 
 **계획 중 (다음 6 개월)**
