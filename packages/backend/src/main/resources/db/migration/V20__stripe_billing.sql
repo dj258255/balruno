@@ -16,11 +16,11 @@ ALTER TABLE workspaces
     -- ('trialing', 'active', 'past_due', 'canceled', 'unpaid', ...).
     -- Source of truth is Stripe, but we keep a copy so reads don't
     -- have to round-trip on every limit check.
-    stripe_subscription_status TEXT,
+    ADD COLUMN stripe_subscription_status TEXT,
 
     -- When the current period ends — for the 'PRO active until 11/12'
     -- chip in the settings panel. NULL for FREE workspaces.
-    stripe_current_period_end TIMESTAMPTZ;
+    ADD COLUMN stripe_current_period_end TIMESTAMPTZ;
 
 -- Lookup by customer / subscription id is what the webhook handler
 -- does on every event. Indexes keep that fast.
