@@ -59,16 +59,16 @@ class SheetCellOpService {
     private final com.fasterxml.jackson.databind.ObjectMapper nodeMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
-    private final com.balruno.webhook.WebhookService webhooks;
+    private final org.springframework.context.ApplicationEventPublisher events;
 
     SheetCellOpService(JdbcTemplate jdbc,
                        OpIdempotencyRepository idempotency,
                        ObjectMapper json,
-                       com.balruno.webhook.WebhookService webhooks) {
+                       org.springframework.context.ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.idempotency = idempotency;
         this.json = json;
-        this.webhooks = webhooks;
+        this.events = events;
     }
 
     @Transactional
@@ -157,7 +157,10 @@ class SheetCellOpService {
         // Webhook outbound — fire-and-forget. row.add is the only
         // sheet-cell op currently subscribed (KNOWN_EVENTS in
         // WebhookService). Hooked via afterCommit so a rolled-back
-        // tx can't notify external receivers. ADR 0028.
+        // tx can't notify external receivers. We publish a Spring
+        // ApplicationEvent (not a direct WebhookService call) so
+        // the webhook module isn't a static dep — Modulith's arch
+        // test rejects the cycle otherwise. ADR 0028.
         if (op instanceof SyncMessage.RowAdd rowAdd) {
             org.springframework.transaction.support.TransactionSynchronizationManager
                     .registerSynchronization(
@@ -168,7 +171,8 @@ class SheetCellOpService {
                                         var payload = nodeMapper.createObjectNode();
                                         payload.put("sheetId", rowAdd.sheetId().toString());
                                         payload.set("row", nodeMapper.valueToTree(rowAdd.row()));
-                                        webhooks.publish(projectId, "row.added", payload);
+                                        events.publishEvent(new com.balruno.events.WebhookEvent(
+                                                projectId, "row.added", payload));
                                     } catch (Exception ignored) {
                                         // Webhooks must never bubble.
                                     }

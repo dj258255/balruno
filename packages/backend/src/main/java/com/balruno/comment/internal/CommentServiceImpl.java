@@ -34,7 +34,7 @@ class CommentServiceImpl implements CommentService {
     private final CommentRepository repo;
     private final ProjectService projects;
     private final ProjectSyncApi sync;
-    private final com.balruno.webhook.WebhookService webhooks;
+    private final org.springframework.context.ApplicationEventPublisher events;
 
     /** databind autowired (tools.jackson) — kept private fasterxml
      *  mapper for tree work in the webhook payload (project_sb4). */
@@ -42,11 +42,11 @@ class CommentServiceImpl implements CommentService {
             new com.fasterxml.jackson.databind.ObjectMapper();
 
     CommentServiceImpl(CommentRepository repo, ProjectService projects, ProjectSyncApi sync,
-                       com.balruno.webhook.WebhookService webhooks) {
+                       org.springframework.context.ApplicationEventPublisher events) {
         this.repo = repo;
         this.projects = projects;
         this.sync = sync;
-        this.webhooks = webhooks;
+        this.events = events;
     }
 
     /**
@@ -126,13 +126,16 @@ class CommentServiceImpl implements CommentService {
                     @Override
                     public void afterCommit() {
                         try {
-                            webhooks.publish(projectId, event,
-                                    nodeMapperForHook.valueToTree(payload));
+                            // Publish via ApplicationEvent so the
+                            // webhook module isn't a static dep here.
+                            // Spring Modulith's arch test rejects the
+                            // direct call. ADR 0028.
+                            events.publishEvent(new com.balruno.events.WebhookEvent(
+                                    projectId, event,
+                                    nodeMapperForHook.valueToTree(payload)));
                         } catch (Exception e) {
                             // Webhook failures must never bubble out of
-                            // commit hooks — log + carry on. The
-                            // dispatcher itself records errors per
-                            // subscriber in webhooks.last_error.
+                            // commit hooks — log + carry on.
                         }
                     }
                 });

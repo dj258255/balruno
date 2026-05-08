@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.webhook.internal;
 
-import com.balruno.project.ProjectService;
 import com.balruno.webhook.Webhook;
 import com.balruno.webhook.WebhookService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -41,7 +40,6 @@ class WebhookServiceImpl implements WebhookService {
     private static final Logger log = LoggerFactory.getLogger(WebhookServiceImpl.class);
 
     private final WebhookRepository repo;
-    private final ProjectService projects;
 
     /** databind autowired (tools.jackson in SB 4); we keep a fasterxml
      *  ObjectMapper locally for canonical JSON serialisation in the
@@ -53,15 +51,20 @@ class WebhookServiceImpl implements WebhookService {
             .connectTimeout(Duration.ofSeconds(5))
             .build();
 
-    WebhookServiceImpl(WebhookRepository repo, ProjectService projects) {
+    WebhookServiceImpl(WebhookRepository repo) {
         this.repo = repo;
-        this.projects = projects;
     }
 
+    /**
+     * Project-membership authorisation lives in the controller layer
+     * (WebhookController calls ProjectService.findById to throw 404
+     * for non-members before delegating here). That keeps the
+     * webhook module from depending on the project module —
+     * Spring Modulith arch test rejects the cycle otherwise.
+     */
     @Override
     @Transactional
     public Webhook create(UUID callerUserId, UUID projectId, String url, List<String> events) {
-        projects.findById(projectId, callerUserId);
         validateUrl(url);
         validateEvents(events);
         return repo.insert(projectId, url, events, callerUserId);
@@ -70,27 +73,25 @@ class WebhookServiceImpl implements WebhookService {
     @Override
     @Transactional(readOnly = true)
     public List<Webhook> listForProject(UUID callerUserId, UUID projectId) {
-        projects.findById(projectId, callerUserId);
         return repo.findByProjectId(projectId).stream()
                 .map(WebhookServiceImpl::stripSecret)
                 .toList();
     }
 
     @Override
+    public Webhook findById(UUID webhookId) {
+        return repo.findById(webhookId);
+    }
+
+    @Override
     @Transactional
     public void setActive(UUID callerUserId, UUID webhookId, boolean active) {
-        var webhook = repo.findById(webhookId);
-        if (webhook == null) return;
-        projects.findById(webhook.projectId(), callerUserId);
         repo.setActive(webhookId, active);
     }
 
     @Override
     @Transactional
     public void delete(UUID callerUserId, UUID webhookId) {
-        var webhook = repo.findById(webhookId);
-        if (webhook == null) return;
-        projects.findById(webhook.projectId(), callerUserId);
         repo.delete(webhookId);
     }
 

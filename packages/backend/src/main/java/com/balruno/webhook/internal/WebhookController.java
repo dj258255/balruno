@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.webhook.internal;
 
+import com.balruno.project.ProjectService;
 import com.balruno.webhook.Webhook;
 import com.balruno.webhook.WebhookService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -37,25 +38,39 @@ import java.util.UUID;
 class WebhookController {
 
     private final WebhookService webhooks;
+    private final ProjectService projects;
 
-    WebhookController(WebhookService webhooks) {
+    WebhookController(WebhookService webhooks, ProjectService projects) {
         this.webhooks = webhooks;
+        this.projects = projects;
     }
 
+    /**
+     * Project membership lives in the controller (not the service)
+     * so the webhook module doesn't import the project module —
+     * Spring Modulith's ArchitectureTest forbids the back edge that
+     * would create. ProjectService.findById throws 404 for non-
+     * members; that error propagates straight through to the HTTP
+     * response.
+     */
     @PostMapping(path = "/projects/{projectId}/webhooks", version = "1")
     @ResponseStatus(HttpStatus.CREATED)
     Webhook create(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID projectId,
             @RequestBody @Valid CreateRequest body) {
-        return webhooks.create(callerId(jwt), projectId, body.url(), body.events());
+        var caller = callerId(jwt);
+        projects.findById(projectId, caller);
+        return webhooks.create(caller, projectId, body.url(), body.events());
     }
 
     @GetMapping(path = "/projects/{projectId}/webhooks", version = "1")
     List<Webhook> list(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID projectId) {
-        return webhooks.listForProject(callerId(jwt), projectId);
+        var caller = callerId(jwt);
+        projects.findById(projectId, caller);
+        return webhooks.listForProject(caller, projectId);
     }
 
     @PatchMapping(path = "/webhooks/{id}", version = "1")
@@ -64,13 +79,21 @@ class WebhookController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id,
             @RequestBody @Valid ToggleRequest body) {
-        webhooks.setActive(callerId(jwt), id, body.active());
+        var caller = callerId(jwt);
+        var webhook = webhooks.findById(id);
+        if (webhook == null) return;
+        projects.findById(webhook.projectId(), caller);
+        webhooks.setActive(caller, id, body.active());
     }
 
     @DeleteMapping(path = "/webhooks/{id}", version = "1")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
-        webhooks.delete(callerId(jwt), id);
+        var caller = callerId(jwt);
+        var webhook = webhooks.findById(id);
+        if (webhook == null) return;
+        projects.findById(webhook.projectId(), caller);
+        webhooks.delete(caller, id);
     }
 
     private static UUID callerId(Jwt jwt) {

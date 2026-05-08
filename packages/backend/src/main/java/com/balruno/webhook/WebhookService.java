@@ -26,6 +26,14 @@ public interface WebhookService {
      *  the secret in plaintext. */
     List<Webhook> listForProject(UUID callerUserId, UUID projectId);
 
+    /**
+     * Read a webhook by id without the project-membership check —
+     * the controller looks up the webhook to discover its
+     * {@code projectId} and then validates the caller against the
+     * project module. Returns null when the row doesn't exist.
+     */
+    Webhook findById(UUID webhookId);
+
     /** Toggle active. Idempotent. */
     void setActive(UUID callerUserId, UUID webhookId, boolean active);
 
