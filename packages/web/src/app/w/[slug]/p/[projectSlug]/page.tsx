@@ -70,7 +70,7 @@ import GalleryView from '@/components/views/GalleryView';
 import { BalanceHeatmap } from '@/components/views/BalanceHeatmap';
 import { CurveOverlay } from '@/components/views/CurveOverlay';
 import { ProbabilityTree } from '@/components/views/ProbabilityTree';
-import { SheetDiffView } from '@/components/views/SheetDiffView';
+import ServerDiffView from '@/components/views/ServerDiffView';
 import ViewSwitcher from '@/components/views/ViewSwitcher';
 import { TemplateImportModal } from '@/components/sheet/TemplateImportModal';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
@@ -714,13 +714,13 @@ export default function ProjectDetailPage() {
                 ) : selectedSheet.activeView === 'probability' ? (
                   <ProbabilityTree sheetId={selectedSheet.id} />
                 ) : selectedSheet.activeView === 'diff' ? (
-                  // Diff view compares two project snapshots — server-
-                  // canonical mode doesn't keep historical snapshots in
-                  // memory, so without a "compare against" picker the
-                  // view renders its empty-baseline placeholder. Picker
-                  // (compare to op_idempotency reversible window) is a
-                  // follow-up.
-                  <SheetDiffView sheetId={selectedSheet.id} before={null} after={null} />
+                  // ServerDiffView walks op_idempotency.inverse_payload
+                  // backward from the current project to synthesise a
+                  // "before" snapshot inside the 120-min reversible
+                  // window (ADR 0021 v3.0 Phase 5). Picker chooses
+                  // how far back. Per-tab + per-user scope (Baserow
+                  // pattern) — solo dev sees their own edit history.
+                  <ServerDiffView projectId={project.id} sheetId={selectedSheet.id} />
                 ) : (
                   <SheetTable projectId={project.id} sheet={selectedSheet} />
                 )}

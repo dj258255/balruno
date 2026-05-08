@@ -8,11 +8,13 @@
  */
 
 import { useState } from 'react';
-import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Filter, Flame, TrendingUp, GitFork, GitCompare } from 'lucide-react';
+import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Filter, Flame, TrendingUp, GitFork, GitCompare, Share2, Plug } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ViewType, Sheet, SavedView, FilterGroup } from '@/types';
 import { useProjectStore } from '@/stores/projectStore';
 import { FilterBuilder } from './FilterBuilder';
+import { ShareLinkModal } from './ShareLinkModal';
+import { WebhooksModal } from './WebhooksModal';
 
 interface ViewSwitcherProps {
   projectId: string;
@@ -48,6 +50,8 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
   const [newName, setNewName] = useState('');
   const [renaming, setRenaming] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [showWebhooks, setShowWebhooks] = useState(false);
 
   const filterGroup = sheet.filterGroup;
   const filterActive = Boolean(filterGroup && filterGroup.conditions.length > 0);
@@ -264,8 +268,45 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
             </span>
           )}
         </button>
+        {/* Share — opens a modal that lists existing share links and
+            lets the user mint a new one. ADR 0027. */}
+        <button
+          type="button"
+          onClick={() => setShowShare(true)}
+          className="ml-1 flex items-center gap-1 px-2 py-1 rounded-md text-xs hover:bg-[var(--bg-hover)] transition-colors flex-shrink-0"
+          style={{ color: 'var(--text-secondary)' }}
+          title="공유 링크"
+        >
+          <Share2 className="w-3 h-3" />
+          공유
+        </button>
+        {/* Webhooks — outbound integrations panel (ADR 0028). */}
+        <button
+          type="button"
+          onClick={() => setShowWebhooks(true)}
+          className="ml-1 flex items-center gap-1 px-2 py-1 rounded-md text-xs hover:bg-[var(--bg-hover)] transition-colors flex-shrink-0"
+          style={{ color: 'var(--text-secondary)' }}
+          title="웹훅 (Outbound)"
+        >
+          <Plug className="w-3 h-3" />
+          웹훅
+        </button>
       </div>
     </div>
+
+    {showShare && (
+      <ShareLinkModal
+        projectId={projectId}
+        sheet={sheet}
+        onClose={() => setShowShare(false)}
+      />
+    )}
+    {showWebhooks && (
+      <WebhooksModal
+        projectId={projectId}
+        onClose={() => setShowWebhooks(false)}
+      />
+    )}
 
     {showFilter && (
       <div className="px-2 pt-2 pb-1 border-b" style={{ borderColor: 'var(--border-primary)' }}>

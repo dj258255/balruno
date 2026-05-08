@@ -34,11 +34,19 @@ class CommentServiceImpl implements CommentService {
     private final CommentRepository repo;
     private final ProjectService projects;
     private final ProjectSyncApi sync;
+    private final com.balruno.webhook.WebhookService webhooks;
 
-    CommentServiceImpl(CommentRepository repo, ProjectService projects, ProjectSyncApi sync) {
+    /** databind autowired (tools.jackson) — kept private fasterxml
+     *  mapper for tree work in the webhook payload (project_sb4). */
+    private final com.fasterxml.jackson.databind.ObjectMapper nodeMapperForHook =
+            new com.fasterxml.jackson.databind.ObjectMapper();
+
+    CommentServiceImpl(CommentRepository repo, ProjectService projects, ProjectSyncApi sync,
+                       com.balruno.webhook.WebhookService webhooks) {
         this.repo = repo;
         this.projects = projects;
         this.sync = sync;
+        this.webhooks = webhooks;
     }
 
     /**
@@ -95,9 +103,39 @@ class CommentServiceImpl implements CommentService {
                 false, null, null,
                 now, now);
         var saved = repo.insert(draft);
-        repo.insertMentions(saved.id(), MentionExtractor.parse(req.bodyJson()));
+        var mentions = MentionExtractor.parse(req.bodyJson());
+        repo.insertMentions(saved.id(), mentions);
         broadcastAfterCommit(saved.projectId(), "comment.added", saved);
+        // Outbound webhook fanout — fires after the same afterCommit
+        // gate so a rolled-back create can't notify external receivers.
+        // Comment + each mention get separate events; receivers can
+        // subscribe independently via the events[] column. ADR 0028.
+        webhookHook(saved.projectId(), "comment.added", saved);
+        for (var mentionedUser : mentions) {
+            webhookHook(saved.projectId(), "mention.created",
+                    java.util.Map.of(
+                            "commentId", saved.id().toString(),
+                            "mentionedUser", mentionedUser.toString()));
+        }
         return saved;
+    }
+
+    private void webhookHook(UUID projectId, String event, Object payload) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            webhooks.publish(projectId, event,
+                                    nodeMapperForHook.valueToTree(payload));
+                        } catch (Exception e) {
+                            // Webhook failures must never bubble out of
+                            // commit hooks — log + carry on. The
+                            // dispatcher itself records errors per
+                            // subscriber in webhooks.last_error.
+                        }
+                    }
+                });
     }
 
     @Override

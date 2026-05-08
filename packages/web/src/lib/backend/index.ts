@@ -85,3 +85,28 @@ export type {
   CreateCommentInput,
   ListCommentsForCellInput,
 } from './comments';
+
+export {
+  createShareLink,
+  listShareLinks,
+  revokeShareLink,
+  fetchPublicShare,
+} from './share';
+export type {
+  ShareLink,
+  CreateShareLinkInput,
+  PublicReadResponse,
+} from './share';
+
+export {
+  createWebhook,
+  listWebhooks,
+  toggleWebhook,
+  deleteWebhook,
+  KNOWN_WEBHOOK_EVENTS,
+} from './webhooks';
+export type {
+  BackendWebhook,
+  CreateWebhookInput,
+  WebhookEvent,
+} from './webhooks';

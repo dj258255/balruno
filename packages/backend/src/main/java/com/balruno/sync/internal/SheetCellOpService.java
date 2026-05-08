@@ -59,12 +59,16 @@ class SheetCellOpService {
     private final com.fasterxml.jackson.databind.ObjectMapper nodeMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
+    private final com.balruno.webhook.WebhookService webhooks;
+
     SheetCellOpService(JdbcTemplate jdbc,
                        OpIdempotencyRepository idempotency,
-                       ObjectMapper json) {
+                       ObjectMapper json,
+                       com.balruno.webhook.WebhookService webhooks) {
         this.jdbc = jdbc;
         this.idempotency = idempotency;
         this.json = json;
+        this.webhooks = webhooks;
     }
 
     @Transactional
@@ -148,6 +152,28 @@ class SheetCellOpService {
             // — re-read and replay it instead of double-applying.
             var winning = idempotency.findById(clientMsgId).orElseThrow(() -> e);
             return new SyncResult.Cached(winning.getResultVersion(), winning.getResultPayload());
+        }
+
+        // Webhook outbound — fire-and-forget. row.add is the only
+        // sheet-cell op currently subscribed (KNOWN_EVENTS in
+        // WebhookService). Hooked via afterCommit so a rolled-back
+        // tx can't notify external receivers. ADR 0028.
+        if (op instanceof SyncMessage.RowAdd rowAdd) {
+            org.springframework.transaction.support.TransactionSynchronizationManager
+                    .registerSynchronization(
+                            new org.springframework.transaction.support.TransactionSynchronization() {
+                                @Override
+                                public void afterCommit() {
+                                    try {
+                                        var payload = nodeMapper.createObjectNode();
+                                        payload.put("sheetId", rowAdd.sheetId().toString());
+                                        payload.set("row", nodeMapper.valueToTree(rowAdd.row()));
+                                        webhooks.publish(projectId, "row.added", payload);
+                                    } catch (Exception ignored) {
+                                        // Webhooks must never bubble.
+                                    }
+                                }
+                            });
         }
 
         return new SyncResult.Acked(newVersion, broadcast);

@@ -66,7 +66,10 @@ class SecurityConfig {
                                 "/", "/error",
                                 "/actuator/**",
                                 "/login/**", "/oauth2/**",
-                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
+                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
+                                // Public share-link read (ADR 0027). Token-only auth
+                                // resolved inside ShareController; no JWT required.
+                                "/api/v1/share-public/**"
                         ).permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
