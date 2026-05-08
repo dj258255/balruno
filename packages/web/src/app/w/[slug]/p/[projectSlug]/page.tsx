@@ -40,6 +40,9 @@ import {
 import { useBackendAuthStore } from '@/stores/backendAuthStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { useProjectHistory } from '@/hooks';
+import { usePanelStates } from '@/hooks/usePanelStates';
+import BottomDock from '@/components/BottomDock';
+import DockedToolbox from '@/components/DockedToolbox';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { useAuthStore } from '@/stores/authStore';
 import { setActiveStack, pushUndo, hydrateStack, type UndoableOp, type UndoEntry } from '@/lib/undo/undoStack';
@@ -509,6 +512,13 @@ export default function ProjectDetailPage() {
   // Mobile sidebar drawer state — desktop (md+) ignores this and
   // renders the sidebar inline. ADR 0022 stage A.
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Floating dock — restored from v0.5 home page (commit eda7fe3^).
+  // BottomDock + DockedToolbox share `panels` state via usePanelStates;
+  // each tool button toggles a DraggablePanel mounted by DockedToolbox.
+  // Server-canonical reads/writes go through the same useProjectStore
+  // path the inline sheet table uses, so no extra rewiring needed.
+  const { panels: toolPanels } = usePanelStates();
   // Close the drawer once the user picks something inside (sheet
   // leaf, doc leaf) so they don't have to manually dismiss.
   const closeMobileSidebar = () => setMobileSidebarOpen(false);
@@ -793,6 +803,15 @@ export default function ProjectDetailPage() {
         onClose={() => setTemplateModalOpen(false)}
         onPick={handlePickTemplate}
       />
+
+      {/* v0.5 floating dock — right-side panel drawer + bottom toolbar.
+          DockedToolbox owns the DraggablePanel mounts; BottomDock owns
+          the toggle buttons. Both subscribe to the same panel state so
+          a click on the bottom button surfaces the corresponding panel
+          on the right (or as a free-floating draggable, depending on
+          per-panel layout in toolLayoutStore). */}
+      <DockedToolbox panels={toolPanels} />
+      <BottomDock panels={toolPanels} isModalOpen={templateModalOpen} />
     </main>
   );
 }
