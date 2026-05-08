@@ -147,3 +147,9 @@ export type {
   DiscordLink,
   CreateDiscordLinkInput,
 } from './discord';
+
+export {
+  exportMyData,
+  deleteMyAccount,
+  downloadDataExport,
+} from './account';

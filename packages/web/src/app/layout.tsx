@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "sonner";
 import { DesktopBootstrap } from "./components/DesktopBootstrap";
 import { BackendAuthBootstrap } from "./components/BackendAuthBootstrap";
+import { CommandPaletteHost } from "@/components/CommandPaletteHost";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -69,6 +70,7 @@ export default async function RootLayout({
         <ThemeProvider>
           <NextIntlClientProvider messages={messages}>
             {children}
+            <CommandPaletteHost />
           </NextIntlClientProvider>
         </ThemeProvider>
         {/* Toast surface — sonner picks up the system theme via CSS vars
