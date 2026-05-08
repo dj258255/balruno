@@ -96,16 +96,16 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 
 - ✅ **ADR 0021 v3.0 phase 5** — server-backed persistent undo (refresh-survival, 120-min Baserow window, per-tab scope, hydrate-on-mount)
 - ✅ **ADR 0008 v2.2** — cell style server-canonical sync (was silent local-only — now broadcasts to peers + cross-device)
-- ✅ **ADR 0022 v1.3** — mobile UX completion (6 stages prod: drawer · sticky col · bottom-sheet editor · Tiptap mobile toolbar · long-press contextmenu · 44px hit targets)
+- ✅ **ADR 0008 ζ.3** — `lib/ydoc.ts` complete deletion (-3411 net lines: lib/ydoc + sample data + 22 dead slice actions). Sheet domain is now 100% server-canonical; Y.Doc only survives in doc-body Hocuspocus pattern.
+- ✅ **ADR 0022 v1.4** — mobile UX completion (drawer · sticky col · bottom-sheet editor · Tiptap mobile toolbar · long-press contextmenu · 44px hit targets · **link picker search**)
 - ✅ **ADR 0024 v2.2** — comment reply threads (1-level nesting via `parentId`, Slack/Linear pattern, both cell + doc panels)
 
 ### Planned (next 6 months)
 
 | ADR | Feature | Stack | Status |
 |---|---|---|---|
-| **0008 ζ.3** | `lib/ydoc.ts` complete deletion — sticker + changelog migration to server-canonical wire ops, V15 schema | Spring backend + Frontend | Next (~1 week) |
 | **0024 stage I** | @mention email + browser push delivery (Resend free tier 100/day, Brevo 300/day, Web Push VAPID) | Spring backend + Web Push | Deferred (waiting on real users) |
-| **0022 polish** | Mobile link picker search/filter for 100+ row sheets | Frontend | Minor |
+| **0022 polish** | Sticky first column width auto-grow for 10K+ row sheets | Frontend | Trigger when row counts cross 10K |
 | **0023 v3.0** | AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | Deferred by user |
 | **0025 v2.0** | ML — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity · RAG over comments | **Same Python sidecar** | Deferred by user |
 | (TBD) | Re-introduce additional views (Kanban / Calendar / Gantt) on top of server-canonical sync | Frontend | TBD |
@@ -216,14 +216,14 @@ We welcome contributions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before 
 - **Undo / redo** — full op coverage (cell / row / column / tree) — ADR 0021 phases 1-4
 - **Server-backed persistent undo** — refresh-survival, per-tab scope, 120-min Baserow window, hydrate-on-mount — ADR 0021 v3.0 phase 5
 - **Comments + @mentions** — sheet cells + doc body (range-anchored highlights via Tiptap Decoration plugin), inbox bell, **reply threads (1-level nesting via parentId, Slack/Linear pattern)** — ADR 0024 v2.2
-- **Mobile UX** — full 6-stage prod: sidebar drawer + sticky first column + iOS 16px input + 44px hit targets + **bottom-sheet portal cell editor + long-press synthetic contextmenu + sticky Tiptap mobile toolbar** — ADR 0022 v1.3
+- **Mobile UX** — full 7-stage prod: sidebar drawer + sticky first column + iOS 16px input + 44px hit targets + **bottom-sheet portal cell editor + long-press synthetic contextmenu + sticky Tiptap mobile toolbar + link picker search** — ADR 0022 v1.4
 - **Cell style server-canonical sync** — was silent local-only, now broadcasts to all peers and survives cross-device — ADR 0008 v2.2
-- **v0.6 Y.Doc cleanup** — legacy local-mode + 294 dead files removed (-77K lines), only server-canonical mode remains — ADR 0008 §10
+- **`lib/ydoc.ts` complete deletion** — sheet domain is now 100% server-canonical, Y.Doc only survives in doc-body Hocuspocus pattern — ADR 0008 ζ.3 (-3411 net lines)
+- **v0.6 Y.Doc cleanup** — legacy local-mode + 294 dead files removed (-77K lines) — ADR 0008 §10
 
 **Next (planned, ~6 months)**
-- `lib/ydoc.ts` complete deletion — sticker + changelog migration to wire ops, V15 schema (ADR 0008 ζ.3)
 - @mention email + browser push delivery — Resend/Brevo free tier + Web Push VAPID (ADR 0024 stage I, deferred until real users land)
-- Mobile link picker search/filter (ADR 0022 minor polish for 100+ row sheets)
+- Mobile sticky col width auto-grow (trigger at 10K+ row sheets)
 - AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) — ADR 0023
 - ML capabilities — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity — ADR 0025
 - Re-introduce additional views (Kanban / Calendar / Gantt) on top of server-canonical sync
@@ -313,16 +313,16 @@ For commercial licensing inquiries: dj258255@naver.com
 **Shipped (이번 sprint)**
 - ✅ ADR 0021 v3.0 phase 5 — server-backed persistent undo (refresh 후 Cmd+Z, 120 분 Baserow 윈도우)
 - ✅ ADR 0008 v2.2 — 셀 스타일 server-canonical 동기화 (이전엔 silent local-only — 이제 peer + cross-device 진짜 sync)
-- ✅ ADR 0022 v1.3 — 모바일 UX 6 stage 풀 (드로어 · sticky 컬럼 · bottom-sheet 셀 에디터 · Tiptap 모바일 툴바 · 길게 누르기 컨텍스트 메뉴 · 44px hit target)
+- ✅ ADR 0008 ζ.3 — `lib/ydoc.ts` 통째 삭제 (-3411 net lines). 시트 도메인 100% server-canonical. Y.Doc 잔존 = 문서 본문 Hocuspocus pattern 만.
+- ✅ ADR 0022 v1.4 — 모바일 UX 풀 (드로어 · sticky 컬럼 · bottom-sheet 셀 에디터 · Tiptap 모바일 툴바 · 길게 누르기 컨텍스트 메뉴 · 44px hit target · **link picker 검색**)
 - ✅ ADR 0024 v2.2 — 코멘트 답글 스레드 (V11 schema 의 parentId 활용, 1단계 nesting, Slack/Linear 패턴, cell + doc 양 panel)
 
 **계획 중 (다음 6 개월)**
 
 | ADR | 기능 | 스택 | 상태 |
 |---|---|---|---|
-| **0008 ζ.3** | `lib/ydoc.ts` 통째 삭제 — sticker + changelog 마이그레이션, V15 schema | Spring backend + Frontend | 다음 (~1주) |
 | **0024 stage I** | @mention 이메일 + 브라우저 푸시 delivery (Resend free 100/day, Brevo 300/day, Web Push VAPID $0) | Spring backend + Web Push | 사용자 등장 시 |
-| **0022 polish** | 모바일 link picker 검색/필터 (100+ 행 시트) | Frontend | 마이너 |
+| **0022 polish** | sticky col 너비 자동조정 (10K+ 행 시 trigger) | Frontend | 자릿수 5+ 진입 시 |
 | **0023 v3.0** | AI 통합 (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | 사용자 보류 |
 | **0025 v2.0** | ML — outlier 탐지 · 클러스터 시각화 · curve fit · TrueSkill · 임베딩 유사도 · RAG | **같은 Python sidecar** | 사용자 보류 |
 | (TBD) | 추가 뷰 재도입 (Kanban / Calendar / Gantt) — server-canonical sync 위에 | Frontend | TBD |
