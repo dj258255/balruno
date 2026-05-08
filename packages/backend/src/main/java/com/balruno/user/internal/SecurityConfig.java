@@ -81,7 +81,11 @@ class SecurityConfig {
                                 "/api/v1/inbound-public/**",
                                 // Discord interaction endpoint (ADR 0030).
                                 // Ed25519 signature header IS the auth.
-                                "/api/v1/discord/interactions"
+                                "/api/v1/discord/interactions",
+                                // Stripe webhook (ADR 0004) — Stripe-Signature
+                                // header IS the auth, verified inside the
+                                // controller.
+                                "/api/v1/billing/stripe-webhook"
                         ).permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())

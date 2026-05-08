@@ -153,3 +153,9 @@ export {
   deleteMyAccount,
   downloadDataExport,
 } from './account';
+
+export {
+  startCheckout,
+  openCustomerPortal,
+} from './billing';
+export type { Plan } from './billing';

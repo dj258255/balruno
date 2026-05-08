@@ -85,6 +85,11 @@ dependencies {
     // can index by field instead of regex-parsing free-form lines.
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
 
+    // Stripe SDK (ADR 0004) — Checkout + Customer Portal + webhook
+    // signature verification. v29.x supports the 2024-09-30.acacia
+    // API version; we pin our @ApiVersion to that for stability.
+    implementation("com.stripe:stripe-java:29.0.0")
+
     // SMTP email (ADR 0024 Stage I) — Spring's JavaMailSender wraps
     // jakarta.mail. Admin brings their own SMTP creds via
     // spring.mail.* properties; same pattern Outline / AFFiNE / Baserow
