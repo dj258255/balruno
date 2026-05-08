@@ -1,0 +1,80 @@
+# SSH into prod_app and dump backend container logs + system stats.
+# Manual trigger only — use after a failed backend-deploy to capture
+# the actual Spring Boot startup error that the smoke-test step
+# can't see.
+#
+# Workflow injection: tail_lines comes from workflow_dispatch input.
+# We bind it to an env var (TAIL_LINES) and reference $TAIL_LINES
+# inside the run: block — never inline ${{ inputs.* }} in shell.
+
+name: backend-diag
+
+on:
+  workflow_dispatch:
+    inputs:
+      tail_lines:
+        description: 'Lines of `docker compose logs` to tail'
+        required: false
+        default: '300'
+
+permissions:
+  contents: read
+
+env:
+  PROD_HOST: 168.107.47.33
+  PROD_USER: rocky
+  INSTALL_DIR: /opt/balruno/backend
+
+jobs:
+  diag:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    steps:
+      - name: Setup SSH key
+        env:
+          OCI_SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$OCI_SSH_PRIVATE_KEY" > ~/.ssh/oci_key
+          chmod 600 ~/.ssh/oci_key
+
+      - name: docker compose ps
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+              -i ~/.ssh/oci_key \
+              "${PROD_USER}@${PROD_HOST}" \
+              "cd ${INSTALL_DIR} && docker compose ps"
+
+      - name: docker compose logs backend
+        env:
+          TAIL_LINES: ${{ inputs.tail_lines }}
+        run: |
+          # Validate the input is purely digits before passing to the
+          # remote shell — the workflow_dispatch UI lets the operator
+          # type anything, so we don't trust the value.
+          if [[ ! "$TAIL_LINES" =~ ^[0-9]+$ ]]; then
+            echo "tail_lines must be digits, got: $TAIL_LINES"
+            exit 1
+          fi
+          ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+              -i ~/.ssh/oci_key \
+              "${PROD_USER}@${PROD_HOST}" \
+              "cd ${INSTALL_DIR} && docker compose logs backend --tail ${TAIL_LINES}"
+
+      - name: System resources
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+              -i ~/.ssh/oci_key \
+              "${PROD_USER}@${PROD_HOST}" \
+              'free -h && echo --- && docker stats --no-stream'
+
+      - name: Flyway schema history (last 10 rows)
+        run: |
+          # Connect to the postgres container via docker exec on the
+          # prod host. Useful to see whether failed migrations left
+          # rows behind blocking subsequent attempts.
+          ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+              -i ~/.ssh/oci_key \
+              "${PROD_USER}@${PROD_HOST}" \
+              'cd /opt/balruno/backend && docker compose exec -T postgres psql -U balruno -d balruno -c "SELECT installed_rank, version, description, success, installed_on FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 10;"' \
+            || echo "(psql exec failed — postgres container may be in a different state)"
