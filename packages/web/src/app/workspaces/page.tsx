@@ -42,6 +42,13 @@ export default function WorkspacesPage() {
       try {
         const [list, q] = await Promise.all([listWorkspaces(), fetchUserQuota()]);
         if (cancelled) return;
+        // Single-workspace users skip the picker — Linear / Notion
+        // pattern. The list page only earns its keep when the user
+        // has 2+ workspaces or wants to create another.
+        if (list.length === 1) {
+          router.replace(`/w/${list[0].slug}`);
+          return;
+        }
         setWorkspaces(list);
         setQuota(q);
       } catch (e) {
