@@ -101,6 +101,9 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 - ✅ **ADR 0008 v2.3** — `sheet.metadata.update` wire op (activeView, view*ColumnId, savedViews, name, icon, kind, filterGroup, tags) — view switches and grouping picks broadcast to peers in real time.
 - ✅ **ADR 0022 v2.0** — Kanban + Calendar + Gantt views restored on top of server-canonical sync. Drag-drop / view config flicks are now genuinely multi-player (Linear pattern).
 - ✅ **ADR 0022 v2.1** — Remaining 6 views shipped: Form · Gallery · Heatmap · Curve · Probability · Diff. The 4 game-balance specific views (Heatmap / Curve / Probability / Diff) are where this stops being a Notion clone and starts being a Game Studio Workspace.
+- ✅ **Diff baseline picker** — op_idempotency.inverse_payload backward replay reconstructs historical baselines inside the 120-min reversible window. No separate snapshot infrastructure needed; Phase 5's idempotency log already has the data.
+- ✅ **ADR 0027 share links** — read-only public viewer at `/share/:token`. UUIDv7 PK + UUIDv4 token, optional sheet / view / expiry pin, instant revoke.
+- ✅ **ADR 0028 webhook outbound** — HMAC-SHA256 signed POSTs on `comment.added` / `mention.created` / `row.added`. ApplicationEvent decoupling so the webhook module isn't a static dep on the publishers (Spring Modulith arch test green).
 - ✅ **ADR 0024 v2.2** — comment reply threads (1-level nesting via `parentId`, Slack/Linear pattern)
 
 ### Planned (next 6 months)
@@ -108,7 +111,7 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 | ADR | Feature | Stack | Status |
 |---|---|---|---|
 | **0024 stage I** | @mention email + browser push delivery (Resend free tier 100/day, Brevo 300/day, Web Push VAPID) | Spring backend + Web Push | Deferred (waiting on real users) |
-| **0022 v2.2+** | Diff view baseline picker (compare current sheet to op_idempotency reversible window) | Frontend | Polish |
+| **Inbound webhooks** | GitHub PR sync · Discord slash commands — provider-specific OAuth + signature verification | Spring backend | Separate ADR |
 | **0023 v3.0** | AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | Deferred by user |
 | **0025 v2.0** | ML — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity · RAG over comments | **Same Python sidecar** | Deferred by user |
 
@@ -320,6 +323,9 @@ For commercial licensing inquiries: dj258255@naver.com
 - ✅ ADR 0008 v2.3 — `sheet.metadata.update` wire op. activeView / view metadata 14 필드 patch. peer 가 view 전환을 실시간으로 봄.
 - ✅ ADR 0022 v2.0 — Kanban / Calendar / Gantt 3 뷰 server-canonical 위로 재도입. drag-drop 이 *진짜* 실시간 멀티플레이어 (Linear 패턴).
 - ✅ ADR 0022 v2.1 — 나머지 6 뷰 풀 (Form · Gallery · Heatmap · Curve · Probability · Diff). 뒤 4 개 (Heatmap / Curve / Probability / Diff) 가 *Notion 클론* 과 *진짜 게임 밸런싱 도구* 의 분리.
+- ✅ Diff baseline picker — op_idempotency.inverse_payload 의 backward replay 로 120 분 윈도우 안 historical baseline 재구성. 별도 snapshot 인프라 불필요.
+- ✅ ADR 0027 share links — `/share/:token` 의 인증 없는 읽기 전용 viewer. 즉시 revoke.
+- ✅ ADR 0028 webhook outbound — `comment.added` / `mention.created` / `row.added` 이벤트의 HMAC-SHA256 POST. ApplicationEvent 디커플링.
 - ✅ ADR 0024 v2.2 — 코멘트 답글 스레드 (1단계 nesting, Slack/Linear 패턴)
 
 **계획 중 (다음 6 개월)**
@@ -327,7 +333,7 @@ For commercial licensing inquiries: dj258255@naver.com
 | ADR | 기능 | 스택 | 상태 |
 |---|---|---|---|
 | **0024 stage I** | @mention 이메일 + 브라우저 푸시 delivery (Resend free 100/day, Brevo 300/day, Web Push VAPID $0) | Spring backend + Web Push | 사용자 등장 시 |
-| **0022 v2.2+** | Diff 뷰 baseline picker (op_idempotency reversible window 비교) | Frontend | Polish |
+| **Inbound webhooks** | GitHub PR sync · Discord slash commands — provider OAuth + 서명 검증 | Spring backend | 별 ADR |
 | **0023 v3.0** | AI 통합 (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | 사용자 보류 |
 | **0025 v2.0** | ML — outlier 탐지 · 클러스터 시각화 · curve fit · TrueSkill · 임베딩 유사도 · RAG | **같은 Python sidecar** | 사용자 보류 |
 
