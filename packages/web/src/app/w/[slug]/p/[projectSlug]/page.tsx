@@ -65,6 +65,12 @@ import SheetTable from '@/components/sheet/SheetTable';
 import KanbanView from '@/components/views/KanbanView';
 import CalendarView from '@/components/views/CalendarView';
 import GanttView from '@/components/views/GanttView';
+import FormView from '@/components/views/FormView';
+import GalleryView from '@/components/views/GalleryView';
+import { BalanceHeatmap } from '@/components/views/BalanceHeatmap';
+import { CurveOverlay } from '@/components/views/CurveOverlay';
+import { ProbabilityTree } from '@/components/views/ProbabilityTree';
+import { SheetDiffView } from '@/components/views/SheetDiffView';
 import ViewSwitcher from '@/components/views/ViewSwitcher';
 import { TemplateImportModal } from '@/components/sheet/TemplateImportModal';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
@@ -697,6 +703,24 @@ export default function ProjectDetailPage() {
                   <CalendarView projectId={project.id} sheet={selectedSheet} />
                 ) : selectedSheet.activeView === 'gantt' ? (
                   <GanttView projectId={project.id} sheet={selectedSheet} />
+                ) : selectedSheet.activeView === 'form' ? (
+                  <FormView projectId={project.id} sheet={selectedSheet} />
+                ) : selectedSheet.activeView === 'gallery' ? (
+                  <GalleryView projectId={project.id} sheet={selectedSheet} />
+                ) : selectedSheet.activeView === 'heatmap' ? (
+                  <BalanceHeatmap sheetId={selectedSheet.id} />
+                ) : selectedSheet.activeView === 'curve' ? (
+                  <CurveOverlay sheetId={selectedSheet.id} />
+                ) : selectedSheet.activeView === 'probability' ? (
+                  <ProbabilityTree sheetId={selectedSheet.id} />
+                ) : selectedSheet.activeView === 'diff' ? (
+                  // Diff view compares two project snapshots — server-
+                  // canonical mode doesn't keep historical snapshots in
+                  // memory, so without a "compare against" picker the
+                  // view renders its empty-baseline placeholder. Picker
+                  // (compare to op_idempotency reversible window) is a
+                  // follow-up.
+                  <SheetDiffView sheetId={selectedSheet.id} before={null} after={null} />
                 ) : (
                   <SheetTable projectId={project.id} sheet={selectedSheet} />
                 )}
