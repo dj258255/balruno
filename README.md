@@ -88,7 +88,7 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 | **Workspaces** | Multi-tenant with role-based access (Owner / Admin / Editor / Viewer) |
 | **Projects** | Per-workspace, with member invites + role management |
 | **Mobile** | Sidebar drawer + sticky first column + iOS 16px input + 44px hit targets + bottom-sheet cell editor + long-press contextmenu + sticky Tiptap toolbar + link picker search — ADR 0022 v1.4 |
-| **Views** | Grid (default) · Kanban · Calendar · Gantt — all on top of the server-canonical sync, so view switches and drag-drop are live multi-player — ADR 0022 v2.0 |
+| **Views** | 10 view types: Grid (default) · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff — all on top of the server-canonical sync, so view switches and drag-drop are live multi-player. The last 4 (Heatmap / Curve / Probability / Diff) are game-balance specific and don't exist in Notion / Airtable / Baserow. — ADR 0022 v2.1 |
 | **Desktop** | Native Mac / Windows / Linux app (Electron 41 + auto-update via GitHub Releases) |
 | **i18n** | UI + 12-group starter pack catalog fully translated (en, ko) |
 | **Observability** | Sentry SaaS (env-gated, optional for self-host) |
@@ -100,6 +100,7 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 - ✅ **ADR 0008 ζ.3** — `lib/ydoc.ts` complete deletion (-3411 net lines). Sheet domain is now 100% server-canonical.
 - ✅ **ADR 0008 v2.3** — `sheet.metadata.update` wire op (activeView, view*ColumnId, savedViews, name, icon, kind, filterGroup, tags) — view switches and grouping picks broadcast to peers in real time.
 - ✅ **ADR 0022 v2.0** — Kanban + Calendar + Gantt views restored on top of server-canonical sync. Drag-drop / view config flicks are now genuinely multi-player (Linear pattern).
+- ✅ **ADR 0022 v2.1** — Remaining 6 views shipped: Form · Gallery · Heatmap · Curve · Probability · Diff. The 4 game-balance specific views (Heatmap / Curve / Probability / Diff) are where this stops being a Notion clone and starts being a Game Studio Workspace.
 - ✅ **ADR 0024 v2.2** — comment reply threads (1-level nesting via `parentId`, Slack/Linear pattern)
 
 ### Planned (next 6 months)
@@ -107,7 +108,7 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 | ADR | Feature | Stack | Status |
 |---|---|---|---|
 | **0024 stage I** | @mention email + browser push delivery (Resend free tier 100/day, Brevo 300/day, Web Push VAPID) | Spring backend + Web Push | Deferred (waiting on real users) |
-| **0022 v2.1+** | Re-introduce remaining view types — Form · Gallery · Heatmap · Curve · Probability · Diff | Frontend | Trigger when users ask |
+| **0022 v2.2+** | Diff view baseline picker (compare current sheet to op_idempotency reversible window) | Frontend | Polish |
 | **0023 v3.0** | AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | Deferred by user |
 | **0025 v2.0** | ML — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity · RAG over comments | **Same Python sidecar** | Deferred by user |
 
@@ -218,7 +219,7 @@ We welcome contributions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before 
 - **Server-backed persistent undo** — refresh-survival, per-tab scope, 120-min Baserow window, hydrate-on-mount — ADR 0021 v3.0 phase 5
 - **Comments + @mentions** — sheet cells + doc body (range-anchored highlights via Tiptap Decoration plugin), inbox bell, **reply threads (1-level nesting via parentId, Slack/Linear pattern)** — ADR 0024 v2.2
 - **Mobile UX** — full prod: sidebar drawer + sticky first column + iOS 16px input + 44px hit targets + bottom-sheet portal cell editor + long-press synthetic contextmenu + sticky Tiptap mobile toolbar + link picker search — ADR 0022 v1.4
-- **Multi-view sheet** — Grid (default) · Kanban · Calendar · Gantt restored on top of server-canonical sync. Every drag-drop / view switch / grouping pick broadcasts to peers — ADR 0022 v2.0 + ADR 0008 v2.3 (`sheet.metadata.update` wire op)
+- **Multi-view sheet** — 10 view types: Grid · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff. The last 4 are game-balance specific (character × stat matrix, level scaling curves, drop / gacha probability tree, balance change before/after). Every drag-drop / view switch / grouping pick broadcasts to peers — ADR 0022 v2.1 + ADR 0008 v2.3 (`sheet.metadata.update` wire op)
 - **Cell style server-canonical sync** — was silent local-only, now broadcasts to all peers and survives cross-device — ADR 0008 v2.2
 - **`lib/ydoc.ts` complete deletion** — sheet domain is now 100% server-canonical, Y.Doc only survives in doc-body Hocuspocus pattern — ADR 0008 ζ.3 (-3411 net lines)
 - **v0.6 Y.Doc cleanup** — legacy local-mode + 294 dead files removed (-77K lines) — ADR 0008 §10
@@ -305,7 +306,7 @@ For commercial licensing inquiries: dj258255@naver.com
 | **워크스페이스** | 멀티 테넌트 + 역할 (Owner / Admin / Editor / Viewer) |
 | **프로젝트** | 워크스페이스 별, 멤버 초대 + 역할 관리 |
 | **모바일** | 사이드바 드로어 + 첫 컬럼 sticky + iOS 16px input + 44px hit target + bottom-sheet 셀 에디터 + 길게 누르기 컨텍스트 메뉴 + 문서 sticky Tiptap 툴바 + link picker 검색 — ADR 0022 v1.4 |
-| **뷰** | Grid (기본) / Kanban / Calendar / Gantt — server-canonical sync 위에서 모든 view 전환 / drag-drop 이 실시간 멀티플레이어 — ADR 0022 v2.0 |
+| **뷰** | 10 뷰: Grid (기본) / Form / Kanban / Calendar / Gallery / Gantt / Heatmap / Curve / Probability / Diff. 마지막 4 개 (Heatmap / Curve / Probability / Diff) 는 게임 밸런싱 도메인 특화 — Notion / Airtable / Baserow 에 없음. server-canonical sync 위에서 모든 view 전환 / drag-drop 이 실시간 멀티플레이어 — ADR 0022 v2.1 |
 | **데스크톱** | Mac / Windows / Linux 네이티브 (Electron 41 + GitHub Releases 자동 업데이트) |
 | **i18n** | UI + 12-그룹 스타터 팩 카탈로그 영/한 번역 |
 | **관측** | Sentry SaaS (env-gated, 셀프호스트는 선택) |
@@ -318,6 +319,7 @@ For commercial licensing inquiries: dj258255@naver.com
 - ✅ ADR 0008 ζ.3 — `lib/ydoc.ts` 통째 삭제 (-3411 net lines). 시트 도메인 100% server-canonical.
 - ✅ ADR 0008 v2.3 — `sheet.metadata.update` wire op. activeView / view metadata 14 필드 patch. peer 가 view 전환을 실시간으로 봄.
 - ✅ ADR 0022 v2.0 — Kanban / Calendar / Gantt 3 뷰 server-canonical 위로 재도입. drag-drop 이 *진짜* 실시간 멀티플레이어 (Linear 패턴).
+- ✅ ADR 0022 v2.1 — 나머지 6 뷰 풀 (Form · Gallery · Heatmap · Curve · Probability · Diff). 뒤 4 개 (Heatmap / Curve / Probability / Diff) 가 *Notion 클론* 과 *진짜 게임 밸런싱 도구* 의 분리.
 - ✅ ADR 0024 v2.2 — 코멘트 답글 스레드 (1단계 nesting, Slack/Linear 패턴)
 
 **계획 중 (다음 6 개월)**
@@ -325,7 +327,7 @@ For commercial licensing inquiries: dj258255@naver.com
 | ADR | 기능 | 스택 | 상태 |
 |---|---|---|---|
 | **0024 stage I** | @mention 이메일 + 브라우저 푸시 delivery (Resend free 100/day, Brevo 300/day, Web Push VAPID $0) | Spring backend + Web Push | 사용자 등장 시 |
-| **0022 v2.1+** | 나머지 뷰 재도입 (Form / Gallery / Heatmap / Curve / Probability / Diff) | Frontend | 사용자 요청 시 |
+| **0022 v2.2+** | Diff 뷰 baseline picker (op_idempotency reversible window 비교) | Frontend | Polish |
 | **0023 v3.0** | AI 통합 (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | 사용자 보류 |
 | **0025 v2.0** | ML — outlier 탐지 · 클러스터 시각화 · curve fit · TrueSkill · 임베딩 유사도 · RAG | **같은 Python sidecar** | 사용자 보류 |
 
