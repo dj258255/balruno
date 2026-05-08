@@ -4,6 +4,7 @@ package com.balruno;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.modulith.Modulithic;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Balruno backend entry point. Domain modules (user, workspace, project,
@@ -15,6 +16,7 @@ import org.springframework.modulith.Modulithic;
  */
 @Modulithic
 @SpringBootApplication
+@EnableScheduling
 public class BalrunoBackendApplication {
     public static void main(String[] args) {
         SpringApplication.run(BalrunoBackendApplication.class, args);

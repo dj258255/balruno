@@ -233,6 +233,11 @@ class CommentServiceImpl implements CommentService {
         return repo.listUnreadMentions(userId, Math.max(1, Math.min(limit, 200)));
     }
 
+    @Override
+    public List<Comment> listMentionsSinceForUser(UUID userId, java.time.OffsetDateTime since) {
+        return repo.listMentionsSinceForUser(userId, since);
+    }
+
     /**
      * Walks a Tiptap JSON tree and pulls out unique mentioned user
      * UUIDs. Tiptap's mention extension serialises each @user as a

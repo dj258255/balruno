@@ -78,7 +78,10 @@ class SecurityConfig {
                                 // Inbound webhooks (ADR 0029) — signature
                                 // verification (X-Hub-Signature-256 / X-Balruno-
                                 // Signature) inside the controller is the auth.
-                                "/api/v1/inbound-public/**"
+                                "/api/v1/inbound-public/**",
+                                // Discord interaction endpoint (ADR 0030).
+                                // Ed25519 signature header IS the auth.
+                                "/api/v1/discord/interactions"
                         ).permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())

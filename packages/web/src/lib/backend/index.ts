@@ -137,3 +137,13 @@ export type {
   InboundProvider,
   CreateInboundWebhookInput,
 } from './inbound';
+
+export {
+  createDiscordLink,
+  listDiscordLinks,
+  deleteDiscordLink,
+} from './discord';
+export type {
+  DiscordLink,
+  CreateDiscordLinkInput,
+} from './discord';

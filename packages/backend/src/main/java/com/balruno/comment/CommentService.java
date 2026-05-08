@@ -47,6 +47,12 @@ public interface CommentService {
     /** Inbox — unread mentions for a user across all projects. */
     List<Comment> listUnreadMentions(UUID userId, int limit);
 
+    /** Digest backing query — comments that mention {@code userId}
+     *  and were created on or after {@code since}. Used by the
+     *  daily / weekly digest scheduler (ADR 0024 Stage I). Newest
+     *  first; capped at 200 to keep the email body bounded. */
+    List<Comment> listMentionsSinceForUser(UUID userId, java.time.OffsetDateTime since);
+
     record CreateRequest(
             UUID projectId,
             Comment.ScopeKind scopeKind,

@@ -161,6 +161,18 @@ class CommentRepository {
                 rowMapper, userId, limit);
     }
 
+    List<Comment> listMentionsSinceForUser(UUID userId, java.time.OffsetDateTime since) {
+        return jdbc.query(
+                BASE_SELECT
+              + " WHERE id IN (SELECT comment_id FROM mentions "
+              + "              WHERE mentioned_user = ?) "
+              + "   AND created_at >= ? "
+              + "   AND deleted_at IS NULL "
+              + " ORDER BY created_at DESC LIMIT 200",
+                rowMapper, userId,
+                java.sql.Timestamp.from(since.toInstant()));
+    }
+
     void insertMentions(UUID commentId, List<UUID> mentionedUsers) {
         if (mentionedUsers.isEmpty()) return;
         // Batch insert; ignore conflicts so re-edit of a mention-bearing
