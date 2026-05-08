@@ -32,6 +32,7 @@ import java.util.UUID;
         // ── client → server ──────────────────────────────────────────
         @JsonSubTypes.Type(value = SyncMessage.CellUpdate.class,    name = "cell.update"),
         @JsonSubTypes.Type(value = SyncMessage.CellStyleUpdate.class, name = "cell.style.update"),
+        @JsonSubTypes.Type(value = SyncMessage.SheetMetadataUpdate.class, name = "sheet.metadata.update"),
         @JsonSubTypes.Type(value = SyncMessage.RowAdd.class,        name = "row.add"),
         @JsonSubTypes.Type(value = SyncMessage.RowDelete.class,     name = "row.delete"),
         @JsonSubTypes.Type(value = SyncMessage.RowMove.class,       name = "row.move"),
@@ -111,6 +112,22 @@ public sealed interface SyncMessage {
         public CellStyleUpdate(UUID sheetId, UUID rowId, UUID columnId, Object style,
                                long baseVersion, UUID clientMsgId) {
             this(sheetId, rowId, columnId, style, baseVersion, clientMsgId, null);
+        }
+    }
+
+    /**
+     * Sheet-level metadata patch — activeView, viewGroupColumnId,
+     * viewKanbanCoverColumnId, viewKanbanFieldIds, viewCalendarEnd
+     * ColumnId, viewGanttEndColumnId, viewGanttDependsColumnId,
+     * savedViews, activeSavedViewId, name, icon, kind. Mutates
+     * projects.data.sheets[i] keeping rows / columns intact.
+     *
+     * `patch` is a partial object — only present keys overwrite.
+     */
+    record SheetMetadataUpdate(UUID sheetId, Object patch, long baseVersion, UUID clientMsgId,
+                               UndoMeta undo) implements SyncMessage {
+        public SheetMetadataUpdate(UUID sheetId, Object patch, long baseVersion, UUID clientMsgId) {
+            this(sheetId, patch, baseVersion, clientMsgId, null);
         }
     }
 

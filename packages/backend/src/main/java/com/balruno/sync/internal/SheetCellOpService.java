@@ -162,6 +162,7 @@ class SheetCellOpService {
         switch (op) {
             case SyncMessage.CellUpdate u      -> applyCellUpdate(data, u);
             case SyncMessage.CellStyleUpdate u -> applyCellStyleUpdate(data, u);
+            case SyncMessage.SheetMetadataUpdate u -> applySheetMetadataUpdate(data, u);
             case SyncMessage.RowAdd u          -> applyRowAdd(data, u);
             case SyncMessage.RowDelete u       -> applyRowDelete(data, u);
             case SyncMessage.RowMove u         -> applyRowMove(data, u);
@@ -171,6 +172,28 @@ class SheetCellOpService {
             default -> throw new UnsupportedOperationException(
                     "not a sheet-cell op: " + op.getClass().getSimpleName());
         }
+    }
+
+    private void applySheetMetadataUpdate(ObjectNode data, SyncMessage.SheetMetadataUpdate u) {
+        var sheet = sheetOrThrow(data, u.sheetId());
+        // patch is a partial map — keys present overwrite, missing keys
+        // leave existing values intact. rows / columns are intentionally
+        // not mutated here even if the client misuses the payload; the
+        // frontend opMapper restricts the patch to view metadata.
+        var patchNode = nodeMapper.valueToTree(u.patch());
+        if (!(patchNode instanceof ObjectNode patchObj)) {
+            throw new IllegalArgumentException(
+                    "sheet.metadata.update patch must be an object");
+        }
+        patchObj.fields().forEachRemaining(entry -> {
+            String key = entry.getKey();
+            // Guard against accidental rows/columns overwrite — the
+            // wire op is for view metadata only.
+            if ("rows".equals(key) || "columns".equals(key) || "id".equals(key)) {
+                return;
+            }
+            sheet.set(key, entry.getValue());
+        });
     }
 
     private void applyCellStyleUpdate(ObjectNode data, SyncMessage.CellStyleUpdate u) {
@@ -358,6 +381,7 @@ class SheetCellOpService {
         return switch (op) {
             case SyncMessage.CellUpdate ignored      -> "cell.update";
             case SyncMessage.CellStyleUpdate ignored -> "cell.style.update";
+            case SyncMessage.SheetMetadataUpdate ignored -> "sheet.metadata.update";
             case SyncMessage.RowAdd ignored          -> "row.add";
             case SyncMessage.RowDelete ignored       -> "row.delete";
             case SyncMessage.RowMove ignored         -> "row.move";
@@ -383,6 +407,9 @@ class SheetCellOpService {
                     "rowId",    u.rowId().toString(),
                     "columnId", u.columnId().toString(),
                     "style",    u.style());
+            case SyncMessage.SheetMetadataUpdate u -> mapOf(
+                    "sheetId", u.sheetId().toString(),
+                    "patch",   u.patch());
             case SyncMessage.RowAdd u -> mapOf(
                     "sheetId", u.sheetId().toString(),
                     "row",     u.row());
@@ -425,6 +452,7 @@ class SheetCellOpService {
         return switch (op) {
             case SyncMessage.CellUpdate u      -> u.clientMsgId();
             case SyncMessage.CellStyleUpdate u -> u.clientMsgId();
+            case SyncMessage.SheetMetadataUpdate u -> u.clientMsgId();
             case SyncMessage.RowAdd u          -> u.clientMsgId();
             case SyncMessage.RowDelete u       -> u.clientMsgId();
             case SyncMessage.RowMove u         -> u.clientMsgId();
@@ -439,6 +467,7 @@ class SheetCellOpService {
         return switch (op) {
             case SyncMessage.CellUpdate u      -> u.baseVersion();
             case SyncMessage.CellStyleUpdate u -> u.baseVersion();
+            case SyncMessage.SheetMetadataUpdate u -> u.baseVersion();
             case SyncMessage.RowAdd u          -> u.baseVersion();
             case SyncMessage.RowDelete u       -> u.baseVersion();
             case SyncMessage.RowMove u         -> u.baseVersion();
@@ -456,6 +485,7 @@ class SheetCellOpService {
         return switch (op) {
             case SyncMessage.CellUpdate u      -> u.undo();
             case SyncMessage.CellStyleUpdate u -> u.undo();
+            case SyncMessage.SheetMetadataUpdate u -> u.undo();
             case SyncMessage.RowAdd u          -> u.undo();
             case SyncMessage.RowDelete u     -> u.undo();
             case SyncMessage.RowMove u       -> u.undo();

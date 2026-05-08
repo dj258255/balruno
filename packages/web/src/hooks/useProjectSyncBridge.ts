@@ -198,6 +198,30 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       }
       break;
     }
+    case 'sheet.metadata.update': {
+      // Sheet-level view metadata (activeView, viewGroupColumnId, ...)
+      // patch — peers see Kanban / Calendar / Gantt switches and the
+      // grouping-column pick in real-time. The patch object mirrors
+      // SheetMetadataPatch on the sender side; we apply it as a
+      // partial over the sheet record, skipping rows / columns / id
+      // defensively (server already filters those).
+      const op = msg.op as {
+        sheetId?: string;
+        patch?: Record<string, unknown>;
+      } | null;
+      if (op?.sheetId && op.patch) {
+        const patch = op.patch;
+        applyToSheet(projectId, op.sheetId, (sheet) => {
+          const next = { ...sheet } as typeof sheet & Record<string, unknown>;
+          for (const [key, value] of Object.entries(patch)) {
+            if (key === 'id' || key === 'rows' || key === 'columns') continue;
+            next[key] = value;
+          }
+          return next;
+        });
+      }
+      break;
+    }
     case 'row.add': {
       const op = msg.op as {
         sheetId?: string;

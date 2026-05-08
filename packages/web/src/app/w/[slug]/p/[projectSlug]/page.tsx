@@ -62,6 +62,10 @@ import { InboxBell } from '@/components/comments/InboxBell';
 import { ServerDocView } from '@/components/docs/ServerDocView';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
 import SheetTable from '@/components/sheet/SheetTable';
+import KanbanView from '@/components/views/KanbanView';
+import CalendarView from '@/components/views/CalendarView';
+import GanttView from '@/components/views/GanttView';
+import ViewSwitcher from '@/components/views/ViewSwitcher';
 import { TemplateImportModal } from '@/components/sheet/TemplateImportModal';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
 import type { CommentSelection } from '@/stores/commentSelectionStore';
@@ -685,7 +689,18 @@ export default function ProjectDetailPage() {
             }}
           >
             {selection?.kind === 'sheet' && selectedSheet ? (
-              <SheetTable projectId={project.id} sheet={selectedSheet} />
+              <div className="flex h-full flex-col">
+                <ViewSwitcher projectId={project.id} sheet={selectedSheet} />
+                {selectedSheet.activeView === 'kanban' ? (
+                  <KanbanView projectId={project.id} sheet={selectedSheet} />
+                ) : selectedSheet.activeView === 'calendar' ? (
+                  <CalendarView projectId={project.id} sheet={selectedSheet} />
+                ) : selectedSheet.activeView === 'gantt' ? (
+                  <GanttView projectId={project.id} sheet={selectedSheet} />
+                ) : (
+                  <SheetTable projectId={project.id} sheet={selectedSheet} />
+                )}
+              </div>
             ) : selection?.kind === 'doc' && selectedDocId ? (
               <ServerDocView
                 documentId={selectedDocId}

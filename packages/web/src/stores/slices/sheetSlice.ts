@@ -1,14 +1,17 @@
 /**
- * Sheet selection / tab actions slice.
+ * Sheet selection / tab actions slice + sheet metadata update.
  *
- * The sheet CRUD path lives on the server-canonical wire (sheet
- * tree ops in /lib/tree). This slice retains only the local UI
- * state for the active-sheet selection + the open-tabs strip.
+ * Sheet CRUD lives on the server-canonical sheet tree wire ops
+ * (/lib/tree). View metadata (activeView, viewGroupColumnId, ...)
+ * uses the sheet.metadata.update wire op so view switches and
+ * grouping picks broadcast to peers.
  */
 
 import type { StoreApi } from 'zustand';
 import type { Sheet } from '@/types';
 import type { ProjectState, TabEntry } from '../projectStore';
+import { emitOp } from '@/lib/sync/writeQueue';
+import type { SheetMetadataPatch } from '@/lib/sync/opMapper';
 
 type SetFn = StoreApi<ProjectState>['setState'];
 type GetFn = StoreApi<ProjectState>['getState'];
@@ -20,6 +23,37 @@ const withTab = (tabs: TabEntry[], kind: TabEntry['kind'], id: string): TabEntry
   hasTab(tabs, kind, id) ? tabs : [...tabs, { kind, id }];
 
 export const createSheetActions = (set: SetFn, get: GetFn) => ({
+  /**
+   * Patch sheet view metadata — activeView toggle, group column pick,
+   * Kanban cover col, Calendar end col, Gantt depends col, etc. The
+   * write goes through emitOp so peers see the same view state in
+   * real time. No undo entry — view config flicks are intentionally
+   * per-user ergonomics (matches Linear's view picker UX).
+   */
+  updateSheetMetadata: (
+    projectId: string,
+    sheetId: string,
+    patch: SheetMetadataPatch,
+    options?: { origin?: 'local' | 'remote' },
+  ) => {
+    const isRemote = options?.origin === 'remote';
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== projectId
+          ? p
+          : {
+              ...p,
+              sheets: p.sheets.map((s) =>
+                s.id !== sheetId ? s : { ...s, ...patch },
+              ),
+            },
+      ),
+    }));
+    if (!isRemote) {
+      emitOp({ kind: 'sheet.metadata.update', sheetId, patch });
+    }
+  },
+
   setCurrentSheet: (id: string | null) => {
     if (id) {
       set((state) => {

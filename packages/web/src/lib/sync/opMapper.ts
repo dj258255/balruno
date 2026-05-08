@@ -17,7 +17,7 @@
  * separate Hocuspocus channel (ADR 0017 §2.1 pattern B).
  */
 
-import type { Column, Row, CellValue, CellStyle } from '@balruno/shared';
+import type { Column, Row, CellValue, CellStyle, Sheet } from '@balruno/shared';
 import { randomId } from '@/lib/uuid';
 import type { ClientOp, UndoMeta } from '@/hooks/useProjectSync';
 
@@ -32,6 +32,34 @@ import type { ClientOp, UndoMeta } from '@/hooks/useProjectSync';
 export type MappedClientOp = Exclude<ClientOp, { type: 'presence' }>;
 
 /**
+ * Allowed keys for the sheet.metadata.update patch — view metadata
+ * only. Backend's applySheetMetadataUpdate rejects rows / columns / id
+ * keys defensively, but the client side restricts the type so the
+ * caller can't even ask. Keep aligned with shared/types Sheet view
+ * fields plus name / icon / kind.
+ */
+export type SheetMetadataPatch = Partial<
+  Pick<
+    Sheet,
+    | 'name'
+    | 'icon'
+    | 'kind'
+    | 'exportClassName'
+    | 'activeView'
+    | 'viewGroupColumnId'
+    | 'viewKanbanCoverColumnId'
+    | 'viewKanbanFieldIds'
+    | 'viewCalendarEndColumnId'
+    | 'viewGanttEndColumnId'
+    | 'viewGanttDependsColumnId'
+    | 'savedViews'
+    | 'activeSavedViewId'
+    | 'filterGroup'
+    | 'tags'
+  >
+>;
+
+/**
  * Closed enumeration of store actions that have a sync wire counterpart.
  * The mapper takes one of these (the *intent* of the action, free of
  * sync-specific fields) and produces a ClientOp ready for the
@@ -40,6 +68,7 @@ export type MappedClientOp = Exclude<ClientOp, { type: 'presence' }>;
 export type StoreActionIntent =
   | { kind: 'cell.update'; sheetId: string; rowId: string; columnId: string; value: CellValue }
   | { kind: 'cell.style.update'; sheetId: string; rowId: string; columnId: string; style: CellStyle }
+  | { kind: 'sheet.metadata.update'; sheetId: string; patch: SheetMetadataPatch }
   | { kind: 'row.add'; sheetId: string; row: Row }
   | { kind: 'row.delete'; sheetId: string; rowId: string }
   | { kind: 'row.move'; sheetId: string; rowId: string; toIndex: number }
@@ -84,6 +113,14 @@ export function mapStoreActionToOp(
         rowId: intent.rowId,
         columnId: intent.columnId,
         style: intent.style,
+        baseVersion,
+        clientMsgId,
+      });
+    case 'sheet.metadata.update':
+      return withUndo({
+        type: 'sheet.metadata.update',
+        sheetId: intent.sheetId,
+        patch: intent.patch,
         baseVersion,
         clientMsgId,
       });

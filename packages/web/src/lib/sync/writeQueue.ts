@@ -138,6 +138,7 @@ function regionOf(intent: StoreActionIntent): Region {
   switch (intent.kind) {
     case 'cell.update':
     case 'cell.style.update':
+    case 'sheet.metadata.update':
     case 'row.add':
     case 'row.delete':
     case 'row.move':

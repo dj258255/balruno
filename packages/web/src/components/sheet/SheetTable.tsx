@@ -759,7 +759,12 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
           </div>
         );
       },
-      size: 50,
+      // Auto-grow with row count digits — 50px holds 9999 rows; past
+      // that the count overflows the sticky column at default font.
+      // Width = digits × 11 + 20 (rough char width for tabular-numerals
+      // at 13px, plus side padding). Floors at 50 so single-digit
+      // sheets keep the prior look.
+      size: Math.max(50, String(sheet.rows.length).length * 11 + 20),
     });
 
     // 데이터 컬럼

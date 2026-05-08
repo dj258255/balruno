@@ -57,6 +57,15 @@ export interface ProjectState {
 
   // 시트 액션 — 로컬 UI 상태만. CRUD 는 sheet tree wire ops (/lib/tree).
   setCurrentSheet: (id: string | null) => void;
+  /** View metadata patch — activeView, viewGroupColumnId, Kanban cover
+   *  col, Calendar end col, Gantt depends col, etc. Broadcasts via
+   *  sheet.metadata.update wire op. */
+  updateSheetMetadata: (
+    projectId: string,
+    sheetId: string,
+    patch: import('@/lib/sync/opMapper').SheetMetadataPatch,
+    options?: { origin?: 'local' | 'remote' },
+  ) => void;
 
   // 컬럼 액션
   addColumn: (
