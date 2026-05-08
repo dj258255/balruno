@@ -78,8 +78,8 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 |----------|----------|
 | **Sync** | Server-canonical wss op log (sheet/tree) + Hocuspocus (doc bodies, yjs CRDT) — ADR 0008 |
 | **Presence** | Sheet cell awareness via wss + doc cursor via Hocuspocus awareness |
-| **Comments** | Sheet cell + doc body (range-anchored highlights) + reply thread (1-level nesting, Slack/Linear pattern) + email + Web Push (VAPID) delivery — ADR 0024 v2.3 |
-| **Integrations** | Outbound webhooks (HMAC-SHA256 POSTs) + Inbound webhooks (GitHub PR / issues + generic) + Share links per view — ADR 0027 / 0028 / 0029 |
+| **Comments** | Sheet cell + doc body (range-anchored highlights) + reply thread (1-level nesting, Slack/Linear pattern) + email + Web Push (VAPID) + daily/weekly digest — ADR 0024 v2.4 |
+| **Integrations** | Outbound webhooks (HMAC-SHA256 POSTs) + Inbound webhooks (GitHub PR / issues + generic) + Share links per view + Discord slash commands (Ed25519 verified) — ADR 0027 / 0028 / 0029 / 0030 |
 | **@mentions** | Tiptap mention extension + inbox bell + per-mention notification — ADR 0024 |
 
 #### Platform
@@ -107,6 +107,8 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 - ✅ **ADR 0028 webhook outbound** — HMAC-SHA256 signed POSTs on `comment.added` / `mention.created` / `row.added`. ApplicationEvent decoupling so the webhook module isn't a static dep on the publishers (Spring Modulith arch test green).
 - ✅ **ADR 0024 Stage I — email + Web Push notifications** — Spring's JavaMailSender (admin brings SMTP creds, Outline / AFFiNE / Baserow pattern, no built-in service) + VAPID Web Push (RFC 8030 + 8292, free forever, no third party). Per-user prefs (instant / daily / weekly / off) + per-device subscription list at `/settings/notifications`.
 - ✅ **ADR 0029 Inbound webhooks (GitHub)** — POST `/api/v1/inbound-public/:id/{github\|generic}` with HMAC-SHA256 (`X-Hub-Signature-256` for GitHub, `X-Balruno-Signature` for generic). PR / issue events auto-create rows on the target sheet (title / url / status mapped to chosen columns).
+- ✅ **Daily / weekly digest** — Spring `@Scheduled` aggregates per-user mentions for non-instant cadence picks (00:00 UTC daily / Monday weekly).
+- ✅ **ADR 0030 Discord slash commands** — Ed25519 verified `/v1/discord/interactions` endpoint. `/balruno bug <text>` adds a row to the workspace's default sheet. v1 is manual setup (paste 4 strings from Developer Portal); OAuth2 install URL is v2 polish.
 - ✅ **ADR 0024 v2.2** — comment reply threads (1-level nesting via `parentId`, Slack/Linear pattern)
 
 ### Planned (next 6 months)
@@ -114,8 +116,8 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 | ADR | Feature | Stack | Status |
 |---|---|---|---|
 | **0024 stage I** | @mention email + browser push delivery (Resend free tier 100/day, Brevo 300/day, Web Push VAPID) | Spring backend + Web Push | Deferred (waiting on real users) |
-| **Discord slash commands** | Ed25519 interaction endpoint + bot registration — separate from generic inbound webhook | Spring backend | Separate ADR (large surface) |
-| **Daily / weekly digest** | Spring `@Scheduled` aggregator for users who picked non-instant cadence | Spring backend | Follow-up |
+| **Discord OAuth2 install** | Replace manual Developer-Portal-paste with hosted OAuth invite URL (registers a public Discord App) | Spring backend | Polish |
+| **`/balruno query` lookup** | Currently ack-only; v2 reads cell value from a sheet and replies in Discord | Spring backend | Polish |
 | **0023 v3.0** | AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | Deferred by user |
 | **0025 v2.0** | ML — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity · RAG over comments | **Same Python sidecar** | Deferred by user |
 
@@ -303,8 +305,8 @@ For commercial licensing inquiries: dj258255@naver.com
 |----------|------|
 | **동기화** | Server-canonical wss op log (시트/트리) + Hocuspocus (문서 본문, yjs CRDT) — ADR 0008 |
 | **Presence** | 시트 셀 awareness via wss + 문서 커서 via Hocuspocus awareness |
-| **코멘트** | 시트 셀 + 문서 본문 (범위 핀 하이라이트) + 답글 스레드 (1단계 nesting, Slack/Linear 패턴) + 이메일 + Web Push (VAPID) delivery — ADR 0024 v2.3 |
-| **외부 통합** | Outbound 웹훅 (HMAC-SHA256 POST) + Inbound 웹훅 (GitHub PR/issues + generic) + 공유 링크 (per view) — ADR 0027 / 0028 / 0029 |
+| **코멘트** | 시트 셀 + 문서 본문 (범위 핀 하이라이트) + 답글 스레드 (1단계 nesting, Slack/Linear 패턴) + 이메일 + Web Push (VAPID) delivery + daily/weekly 다이제스트 — ADR 0024 v2.4 |
+| **외부 통합** | Outbound 웹훅 (HMAC-SHA256 POST) + Inbound 웹훅 (GitHub PR/issues + generic) + 공유 링크 (per view) + Discord slash commands (Ed25519 검증) — ADR 0027 / 0028 / 0029 / 0030 |
 | **@멘션** | Tiptap mention 확장 + 인박스 종 + per-mention 알림 — ADR 0024 |
 
 #### 플랫폼
@@ -333,6 +335,8 @@ For commercial licensing inquiries: dj258255@naver.com
 - ✅ ADR 0028 webhook outbound — `comment.added` / `mention.created` / `row.added` 이벤트의 HMAC-SHA256 POST. ApplicationEvent 디커플링.
 - ✅ ADR 0024 Stage I — email + Web Push (VAPID) 알림. SMTP 는 admin 이 spring.mail.* 로 가져옴 (Outline/AFFiNE/Baserow 패턴). Web Push 는 RFC 표준이라 영구 무료. `/settings/notifications` 에서 toggles + per-device 관리.
 - ✅ ADR 0029 Inbound webhooks (GitHub) — POST + HMAC-SHA256 검증. PR / issue 이벤트가 자동으로 row 추가. ViewSwitcher 의 "받기" 버튼으로 URL + secret 발급.
+- ✅ Daily / weekly digest — Spring `@Scheduled` 가 instant 가 아닌 사용자에게 mention 모음 1통 (00:00 UTC).
+- ✅ ADR 0030 Discord slash commands — Ed25519 검증 interaction endpoint. `/balruno bug <text>` 가 workspace 기본 시트에 row 추가. v1 = 5단계 manual setup (Developer Portal 4 string 복사), v2 = OAuth2 install.
 - ✅ ADR 0024 v2.2 — 코멘트 답글 스레드 (1단계 nesting, Slack/Linear 패턴)
 
 **계획 중 (다음 6 개월)**
@@ -340,8 +344,8 @@ For commercial licensing inquiries: dj258255@naver.com
 | ADR | 기능 | 스택 | 상태 |
 |---|---|---|---|
 | **0024 stage I** | @mention 이메일 + 브라우저 푸시 delivery (Resend free 100/day, Brevo 300/day, Web Push VAPID $0) | Spring backend + Web Push | 사용자 등장 시 |
-| **Discord slash commands** | Ed25519 interaction endpoint + bot 등록 — generic inbound 와 분리 | Spring backend | 별 ADR (큰 surface) |
-| **Daily / weekly digest** | Spring `@Scheduled` 집계 — non-instant 빈도 사용자용 | Spring backend | follow-up |
+| **Discord OAuth2 install** | manual paste 대신 hosted OAuth invite (Public Discord App 등록) | Spring backend | Polish |
+| **`/balruno query` lookup** | 현재 ack only — v2 에서 셀 값 lookup + Discord 답장 | Spring backend | Polish |
 | **0023 v3.0** | AI 통합 (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) | **Python FastAPI sidecar** (`packages/ai-service`) | 사용자 보류 |
 | **0025 v2.0** | ML — outlier 탐지 · 클러스터 시각화 · curve fit · TrueSkill · 임베딩 유사도 · RAG | **같은 Python sidecar** | 사용자 보류 |
 
