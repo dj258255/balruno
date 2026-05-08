@@ -13,6 +13,7 @@ import { createSheetActions } from './slices/sheetSlice';
 import { createCellActions } from './slices/cellSlice';
 import { createSelectionActions } from './slices/selectionSlice';
 import { createDocActions, bindDocSliceGetters } from './slices/docSlice';
+import { createLegacyStubActions } from './slices/legacyStubSlice';
 
 // ==== 보조 타입 ====
 
@@ -195,6 +196,37 @@ export interface ProjectState {
   openDocTab: (docId: string) => void;
   closeDocTab: (docId: string) => void;
 
+  // ── Legacy v0.5 stubs ────────────────────────────────────────────
+  // The v0.6 cleanup moved local-mode multi-project state to
+  // server-canonical REST. The Sidebar/SheetTabs/BranchModal still
+  // call these by name; the actual mutation paths are pending the
+  // D-3/E-4 follow-up. Stubs surface a clear alert when a button
+  // whose action is not yet rewired is clicked, so the regression
+  // is loud, not silent. See {@link ./slices/legacyStubSlice.ts}.
+  createProject: (name: string, options?: unknown) => string;
+  duplicateProject: (projectId: string) => string;
+  deleteProject: (projectId: string) => void;
+  updateProject: (projectId: string, updates: Partial<Project>) => void;
+  createFromSample: (...args: unknown[]) => string;
+  reorderProjects: (...args: unknown[]) => void;
+  createSheet: (...args: unknown[]) => string;
+  updateSheet: (projectId: string, sheetId: string, updates: Partial<Sheet>) => void;
+  duplicateSheet: (projectId: string, sheetId: string) => string;
+  deleteSheet: (projectId: string, sheetId: string) => void;
+  reorderSheets: (...args: unknown[]) => void;
+  moveSheetToFolder: (projectId: string, sheetId: string, folderId: string | null) => void;
+  moveSheetToProject: (fromProjectId: string, sheetId: string, toProjectId: string) => void;
+  createFolder: (projectId: string, name: string, parentId?: string) => string;
+  updateFolder: (projectId: string, folderId: string, updates: unknown) => void;
+  deleteFolder: (projectId: string, folderId: string) => void;
+  moveFolderToFolder: (projectId: string, folderId: string, parentId: string | null) => void;
+  toggleFolderExpanded: (projectId: string, folderId: string) => void;
+  closeSheetTab: (sheetId: string) => void;
+  reorderOpenTabs: (...args: unknown[]) => void;
+  updateSticker: (sheetId: string, stickerId: string, updates: unknown) => void;
+  deleteSticker: (sheetId: string, stickerId: string) => void;
+  exportProject: (projectId: string) => unknown;
+  importProject: (data: unknown) => void;
 }
 
 // ==== 스토어 구성 ====
@@ -217,6 +249,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   ...createCellActions(set, get),
   ...createSelectionActions(set, get),
   ...createDocActions(set),
+  ...createLegacyStubActions(),
 }));
 
 // Wire docSlice getters now that the store is created (avoids circular import).

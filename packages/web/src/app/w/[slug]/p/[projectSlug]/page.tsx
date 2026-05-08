@@ -24,7 +24,7 @@
  * placeholder so each phase ships behind a green CI run.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Menu, MessageSquare } from 'lucide-react';
 
@@ -43,6 +43,12 @@ import { useProjectHistory } from '@/hooks';
 import { usePanelStates } from '@/hooks/usePanelStates';
 import BottomDock from '@/components/BottomDock';
 import DockedToolbox from '@/components/DockedToolbox';
+import Sidebar from '@/components/layout/Sidebar';
+import SheetTabs from '@/components/layout/SheetTabs';
+import SidebarResizer from '@/app/components/SidebarResizer';
+import StickerLayer from '@/components/sheet/StickerLayer';
+import { PmBadgeStrip } from '@/components/sheet/PmBadgeStrip';
+import SheetHeader from '@/app/components/SheetHeader';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
 import { useAuthStore } from '@/stores/authStore';
 import { setActiveStack, pushUndo, hydrateStack, type UndoableOp, type UndoEntry } from '@/lib/undo/undoStack';
@@ -519,6 +525,53 @@ export default function ProjectDetailPage() {
   // Server-canonical reads/writes go through the same useProjectStore
   // path the inline sheet table uses, so no extra rewiring needed.
   const { panels: toolPanels } = usePanelStates();
+
+  // Container ref for the StickerLayer — sticky notes are positioned
+  // relative to this rect (v0.5 behaviour). Currently a no-op render
+  // until the sticker JSONB column lands (see StickerLayer placeholder).
+  const sheetContainerRef = useRef<HTMLDivElement>(null);
+
+  // v0.5 Sidebar tool-toggle callbacks — pass-through to the
+  // floating dock's DraggablePanel state so the side rail and
+  // bottom dock both control the same panels.
+  const toggleTool = (id: keyof typeof toolPanels) => () =>
+    toolPanels[id].setShow(!toolPanels[id].show);
+  const sidebarCallbacks = {
+    onShowChart: toggleTool('chart'),
+    onShowHelp: () => { /* OnboardingGuide not yet rewired */ },
+    onShowCalculator: toggleTool('calculator'),
+    onShowComparison: toggleTool('comparison'),
+    onShowReferences: () => { /* ReferencesModal not yet rewired */ },
+    onShowPresetComparison: toggleTool('preset'),
+    onShowImbalanceDetector: toggleTool('imbalance'),
+    onShowGoalSolver: toggleTool('goal'),
+    onShowBalanceAnalysis: toggleTool('balance'),
+    onShowEconomy: toggleTool('economy'),
+    onShowDpsVariance: toggleTool('dpsVariance'),
+    onShowCurveFitting: toggleTool('curveFitting'),
+    onToggleFormulaHelper: toggleTool('formulaHelper'),
+    onToggleBalanceValidator: toggleTool('balanceValidator'),
+    onToggleDifficultyCurve: toggleTool('difficultyCurve'),
+    onToggleSimulation: toggleTool('simulation'),
+    onToggleEntityDefinition: toggleTool('entityDefinition'),
+  };
+  const activeTools = {
+    calculator: toolPanels.calculator.show,
+    comparison: toolPanels.comparison.show,
+    chart: toolPanels.chart.show,
+    presetComparison: toolPanels.preset.show,
+    imbalanceDetector: toolPanels.imbalance.show,
+    goalSolver: toolPanels.goal.show,
+    balanceAnalysis: toolPanels.balance.show,
+    economy: toolPanels.economy.show,
+    dpsVariance: toolPanels.dpsVariance.show,
+    curveFitting: toolPanels.curveFitting.show,
+    formulaHelper: toolPanels.formulaHelper.show,
+    balanceValidator: toolPanels.balanceValidator.show,
+    difficultyCurve: toolPanels.difficultyCurve.show,
+    simulation: toolPanels.simulation.show,
+    entityDefinition: toolPanels.entityDefinition.show,
+  };
   // Close the drawer once the user picks something inside (sheet
   // leaf, doc leaf) so they don't have to manually dismiss.
   const closeMobileSidebar = () => setMobileSidebarOpen(false);
@@ -632,65 +685,29 @@ export default function ProjectDetailPage() {
             />
           )}
 
-          {/* Sidebar — sheet_tree navigation (ADR 0020 Stage D minimal).
-              Desktop: grid column. Mobile: fixed off-canvas drawer
-              that slides in via translateX (ADR 0022 stage A). */}
-          <aside
-            className={
-              'rounded-lg border p-2 transition-transform '
-              + 'md:static md:translate-x-0 md:w-auto '
-              + 'fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto '
-              + (mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full')
-            }
-            style={{
-              borderColor: 'var(--border-primary)',
-              background: 'var(--bg-primary)',
-              minHeight: '400px',
-            }}
-          >
-            <h2
-              className="px-2 py-1.5 text-xs font-medium uppercase tracking-wide"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              시트
-            </h2>
-            <ServerSheetTree
-              tree={sheetTree}
-              leafKind="sheet"
-              selectedSheetId={selectedSheetId}
-              onSelectSheet={(id) => {
-                setSelection({ kind: 'sheet', id });
-                closeMobileSidebar();
-              }}
-              onRenameNode={sheetTreeOps.rename}
-              onAddFolder={sheetTreeOps.addFolder}
-              onAddSheet={sheetTreeOps.addLeaf}
-              onAddFromTemplate={() => setTemplateModalOpen(true)}
-              onDeleteFolder={sheetTreeOps.deleteNode}
-              onMoveNode={sheetTreeOps.move}
-            />
+          {/* Sidebar — v0.5 layout restored (Phase E). Renders the
+              workspace switcher, project list, sheet/doc tree, pinned
+              section, quick-access today's work bucket, and footer.
+              Mutating actions (createSheet, deleteProject, etc.) hit
+              the legacyStubSlice alert until D-3 / E-4 follow-up
+              re-wires them to the project-tree REST. The non-mutating
+              tool toggles (calculator/balance/etc.) are wired here
+              and feed the same DockedToolbox panel state.
 
-            <h2
-              className="mt-4 px-2 py-1.5 text-xs font-medium uppercase tracking-wide"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              문서
-            </h2>
-            <ServerSheetTree
-              tree={docTree}
-              leafKind="doc"
-              selectedSheetId={selectedDocId}
-              onSelectSheet={(id) => {
-                setSelection({ kind: 'doc', id });
-                closeMobileSidebar();
-              }}
-              onRenameNode={docTreeOps.rename}
-              onAddFolder={docTreeOps.addFolder}
-              onAddSheet={docTreeOps.addLeaf}
-              onDeleteFolder={docTreeOps.deleteNode}
-              onMoveNode={docTreeOps.move}
-            />
-          </aside>
+              Mobile: still uses translateX off-canvas pattern (ADR 0022
+              stage A) — Sidebar.tsx itself is desktop-positioned, so
+              we wrap it for the drawer behaviour. */}
+          <div
+            className={
+              'transition-transform '
+              + 'md:static md:translate-x-0 '
+              + 'fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto '
+              + (mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0')
+            }
+          >
+            <Sidebar {...sidebarCallbacks} activeTools={activeTools} />
+          </div>
+          <SidebarResizer />
 
           {/* Main — SheetTable for sheet selection, doc placeholder
               for doc selection (real Tiptap editor wiring lands in a
@@ -704,8 +721,21 @@ export default function ProjectDetailPage() {
               minHeight: '500px',
             }}
           >
+            {/* v0.5 SheetTabs at the top of the main area — restored
+                from eda7fe3^ project layout. Lets the user switch
+                between open sheets/docs without going back to the
+                sidebar. Reads from the store-resolved project (which
+                carries the v0.5 sheets[]/docs[] arrays via
+                useProjectSyncBridge.sync.full); the REST `project`
+                from /api/v1/projects/:id has only the metadata.
+                Mutations (close-tab, reorder) hit the
+                legacyStubSlice alert pending E-4 follow-up. */}
+            {localProject ? <SheetTabs project={localProject} /> : null}
             {selection?.kind === 'sheet' && selectedSheet ? (
-              <div className="flex h-full flex-col">
+              <div ref={sheetContainerRef} className="flex h-full flex-col relative">
+                <StickerLayer containerRef={sheetContainerRef} />
+                <SheetHeader sheet={selectedSheet} />
+                <PmBadgeStrip sheet={selectedSheet} />
                 <ViewSwitcher projectId={project.id} sheet={selectedSheet} />
                 {selectedSheet.activeView === 'kanban' ? (
                   <KanbanView projectId={project.id} sheet={selectedSheet} />
