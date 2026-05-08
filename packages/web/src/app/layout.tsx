@@ -34,6 +34,10 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "Balruno — Game Studio Workspace",
     description: t('metaDescription'),
     keywords: t('metaKeywords').split(','),
+    // PWA manifest — pairs with /sw.js (already shipped for Web Push)
+    // to enable "Add to Home Screen" on iOS/Android Safari + Chrome
+    // standalone mode. ADR 0024 Stage I.
+    manifest: '/manifest.json',
     icons: {
       icon: [
         {

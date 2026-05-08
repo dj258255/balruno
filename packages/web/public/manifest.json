@@ -1,0 +1,20 @@
+{
+  "name": "Balruno",
+  "short_name": "Balruno",
+  "description": "Game Studio Workspace — Balance Data + Agile Tickets + Epic Roadmaps in One",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#111827",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

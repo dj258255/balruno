@@ -8,7 +8,8 @@
  */
 
 import { useState } from 'react';
-import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Filter, Flame, TrendingUp, GitFork, GitCompare, Share2, Plug, Inbox } from 'lucide-react';
+import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Filter, Flame, TrendingUp, GitFork, GitCompare, Share2, Plug, Inbox, Download } from 'lucide-react';
+import { downloadSheetCsv } from '@/lib/sheet/csvExport';
 import { useTranslations } from 'next-intl';
 import type { ViewType, Sheet, SavedView, FilterGroup } from '@/types';
 import { useProjectStore } from '@/stores/projectStore';
@@ -304,6 +305,18 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
         >
           <Inbox className="w-3 h-3" />
           받기
+        </button>
+        {/* CSV export — RFC 4180 + UTF-8 BOM for Excel. Pure
+            frontend, no backend round-trip. */}
+        <button
+          type="button"
+          onClick={() => downloadSheetCsv(sheet)}
+          className="ml-1 flex items-center gap-1 px-2 py-1 rounded-md text-xs hover:bg-[var(--bg-hover)] transition-colors flex-shrink-0"
+          style={{ color: 'var(--text-secondary)' }}
+          title="CSV로 내보내기"
+        >
+          <Download className="w-3 h-3" />
+          CSV
         </button>
       </div>
     </div>
