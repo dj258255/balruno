@@ -85,7 +85,13 @@ class SecurityConfig {
                                 // Stripe webhook (ADR 0004) — Stripe-Signature
                                 // header IS the auth, verified inside the
                                 // controller.
-                                "/api/v1/billing/stripe-webhook"
+                                "/api/v1/billing/stripe-webhook",
+                                // Anonymous multiplayer demo (ADR 0035).
+                                // Issues a balruno_session cookie bound to
+                                // the seeded demo user. Subsequent calls
+                                // (sheet/project/sync) go through the same
+                                // cookie-resolved JWT path as OAuth login.
+                                "/api/v1/demo/anonymous-session"
                         ).permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
