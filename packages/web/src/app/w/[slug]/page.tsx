@@ -64,6 +64,14 @@ export default function WorkspaceDetailPage() {
         setWorkspace(found);
         const ps = await listProjects(found.id);
         if (cancelled) return;
+        // Single-project users skip the picker — Linear / Notion
+        // pattern. The workspace home only earns its keep when the
+        // user has 2+ projects or wants to create another. Mirrors
+        // the /workspaces single-ws redirect.
+        if (ps.length === 1) {
+          router.replace(`/w/${found.slug}/p/${ps[0].slug}`);
+          return;
+        }
         setProjects(ps);
       } catch (e) {
         if (cancelled) return;
