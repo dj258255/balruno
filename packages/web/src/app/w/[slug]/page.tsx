@@ -64,12 +64,32 @@ export default function WorkspaceDetailPage() {
         setWorkspace(found);
         const ps = await listProjects(found.id);
         if (cancelled) return;
-        // Single-project users skip the picker — Linear / Notion
-        // pattern. The workspace home only earns its keep when the
-        // user has 2+ projects or wants to create another. Mirrors
-        // the /workspaces single-ws redirect.
-        if (ps.length === 1) {
-          router.replace(`/w/${found.slug}/p/${ps[0].slug}`);
+        // Always land on a project — pick the one the user opened
+        // most recently (localStorage hint), falling back to the
+        // most-recently-updated. The workspace home is reached via
+        // breadcrumb / sidebar back when the user actively wants
+        // the picker. Linear / Notion / Figma pattern.
+        if (ps.length > 0) {
+          let target = ps[0];
+          if (typeof window !== 'undefined') {
+            const lastSlug = window.localStorage.getItem(`balruno:lastProject:${found.slug}`);
+            const lastMatch = lastSlug ? ps.find((p) => p.slug === lastSlug) : null;
+            if (lastMatch) {
+              target = lastMatch;
+            } else {
+              // Pick the most-recently-updated project so refresh
+              // lands on the same place as a sidebar 'recent' click
+              // would.
+              target = ps.reduce(
+                (best, p) =>
+                  new Date(p.updatedAt).getTime() > new Date(best.updatedAt).getTime()
+                    ? p
+                    : best,
+                ps[0],
+              );
+            }
+          }
+          router.replace(`/w/${found.slug}/p/${target.slug}`);
           return;
         }
         setProjects(ps);
