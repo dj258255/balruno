@@ -51,7 +51,7 @@ class AuditRepository {
                 String resourceType, UUID resourceId, JsonNode payload) {
         jdbc.update(
                 """
-                INSERT INTO audit_log
+                INSERT INTO workspace_audit_log
                     (workspace_id, actor_user_id, action, resource_type, resource_id, payload)
                 VALUES (?, ?, ?, ?, ?, ?::jsonb)
                 """,
@@ -64,7 +64,7 @@ class AuditRepository {
                 """
                 SELECT id, workspace_id, actor_user_id, action, resource_type,
                        resource_id, payload::text AS payload, created_at
-                FROM audit_log
+                FROM workspace_audit_log
                 WHERE workspace_id = ?
                 ORDER BY id DESC
                 LIMIT ?
