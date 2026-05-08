@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "sonner";
 import { DesktopBootstrap } from "./components/DesktopBootstrap";
 import { BackendAuthBootstrap } from "./components/BackendAuthBootstrap";
+import { AnonymousDemoBanner } from "./components/AnonymousDemoBanner";
 import { CommandPaletteHost } from "@/components/CommandPaletteHost";
 import "./globals.css";
 
@@ -77,6 +78,7 @@ export default async function RootLayout({
             on <html>; one mount at the body root drives every toast call
             in the app. Position right-bottom matches Vercel/Linear UX. */}
         <Toaster richColors position="bottom-right" />
+        <AnonymousDemoBanner />
         <Analytics />
       </body>
     </html>
