@@ -609,15 +609,24 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-8">
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          {/* Mobile hamburger — opens the sidebar drawer. md:hidden
-              keeps it off desktop (sidebar inline there). */}
+    <main
+      className="h-screen flex flex-col overflow-hidden"
+      style={{ background: 'var(--bg-secondary)' }}
+    >
+      {/* Topbar — full-width, fixed-height. Mirrors the v0.5
+          home-page topbar (workspace breadcrumb + project name on
+          the left, comments toggle + inbox + sync status on the
+          right). The whole row stays above the sidebar/main split
+          so neither column scrolls it off-screen. */}
+      <div
+        className="flex-shrink-0 flex items-center justify-between gap-4 border-b px-4 py-2"
+        style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+      >
+        <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={() => setMobileSidebarOpen(true)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded hover:bg-[var(--bg-hover)] md:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded hover:bg-[var(--bg-hover)] md:hidden"
             style={{ color: 'var(--text-secondary)' }}
             aria-label="시트 사이드바 열기"
           >
@@ -625,17 +634,30 @@ export default function ProjectDetailPage() {
           </button>
           <button
             onClick={() => router.push(`/w/${workspace.slug}`)}
-            className="inline-flex items-center gap-1 text-sm"
+            className="inline-flex items-center gap-1 text-sm hover:underline"
             style={{ color: 'var(--text-secondary)' }}
           >
             <ArrowLeft className="w-3.5 h-3.5" /> {workspace.name}
           </button>
+          <span style={{ color: 'var(--text-tertiary)' }}>/</span>
+          <h1
+            className="text-base font-semibold truncate"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {project.name}
+          </h1>
+          <span
+            className="font-mono text-xs"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            /{project.slug}
+          </span>
         </div>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs flex-shrink-0">
           <button
             type="button"
             onClick={() => setCommentPanelOpen(!commentPanelOpen)}
-            className="inline-flex items-center gap-1 rounded px-2 py-1 max-md:min-h-11 max-md:px-3 hover:bg-[var(--bg-hover)]"
+            className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-[var(--bg-hover)]"
             style={{
               color: commentPanelOpen ? 'var(--text-primary)' : 'var(--text-secondary)',
               background: commentPanelOpen ? 'var(--bg-hover)' : undefined,
@@ -654,22 +676,14 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      <header className="mb-4">
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-          {project.name}
-        </h1>
-        <p className="mt-1 text-sm font-mono" style={{ color: 'var(--text-tertiary)' }}>
-          /{project.slug}
+      {error && error !== 'not-found' && (
+        <p className="flex-shrink-0 m-2 rounded-md bg-red-50 dark:bg-red-950/30 px-3 py-2 text-sm text-red-700 dark:text-red-300">
+          {error}
         </p>
-        {error && error !== 'not-found' && (
-          <p className="mt-2 rounded-md bg-red-50 dark:bg-red-950/30 px-3 py-2 text-sm text-red-700 dark:text-red-300">
-            {error}
-          </p>
-        )}
-      </header>
+      )}
 
       {sheets.length > 0 ? (
-        <div className="md:flex md:gap-4 md:items-stretch">
+        <div className="flex-1 flex overflow-hidden">
           {/* Mobile drawer backdrop — clicks outside the sidebar
               dismiss the drawer. Hidden on desktop. */}
           {mobileSidebarOpen && (
@@ -695,26 +709,22 @@ export default function ProjectDetailPage() {
           <div
             className={
               'transition-transform '
-              + 'md:static md:translate-x-0 md:w-[260px] md:flex-shrink-0 md:max-h-[calc(100vh-160px)] md:overflow-y-auto '
+              + 'md:static md:translate-x-0 md:w-[260px] md:flex-shrink-0 md:h-full md:overflow-y-auto '
               + 'fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto '
               + (mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0')
             }
+            style={{ background: 'var(--bg-primary)' }}
           >
             <Sidebar {...sidebarCallbacks} activeTools={activeTools} />
           </div>
           <SidebarResizer />
 
-          {/* Main — SheetTable for sheet selection, doc placeholder
-              for doc selection (real Tiptap editor wiring lands in a
-              follow-up phase — needs server-canonical version of
-              updateDoc / setCurrentDoc + HocuspocusProvider mount). */}
+          {/* Main column — SheetTabs strip on top, sheet/doc view
+              filling the rest. The flex column ensures the strip
+              stays pinned and the view scrolls inside its own box. */}
           <section
-            className="md:flex-1 md:min-w-0 rounded-lg border overflow-hidden"
-            style={{
-              borderColor: 'var(--border-primary)',
-              background: 'var(--bg-primary)',
-              minHeight: '500px',
-            }}
+            className="flex-1 flex flex-col min-w-0 overflow-hidden"
+            style={{ background: 'var(--bg-primary)' }}
           >
             {/* v0.5 SheetTabs at the top of the main area — restored
                 from eda7fe3^ project layout. Lets the user switch
@@ -801,7 +811,7 @@ export default function ProjectDetailPage() {
             && commentSelection?.kind !== 'sheet-cell'
             && commentSelection?.kind !== 'doc-body' && (
             <aside
-              className="md:w-[320px] md:flex-shrink-0 rounded-lg border p-4 text-sm"
+              className="md:w-[320px] md:flex-shrink-0 md:h-full md:overflow-y-auto border-l p-4 text-sm"
               style={{
                 borderColor: 'var(--border-primary)',
                 background: 'var(--bg-primary)',
