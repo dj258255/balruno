@@ -663,20 +663,22 @@ export default function ProjectDetailPage() {
           <div
             className={
               'relative transition-transform '
-              + 'md:static md:translate-x-0 md:w-[260px] md:flex-shrink-0 md:h-full md:overflow-y-auto '
+              + 'md:static md:translate-x-0 md:flex-shrink-0 md:h-full md:overflow-y-auto '
               + 'fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto '
               + (mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0')
             }
             style={{ background: 'var(--bg-primary)' }}
           >
-            {/* InboxBell — moved into the sidebar at the user's
-                request. Absolute-positioned at the top-right of
-                the sidebar so it doesn't reflow the v0.5
-                workspace-switcher row. */}
-            <div className="absolute top-2 right-2 z-10">
+            <Sidebar {...sidebarCallbacks} activeTools={activeTools} />
+            {/* InboxBell — anchored to the sidebar's bottom-left
+                next to the SidebarFooter's ConnectionStatus, per
+                the user's "왼쪽아래 클라우드 연결 옆" request.
+                Absolute-positioned over the SidebarFooter's left
+                edge; SidebarFooter has its own h-9 strip so the
+                bell sits above the cloud icon area. */}
+            <div className="absolute bottom-2 left-2 z-10">
               <InboxBell />
             </div>
-            <Sidebar {...sidebarCallbacks} activeTools={activeTools} />
           </div>
           <SidebarResizer />
 
@@ -698,38 +700,43 @@ export default function ProjectDetailPage() {
                 legacyStubSlice alert pending E-4 follow-up. */}
             {localProject ? <SheetTabs project={localProject} /> : null}
             {selection?.kind === 'sheet' && selectedSheet ? (
-              <div ref={sheetContainerRef} className="flex h-full flex-col relative">
+              <div
+                ref={sheetContainerRef}
+                className="flex-1 flex flex-col p-3 sm:p-4 lg:p-6 pb-[140px] min-h-0 overflow-hidden relative"
+              >
                 <StickerLayer containerRef={sheetContainerRef} />
                 <SheetHeader sheet={selectedSheet} />
                 <PmBadgeStrip sheet={selectedSheet} />
                 <ViewSwitcher projectId={project.id} sheet={selectedSheet} />
-                {selectedSheet.activeView === 'kanban' ? (
-                  <KanbanView projectId={project.id} sheet={selectedSheet} />
-                ) : selectedSheet.activeView === 'calendar' ? (
-                  <CalendarView projectId={project.id} sheet={selectedSheet} />
-                ) : selectedSheet.activeView === 'gantt' ? (
-                  <GanttView projectId={project.id} sheet={selectedSheet} />
-                ) : selectedSheet.activeView === 'form' ? (
-                  <FormView projectId={project.id} sheet={selectedSheet} />
-                ) : selectedSheet.activeView === 'gallery' ? (
-                  <GalleryView projectId={project.id} sheet={selectedSheet} />
-                ) : selectedSheet.activeView === 'heatmap' ? (
-                  <BalanceHeatmap sheetId={selectedSheet.id} />
-                ) : selectedSheet.activeView === 'curve' ? (
-                  <CurveOverlay sheetId={selectedSheet.id} />
-                ) : selectedSheet.activeView === 'probability' ? (
-                  <ProbabilityTree sheetId={selectedSheet.id} />
-                ) : selectedSheet.activeView === 'diff' ? (
-                  // ServerDiffView walks op_idempotency.inverse_payload
-                  // backward from the current project to synthesise a
-                  // "before" snapshot inside the 120-min reversible
-                  // window (ADR 0021 v3.0 Phase 5). Picker chooses
-                  // how far back. Per-tab + per-user scope (Baserow
-                  // pattern) — solo dev sees their own edit history.
-                  <ServerDiffView projectId={project.id} sheetId={selectedSheet.id} />
-                ) : (
-                  <SheetTable projectId={project.id} sheet={selectedSheet} />
-                )}
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  {selectedSheet.activeView === 'kanban' ? (
+                    <KanbanView projectId={project.id} sheet={selectedSheet} />
+                  ) : selectedSheet.activeView === 'calendar' ? (
+                    <CalendarView projectId={project.id} sheet={selectedSheet} />
+                  ) : selectedSheet.activeView === 'gantt' ? (
+                    <GanttView projectId={project.id} sheet={selectedSheet} />
+                  ) : selectedSheet.activeView === 'form' ? (
+                    <FormView projectId={project.id} sheet={selectedSheet} />
+                  ) : selectedSheet.activeView === 'gallery' ? (
+                    <GalleryView projectId={project.id} sheet={selectedSheet} />
+                  ) : selectedSheet.activeView === 'heatmap' ? (
+                    <BalanceHeatmap sheetId={selectedSheet.id} />
+                  ) : selectedSheet.activeView === 'curve' ? (
+                    <CurveOverlay sheetId={selectedSheet.id} />
+                  ) : selectedSheet.activeView === 'probability' ? (
+                    <ProbabilityTree sheetId={selectedSheet.id} />
+                  ) : selectedSheet.activeView === 'diff' ? (
+                    // ServerDiffView walks op_idempotency.inverse_payload
+                    // backward from the current project to synthesise a
+                    // "before" snapshot inside the 120-min reversible
+                    // window (ADR 0021 v3.0 Phase 5). Picker chooses
+                    // how far back. Per-tab + per-user scope (Baserow
+                    // pattern) — solo dev sees their own edit history.
+                    <ServerDiffView projectId={project.id} sheetId={selectedSheet.id} />
+                  ) : (
+                    <SheetTable projectId={project.id} sheet={selectedSheet} />
+                  )}
+                </div>
               </div>
             ) : selection?.kind === 'doc' && selectedDocId ? (
               <ServerDocView
