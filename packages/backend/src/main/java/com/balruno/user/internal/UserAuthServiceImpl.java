@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.user.internal;
 
-import com.balruno.project.ProjectService;
 import com.balruno.user.AuthenticatedUser;
 import com.balruno.user.OAuthLogin;
 import com.balruno.user.UserAuthException;
 import com.balruno.user.UserAuthService;
+import com.balruno.user.UserCreatedEvent;
 import com.balruno.workspace.WorkspaceService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,15 +27,15 @@ class UserAuthServiceImpl implements UserAuthService {
     private final UserRepository userRepo;
     private final OAuthAccountRepository oauthRepo;
     private final WorkspaceService workspaceService;
-    private final ProjectService projectService;
+    private final ApplicationEventPublisher events;
 
     UserAuthServiceImpl(UserRepository userRepo, OAuthAccountRepository oauthRepo,
                         WorkspaceService workspaceService,
-                        ProjectService projectService) {
+                        ApplicationEventPublisher events) {
         this.userRepo = userRepo;
         this.oauthRepo = oauthRepo;
         this.workspaceService = workspaceService;
-        this.projectService = projectService;
+        this.events = events;
     }
 
     @Override
@@ -97,20 +98,19 @@ class UserAuthServiceImpl implements UserAuthService {
                         slugBase,
                         displayName + "'s Workspace");
 
-                // Auto-create a default project + starter sheet so the
-                // user lands on something usable on first login (rather
-                // than a blank /workspaces/{slug} with zero projects).
-                // Notion / Linear / Vercel pattern. ProjectServiceImpl
-                // .create's seedInitialData path drops the starter
-                // Sheet 1 + Column 1 + Row 1 in projects.data so the
-                // minimal cell editor renders immediately.
-                projectService.createWithStarterPack(
-                        workspace.id(),
+                // Hand off the default-project seeding to the project
+                // module via a UserCreatedEvent. The listener runs
+                // AFTER_COMMIT, so the user + workspace rows are already
+                // committed when the starter pack write begins — if it
+                // fails the user can still sign in to an empty
+                // workspace (and re-seed via the empty-state path) and
+                // the user module stays free of project imports.
+                events.publishEvent(new UserCreatedEvent(
                         u.getId(),
+                        workspace.id(),
                         "main",
                         "내 첫 게임",
-                        null,
-                        u.getLocale());
+                        u.getLocale()));
 
                 yield u;
             }

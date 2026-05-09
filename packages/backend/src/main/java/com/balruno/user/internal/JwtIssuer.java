@@ -52,6 +52,7 @@ class JwtIssuer {
                 .claim("email", user.email())
                 .claim("name", user.name())
                 .claim("avatar_url", user.avatarUrl())
+                .claim("locale", user.locale())
                 .build();
         var header = JwsHeader.with(MacAlgorithm.HS256).build();
         return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

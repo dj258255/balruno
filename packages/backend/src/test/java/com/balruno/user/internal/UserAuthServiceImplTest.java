@@ -4,6 +4,7 @@ package com.balruno.user.internal;
 import com.balruno.user.OAuthLogin;
 import com.balruno.user.OAuthProvider;
 import com.balruno.user.UserAuthException;
+import com.balruno.user.UserCreatedEvent;
 import com.balruno.workspace.Workspace;
 import com.balruno.workspace.WorkspaceService;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +15,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.lang.reflect.Field;
 import java.time.OffsetDateTime;
@@ -44,14 +46,14 @@ class UserAuthServiceImplTest {
     @Mock UserRepository userRepo;
     @Mock OAuthAccountRepository oauthRepo;
     @Mock WorkspaceService workspaceService;
-    @Mock com.balruno.project.ProjectService projectService;
+    @Mock ApplicationEventPublisher events;
     @InjectMocks UserAuthServiceImpl service;
 
     @org.junit.jupiter.api.BeforeEach
     void seedDefaultWorkspaceStub() {
-        // CreateNewUser path now follows up createDefaultFor with
-        // projectService.create(workspace.id(), ...). Without a Workspace
-        // return the .id() call NPEs and the test never reaches the
+        // CreateNewUser path follows up createDefaultFor with
+        // events.publishEvent(UserCreatedEvent(workspace.id(), ...)). Without a
+        // Workspace return the .id() call NPEs and the test never reaches the
         // assertion. Lenient — not all happy paths trigger this stub.
         org.mockito.Mockito.lenient()
                 .when(workspaceService.createDefaultFor(
@@ -137,6 +139,9 @@ class UserAuthServiceImplTest {
             verify(workspaceService).createDefaultFor(eq(dto.id()), slugCaptor.capture(), nameCaptor.capture());
             assertThat(slugCaptor.getValue()).isEqualTo("newcomer");      // email local-part
             assertThat(nameCaptor.getValue()).isEqualTo("Newcomer's Workspace");
+            // Starter-pack seeding is delegated to the project module via
+            // a UserCreatedEvent — verify the contract holds.
+            verify(events).publishEvent(any(UserCreatedEvent.class));
         }
     }
 

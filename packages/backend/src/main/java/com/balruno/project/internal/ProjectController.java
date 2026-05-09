@@ -3,7 +3,6 @@ package com.balruno.project.internal;
 
 import com.balruno.project.Project;
 import com.balruno.project.ProjectService;
-import com.balruno.user.UserAuthService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -37,11 +36,9 @@ import java.util.UUID;
 class ProjectController {
 
     private final ProjectService projects;
-    private final UserAuthService users;
 
-    ProjectController(ProjectService projects, UserAuthService users) {
+    ProjectController(ProjectService projects) {
         this.projects = projects;
-        this.users = users;
     }
 
     @PostMapping(path = "/workspaces/{wsId}/projects", version = "1")
@@ -61,7 +58,12 @@ class ProjectController {
             // routes — matches the OAuth-callback first-login
             // behaviour for accounts that pre-date the auto-create
             // logic or that deleted their default project.
-            var locale = users.findById(caller).locale();
+            //
+            // Locale comes from the JWT 'locale' claim issued in
+            // JwtIssuer; pre-locale tokens default to 'ko' so legacy
+            // sessions still get a sensible starter catalogue.
+            var locale = jwt.getClaimAsString("locale");
+            if (locale == null || locale.isBlank()) locale = "ko";
             return projects.createWithStarterPack(
                     wsId, caller, body.slug(), body.name(), body.description(), locale);
         }
