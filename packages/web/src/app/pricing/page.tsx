@@ -118,7 +118,7 @@ export default function PricingPage() {
             <Row
               label={t('rowStorage')}
               description={t('rowStorageDesc')}
-              free="50 MB"
+              free="200 MB"
               pro="5 GB"
               team="50 GB"
             />

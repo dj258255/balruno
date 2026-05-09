@@ -58,6 +58,19 @@ class LocalFsStorageAdapter implements StorageService {
     }
 
     @Override
+    public void delete(String path) throws IOException {
+        var target = resolveSafe(path);
+        Files.deleteIfExists(target);
+        // Sidecar content-type — best-effort; absence is fine.
+        var sidecar = target.resolveSibling(target.getFileName() + ".ct");
+        try {
+            Files.deleteIfExists(sidecar);
+        } catch (IOException ignored) {
+            // Sidecar leak is harmless — read() returns octet-stream.
+        }
+    }
+
+    @Override
     public Optional<StoredObject> read(String path) throws IOException {
         var target = resolveSafe(path);
         if (!Files.exists(target)) return Optional.empty();

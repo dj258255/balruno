@@ -40,6 +40,16 @@ public interface StorageService {
      */
     Optional<StoredObject> read(String path) throws IOException;
 
+    /**
+     * Best-effort delete — orphan-cleanup callers (avatar replace,
+     * future attachment delete) use this. Missing objects are NOT
+     * an error; transport failures (network / permission) raise
+     * IOException. Implementations should not delete sidecar files
+     * for missing primary blobs (that's a one-shot housekeeping
+     * concern, not an idempotent delete invariant).
+     */
+    void delete(String path) throws IOException;
+
     /** Returned by {@link #read} — bytes + content-type for HTTP response. */
     record StoredObject(InputStream content, String contentType, long contentLength) {}
 }

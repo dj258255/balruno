@@ -28,14 +28,17 @@ class UserAuthServiceImpl implements UserAuthService {
     private final OAuthAccountRepository oauthRepo;
     private final WorkspaceService workspaceService;
     private final ApplicationEventPublisher events;
+    private final com.balruno.storage.StorageService storage;
 
     UserAuthServiceImpl(UserRepository userRepo, OAuthAccountRepository oauthRepo,
                         WorkspaceService workspaceService,
-                        ApplicationEventPublisher events) {
+                        ApplicationEventPublisher events,
+                        com.balruno.storage.StorageService storage) {
         this.userRepo = userRepo;
         this.oauthRepo = oauthRepo;
         this.workspaceService = workspaceService;
         this.events = events;
+        this.storage = storage;
     }
 
     @Override
@@ -166,9 +169,51 @@ class UserAuthServiceImpl implements UserAuthService {
                         com.balruno.user.UserAuthException.Reason.INVALID_PROFILE,
                         "avatarUrl exceeds 2048 characters");
             }
+            // Capture the previous /media/avatars/ blob (if any) BEFORE
+            // we mutate the entity — once user.updateProfile runs the
+            // old URL is gone. Slack / Linear / Notion all keep a single
+            // avatar slot per user; this matches that pattern by deleting
+            // the now-unreferenced blob from R2 / LocalFs after commit.
+            var previous = user.getAvatarUrl();
             user.updateProfile(user.getName(), url);
+            if (previous != null
+                    && previous.startsWith("/media/avatars/")
+                    && !previous.equals(url)) {
+                deleteAvatarBlobAfterCommit(previous);
+            }
         }
         return toDto(user);
+    }
+
+    /**
+     * Schedule the orphan avatar delete after the surrounding tx
+     * commits — same pattern CommentServiceImpl uses for wss + webhook
+     * fanout. A rolled-back updateProfile must not delete the old
+     * blob; failure during delete must not roll back the user mutation.
+     */
+    private void deleteAvatarBlobAfterCommit(String mediaUrl) {
+        // mediaUrl is "/media/avatars/{userId}/{hash}.{ext}" — strip
+        // the "/media/" prefix to get the StorageService key.
+        var path = mediaUrl.startsWith("/media/")
+                ? mediaUrl.substring("/media/".length())
+                : mediaUrl;
+        org.springframework.transaction.support.TransactionSynchronizationManager
+                .registerSynchronization(
+                        new org.springframework.transaction.support.TransactionSynchronization() {
+                            @Override
+                            public void afterCommit() {
+                                try {
+                                    storage.delete(path);
+                                } catch (Exception e) {
+                                    // Orphan is benign — re-upload of
+                                    // same image returns same hash so
+                                    // re-conflicts on PUT, never breaks
+                                    // the user. Worst case: 2MB R2
+                                    // leak, swept by future R2
+                                    // lifecycle rule.
+                                }
+                            }
+                        });
     }
 
     /** Pulls the local-part out of an email, or returns null when absent. */

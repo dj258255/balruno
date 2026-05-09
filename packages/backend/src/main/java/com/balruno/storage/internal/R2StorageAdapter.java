@@ -12,6 +12,7 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -77,6 +78,22 @@ class R2StorageAdapter implements StorageService {
             s3.putObject(req, RequestBody.fromBytes(bytes));
         } catch (Exception e) {
             throw new IOException("R2 putObject failed: " + path, e);
+        }
+    }
+
+    @Override
+    public void delete(String path) throws IOException {
+        try {
+            s3.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(path)
+                    .build());
+        } catch (NoSuchKeyException missing) {
+            // R2 / S3 deleteObject is idempotent and never throws on
+            // missing keys; this catch is a defensive no-op for SDK
+            // implementations that disagree.
+        } catch (Exception e) {
+            throw new IOException("R2 deleteObject failed: " + path, e);
         }
     }
 

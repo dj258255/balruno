@@ -42,7 +42,10 @@ public record WorkspaceLimits(
                     /* maxRowsPerSheet */           2_000,
                     /* maxCellsPerProject */        20_000,
                     /* maxDocumentsPerProject */    20,
-                    /* maxAttachmentBytes */        50L * 1024 * 1024,        // 50 MB
+                    // ClickUp Free / Asana Free 정합. 50MB 단일 파일
+                    // cap (UploadService.MAX_ATTACHMENT_BYTES) 와는 별
+                    // 차원 — 이 값은 워크스페이스 누적 첨부 합계.
+                    /* maxAttachmentBytes */        200L * 1024 * 1024,       // 200 MB
                     /* historyRetentionDays */      14,
                     /* aiRequestsPerMonth */        0                          // BYOK only
             );
