@@ -23,11 +23,14 @@ import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
 import Placeholder from '@tiptap/extension-placeholder';
+import Image from '@tiptap/extension-image';
 import type { JSONContent } from '@tiptap/react';
 import type { SuggestionOptions, SuggestionProps } from '@tiptap/suggestion';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
+import { toast } from 'sonner';
 
-import { listWorkspaceMembers, resolveMediaUrl } from '@/lib/backend';
+import { listWorkspaceMembers, resolveMediaUrl, uploadAttachment } from '@/lib/backend';
+import { BackendError } from '@/lib/backend/client';
 import type { WorkspaceMemberView } from '@/lib/backend/types';
 
 export interface MentionEditorHandle {
@@ -43,6 +46,10 @@ interface MentionEditorProps {
    *  undefined the editor still works but suggestions stay empty
    *  (legacy local-mode fallback). */
   workspaceId: string | undefined;
+  /** Project the comment belongs to — required for inline image
+   *  upload (`/api/v1/uploads/attachment` is project-scoped). When
+   *  undefined image drop / paste is silently disabled. */
+  projectId?: string;
   /** Initial body. Pass null for an empty editor. Used for both
    *  fresh-comment compose and edit-in-place scenarios. */
   initialJson?: JSONContent | null;
@@ -61,7 +68,7 @@ interface MentionEditorProps {
 
 const MentionEditor = forwardRef<MentionEditorHandle, MentionEditorProps>(
   function MentionEditor(
-    { workspaceId, initialJson, onSubmit, onChange, placeholder, disabled, className },
+    { workspaceId, projectId, initialJson, onSubmit, onChange, placeholder, disabled, className },
     ref,
   ) {
     const editor = useEditor({
@@ -77,6 +84,10 @@ const MentionEditor = forwardRef<MentionEditorHandle, MentionEditorProps>(
           horizontalRule: false,
         }),
         Placeholder.configure({ placeholder: placeholder ?? '코멘트를 입력하세요...' }),
+        // Inline image — uploaded via the project-scoped attachment
+        // endpoint. allowBase64=false forces real upload so server-side
+        // size cap + magic-byte sniff + workspace quota all engage.
+        Image.configure({ inline: true, allowBase64: false }),
         Mention.configure({
           HTMLAttributes: { class: 'balruno-mention' },
           renderText({ options, node }) {
@@ -108,6 +119,31 @@ const MentionEditor = forwardRef<MentionEditorHandle, MentionEditorProps>(
             return true;
           }
           return false;
+        },
+        // Drop / paste handlers — same pattern as ServerDocView. Without
+        // a projectId we can't upload, so leave default behaviour (the
+        // editor refuses base64-only via allowBase64=false).
+        handleDrop(view, event) {
+          if (!projectId) return false;
+          const files = event.dataTransfer?.files;
+          if (!files || files.length === 0) return false;
+          const images = Array.from(files).filter((f) => f.type.startsWith('image/'));
+          if (images.length === 0) return false;
+          event.preventDefault();
+          const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          const insertAt = coords?.pos ?? view.state.selection.from;
+          void insertImagesIntoComment(view, projectId, images, insertAt);
+          return true;
+        },
+        handlePaste(view, event) {
+          if (!projectId) return false;
+          const files = event.clipboardData?.files;
+          if (!files || files.length === 0) return false;
+          const images = Array.from(files).filter((f) => f.type.startsWith('image/'));
+          if (images.length === 0) return false;
+          event.preventDefault();
+          void insertImagesIntoComment(view, projectId, images, null);
+          return true;
         },
       },
     });
@@ -154,6 +190,48 @@ export default MentionEditor;
  * Pulled out so the tippy / ReactRenderer plumbing is testable
  * without a full editor harness.
  */
+/**
+ * Inline image upload helper — used by drop / paste handlers in the
+ * comment composer. Sequential per-file upload so quota errors halt
+ * the chain rather than half-applying. Toast feedback maps the
+ * common BackendError codes the user already sees on the doc body
+ * surface.
+ */
+async function insertImagesIntoComment(
+  view: import('@tiptap/pm/view').EditorView,
+  projectId: string,
+  files: File[],
+  pos: number | null,
+): Promise<void> {
+  let cursor = pos;
+  for (const file of files) {
+    try {
+      const { url } = await uploadAttachment(projectId, file);
+      const resolved = resolveMediaUrl(url) ?? url;
+      const at = cursor ?? view.state.selection.from;
+      const node = view.state.schema.nodes.image?.create({
+        src: resolved,
+        alt: file.name,
+      });
+      if (!node) return;
+      const tr = view.state.tr.insert(at, node);
+      view.dispatch(tr);
+      cursor = null;
+    } catch (e) {
+      if (e instanceof BackendError && e.code === 'attachmentBytes') {
+        toast.error('워크스페이스 저장 용량이 가득 찼습니다');
+      } else if (e instanceof BackendError && e.status === 413) {
+        toast.error('이미지가 50MB 를 초과했습니다');
+      } else if (e instanceof BackendError && e.status === 415) {
+        toast.error('지원하지 않는 이미지 형식입니다');
+      } else {
+        toast.error(e instanceof Error ? e.message : '업로드 실패');
+      }
+      return;
+    }
+  }
+}
+
 function buildSuggestion(workspaceId: string | undefined): Partial<SuggestionOptions<MentionItem>> {
   return {
     char: '@',

@@ -14,6 +14,7 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
+import { resolveMediaUrl } from '@/lib/backend';
 
 interface CommentBodyProps {
   body: unknown;
@@ -57,6 +58,23 @@ function renderNode(node: unknown, key: number): ReactNode[] {
       <span key={key} className="balruno-mention">
         @{label}
       </span>,
+    ];
+  }
+
+  if (obj.type === 'image') {
+    const attrs = obj.attrs as { src?: unknown; alt?: unknown } | undefined;
+    const src = typeof attrs?.src === 'string' ? attrs.src : null;
+    if (!src) return [];
+    const alt = typeof attrs?.alt === 'string' ? attrs.alt : '';
+    return [
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        key={key}
+        src={resolveMediaUrl(src) ?? src}
+        alt={alt}
+        className="my-1 inline-block max-h-48 max-w-full rounded border align-middle"
+        style={{ borderColor: 'var(--border-primary)' }}
+      />,
     ];
   }
 

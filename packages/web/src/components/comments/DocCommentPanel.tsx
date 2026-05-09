@@ -262,11 +262,12 @@ export function DocCommentPanel({
         <MentionEditor
           ref={editorRef}
           workspaceId={workspaceId}
+          projectId={projectId}
           placeholder={replyToId
-            ? '답글... (@ 으로 멤버 멘션)'
+            ? '답글... (@ 으로 멤버 · 이미지 drag-drop)'
             : typeof anchorPosition === 'number'
-              ? '선택한 부분에 대한 의견... (@ 으로 멤버 멘션)'
-              : '이 문서에 대한 의견... (@ 으로 멤버 멘션)'}
+              ? '선택한 부분에 대한 의견... (@ 으로 멤버 · 이미지 drag-drop)'
+              : '이 문서에 대한 의견... (@ 으로 멤버 · 이미지 drag-drop)'}
           disabled={posting}
           onChange={setDraftJson}
           onSubmit={handlePost}
@@ -384,5 +385,16 @@ function walk(node: unknown, out: string[]): void {
 
 function isEmptyDoc(body: unknown): boolean {
   if (!body || typeof body !== 'object') return true;
-  return extractPlainText(body).length === 0;
+  if (extractPlainText(body).length > 0) return false;
+  return !hasImage(body);
+}
+
+function hasImage(node: unknown): boolean {
+  if (!node || typeof node !== 'object') return false;
+  const obj = node as { type?: string; content?: unknown };
+  if (obj.type === 'image') return true;
+  if (Array.isArray(obj.content)) {
+    for (const child of obj.content) if (hasImage(child)) return true;
+  }
+  return false;
 }
