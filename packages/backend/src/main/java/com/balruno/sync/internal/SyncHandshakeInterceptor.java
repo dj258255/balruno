@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.sync.internal;
 
+import com.balruno.security.Principals;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,7 +64,7 @@ class SyncHandshakeInterceptor implements HandshakeInterceptor {
         }
         try {
             var jwt = jwtDecoder.decode(token);
-            var userId = UUID.fromString(jwt.getSubject());
+            var userId = Principals.userId(jwt);
             attributes.put(ProjectWebSocketHandler.ATTR_USER_ID, userId);
             return true;
         } catch (JwtException | IllegalArgumentException e) {

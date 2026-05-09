@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.project.internal;
 
+import com.balruno.security.Principals;
+
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
@@ -64,6 +66,6 @@ class TemplateController {
     }
 
     private static UUID callerId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
+        return Principals.userId(jwt);
     }
 }

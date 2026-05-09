@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.storage.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.project.ProjectService;
 import com.balruno.storage.StorageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -82,7 +84,7 @@ class MediaController {
             if (projectId == null) return ResponseEntity.notFound().build();
             if (jwt == null) return ResponseEntity.status(401).build();
             try {
-                var callerId = UUID.fromString(jwt.getSubject());
+                var callerId = Principals.userId(jwt);
                 projects.findById(projectId, callerId);
             } catch (Exception e) {
                 // Non-member → ProjectException(PROJECT_NOT_FOUND).

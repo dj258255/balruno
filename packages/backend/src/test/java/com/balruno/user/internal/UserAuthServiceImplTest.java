@@ -47,6 +47,7 @@ class UserAuthServiceImplTest {
     @Mock OAuthAccountRepository oauthRepo;
     @Mock WorkspaceService workspaceService;
     @Mock ApplicationEventPublisher events;
+    @Mock com.balruno.events.AfterCommitPublisher afterCommit;
     @InjectMocks UserAuthServiceImpl service;
 
     @org.junit.jupiter.api.BeforeEach

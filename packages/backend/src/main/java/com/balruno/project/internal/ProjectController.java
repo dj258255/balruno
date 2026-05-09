@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.project.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.project.Project;
 import com.balruno.project.ProjectService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -131,7 +133,7 @@ class ProjectController {
     }
 
     private static UUID callerId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
+        return Principals.userId(jwt);
     }
 
     record CreateRequest(

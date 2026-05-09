@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.directory.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.directory.WorkspaceMemberView;
 import com.balruno.user.UserDirectoryService;
 import com.balruno.workspace.WorkspaceMember;
@@ -38,7 +40,7 @@ class MemberController {
     @GetMapping(path = "/workspaces/{workspaceId}/members", version = "1")
     List<WorkspaceMemberView> list(@PathVariable UUID workspaceId,
                                    @AuthenticationPrincipal Jwt jwt) {
-        var callerId = UUID.fromString(jwt.getSubject());
+        var callerId = Principals.userId(jwt);
         var members = workspaces.listMembers(workspaceId, callerId);
 
         var ids = members.stream().map(WorkspaceMember::userId).toList();

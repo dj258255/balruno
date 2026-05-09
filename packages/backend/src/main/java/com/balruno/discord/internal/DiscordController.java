@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.discord.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.discord.DiscordLink;
 import com.balruno.discord.DiscordService;
 import com.balruno.workspace.WorkspaceService;
@@ -132,7 +134,7 @@ class DiscordController {
     }
 
     private static UUID callerId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
+        return Principals.userId(jwt);
     }
 
     record CreateRequest(

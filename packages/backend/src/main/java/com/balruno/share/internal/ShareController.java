@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.share.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.share.ShareLink;
 import com.balruno.share.ShareService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -80,7 +82,7 @@ class ShareController {
     }
 
     private static UUID callerId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
+        return Principals.userId(jwt);
     }
 
     /** Wire model for POST /share-links. The body fields all default

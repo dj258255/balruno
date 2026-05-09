@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.storage.internal;
 
+import com.balruno.security.Principals;
+
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -39,7 +41,7 @@ class UploadController {
     @PostMapping(path = "/uploads/avatar", version = "1", consumes = "multipart/form-data")
     UploadResult uploadAvatar(@AuthenticationPrincipal Jwt jwt,
                               @RequestParam("file") MultipartFile file) throws IOException {
-        var userId = UUID.fromString(jwt.getSubject());
+        var userId = Principals.userId(jwt);
         return new UploadResult(uploads.uploadAvatar(userId, file));
     }
 
@@ -49,7 +51,7 @@ class UploadController {
                                   @RequestParam(value = "refKind", required = false) String refKind,
                                   @RequestParam(value = "refId", required = false) UUID refId,
                                   @RequestParam("file") MultipartFile file) throws IOException {
-        var callerId = UUID.fromString(jwt.getSubject());
+        var callerId = Principals.userId(jwt);
         return new UploadResult(uploads.uploadAttachment(callerId, projectId, refKind, refId, file));
     }
 

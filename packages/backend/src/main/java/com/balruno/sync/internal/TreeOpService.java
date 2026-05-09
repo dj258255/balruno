@@ -73,18 +73,18 @@ class TreeOpService {
     private final com.fasterxml.jackson.databind.ObjectMapper nodeMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
-    private final org.springframework.context.ApplicationEventPublisher events;
+    private final com.balruno.events.AfterCommitPublisher afterCommit;
     private final com.balruno.workspace.LimitGuard limitGuard;
 
     TreeOpService(JdbcTemplate jdbc,
                   OpIdempotencyRepository idempotency,
                   ObjectMapper json,
-                  org.springframework.context.ApplicationEventPublisher events,
+                  com.balruno.events.AfterCommitPublisher afterCommit,
                   com.balruno.workspace.LimitGuard limitGuard) {
         this.jdbc = jdbc;
         this.idempotency = idempotency;
         this.json = json;
-        this.events = events;
+        this.afterCommit = afterCommit;
         this.limitGuard = limitGuard;
     }
 
@@ -293,22 +293,8 @@ class TreeOpService {
             }
             default -> { return; }
         }
-        final var actionFinal = action;
-        final var nodeIdFinal = nodeId;
-        org.springframework.transaction.support.TransactionSynchronizationManager
-                .registerSynchronization(
-                        new org.springframework.transaction.support.TransactionSynchronization() {
-                            @Override
-                            public void afterCommit() {
-                                try {
-                                    events.publishEvent(new com.balruno.events.AuditLogEvent(
-                                            workspaceId, userId, actionFinal, "doc",
-                                            nodeIdFinal, payload));
-                                } catch (Exception ignored) {
-                                    // Audit publish must never bubble.
-                                }
-                            }
-                        });
+        afterCommit.publish(new com.balruno.events.AuditLogEvent(
+                workspaceId, userId, action, "doc", nodeId, payload));
     }
 
     private static UUID nodeIdOf(Object node) {

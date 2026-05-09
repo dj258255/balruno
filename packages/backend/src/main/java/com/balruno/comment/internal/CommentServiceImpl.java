@@ -35,7 +35,7 @@ class CommentServiceImpl implements CommentService {
     private final MentionRepository mentions;
     private final ProjectService projects;
     private final ProjectSyncService sync;
-    private final org.springframework.context.ApplicationEventPublisher events;
+    private final com.balruno.events.AfterCommitPublisher afterCommit;
     private final com.balruno.storage.AttachmentReferenceService attachmentRefs;
     private final com.balruno.storage.StorageService storage;
     private final com.balruno.storage.WorkspaceStorageService workspaceStorage;
@@ -47,7 +47,7 @@ class CommentServiceImpl implements CommentService {
 
     CommentServiceImpl(CommentRepository repo, MentionRepository mentions,
                        ProjectService projects, ProjectSyncService sync,
-                       org.springframework.context.ApplicationEventPublisher events,
+                       com.balruno.events.AfterCommitPublisher afterCommit,
                        com.balruno.storage.AttachmentReferenceService attachmentRefs,
                        com.balruno.storage.StorageService storage,
                        com.balruno.storage.WorkspaceStorageService workspaceStorage) {
@@ -55,7 +55,7 @@ class CommentServiceImpl implements CommentService {
         this.mentions = mentions;
         this.projects = projects;
         this.sync = sync;
-        this.events = events;
+        this.afterCommit = afterCommit;
         this.attachmentRefs = attachmentRefs;
         this.storage = storage;
         this.workspaceStorage = workspaceStorage;
@@ -142,41 +142,17 @@ class CommentServiceImpl implements CommentService {
     private void mentionEventAfterCommit(
             UUID projectId, UUID mentionedUser, UUID commentId,
             UUID authorUserId, String bodyText) {
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        try {
-                            events.publishEvent(
-                                    new com.balruno.events.MentionCreatedEvent(
-                                            projectId, mentionedUser, commentId,
-                                            authorUserId, bodyText));
-                        } catch (Exception ignored) {
-                            // Notification failures must never bubble.
-                        }
-                    }
-                });
+        afterCommit.publish(new com.balruno.events.MentionCreatedEvent(
+                projectId, mentionedUser, commentId, authorUserId, bodyText));
     }
 
     private void webhookHook(UUID projectId, String event, Object payload) {
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        try {
-                            // Publish via ApplicationEvent so the
-                            // webhook module isn't a static dep here.
-                            // Spring Modulith's arch test rejects the
-                            // direct call. ADR 0028.
-                            events.publishEvent(new com.balruno.events.WebhookEvent(
-                                    projectId, event,
-                                    nodeMapperForHook.valueToTree(payload)));
-                        } catch (Exception e) {
-                            // Webhook failures must never bubble out of
-                            // commit hooks — log + carry on.
-                        }
-                    }
-                });
+        // Publish via ApplicationEvent so the webhook module isn't a
+        // static dep here. Spring Modulith's arch test rejects the
+        // direct call. ADR 0028.
+        afterCommit.publish(new com.balruno.events.WebhookEvent(
+                projectId, event,
+                nodeMapperForHook.valueToTree(payload)));
     }
 
     @Override

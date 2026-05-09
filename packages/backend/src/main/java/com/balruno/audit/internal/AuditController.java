@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.audit.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.audit.AuditEntry;
 import com.balruno.audit.AuditService;
 import com.balruno.workspace.WorkspaceService;
@@ -42,7 +44,7 @@ class AuditController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID workspaceId,
             @RequestParam(value = "limit", defaultValue = "100") int limit) {
-        var caller = UUID.fromString(jwt.getSubject());
+        var caller = Principals.userId(jwt);
         var memberships = workspaces.listForUser(caller);
         var match = memberships.stream().anyMatch(w -> w.id().equals(workspaceId));
         if (!match) {

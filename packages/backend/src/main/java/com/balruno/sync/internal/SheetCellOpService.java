@@ -59,18 +59,18 @@ class SheetCellOpService {
     private final com.fasterxml.jackson.databind.ObjectMapper nodeMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
-    private final org.springframework.context.ApplicationEventPublisher events;
+    private final com.balruno.events.AfterCommitPublisher afterCommit;
     private final com.balruno.workspace.LimitGuard limitGuard;
 
     SheetCellOpService(JdbcTemplate jdbc,
                        OpIdempotencyRepository idempotency,
                        ObjectMapper json,
-                       org.springframework.context.ApplicationEventPublisher events,
+                       com.balruno.events.AfterCommitPublisher afterCommit,
                        com.balruno.workspace.LimitGuard limitGuard) {
         this.jdbc = jdbc;
         this.idempotency = idempotency;
         this.json = json;
-        this.events = events;
+        this.afterCommit = afterCommit;
         this.limitGuard = limitGuard;
     }
 
@@ -213,22 +213,11 @@ class SheetCellOpService {
         // the webhook module isn't a static dep — Modulith's arch
         // test rejects the cycle otherwise. ADR 0028.
         if (op instanceof SyncMessage.RowAdd rowAdd) {
-            org.springframework.transaction.support.TransactionSynchronizationManager
-                    .registerSynchronization(
-                            new org.springframework.transaction.support.TransactionSynchronization() {
-                                @Override
-                                public void afterCommit() {
-                                    try {
-                                        var payload = nodeMapper.createObjectNode();
-                                        payload.put("sheetId", rowAdd.sheetId().toString());
-                                        payload.set("row", nodeMapper.valueToTree(rowAdd.row()));
-                                        events.publishEvent(new com.balruno.events.WebhookEvent(
-                                                projectId, "row.added", payload));
-                                    } catch (Exception ignored) {
-                                        // Webhooks must never bubble.
-                                    }
-                                }
-                            });
+            var payload = nodeMapper.createObjectNode();
+            payload.put("sheetId", rowAdd.sheetId().toString());
+            payload.set("row", nodeMapper.valueToTree(rowAdd.row()));
+            afterCommit.publish(new com.balruno.events.WebhookEvent(
+                    projectId, "row.added", payload));
         }
 
         return new SyncResult.Acked(newVersion, broadcast);
@@ -245,20 +234,9 @@ class SheetCellOpService {
     private void publishHistoryEvent(UUID projectId, UUID userId, SyncMessage op) {
         var meta = historyMetaFor(op);
         if (meta == null) return;
-        org.springframework.transaction.support.TransactionSynchronizationManager
-                .registerSynchronization(
-                        new org.springframework.transaction.support.TransactionSynchronization() {
-                            @Override
-                            public void afterCommit() {
-                                try {
-                                    events.publishEvent(new com.balruno.events.SyncOpProcessedEvent(
-                                            projectId, meta.sheetId, meta.rowId, meta.columnId,
-                                            userId, meta.action, meta.payload));
-                                } catch (Exception ignored) {
-                                    // History is best effort — never bubble out of afterCommit.
-                                }
-                            }
-                        });
+        afterCommit.publish(new com.balruno.events.SyncOpProcessedEvent(
+                projectId, meta.sheetId, meta.rowId, meta.columnId,
+                userId, meta.action, meta.payload));
     }
 
     private record HistoryMeta(

@@ -2,7 +2,6 @@
 package com.balruno.project.internal;
 
 import com.balruno.project.ProjectException;
-import com.balruno.workspace.LimitGuard;
 import com.balruno.workspace.QuotaException;
 import com.balruno.workspace.Workspace;
 import com.balruno.workspace.WorkspaceException;
@@ -45,7 +44,9 @@ class ProjectServiceImplTest {
 
     @Mock ProjectRepository projects;
     @Mock WorkspaceService workspaces;
-    @Mock LimitGuard limitGuard;
+    @Mock StarterPackSeeder starterPack;
+    @Mock org.springframework.context.ApplicationEventPublisher events;
+    @Mock com.balruno.events.AfterCommitPublisher afterCommit;
     @InjectMocks ProjectServiceImpl service;
 
     private final UUID wsId = UUID.randomUUID();
@@ -68,7 +69,6 @@ class ProjectServiceImplTest {
         @Test
         void create_inserts_with_valid_inputs() {
             when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(wsId, "main")).thenReturn(false);
-            when(workspaces.findById(wsId)).thenReturn(freeWorkspace(wsId));
             when(projects.countByWorkspaceIdAndDeletedAtIsNull(wsId)).thenReturn(0L);
             when(projects.saveAndFlush(any(ProjectEntity.class)))
                     .thenAnswer(inv -> stamp(inv.getArgument(0)));
@@ -117,7 +117,6 @@ class ProjectServiceImplTest {
         @Test
         void create_with_min_length_slug_is_accepted() {
             when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(wsId, "abc")).thenReturn(false);
-            when(workspaces.findById(wsId)).thenReturn(freeWorkspace(wsId));
             when(projects.countByWorkspaceIdAndDeletedAtIsNull(wsId)).thenReturn(0L);
             when(projects.saveAndFlush(any(ProjectEntity.class)))
                     .thenAnswer(inv -> stamp(inv.getArgument(0)));
@@ -131,7 +130,6 @@ class ProjectServiceImplTest {
         void create_with_max_length_slug_is_accepted() {
             var slug = "a23456789012345678901234567890"; // 30 chars
             when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(wsId, slug)).thenReturn(false);
-            when(workspaces.findById(wsId)).thenReturn(freeWorkspace(wsId));
             when(projects.countByWorkspaceIdAndDeletedAtIsNull(wsId)).thenReturn(0L);
             when(projects.saveAndFlush(any(ProjectEntity.class)))
                     .thenAnswer(inv -> stamp(inv.getArgument(0)));
@@ -221,8 +219,6 @@ class ProjectServiceImplTest {
             // allowed because the existence check is workspace-scoped.
             when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(wsId, "main")).thenReturn(false);
             when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(otherWs, "main")).thenReturn(false);
-            when(workspaces.findById(wsId)).thenReturn(freeWorkspace(wsId));
-            when(workspaces.findById(otherWs)).thenReturn(freeWorkspace(otherWs));
             when(projects.countByWorkspaceIdAndDeletedAtIsNull(wsId)).thenReturn(0L);
             when(projects.countByWorkspaceIdAndDeletedAtIsNull(otherWs)).thenReturn(0L);
             when(projects.saveAndFlush(any(ProjectEntity.class)))
@@ -236,12 +232,14 @@ class ProjectServiceImplTest {
 
         @Test
         void create_at_FREE_project_cap_throws_QUOTA_EXCEEDED() {
-            // FREE limit = 3 projects/workspace; LimitGuard mock simulates the throw.
+            // FREE limit = 3 projects/workspace; checkQuota mock simulates
+            // the throw — ProjectServiceImpl now delegates the plan +
+            // limit lookup to WorkspaceService.checkQuota.
             when(projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(wsId, "fourth")).thenReturn(false);
-            when(workspaces.findById(wsId)).thenReturn(freeWorkspace(wsId));
             when(projects.countByWorkspaceIdAndDeletedAtIsNull(wsId)).thenReturn(3L);
             doThrow(new QuotaException("projectsPerWorkspace", 3, 3, WorkspacePlan.FREE, "full"))
-                    .when(limitGuard).requireBelow(eq(WorkspacePlan.FREE), eq("projectsPerWorkspace"), anyLong(), anyLong());
+                    .when(workspaces).checkQuota(eq(wsId), eq("projectsPerWorkspace"),
+                            anyLong(), any());
 
             assertThatThrownBy(() ->
                     service.create(wsId, userId, "fourth", "Fourth", null))

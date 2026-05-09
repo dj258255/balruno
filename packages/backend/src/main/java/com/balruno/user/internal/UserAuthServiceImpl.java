@@ -28,14 +28,17 @@ class UserAuthServiceImpl implements UserAuthService {
     private final OAuthAccountRepository oauthRepo;
     private final WorkspaceService workspaceService;
     private final ApplicationEventPublisher events;
+    private final com.balruno.events.AfterCommitPublisher afterCommit;
 
     UserAuthServiceImpl(UserRepository userRepo, OAuthAccountRepository oauthRepo,
                         WorkspaceService workspaceService,
-                        ApplicationEventPublisher events) {
+                        ApplicationEventPublisher events,
+                        com.balruno.events.AfterCommitPublisher afterCommit) {
         this.userRepo = userRepo;
         this.oauthRepo = oauthRepo;
         this.workspaceService = workspaceService;
         this.events = events;
+        this.afterCommit = afterCommit;
     }
 
     @Override
@@ -192,19 +195,7 @@ class UserAuthServiceImpl implements UserAuthService {
         var path = mediaUrl.startsWith("/media/")
                 ? mediaUrl.substring("/media/".length())
                 : mediaUrl;
-        org.springframework.transaction.support.TransactionSynchronizationManager
-                .registerSynchronization(
-                        new org.springframework.transaction.support.TransactionSynchronization() {
-                            @Override
-                            public void afterCommit() {
-                                try {
-                                    events.publishEvent(
-                                            new com.balruno.events.AvatarReplacedEvent(path));
-                                } catch (Exception ignored) {
-                                    // Failure during event publish is benign.
-                                }
-                            }
-                        });
+        afterCommit.publish(new com.balruno.events.AvatarReplacedEvent(path));
     }
 
     /** Pulls the local-part out of an email, or returns null when absent. */

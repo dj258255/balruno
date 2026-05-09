@@ -2,7 +2,6 @@
 package com.balruno.storage.internal;
 
 import com.balruno.storage.WorkspaceStorageService;
-import com.balruno.workspace.LimitGuard;
 import com.balruno.workspace.WorkspaceLimits;
 import com.balruno.workspace.WorkspaceService;
 import org.springframework.stereotype.Service;
@@ -23,14 +22,11 @@ import java.util.UUID;
 class WorkspaceStorageServiceImpl implements WorkspaceStorageService {
 
     private final WorkspaceStorageRepository repo;
-    private final LimitGuard limitGuard;
     private final WorkspaceService workspaces;
 
     WorkspaceStorageServiceImpl(WorkspaceStorageRepository repo,
-                                LimitGuard limitGuard,
                                 WorkspaceService workspaces) {
         this.repo = repo;
-        this.limitGuard = limitGuard;
         this.workspaces = workspaces;
     }
 
@@ -45,15 +41,14 @@ class WorkspaceStorageServiceImpl implements WorkspaceStorageService {
                 .map(WorkspaceStorageEntity::getTotalBytes)
                 .orElse(0L);
 
-        var plan = workspaces.findById(workspaceId).plan();
-        var limits = WorkspaceLimits.forPlan(plan);
+        // Pre-mutation check — checkQuota fires when current >= limit;
+        // pass nextBytes - 1 so the guard rejects exactly at the cap
+        // (nextBytes == limit means the new upload would push us to
+        // the cap, which we treat as "already breached" for incoming
+        // bytes).
         var nextBytes = prevBytes + delta;
-        // Pre-mutation check — LimitGuard.requireBelow expects
-        // current to be the pre-mutation count and limit to be the
-        // total cap. We pass nextBytes - 1 so the guard fires when
-        // nextBytes >= limit (i.e. the new upload would breach it).
-        limitGuard.requireBelow(plan, "attachmentBytes",
-                nextBytes - 1, limits.maxAttachmentBytes());
+        workspaces.checkQuota(workspaceId, "attachmentBytes",
+                nextBytes - 1, WorkspaceLimits::maxAttachmentBytes);
 
         repo.addBytes(workspaceId, delta);
     }

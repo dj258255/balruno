@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.user.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.user.AuthenticatedUser;
 import com.balruno.user.UserAuthService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -33,7 +35,7 @@ class MeController {
 
     @GetMapping(path = "/me", version = "1")
     AuthenticatedUser me(@AuthenticationPrincipal Jwt jwt) {
-        var userId = UUID.fromString(jwt.getSubject());
+        var userId = Principals.userId(jwt);
         return userAuthService.findById(userId);
     }
 
@@ -52,7 +54,7 @@ class MeController {
     AuthenticatedUser updateMe(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody UpdateProfileRequest body) {
-        var userId = UUID.fromString(jwt.getSubject());
+        var userId = Principals.userId(jwt);
         return userAuthService.updateProfile(userId, body.name(), body.avatarUrl());
     }
 

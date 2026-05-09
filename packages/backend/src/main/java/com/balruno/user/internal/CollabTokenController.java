@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.user.internal;
 
+import com.balruno.security.Principals;
+
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -54,7 +56,7 @@ class CollabTokenController {
     @PostMapping(path = "/auth/collab-token", version = "1")
     Response issue(@AuthenticationPrincipal Jwt jwt,
                    @Valid @RequestBody Request body) {
-        var userId = UUID.fromString(jwt.getSubject());
+        var userId = Principals.userId(jwt);
         if (!access.canUserAccessDocument(userId, body.documentId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }

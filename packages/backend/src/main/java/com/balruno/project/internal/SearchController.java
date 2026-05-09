@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.project.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.project.ProjectService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,7 +53,7 @@ class SearchController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID projectId,
             @RequestParam("q") String q) {
-        var caller = UUID.fromString(jwt.getSubject());
+        var caller = Principals.userId(jwt);
         // Membership check via ProjectService.findById — non-members
         // get a 404. Same gate every project read uses.
         projects.findById(projectId, caller);

@@ -5,7 +5,6 @@ import com.balruno.events.ProjectSoftDeletedEvent;
 import com.balruno.project.Project;
 import com.balruno.project.ProjectException;
 import com.balruno.project.ProjectService;
-import com.balruno.workspace.LimitGuard;
 import com.balruno.workspace.WorkspaceLimits;
 import com.balruno.workspace.WorkspaceRole;
 import com.balruno.workspace.WorkspaceService;
@@ -13,8 +12,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,20 +22,20 @@ class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projects;
     private final WorkspaceService workspaces;
-    private final LimitGuard limitGuard;
     private final StarterPackSeeder starterPack;
     private final ApplicationEventPublisher events;
+    private final com.balruno.events.AfterCommitPublisher afterCommit;
 
     ProjectServiceImpl(ProjectRepository projects,
                        WorkspaceService workspaces,
-                       LimitGuard limitGuard,
                        StarterPackSeeder starterPack,
-                       ApplicationEventPublisher events) {
+                       ApplicationEventPublisher events,
+                       com.balruno.events.AfterCommitPublisher afterCommit) {
         this.projects = projects;
         this.workspaces = workspaces;
-        this.limitGuard = limitGuard;
         this.starterPack = starterPack;
         this.events = events;
+        this.afterCommit = afterCommit;
     }
 
     @Override
@@ -51,10 +48,9 @@ class ProjectServiceImpl implements ProjectService {
         }
         // The slug check above proves the workspace is reachable; we now
         // enforce the per-plan project cap before the insert.
-        var plan = workspaces.findById(workspaceId).plan();
-        var limit = WorkspaceLimits.forPlan(plan).maxProjectsPerWorkspace();
         var current = projects.countByWorkspaceIdAndDeletedAtIsNull(workspaceId);
-        limitGuard.requireBelow(plan, "projectsPerWorkspace", current, limit);
+        workspaces.checkQuota(workspaceId, "projectsPerWorkspace", current,
+                WorkspaceLimits::maxProjectsPerWorkspace);
 
         var fresh = new ProjectEntity(workspaceId, slug, name, description, callerUserId);
         fresh.seedInitialData(buildDefaultSheetJson());
@@ -72,10 +68,9 @@ class ProjectServiceImpl implements ProjectService {
         if (projects.existsByWorkspaceIdAndSlugAndDeletedAtIsNull(workspaceId, slug)) {
             throw slugTaken();
         }
-        var plan = workspaces.findById(workspaceId).plan();
-        var limit = WorkspaceLimits.forPlan(plan).maxProjectsPerWorkspace();
         var current = projects.countByWorkspaceIdAndDeletedAtIsNull(workspaceId);
-        limitGuard.requireBelow(plan, "projectsPerWorkspace", current, limit);
+        workspaces.checkQuota(workspaceId, "projectsPerWorkspace", current,
+                WorkspaceLimits::maxProjectsPerWorkspace);
 
         var fresh = new ProjectEntity(workspaceId, slug, name, description, callerUserId);
         var bundle = starterPack.isAvailable() ? starterPack.buildFor(locale) : null;
@@ -172,14 +167,7 @@ class ProjectServiceImpl implements ProjectService {
         // listens and clears `attachments/{projectId}/*` from R2 +
         // decrements workspace_storage. Doing it post-commit means a
         // rolled-back soft-delete can't cascade the blob delete.
-        var workspaceId = entity.getWorkspaceId();
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        events.publishEvent(new ProjectSoftDeletedEvent(projectId, workspaceId));
-                    }
-                });
+        afterCommit.publish(new ProjectSoftDeletedEvent(projectId, entity.getWorkspaceId()));
     }
 
     @Override

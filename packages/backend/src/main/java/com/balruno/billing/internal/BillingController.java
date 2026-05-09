@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.billing.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.billing.BillingService;
 import com.balruno.workspace.WorkspaceService;
 import com.stripe.exception.SignatureVerificationException;
@@ -164,7 +166,7 @@ class BillingController {
     }
 
     private static UUID callerId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
+        return Principals.userId(jwt);
     }
 
     record CheckoutRequest(

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.user.internal;
 
+import com.balruno.security.Principals;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -34,17 +36,17 @@ class AccountController {
 
     private final UserAccountRepository repo;
     private final ObjectMapper json = new ObjectMapper();
-    private final org.springframework.context.ApplicationEventPublisher events;
+    private final com.balruno.events.AfterCommitPublisher afterCommit;
 
     AccountController(UserAccountRepository repo,
-                      org.springframework.context.ApplicationEventPublisher events) {
+                      com.balruno.events.AfterCommitPublisher afterCommit) {
         this.repo = repo;
-        this.events = events;
+        this.afterCommit = afterCommit;
     }
 
     @GetMapping(path = "/me/export-data", version = "1")
     ObjectNode exportMyData(@AuthenticationPrincipal Jwt jwt) {
-        var userId = UUID.fromString(jwt.getSubject());
+        var userId = Principals.userId(jwt);
         var root = json.createObjectNode();
         root.put("schemaVersion", 1);
         root.put("exportedAt", java.time.OffsetDateTime.now().toString());
@@ -80,7 +82,7 @@ class AccountController {
     ResponseEntity<?> deleteAccount(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam("confirm") String confirm) {
-        var userId = UUID.fromString(jwt.getSubject());
+        var userId = Principals.userId(jwt);
 
         // Confirm-by-typing — the frontend asks the user to type
         // "DELETE" (or their email). 'I understand' confirmations
@@ -114,25 +116,13 @@ class AccountController {
         // both cascaded via events; the storage module listens. Direct
         // storage call would create a user → storage Modulith arch
         // cycle (storage already depends on project, project on user).
-        var capturedUserId = userId;
-        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-                new org.springframework.transaction.support.TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        // Avatar wipe — encoded as a "replaced with empty"
-                        // event so storage's AttachmentCascadeListener can
-                        // call deleteByPrefix("avatars/{userId}/").
-                        events.publishEvent(
-                                new com.balruno.events.AvatarReplacedEvent(
-                                        "avatars/" + capturedUserId + "/"));
-                        for (var row : projectsToCascade) {
-                            var pid = (java.util.UUID) row.get("id");
-                            var wid = (java.util.UUID) row.get("workspace_id");
-                            events.publishEvent(
-                                    new com.balruno.events.ProjectSoftDeletedEvent(pid, wid));
-                        }
-                    }
-                });
+        afterCommit.publish(new com.balruno.events.AvatarReplacedEvent(
+                "avatars/" + userId + "/"));
+        for (var row : projectsToCascade) {
+            var pid = (java.util.UUID) row.get("id");
+            var wid = (java.util.UUID) row.get("workspace_id");
+            afterCommit.publish(new com.balruno.events.ProjectSoftDeletedEvent(pid, wid));
+        }
 
         return ResponseEntity.noContent().build();
     }

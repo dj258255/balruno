@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.history.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.history.DocSnapshot;
 import com.balruno.history.DocSnapshotService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -68,6 +70,6 @@ class DocSnapshotController {
     }
 
     private static UUID callerId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
+        return Principals.userId(jwt);
     }
 }

@@ -96,6 +96,23 @@ public interface WorkspaceService {
      */
     void requireRole(UUID workspaceId, UUID userId, WorkspaceRole minRequired);
 
+    /**
+     * Pre-mutation quota guard. Looks up the workspace's plan, derives
+     * its {@link WorkspaceLimits}, and throws {@link QuotaException} via
+     * {@link LimitGuard} when {@code current >= limit}.
+     *
+     * Consolidates the 3-line ritual of <pre>{@code
+     *   var plan   = workspaces.findById(id).plan();
+     *   var limits = WorkspaceLimits.forPlan(plan);
+     *   limitGuard.requireBelow(plan, "key", current, limits.maxX());
+     * }</pre>
+     * Callers pass a method reference like {@code WorkspaceLimits::maxRowsPerSheet}
+     * so the cap selection lives at the call site in 1 line:
+     * <pre>{@code workspaces.checkQuota(wsId, "key", current, WorkspaceLimits::maxRowsPerSheet); }</pre>
+     */
+    void checkQuota(UUID workspaceId, String quotaKey, long current,
+                    java.util.function.ToLongFunction<WorkspaceLimits> limitSelector);
+
     // ── quota readouts ────────────────────────────────────────────────
 
     /** Active workspaces this user created (proxy for "owned"). */

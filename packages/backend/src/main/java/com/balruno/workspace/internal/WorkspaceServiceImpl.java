@@ -267,6 +267,19 @@ class WorkspaceServiceImpl implements WorkspaceService {
 
     @Override
     @Transactional(readOnly = true)
+    public void checkQuota(UUID workspaceId, String quotaKey, long current,
+                            java.util.function.ToLongFunction<WorkspaceLimits> limitSelector) {
+        var plan = workspaceRepo.findById(workspaceId)
+                .orElseThrow(() -> new WorkspaceException(
+                        WorkspaceException.Reason.WORKSPACE_NOT_FOUND,
+                        "workspace not found: " + workspaceId))
+                .getPlan();
+        var limit = limitSelector.applyAsLong(WorkspaceLimits.forPlan(plan));
+        limitGuard.requireBelow(plan, quotaKey, current, limit);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Workspace> listOwnedFor(UUID userId) {
         return workspaceRepo.findByCreatedByAndDeletedAtIsNullOrderByCreatedAtAsc(userId).stream()
                 .map(WorkspaceServiceImpl::toDto)

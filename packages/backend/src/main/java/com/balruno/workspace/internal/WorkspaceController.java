@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.workspace.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.workspace.CreatedInvite;
 import com.balruno.workspace.Workspace;
 import com.balruno.workspace.WorkspaceInvite;
@@ -137,7 +139,7 @@ class WorkspaceController {
     // ── helpers ────────────────────────────────────────────────────────
 
     private static UUID callerId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
+        return Principals.userId(jwt);
     }
 
     // ── request bodies ─────────────────────────────────────────────────

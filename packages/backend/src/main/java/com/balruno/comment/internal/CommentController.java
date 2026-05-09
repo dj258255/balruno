@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.comment.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.comment.Comment;
 import com.balruno.comment.CommentService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -121,7 +123,7 @@ class CommentController {
     }
 
     private static UUID callerId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
+        return Principals.userId(jwt);
     }
 
     record CreateRequest(

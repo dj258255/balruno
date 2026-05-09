@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.notification.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.notification.NotificationPreference;
 import com.balruno.notification.NotificationService;
 import com.balruno.notification.WebPushSubscription;
@@ -100,7 +102,7 @@ class NotificationController {
     }
 
     private static UUID callerId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
+        return Principals.userId(jwt);
     }
 
     record UpdateRequest(

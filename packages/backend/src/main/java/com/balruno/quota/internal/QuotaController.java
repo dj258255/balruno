@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.quota.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.project.ProjectService;
 import com.balruno.quota.UserQuota;
 import com.balruno.quota.WorkspaceQuotaUsage;
@@ -42,7 +44,7 @@ class QuotaController {
 
     @GetMapping(path = "/me/quota", version = "1")
     UserQuota quota(@AuthenticationPrincipal Jwt jwt) {
-        var userId = UUID.fromString(jwt.getSubject());
+        var userId = Principals.userId(jwt);
 
         var owned = workspaces.listOwnedFor(userId);
         var perWorkspace = owned.stream()

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.inbound.internal;
 
+import com.balruno.security.Principals;
+
 import com.balruno.inbound.InboundService;
 import com.balruno.inbound.InboundWebhook;
 import com.balruno.project.ProjectService;
@@ -167,7 +169,7 @@ class InboundController {
     }
 
     private static UUID callerId(Jwt jwt) {
-        return UUID.fromString(jwt.getSubject());
+        return Principals.userId(jwt);
     }
 
     record CreateRequest(
