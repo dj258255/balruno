@@ -28,11 +28,14 @@ class HistoryRepository {
     private static final Logger log = LoggerFactory.getLogger(HistoryRepository.class);
 
     private final JdbcTemplate jdbc;
-    private final ObjectMapper mapper;
+    // Spring Boot 4 autowires tools.jackson.databind.ObjectMapper, not the
+    // fasterxml one — same trap CommentRepository hit earlier (memory:
+    // project_sb4_abstractions). Construct a private fasterxml mapper so
+    // the JSONB tree work here doesn't depend on Spring's autowire pick.
+    private final ObjectMapper mapper = new ObjectMapper();
 
-    HistoryRepository(JdbcTemplate jdbc, ObjectMapper mapper) {
+    HistoryRepository(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
-        this.mapper = mapper;
     }
 
     void insert(UUID projectId, UUID sheetId, UUID rowId, UUID columnId,

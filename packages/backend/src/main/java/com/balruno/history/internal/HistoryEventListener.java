@@ -23,11 +23,12 @@ class HistoryEventListener {
     private static final Logger log = LoggerFactory.getLogger(HistoryEventListener.class);
 
     private final HistoryRepository repo;
-    private final ObjectMapper mapper;
+    // Same Spring Boot 4 ObjectMapper trap as HistoryRepository — see
+    // memory project_sb4_abstractions.
+    private final ObjectMapper mapper = new ObjectMapper();
 
-    HistoryEventListener(HistoryRepository repo, ObjectMapper mapper) {
+    HistoryEventListener(HistoryRepository repo) {
         this.repo = repo;
-        this.mapper = mapper;
     }
 
     @EventListener
