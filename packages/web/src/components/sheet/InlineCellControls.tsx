@@ -8,8 +8,12 @@ import { useTranslations } from 'next-intl';
  * 더블클릭으로 편집 모드 진입 X — 컨트롤 자체가 에디터 역할.
  */
 
-import { Check, Star, Circle, User } from 'lucide-react';
-import type { CellValue, Column, Sheet, SelectOption } from '@/types';
+import { useRef, useState } from 'react';
+import { Check, Star, Circle, User, Paperclip, X, Upload, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import type { CellValue, Column, Sheet, SelectOption, FileAttachment } from '@/types';
+import { resolveMediaUrl, uploadAttachment } from '@/lib/backend';
+import { BackendError } from '@/lib/backend/client';
 
 /**
  * person / assignee 컬럼 인라인 렌더. 값은 콤마 split — 한 명 또는 여러 명.
@@ -423,4 +427,163 @@ export function InlineMultiSelectChips({
       })}
     </span>
   );
+}
+
+/**
+ * File attachment cell — Phase D Tier 3.
+ *
+ * Cell value is a JSON-stringified {@link FileAttachment}[] held in
+ * the existing string slot of {@link CellValue}; encoding here
+ * avoids widening the union across the entire sheet pipeline. A
+ * malformed JSON body is treated as "no files" so a stray value
+ * doesn't crash the row.
+ *
+ * Drop / file-picker uploads route through {@code uploadAttachment}
+ * (project-scoped, 50MB cap, magic-byte sniff, workspace quota).
+ * The ref recorded at upload time keys off the project + 'cell' kind
+ * with refId = rowId so the orphan-cleanup hooks can find them when
+ * the row is deleted in a future phase.
+ */
+export function InlineFile({
+  value,
+  projectId,
+  rowId,
+  onChange,
+}: {
+  value: CellValue;
+  projectId: string;
+  rowId: string;
+  onChange: (next: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const files = parseFileValue(value);
+
+  const handleFiles = async (incoming: File[]) => {
+    if (incoming.length === 0 || uploading) return;
+    setUploading(true);
+    try {
+      const uploaded: FileAttachment[] = [];
+      for (const f of incoming) {
+        const { url } = await uploadAttachment(projectId, f, { kind: 'cell', id: rowId });
+        uploaded.push({ url, name: f.name, size: f.size, mime: f.type });
+      }
+      onChange(JSON.stringify([...files, ...uploaded]));
+    } catch (e) {
+      if (e instanceof BackendError && e.code === 'attachmentBytes') {
+        toast.error('워크스페이스 저장 용량이 가득 찼습니다');
+      } else if (e instanceof BackendError && e.status === 413) {
+        toast.error('파일이 50MB 를 초과했습니다');
+      } else if (e instanceof BackendError && e.status === 415) {
+        toast.error('지원하지 않는 파일 형식입니다');
+      } else {
+        toast.error(e instanceof Error ? e.message : '업로드 실패');
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemove = (idx: number) => {
+    const next = files.filter((_, i) => i !== idx);
+    onChange(next.length === 0 ? '' : JSON.stringify(next));
+  };
+
+  return (
+    <span
+      className="inline-flex flex-wrap items-center gap-1"
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropped = Array.from(e.dataTransfer.files);
+        if (dropped.length > 0) void handleFiles(dropped);
+      }}
+    >
+      {files.map((f, idx) => (
+        <a
+          key={`${f.url}-${idx}`}
+          href={resolveMediaUrl(f.url) ?? f.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs"
+          style={{
+            background: 'var(--bg-secondary)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-primary)',
+          }}
+          title={`${f.name} · ${formatBytes(f.size)}`}
+        >
+          <Paperclip className="h-3 w-3 flex-shrink-0" />
+          <span className="truncate max-w-[120px]">{f.name}</span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleRemove(idx);
+            }}
+            className="opacity-50 hover:opacity-100"
+            aria-label="제거"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </a>
+      ))}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          fileInputRef.current?.click();
+        }}
+        disabled={uploading}
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs disabled:opacity-40"
+        style={{
+          background: 'transparent',
+          color: 'var(--text-tertiary)',
+          border: '1px dashed var(--border-primary)',
+        }}
+      >
+        {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+        업로드
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        onChange={(e) => {
+          const picked = Array.from(e.target.files ?? []);
+          e.target.value = '';
+          if (picked.length > 0) void handleFiles(picked);
+        }}
+        className="hidden"
+      />
+    </span>
+  );
+}
+
+function parseFileValue(value: CellValue): FileAttachment[] {
+  if (value === null || value === undefined || value === '') return [];
+  if (typeof value !== 'string') return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (f): f is FileAttachment =>
+        f && typeof f === 'object' && typeof f.url === 'string' && typeof f.name === 'string',
+    );
+  } catch {
+    return [];
+  }
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }

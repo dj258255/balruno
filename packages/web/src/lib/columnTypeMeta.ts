@@ -25,6 +25,7 @@ import {
   ClipboardList,
   User,
   Camera,
+  Paperclip,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ColumnType, SheetKind } from '@/types';
@@ -212,6 +213,17 @@ export const COLUMN_TYPE_META: Record<ColumnType, ColumnTypeMeta> = {
     preview: '◷ HP:800 ATK:120 ...',
     shownIn: ['pm', 'analysis'],
     recommendedIn: ['pm', 'analysis'],
+  },
+
+  file: {
+    type: 'file',
+    category: 'basic',
+    Icon: Paperclip,
+    label: 'File',
+    description: '첨부 파일 (이미지/PDF/문서/ZIP)',
+    preview: '📎 design.pdf',
+    shownIn: ALL_KINDS,
+    recommendedIn: ['reference', 'pm'],
   },
 };
 

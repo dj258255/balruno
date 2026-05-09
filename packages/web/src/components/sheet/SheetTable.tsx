@@ -54,7 +54,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import SheetKindEmptyState from './SheetKindEmptyState';
 import { isUnitMappable, rowToUnitStats, rowsToUnitStats } from '@/lib/simulation/rowToUnits';
 import { useSimulationPreload } from '@/stores/simulationPreloadStore';
-import { InlineCheckbox, InlineRating, InlineTaskLink, InlineLink, InlineSelectChip, InlineMultiSelectChips } from './InlineCellControls';
+import { InlineCheckbox, InlineRating, InlineTaskLink, InlineLink, InlineSelectChip, InlineMultiSelectChips, InlineFile } from './InlineCellControls';
 import InlineStatSnapshot from './InlineStatSnapshot';
 import FormulaBar from './FormulaBar';
 import FormulaAutocomplete, { type FormulaAutocompleteRef } from './FormulaAutocomplete';
@@ -1599,6 +1599,16 @@ export default function SheetTable({ projectId, sheet }: SheetTableProps) {
                                     <InlineCheckbox
                                       value={rawValue}
                                       onChange={(next) => updateCell(projectId, sheet.id, rowData.id, columnId, next ? 1 : 0)}
+                                    />
+                                  );
+                                }
+                                if (column.type === 'file') {
+                                  return (
+                                    <InlineFile
+                                      value={rawValue}
+                                      projectId={projectId}
+                                      rowId={rowData.id}
+                                      onChange={(next) => updateCell(projectId, sheet.id, rowData.id, columnId, next)}
                                     />
                                   );
                                 }

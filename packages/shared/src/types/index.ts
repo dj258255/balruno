@@ -237,7 +237,25 @@ export type ColumnType =
   | 'rollup'         // link 경유 집계
   | 'task-link'      // 셀 → 태스크 시트 레코드 연결
   | 'stat-snapshot'  // 밸런스 스냅샷 참조 (PM 이력용)
-  | 'person';        // 담당자 (multi-user pick)
+  | 'person'         // 담당자 (multi-user pick)
+  | 'file';          // 첨부 파일 (multi-attachment, Phase D Tier 3)
+
+/**
+ * Serialised cell value for a 'file' column. Stored as JSON in the
+ * primitive CellValue slot (string) to avoid widening the CellValue
+ * union across the entire sheet pipeline. Parsers / renderers should
+ * tolerate a malformed JSON string by falling back to "no files".
+ */
+export interface FileAttachment {
+  /** /media/attachments/{projectId}/{hash}.{ext} URL. */
+  url: string;
+  /** Original filename for display + download UX. */
+  name: string;
+  /** Bytes (used for tooltip / quota math). */
+  size: number;
+  /** MIME from the upload pipeline. */
+  mime?: string;
+}
 
 // 선택 옵션 (select / multiSelect 공용)
 export interface SelectOption {
