@@ -1826,3 +1826,37 @@ select {
   background: rgba(148, 163, 184, 0.12);
   border-bottom-color: rgba(148, 163, 184, 0.5);
 }
+
+/* ============================================================================
+ * @mention chip — Tiptap Mention extension output (ADR 0024 stage F)
+ * ============================================================================
+ * The MentionEditor renders mention nodes as `<span class="balruno-mention">`.
+ * Display them as inline chips so the @label visually separates from
+ * surrounding plain text in both the composer and the rendered comment.
+ * Color uses the existing accent-blue family + reduced contrast for resolved
+ * comments inherited via the parent .comment-resolved opacity. */
+.balruno-mention {
+  display: inline-block;
+  padding: 0 4px;
+  margin: 0 1px;
+  border-radius: 4px;
+  background: rgba(59, 130, 246, 0.12);
+  color: rgb(37, 99, 235);
+  font-weight: 600;
+  font-size: 0.95em;
+}
+.dark .balruno-mention {
+  background: rgba(96, 165, 250, 0.15);
+  color: rgb(147, 197, 253);
+}
+
+/* Empty-state hint for the MentionEditor composer — Tiptap Placeholder
+ * extension emits `data-placeholder` on the empty doc paragraph; the
+ * official recipe is this CSS pseudo-element. */
+.balruno-mention-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--text-tertiary);
+  pointer-events: none;
+  height: 0;
+}

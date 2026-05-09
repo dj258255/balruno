@@ -18,8 +18,9 @@
  * re-fetches on open + after every local mutation.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, X, Check, Trash2, MessageSquareReply } from 'lucide-react';
+import type { JSONContent } from '@tiptap/react';
 import { toast } from 'sonner';
 
 import {
@@ -30,6 +31,8 @@ import {
   setCommentResolved,
 } from '@/lib/backend';
 import { useAuthStore } from '@/stores/authStore';
+import { useProjectStore } from '@/stores/projectStore';
+import MentionEditor, { type MentionEditorHandle } from './MentionEditor';
 
 interface CellCommentPanelProps {
   projectId: string;
@@ -51,8 +54,12 @@ export function CellCommentPanel({
 }: CellCommentPanelProps) {
   const [comments, setComments] = useState<BackendComment[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [draft, setDraft] = useState('');
+  const [draftJson, setDraftJson] = useState<JSONContent | null>(null);
   const [posting, setPosting] = useState(false);
+  const editorRef = useRef<MentionEditorHandle | null>(null);
+  const workspaceId = useProjectStore((s) =>
+    s.projects.find((p) => p.id === projectId)?.workspaceId,
+  );
   // Reply target — when set, the bottom textarea posts as a reply to
   // this thread. Click "Reply" on a root comment to populate; clear
   // by sending or canceling. ADR 0024 v2.1 stage H.
@@ -111,8 +118,9 @@ export function CellCommentPanel({
   }, [projectId, sheetId, rowId, columnId]);
 
   const handlePost = async () => {
-    const body = draft.trim();
-    if (!body || posting) return;
+    if (posting) return;
+    const body = draftJson ?? editorRef.current?.getJson();
+    if (!body || isEmptyDoc(body)) return;
     setPosting(true);
     try {
       const created = await createComment({
@@ -123,16 +131,14 @@ export function CellCommentPanel({
         columnId,
         // Reply if replyToId is set (Stage H), otherwise root comment.
         parentId: replyToId ?? undefined,
-        // Wrap plain text into the minimum Tiptap doc shape so the
-        // backend stores a future-proof JSON body. Rich-text Stage F
-        // produces the real Tiptap output here.
-        bodyJson: {
-          type: 'doc',
-          content: [{ type: 'paragraph', content: [{ type: 'text', text: body }] }],
-        },
+        // MentionEditor (Stage F) emits the real Tiptap doc shape with
+        // mention nodes inlined; backend MentionExtractor walks for
+        // {type:'mention', attrs:{id}} to record mention rows.
+        bodyJson: body,
       });
       setComments((prev) => (prev ? [...prev, created] : [created]));
-      setDraft('');
+      editorRef.current?.clear();
+      setDraftJson(null);
       setReplyToId(null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : '코멘트 작성 실패');
@@ -265,23 +271,18 @@ export function CellCommentPanel({
             </button>
           </div>
         )}
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder={replyToId ? '답글...' : '이 셀에 대한 의견...'}
-          rows={3}
+        <MentionEditor
+          ref={editorRef}
+          workspaceId={workspaceId}
+          placeholder={replyToId ? '답글... (@ 으로 멤버 멘션)' : '이 셀에 대한 의견... (@ 으로 멤버 멘션)'}
           disabled={posting}
-          className="w-full rounded-md border px-2 py-1.5 text-sm disabled:opacity-50"
-          style={{
-            borderColor: 'var(--border-primary)',
-            background: 'var(--bg-secondary)',
-            color: 'var(--text-primary)',
-          }}
+          onChange={setDraftJson}
+          onSubmit={handlePost}
         />
         <button
           type="button"
           onClick={handlePost}
-          disabled={!draft.trim() || posting}
+          disabled={posting || isEmptyDoc(draftJson)}
           className="mt-2 w-full rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
         >
           {posting ? '전송 중...' : replyToId ? '답글 추가' : '코멘트 추가'}
@@ -355,9 +356,9 @@ function CommentItem({ c, isMe, onResolve, onDelete, onReply, isReplying }: Comm
 }
 
 /**
- * Extract the plain text from a Tiptap JSON doc — the MVP textarea
- * stores `paragraph > text` only, so a single concat works. Rich-
- * text Stage F replaces this with a proper Tiptap render.
+ * Plain-text projection of a Tiptap doc that keeps mention nodes
+ * visible as `@label`. Walking once is fine — bodies are bounded to
+ * the comment shape (no lists, no code blocks).
  */
 function extractPlainText(body: unknown): string {
   if (!body || typeof body !== 'object') return '';
@@ -368,11 +369,24 @@ function extractPlainText(body: unknown): string {
 
 function walk(node: unknown, out: string[]): void {
   if (!node || typeof node !== 'object') return;
-  const obj = node as { type?: string; text?: unknown; content?: unknown };
+  const obj = node as { type?: string; text?: unknown; attrs?: { label?: unknown; id?: unknown }; content?: unknown };
   if (obj.type === 'text' && typeof obj.text === 'string') {
     out.push(obj.text);
+  } else if (obj.type === 'mention') {
+    const label = typeof obj.attrs?.label === 'string'
+      ? obj.attrs.label
+      : typeof obj.attrs?.id === 'string'
+        ? obj.attrs.id
+        : '';
+    if (label) out.push(`@${label}`);
   }
   if (Array.isArray(obj.content)) {
     for (const child of obj.content) walk(child, out);
   }
+}
+
+/** Empty-doc detector — Tiptap's empty state is `doc > paragraph` with no text. */
+function isEmptyDoc(body: unknown): boolean {
+  if (!body || typeof body !== 'object') return true;
+  return extractPlainText(body).length === 0;
 }
