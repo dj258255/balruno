@@ -36,6 +36,13 @@ export interface TreeNode {
   id: string;
   type: 'folder' | 'sheet' | 'doc';
   name: string;
+  /**
+   * Optional emoji / icon for the node. Persisted into the
+   * project's sheet_tree / doc_tree JSONB on tree.add so other
+   * workspace members see the same icon. Doc nodes default to
+   * '📄' on creation; sheets / folders leave this undefined.
+   */
+  icon?: string;
   children?: TreeNode[];
 }
 

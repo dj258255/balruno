@@ -28,6 +28,15 @@ interface SidebarPrefsState {
   activeWorkspaceId: WorkspaceId;
   /** 프로젝트별 활성 tag 필터 (AND 조건). key=projectId, value=tag[] */
   tagFilters: Record<string, string[]>;
+  /**
+   * Project rows the user has expanded in the sidebar tree. Per-user
+   * UI preference (Outline / Obsidian / VS Code Explorer pattern) —
+   * not a workspace-shared setting. Defaulting to "absent = collapsed"
+   * keeps workspaces with many projects calm on first paint.
+   */
+  expandedProjectIds: string[];
+  /** Doc nodes the user has expanded. Same per-user preference. */
+  expandedDocIds: string[];
 
   togglePinSheet: (sheetId: string) => void;
   isSheetPinned: (sheetId: string) => boolean;
@@ -35,6 +44,9 @@ interface SidebarPrefsState {
   setActiveWorkspace: (id: WorkspaceId) => void;
   toggleTagFilter: (projectId: string, tag: string) => void;
   clearTagFilter: (projectId: string) => void;
+  toggleProjectExpanded: (projectId: string) => void;
+  setProjectExpanded: (projectId: string, expanded: boolean) => void;
+  toggleDocExpanded: (docId: string) => void;
 }
 
 export const useSidebarPrefs = create<SidebarPrefsState>()(
@@ -43,6 +55,8 @@ export const useSidebarPrefs = create<SidebarPrefsState>()(
       pinnedSheetIds: [],
       activeWorkspaceId: '',
       tagFilters: {},
+      expandedProjectIds: [],
+      expandedDocIds: [],
 
       togglePinSheet: (sheetId) => {
         set((state) => {
@@ -77,6 +91,40 @@ export const useSidebarPrefs = create<SidebarPrefsState>()(
         set((state) => ({
           tagFilters: { ...state.tagFilters, [projectId]: [] },
         }));
+      },
+
+      toggleProjectExpanded: (projectId) => {
+        set((state) => {
+          const has = state.expandedProjectIds.includes(projectId);
+          return {
+            expandedProjectIds: has
+              ? state.expandedProjectIds.filter((id) => id !== projectId)
+              : [...state.expandedProjectIds, projectId],
+          };
+        });
+      },
+
+      setProjectExpanded: (projectId, expanded) => {
+        set((state) => {
+          const has = state.expandedProjectIds.includes(projectId);
+          if (has === expanded) return state;
+          return {
+            expandedProjectIds: expanded
+              ? [...state.expandedProjectIds, projectId]
+              : state.expandedProjectIds.filter((id) => id !== projectId),
+          };
+        });
+      },
+
+      toggleDocExpanded: (docId) => {
+        set((state) => {
+          const has = state.expandedDocIds.includes(docId);
+          return {
+            expandedDocIds: has
+              ? state.expandedDocIds.filter((id) => id !== docId)
+              : [...state.expandedDocIds, docId],
+          };
+        });
       },
     }),
     { name: 'balruno:sidebar-prefs' },

@@ -191,18 +191,36 @@ export function useSidebarState() {
   const effectiveWidth = mounted ? toolLayoutStore.sidebarWidth : 280;
   const effectiveToolsHeight = mounted ? toolLayoutStore.toolsSectionHeight : 200;
 
-  // 프로젝트 토글
+  // 프로젝트 토글 — local React state + persistent mirror in
+  // sidebarPrefs (localStorage). Reload restores the user's expanded
+  // set instead of starting collapsed every session.
   const toggleProject = useCallback((projectId: string) => {
     setExpandedProjects((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(projectId)) {
-        newSet.delete(projectId);
-      } else {
+      const isExpanding = !newSet.has(projectId);
+      if (isExpanding) {
         newSet.add(projectId);
+      } else {
+        newSet.delete(projectId);
       }
+      useSidebarPrefs.getState().setProjectExpanded(projectId, isExpanding);
       return newSet;
     });
   }, []);
+
+  // Hydrate the React-state set from the persisted preference once
+  // the component is mounted client-side. Skipping during SSR avoids
+  // a hydration mismatch.
+  useEffect(() => {
+    if (!mounted) return;
+    const ids = useSidebarPrefs.getState().expandedProjectIds;
+    if (ids.length === 0) return;
+    setExpandedProjects((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) next.add(id);
+      return next;
+    });
+  }, [mounted]);
 
   // 프로젝트 생성 — server-canonical REST.
   //   1. 활성 워크스페이스 (sidebarPrefs.activeWorkspaceId) 안에서 생성

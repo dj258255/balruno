@@ -122,11 +122,13 @@ export const createDocActions = (set: SetFn) => ({
     }));
     // Mirror into the doc_tree on the backend. WorkspaceShell's
     // docTreeOps listener picks this up and emits a tree.add op so
-    // the new doc survives reload + becomes visible to peers.
+    // the new doc survives reload + becomes visible to peers. Icon
+    // is part of the node so the page-facing emoji travels with the
+    // doc — shared TreeNode just gained the optional field.
     emitTreeAdd(
       newDoc.parentId ?? null,
       Number.MAX_SAFE_INTEGER, // append; insertNodeAt clamps
-      { id, type: 'doc', name },
+      { id, type: 'doc', name, icon: newDoc.icon },
     );
     return id;
   },
@@ -215,7 +217,16 @@ export const createDocActions = (set: SetFn) => ({
     );
   },
 
-  /** 사이드바 펼침/접힘 토글. */
+  /**
+   * 사이드바 펼침/접힘 토글. Per-user preference — Outline / Obsidian
+   * / VS Code Explorer 패턴으로 sidebarPrefs (localStorage) 에만
+   * 저장한다. 같은 워크스페이스의 다른 멤버, 그리고 같은 사용자의
+   * 다른 기기는 각자 자기 펼침 상태를 가진다 (Notion / Linear 처럼
+   * server-side 까지 가지 않는 의도된 trade-off).
+   *
+   * 기존 Doc.isExpanded 필드도 일관성을 위해 같이 mirror 하지만,
+   * persist 가 sidebarPrefs 쪽이라 reload 시 source of truth 는 그쪽.
+   */
   toggleDocExpanded: (projectId: string, docId: string) => {
     set((state) => ({
       projects: state.projects.map((p) =>
@@ -229,6 +240,11 @@ export const createDocActions = (set: SetFn) => ({
             },
       ),
     }));
+    // Mirror to the persisted preference store. Lazy import keeps the
+    // slice's module load free of UI-store side effects.
+    void import('../sidebarPrefsStore').then(({ useSidebarPrefs }) => {
+      useSidebarPrefs.getState().toggleDocExpanded(docId);
+    });
   },
 
   /** 문서 선택 — null 이면 단순 해제. id 면 탭 자동 열림 + 시트 해제. */
