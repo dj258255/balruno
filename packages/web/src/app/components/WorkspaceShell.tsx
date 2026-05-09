@@ -47,6 +47,7 @@ import WorkspaceSettingsClient from '@/app/components/WorkspaceSettingsClient';
 import AccountSettingsClient from '@/app/components/AccountSettingsClient';
 import NotificationSettingsClient from '@/app/components/NotificationSettingsClient';
 import CreateWorkspaceModal from '@/app/components/CreateWorkspaceModal';
+import TemplateGalleryModal from '@/app/components/TemplateGalleryModal';
 import Sidebar from '@/components/layout/Sidebar';
 import SheetTabs from '@/components/layout/SheetTabs';
 import SidebarResizer from '@/app/components/SidebarResizer';
@@ -892,6 +893,12 @@ export default function WorkspaceShell({
       )}
       {createWorkspaceOpen && (
         <CreateWorkspaceModal onClose={() => setCreateWorkspaceOpen(false)} />
+      )}
+      {workspace && (
+        <TemplateGalleryModal
+          workspaceId={workspace.id}
+          workspaceSlug={workspace.slug}
+        />
       )}
     </main>
   );

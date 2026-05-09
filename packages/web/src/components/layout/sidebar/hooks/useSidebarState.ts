@@ -3,8 +3,14 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { useProjectStore } from '@/stores/projectStore';
 import { useToolLayoutStore, AllToolId } from '@/stores/toolLayoutStore';
+import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
+import { useWorkspaceListStore } from '@/stores/workspaceListStore';
+import { createProject as createProjectRest } from '@/lib/backend';
+import { randomId } from '@/lib/uuid';
 
 // 드래그 상태 타입
 export interface ToolDragState {
@@ -72,6 +78,7 @@ export function useSidebarState() {
   // 스토어
   const projectStore = useProjectStore();
   const toolLayoutStore = useToolLayoutStore();
+  const router = useRouter();
 
   // 클라이언트 마운트 상태
   const [mounted, setMounted] = useState(false);
@@ -195,15 +202,33 @@ export function useSidebarState() {
     });
   }, []);
 
-  // 프로젝트 생성
-  const handleCreateProject = useCallback(() => {
-    if (newProjectName.trim()) {
-      const id = projectStore.createProject(newProjectName.trim());
-      setExpandedProjects((prev) => new Set([...prev, id]));
+  // 프로젝트 생성 — server-canonical REST.
+  //   1. 활성 워크스페이스 (sidebarPrefs.activeWorkspaceId) 안에서 생성
+  //   2. slug 는 클라가 생성: 'p-' + UUIDv4 첫 8 hex (regex
+  //      [a-z0-9][a-z0-9-]{2,29} 매칭). 한국어 이름이라도 안전.
+  //   3. 성공 시 새 프로젝트 페이지로 navigate — WorkspaceShell 이
+  //      mount 되며 listProjects 가 다시 fetch 되어 사이드바 갱신됨.
+  //   4. 실패 시 toast 로 에러 표시. legacyStubSlice 의 alert 와 달리
+  //      silent 가 아니라 actionable.
+  const handleCreateProject = useCallback(async () => {
+    const name = newProjectName.trim();
+    if (!name) return;
+    const wsId = useSidebarPrefs.getState().activeWorkspaceId;
+    const ws = useWorkspaceListStore.getState().workspaces.find((w) => w.id === wsId);
+    if (!ws) {
+      toast.error('워크스페이스를 찾을 수 없습니다.');
+      return;
+    }
+    const slug = 'p-' + randomId().replace(/-/g, '').slice(0, 8);
+    try {
+      const created = await createProjectRest(ws.id, { slug, name });
       setNewProjectName('');
       setShowNewProject(false);
+      router.replace(`/${ws.slug}/projects/${created.slug}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '프로젝트 생성 실패');
     }
-  }, [newProjectName, projectStore]);
+  }, [newProjectName, router]);
 
   // 프로젝트 편집 시작
   const handleStartEdit = useCallback((projectId: string, name: string) => {
