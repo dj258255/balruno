@@ -138,9 +138,9 @@ jobs:
         run: |
           # Drive the remote cutover from a heredoc'd bash script. All
           # GitHub-context values reach the remote shell only via the
-          # exported env vars below (MODE, GH_TOKEN, ACTOR, INSTALL_DIR);
-          # the heredoc body itself is single-quoted so no `${{ }}`
-          # interpolation happens inside.
+          # exported env vars below (MODE, GH_TOKEN, ACTOR, INSTALL_DIR).
+          # The heredoc body is single-quoted so the GitHub Actions
+          # expression engine never inspects what is inside.
           ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
               -i ~/.ssh/oci_key \
               "${PROD_USER}@${PROD_HOST}" \
