@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+# ADR 0044 — Balruno backend (Spring) upstream snippet, GREEN active.
+#
+# When this file is the symlink target of conf.d/balruno-backend-active.conf,
+# nginx routes traffic to the green container ({{ backend_green_host_port }}).
+# Blue is listed as 'backup' so it only takes traffic if green dies.
+
+upstream balruno_backend {
+  server 127.0.0.1:{{ backend_blue_host_port }} backup;
+  server 127.0.0.1:{{ backend_green_host_port }};
+}

@@ -9,12 +9,22 @@ nginx_cert_dir: /etc/nginx/cert
 nginx_origin_cert_path: "{{ nginx_cert_dir }}/cloudflare-origin.crt"
 nginx_origin_key_path: "{{ nginx_cert_dir }}/cloudflare-origin.key"
 
-# Backend upstream targets. Bound to loopback because Cloudflare proxy is
-# the only reachable inbound path; backends never expose to the VCN.
-nginx_backend_spring_host: 127.0.0.1
-nginx_backend_spring_port: 8080
-nginx_backend_hocuspocus_host: 127.0.0.1
-nginx_backend_hocuspocus_port: 1234
+# Blue/green upstream wiring — ADR 0044. Backend ports come from the
+# backend role defaults (backend_blue_host_port / backend_green_host_port);
+# collab ports come from the hocuspocus role defaults. nginx routes via
+# the snippet symlink swap pattern:
+#
+#   /etc/nginx/snippets/upstream-balruno-backend-{blue,green}.conf  (rendered)
+#   /etc/nginx/conf.d/balruno-backend-active.conf                   (symlink)
+#   /etc/nginx/conf.d/api.balruno.com.conf  proxy_pass → upstream balruno_backend
+#
+# Workflow flips the symlink + nginx -s reload to graceful cutover.
+#
+# Initial active color — only used on the very first ansible apply
+# (when the symlink does not yet exist). Subsequent applies do NOT
+# override the symlink (so deploy-workflow cutovers survive ansible
+# runs).
+nginx_initial_active_color: blue
 
 # Cloudflare published IPv4 ranges. real_ip_from sets the trusted proxy list
 # so nginx logs and rate-limits use the real client IP from CF-Connecting-IP

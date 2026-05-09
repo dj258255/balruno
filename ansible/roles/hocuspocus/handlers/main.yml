@@ -1,13 +1,7 @@
-# Restart trigger when docker-compose.yml or .env changes. The
-# collab-deploy workflow's `docker compose up -d` covers normal image
-# redeploys; this handler only fires for Ansible-side changes (env
-# rotation, mem_limit tweak).
-
-- name: restart collab stack
-  community.docker.docker_compose_v2:
-    project_src: "{{ hocuspocus_install_dir }}"
-    state: restarted
-  # If the image hasn't been pushed yet (first apply, before
-  # collab-deploy has run) the docker-compose call would fail. Skipping
-  # on first apply is the workflow's responsibility.
-  failed_when: false
+# Handler intentionally left empty — ADR 0044.
+#
+# Same rationale as the backend role: under blue/green deploy the active
+# container set is the workflow's responsibility, not Ansible's. Ansible
+# renders compose.yml + .env on disk; the collab-deploy workflow handles
+# `docker compose up -d <service>`, readiness probing, and the nginx
+# cutover.

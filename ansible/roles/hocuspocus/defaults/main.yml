@@ -23,9 +23,19 @@ hocuspocus_postgres_user: "{{ postgres_db_user | default('balruno') }}"
 hocuspocus_image_repo: "ghcr.io/dj258255/balruno-collab"
 hocuspocus_image_tag: latest
 
-# Listen port — nginx reverse-proxies collab.balruno.com to this on
-# 127.0.0.1. The vhost (collab.balruno.com.conf) already points at 1234.
-hocuspocus_collab_port: 1234
+# Listen port inside the container. Both colors listen on the same
+# internal port; only the host-side mapping differs.
+hocuspocus_container_port: 1234
+
+# Blue/green deploy ports — ADR 0044. Workflow brings up exactly one
+# color at a time via COMPOSE_PROFILES=<blue|green>; nginx routes via
+# the snippet symlink swap (see nginx role).
+hocuspocus_blue_host_port: 1234
+hocuspocus_green_host_port: 1235
+
+# Backwards-compat alias for the .env template (still referenced as
+# COLLAB_PORT inside the container — see .env.j2 PORT setting).
+hocuspocus_collab_port: "{{ hocuspocus_container_port }}"
 
 # Memory ceiling defaults to the value declared in group_vars/all/vars.yml
 # (hocuspocus_mem_limit: "512m"); kept here so the role stays

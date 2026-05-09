@@ -2,6 +2,12 @@
 # collab.balruno.com — Hocuspocus (yjs WebSocket) reverse proxy.
 # Hocuspocus connections are long-lived (idle keepalive), so the read
 # timeout is bumped from the default 60s to 1h.
+#
+# The upstream `balruno_collab` is defined in
+# /etc/nginx/conf.d/balruno-collab-active.conf, a symlink to one of the
+# blue/green snippets in /etc/nginx/snippets/. The collab-deploy workflow
+# flips the symlink + nginx -s reload to graceful-cutover at deploy time
+# (ADR 0044).
 
 server {
   listen 80;
@@ -31,7 +37,7 @@ server {
   }
 
   location / {
-    proxy_pass http://{{ nginx_backend_hocuspocus_host }}:{{ nginx_backend_hocuspocus_port }};
+    proxy_pass http://balruno_collab;
     proxy_http_version 1.1;
 
     # WS upgrade headers — Hocuspocus is purely WebSocket.

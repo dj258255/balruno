@@ -1,6 +1,12 @@
 # {{ ansible_managed }}
 # api.balruno.com — Spring Boot reverse proxy.
 # 80 redirects to 443 for any direct hits; Cloudflare always sends HTTPS.
+#
+# The upstream `balruno_backend` is defined in
+# /etc/nginx/conf.d/balruno-backend-active.conf, a symlink to one of the
+# blue/green snippets in /etc/nginx/snippets/. The deploy workflow flips
+# the symlink + nginx -s reload to graceful-cutover at deploy time
+# (ADR 0044).
 
 server {
   listen 80;
@@ -34,7 +40,7 @@ server {
   }
 
   location / {
-    proxy_pass http://{{ nginx_backend_spring_host }}:{{ nginx_backend_spring_port }};
+    proxy_pass http://balruno_backend;
     proxy_http_version 1.1;
 
     proxy_set_header Host              $host;
@@ -59,7 +65,7 @@ server {
   # a future internal token (Phase B-7). For now the rule above already
   # blocks non-CF traffic, so /actuator works through the same gate.
   location /actuator/health {
-    proxy_pass http://{{ nginx_backend_spring_host }}:{{ nginx_backend_spring_port }}/actuator/health;
+    proxy_pass http://balruno_backend/actuator/health;
     proxy_set_header Host $host;
     access_log off;
   }

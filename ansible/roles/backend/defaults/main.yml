@@ -26,3 +26,10 @@ backend_image_tag: latest
 # they land in B-4/B-5.
 backend_mem_limit: "2g"
 backend_active_profile: prod
+
+# Blue/green deploy ports — ADR 0044. Spring listens on 8080 inside both
+# containers; only the host-side mapping differs. nginx upstream switches
+# between these via the snippet symlink swap.
+backend_blue_host_port: 8080
+backend_green_host_port: 8081
+backend_container_port: 8080

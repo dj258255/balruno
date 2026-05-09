@@ -32,7 +32,6 @@
     group: docker
     mode: '0640'
   no_log: true   # don't echo secret-laced template diff to the run log
-  notify: restart backend stack
 
 - name: Render docker-compose.yml
   ansible.builtin.template:
@@ -41,7 +40,6 @@
     owner: root
     group: docker
     mode: '0664'
-  notify: restart backend stack
 
 - name: Allow rocky user to run docker (group membership)
   ansible.builtin.user:

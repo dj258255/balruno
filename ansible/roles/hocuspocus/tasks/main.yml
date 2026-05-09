@@ -32,7 +32,6 @@
     group: docker
     mode: '0640'
   no_log: true   # don't echo secret-laced template diff to the run log
-  notify: restart collab stack
 
 - name: Render docker-compose.yml
   ansible.builtin.template:
@@ -41,4 +40,3 @@
     owner: root
     group: docker
     mode: '0664'
-  notify: restart collab stack

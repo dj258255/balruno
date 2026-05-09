@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+# ADR 0044 — Balruno collab (Hocuspocus) upstream snippet, GREEN active.
+#
+# When this file is the symlink target of conf.d/balruno-collab-active.conf,
+# nginx routes WebSocket traffic to the green container
+# ({{ hocuspocus_green_host_port }}). Blue is 'backup'.
+
+upstream balruno_collab {
+  server 127.0.0.1:{{ hocuspocus_blue_host_port }} backup;
+  server 127.0.0.1:{{ hocuspocus_green_host_port }};
+}
