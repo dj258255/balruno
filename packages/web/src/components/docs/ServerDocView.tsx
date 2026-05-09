@@ -17,7 +17,7 @@
  * via Y.Doc updates.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useEditor, EditorContent, Extension } from '@tiptap/react';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
@@ -103,26 +103,29 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
   // overlay it (collab takes precedence on the same keys). Keeping
   // StarterKit's default config avoids the option-shape mismatch
   // between StarterKit versions.
-  // CommentHighlight extension — emits an inline Decoration over
-  // every range-pinned comment so the user sees an orange underline
-  // at the anchored span. The extension is recreated per render only
-  // when `highlights` changes (memoized below) so selection / IME
-  // typing doesn't churn through plugin instantiation.
+  //
+  // CommentHighlight: stable extension created once per documentId.
+  // Decorations are stored inside the ProseMirror plugin state and
+  // refreshed via a meta transaction when `highlights` changes —
+  // recreating the extension would force useEditor to rebuild the
+  // editor and bounce the user's cursor / IME state on every peer
+  // comment broadcast.
+  const onHighlightClickRef = useRef<(commentId: string) => void>(() => {});
+  onHighlightClickRef.current = (commentId: string) => {
+    const target = highlights.find((h) => h.commentId === commentId);
+    if (!target) return;
+    setCommentSelection({
+      kind: 'doc-body',
+      documentId,
+      anchorPosition: target.from,
+    });
+    setCommentPanelOpen(true);
+  };
   const commentHighlightExt = useMemo(
-    () => createCommentHighlightExtension(highlights, (commentId) => {
-      // Click on a highlight → bring the matching comment into the
-      // panel selection. The panel reads commentSelection.anchorPosition
-      // to know which thread to scroll to.
-      const target = highlights.find((h) => h.commentId === commentId);
-      if (!target) return;
-      setCommentSelection({
-        kind: 'doc-body',
-        documentId,
-        anchorPosition: target.from,
-      });
-      setCommentPanelOpen(true);
-    }),
-    [highlights, documentId, setCommentSelection, setCommentPanelOpen],
+    () => createCommentHighlightExtension(onHighlightClickRef),
+    // Stable per documentId — doc swap is the only legitimate
+    // reason to rebuild the plugin (decoration set is doc-bound).
+    [documentId],
   );
 
   const editor = useEditor(
@@ -146,6 +149,16 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
     },
     [documentId, collabExtensions, commentHighlightExt],
   );
+
+  // Push the latest highlight set into the plugin state via a meta
+  // transaction. The plugin's `apply` reads tr.getMeta(KEY) to swap
+  // its DecorationSet — the editor / cursor / IME stays put.
+  useEffect(() => {
+    if (!editor) return;
+    const view = editor.view;
+    const tr = view.state.tr.setMeta(COMMENT_HIGHLIGHT_META, highlights);
+    view.dispatch(tr);
+  }, [editor, highlights]);
 
   const handleCommentSelection = () => {
     if (!selRange) return;
@@ -301,52 +314,62 @@ function DocTitleEditor({ title, onTitleChange }: DocTitleEditorProps) {
 }
 
 /**
+ * Meta key used by the surrounding ServerDocView to push a fresh
+ * highlight set into the plugin without recreating the extension.
+ * Exported via module scope so the dispatcher and the plugin's
+ * `apply` use the exact same string instance.
+ */
+const COMMENT_HIGHLIGHT_META = 'comment-highlight/set';
+
+interface CommentHighlight {
+  commentId: string;
+  from: number;
+  to: number;
+  resolved: boolean;
+}
+
+/**
  * Tiptap Extension that emits inline Decoration over every
  * range-pinned comment (Comment F.2). Each highlight gets a
  * `comment-highlight` class — the global stylesheet provides the
- * orange underline. Click handler dispatches via the supplied
- * onClick callback so the panel can scroll to the matched thread.
+ * orange underline. Click handler dispatches via the ref-held
+ * callback so the panel can scroll to the matched thread.
  *
- * Idempotent on highlight set churn: the plugin spec carries
- * highlights in plugin state via apply/init, but the React side
- * recreates the extension when `highlights` changes, which
- * triggers a fresh ProseMirror plugin replacement (Tiptap rebinds
- * the editor). Cheap because the plugin only stores a
- * DecorationSet — no persistent state across editor instances.
+ * Stable across highlight churn: the highlight set lives in plugin
+ * state and is mapped through document changes via DecorationSet.map
+ * so concurrent edits don't drift the underlines. Updating the set
+ * is a single meta-transaction (no editor recreate) — the user's
+ * cursor / IME state is preserved when peers add/edit/delete
+ * comments.
  */
 function createCommentHighlightExtension(
-  highlights: Array<{ commentId: string; from: number; to: number; resolved: boolean }>,
-  onClick: (commentId: string) => void,
+  onClickRef: { current: (commentId: string) => void },
 ) {
-  const pluginKey = new PluginKey('comment-highlight');
+  const pluginKey = new PluginKey<DecorationSet>('comment-highlight');
   return Extension.create({
     name: 'commentHighlight',
     addProseMirrorPlugins() {
       return [
-        new Plugin({
+        new Plugin<DecorationSet>({
           key: pluginKey,
+          state: {
+            init: () => DecorationSet.empty,
+            apply(tr, oldSet) {
+              const incoming = tr.getMeta(COMMENT_HIGHLIGHT_META) as
+                | CommentHighlight[]
+                | undefined;
+              if (incoming) {
+                return buildDecorationSet(tr.doc, incoming);
+              }
+              // Map existing decorations through doc changes so the
+              // underline tracks edited text (Tiptap's standard
+              // pattern for range-anchored decoration plugins).
+              return oldSet.map(tr.mapping, tr.doc);
+            },
+          },
           props: {
             decorations(state) {
-              const docSize = state.doc.content.size;
-              const decos: Decoration[] = [];
-              for (const h of highlights) {
-                // Clamp to current doc bounds — the user may have
-                // edited the doc since the comment was anchored,
-                // shrinking it. Out-of-bound ranges are skipped
-                // rather than crashing the plugin.
-                const from = Math.max(0, Math.min(h.from, docSize));
-                const to = Math.max(from, Math.min(h.to, docSize));
-                if (to <= from) continue;
-                decos.push(
-                  Decoration.inline(from, to, {
-                    class: h.resolved
-                      ? 'comment-highlight comment-highlight-resolved'
-                      : 'comment-highlight',
-                    'data-comment-id': h.commentId,
-                  }),
-                );
-              }
-              return DecorationSet.create(state.doc, decos);
+              return pluginKey.getState(state) ?? DecorationSet.empty;
             },
             handleClick(view, _pos, event) {
               const target = event.target as HTMLElement | null;
@@ -354,7 +377,7 @@ function createCommentHighlightExtension(
               if (!span) return false;
               const commentId = span.getAttribute('data-comment-id');
               if (!commentId) return false;
-              onClick(commentId);
+              onClickRef.current(commentId);
               return true;
             },
           },
@@ -362,4 +385,29 @@ function createCommentHighlightExtension(
       ];
     },
   });
+}
+
+function buildDecorationSet(
+  doc: import('@tiptap/pm/model').Node,
+  highlights: CommentHighlight[],
+): DecorationSet {
+  const docSize = doc.content.size;
+  const decos: Decoration[] = [];
+  for (const h of highlights) {
+    // Clamp to current doc bounds — the user may have edited the
+    // doc since the comment was anchored, shrinking it. Out-of-
+    // bound ranges are skipped rather than crashing the plugin.
+    const from = Math.max(0, Math.min(h.from, docSize));
+    const to = Math.max(from, Math.min(h.to, docSize));
+    if (to <= from) continue;
+    decos.push(
+      Decoration.inline(from, to, {
+        class: h.resolved
+          ? 'comment-highlight comment-highlight-resolved'
+          : 'comment-highlight',
+        'data-comment-id': h.commentId,
+      }),
+    );
+  }
+  return DecorationSet.create(doc, decos);
 }
