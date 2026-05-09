@@ -36,16 +36,16 @@ class DigestScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(DigestScheduler.class);
 
-    private final NotificationRepository repo;
+    private final NotificationPreferenceRepository prefs;
     private final ObjectProvider<EmailService> emailServiceProvider;
     private final CommentService comments;
     private final UserDirectoryService users;
 
-    DigestScheduler(NotificationRepository repo,
+    DigestScheduler(NotificationPreferenceRepository prefs,
                     ObjectProvider<EmailService> emailServiceProvider,
                     CommentService comments,
                     UserDirectoryService users) {
-        this.repo = repo;
+        this.prefs = prefs;
         this.emailServiceProvider = emailServiceProvider;
         this.comments = comments;
         this.users = users;
@@ -70,7 +70,7 @@ class DigestScheduler {
             return;
         }
         var since = OffsetDateTime.now().minus(window);
-        var userIds = repo.findUsersForDigest(cadence);
+        var userIds = prefs.findUsersForDigest(cadence);
         if (userIds.isEmpty()) {
             log.debug("digest cadence={} userCount=0", cadence);
             return;

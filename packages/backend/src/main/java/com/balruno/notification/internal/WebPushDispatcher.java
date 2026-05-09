@@ -50,14 +50,14 @@ class WebPushDispatcher {
     private final String subject;
 
     private PushService pushService;
-    private final NotificationRepository repo;
+    private final WebPushSubscriptionRepository subs;
 
     WebPushDispatcher(
-            NotificationRepository repo,
+            WebPushSubscriptionRepository subs,
             @Value("${balruno.notification.webpush.vapid-public-key:}") String publicKey,
             @Value("${balruno.notification.webpush.vapid-private-key:}") String privateKey,
             @Value("${balruno.notification.webpush.vapid-subject:mailto:noreply@balruno.com}") String subject) {
-        this.repo = repo;
+        this.subs = subs;
         this.publicKey = publicKey;
         this.privateKey = privateKey;
         this.subject = subject;
@@ -93,10 +93,10 @@ class WebPushDispatcher {
             if (code == 410 || code == 404) {
                 // Browser permanently dropped the subscription —
                 // remove the row so future fanouts skip it.
-                repo.deleteByEndpoint(sub.endpoint());
+                subs.deleteByEndpoint(sub.endpoint());
                 log.info("dropped expired push subscription endpoint={}", sub.endpoint());
             } else if (code >= 200 && code < 300) {
-                repo.touchLastUsed(sub.id(), OffsetDateTime.now());
+                subs.touchLastUsed(sub.id(), OffsetDateTime.now());
             } else {
                 log.warn("web push gateway non-2xx status={} endpoint={}", code, sub.endpoint());
             }

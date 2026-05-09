@@ -30,7 +30,8 @@ class NotificationDispatcher {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationDispatcher.class);
 
-    private final NotificationRepository repo;
+    private final NotificationPreferenceRepository prefs;
+    private final WebPushSubscriptionRepository subs;
     private final WebPushDispatcher pushDispatcher;
 
     /** Optional — null when SMTP isn't configured (the bean only
@@ -41,11 +42,13 @@ class NotificationDispatcher {
 
     private final ObjectMapper jsonMapper = new ObjectMapper();
 
-    NotificationDispatcher(NotificationRepository repo,
+    NotificationDispatcher(NotificationPreferenceRepository prefs,
+                           WebPushSubscriptionRepository subs,
                            WebPushDispatcher pushDispatcher,
                            ObjectProvider<EmailService> emailServiceProvider,
                            UserDirectoryService users) {
-        this.repo = repo;
+        this.prefs = prefs;
+        this.subs = subs;
         this.pushDispatcher = pushDispatcher;
         this.emailServiceProvider = emailServiceProvider;
         this.users = users;
@@ -76,7 +79,9 @@ class NotificationDispatcher {
             // No way to email them; push channel still works if subs exist.
         }
 
-        var pref = repo.findPreference(event.mentionedUserId());
+        var pref = prefs.findById(event.mentionedUserId())
+                .map(NotificationPreferenceEntity::toDto)
+                .orElse(null);
         boolean emailOn = pref == null
                 ? NotificationServiceImpl.DEFAULT.emailOnMention()
                 : pref.emailOnMention();
@@ -108,8 +113,8 @@ class NotificationDispatcher {
         // Web Push — fan out to every subscribed device.
         if (pushOn && pushDispatcher.isReady()) {
             var payload = pushPayload(authorName, projectName, snippet);
-            for (var sub : repo.listSubscriptions(event.mentionedUserId())) {
-                pushDispatcher.send(sub, payload);
+            for (var sub : subs.findByUserIdOrderByCreatedAtDesc(event.mentionedUserId())) {
+                pushDispatcher.send(sub.toDto(), payload);
             }
         }
     }

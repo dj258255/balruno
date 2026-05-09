@@ -8,7 +8,6 @@ import com.balruno.notification.WebPushSubscription;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,18 +18,22 @@ class NotificationServiceImpl implements NotificationService {
             null, true, true, true, false,
             DigestFrequency.INSTANT, null);
 
-    private final NotificationRepository repo;
+    private final NotificationPreferenceRepository prefs;
+    private final WebPushSubscriptionRepository subs;
     private final WebPushDispatcher pushDispatcher;
 
-    NotificationServiceImpl(NotificationRepository repo, WebPushDispatcher pushDispatcher) {
-        this.repo = repo;
+    NotificationServiceImpl(NotificationPreferenceRepository prefs,
+                             WebPushSubscriptionRepository subs,
+                             WebPushDispatcher pushDispatcher) {
+        this.prefs = prefs;
+        this.subs = subs;
         this.pushDispatcher = pushDispatcher;
     }
 
     @Override
     @Transactional(readOnly = true)
     public NotificationPreference getPreference(UUID userId) {
-        var existing = repo.findPreference(userId);
+        var existing = prefs.findById(userId).map(NotificationPreferenceEntity::toDto).orElse(null);
         if (existing != null) return existing;
         return new NotificationPreference(
                 userId,
@@ -46,40 +49,46 @@ class NotificationServiceImpl implements NotificationService {
     @Transactional
     public NotificationPreference updatePreference(UUID userId, UpdatePreferenceInput input) {
         var current = getPreference(userId);
-        var next = new NotificationPreference(
+        var nextDigest = input.digestFrequency() != null
+                ? DigestFrequency.parse(input.digestFrequency())
+                : current.digestFrequency();
+        prefs.upsert(
                 userId,
                 input.emailOnMention() != null ? input.emailOnMention() : current.emailOnMention(),
                 input.emailOnCommentReply() != null ? input.emailOnCommentReply() : current.emailOnCommentReply(),
                 input.pushOnMention() != null ? input.pushOnMention() : current.pushOnMention(),
                 input.pushOnCommentReply() != null ? input.pushOnCommentReply() : current.pushOnCommentReply(),
-                input.digestFrequency() != null
-                        ? DigestFrequency.parse(input.digestFrequency())
-                        : current.digestFrequency(),
-                OffsetDateTime.now());
-        return repo.upsertPreference(next);
+                nextDigest.wireValue());
+        return prefs.findById(userId).map(NotificationPreferenceEntity::toDto)
+                .orElseThrow(() -> new IllegalStateException("upsert succeeded but row missing"));
     }
 
     @Override
     @Transactional
     public WebPushSubscription saveSubscription(UUID userId, SaveSubscriptionInput input) {
-        return repo.upsertSubscription(
+        subs.upsert(
                 userId,
                 input.endpoint(),
                 input.p256dh(),
                 input.auth(),
                 input.userAgent());
+        return subs.findByUserIdAndEndpoint(userId, input.endpoint())
+                .map(WebPushSubscriptionEntity::toDto)
+                .orElseThrow(() -> new IllegalStateException("upsert succeeded but row missing"));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<WebPushSubscription> listSubscriptions(UUID userId) {
-        return repo.listSubscriptions(userId);
+        return subs.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(WebPushSubscriptionEntity::toDto)
+                .toList();
     }
 
     @Override
     @Transactional
     public void deleteSubscription(UUID userId, UUID subscriptionId) {
-        repo.deleteSubscription(userId, subscriptionId);
+        subs.deleteByIdAndUserId(subscriptionId, userId);
     }
 
     @Override
