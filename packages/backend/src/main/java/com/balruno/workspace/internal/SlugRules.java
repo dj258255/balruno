@@ -18,17 +18,38 @@ final class SlugRules {
 
     /**
      * Names that collide with URL prefixes or general sensitive routes.
-     * Any new top-level path should be added here too — a workspace slug
-     * sharing a path with a system route makes routing ambiguous.
+     * Any new top-level path should be added here too — a workspace
+     * slug sharing a path with a system route makes routing ambiguous.
+     *
+     * Linear-style URL migration (Phase 1) adds `/{wsSlug}` and
+     * `/{wsSlug}/projects/{p}` and is preparing the ground for
+     * `/{wsSlug}/{members,settings,audit,...}` workspace sub-resources.
+     * Each second-level keyword is also reserved at the workspace-slug
+     * level so a future ws-level page never collides with an existing
+     * workspace's slug.
      */
     private static final Set<String> RESERVED = Set.of(
+            // Top-level system routes / brand
             "api", "app", "admin", "www", "balruno",
-            "auth", "login", "logout", "oauth2", "signup",
+            // Auth + OAuth
+            "auth", "login", "logout", "oauth2", "signup", "callback",
+            // Spring actuator + OpenAPI
             "actuator", "swagger-ui", "v3",
+            // Static asset prefixes
             "static", "assets", "public",
-            "i", "w", "u", "p",        // reserve short path prefixes for future use
+            // Short prefixes reserved for future use (also covers the
+            // legacy /w + /p paths)
+            "i", "w", "u", "p",
+            // Marketing + content surface
             "help", "support", "docs", "blog", "status",
-            "settings", "billing", "team", "teams"
+            "pricing", "privacy", "terms", "about", "changelog",
+            // Workspace-level sub-resources (Linear-style routing prep)
+            "settings", "billing", "team", "teams", "workspace", "workspaces",
+            "projects", "project", "members", "member",
+            "audit", "audit-log", "inbox", "notifications",
+            "integrations", "integration", "webhooks", "webhook",
+            "discord", "share", "quota", "templates", "template",
+            "trash", "search", "invites", "invite"
     );
 
     static void validate(String slug) {
