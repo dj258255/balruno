@@ -71,6 +71,7 @@ import { ConfirmDialog } from '@/components/ui';
 import { cellKey, rafThrottle, formatDisplayValue, formatForFormulaBar } from './utils';
 import { evaluateFormula } from '@/lib/formulaEngine';
 import { cn } from '@/lib/utils';
+import { COLUMN_TYPE_META } from '@/lib/columnTypeMeta';
 import { usePresence } from '@/hooks/usePresence';
 import { emitPresence } from '@/lib/sync/writeQueue';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
@@ -1248,6 +1249,24 @@ export default function SheetTable({ projectId, sheet }: SheetTableProps) {
                                   whiteSpace: 'nowrap',
                                 }}
                               >
+                                {(() => {
+                                  // ColumnType prefix icon — picker 모달과 동일한
+                                  // lucide 아이콘을 헤더에 미러링해서 picker ↔ header
+                                  // 시각 연속성 확보. text-tertiary 톤으로 컬럼명
+                                  // (text-secondary) 보다 한 단계 약하게.
+                                  const col = sheet.columns.find((c) => c.id === header.id);
+                                  if (!col) return null;
+                                  const meta = COLUMN_TYPE_META[col.type];
+                                  if (!meta) return null;
+                                  const Icon = meta.Icon;
+                                  return (
+                                    <Icon
+                                      className="w-3 h-3 shrink-0"
+                                      style={{ color: 'var(--text-tertiary)' }}
+                                      aria-hidden
+                                    />
+                                  );
+                                })()}
                                 <span className="truncate">
                                   {flexRender(header.column.columnDef.header, header.getContext())}
                                 </span>

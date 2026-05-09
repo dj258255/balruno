@@ -67,20 +67,22 @@ class WebhookServiceImpl implements WebhookService {
     public Webhook create(UUID callerUserId, UUID projectId, String url, List<String> events) {
         validateUrl(url);
         validateEvents(events);
-        return repo.insert(projectId, url, events, callerUserId);
+        var entity = new WebhookEntity(projectId, url, events, callerUserId);
+        return repo.save(entity).toDto();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Webhook> listForProject(UUID callerUserId, UUID projectId) {
-        return repo.findByProjectId(projectId).stream()
+        return repo.findByProjectIdOrderByCreatedAtDesc(projectId).stream()
+                .map(WebhookEntity::toDto)
                 .map(WebhookServiceImpl::stripSecret)
                 .toList();
     }
 
     @Override
     public Webhook findById(UUID webhookId) {
-        return repo.findById(webhookId);
+        return repo.findById(webhookId).map(WebhookEntity::toDto).orElse(null);
     }
 
     @Override
@@ -92,7 +94,7 @@ class WebhookServiceImpl implements WebhookService {
     @Override
     @Transactional
     public void delete(UUID callerUserId, UUID webhookId) {
-        repo.delete(webhookId);
+        repo.deleteById(webhookId);
     }
 
     @Override
@@ -108,7 +110,7 @@ class WebhookServiceImpl implements WebhookService {
         try {
             var subscribers = repo.findActiveSubscribers(projectId, event);
             for (var sub : subscribers) {
-                deliver(sub, event, payload);
+                deliver(sub.toDto(), event, payload);
             }
         } catch (Exception e) {
             log.error("webhook dispatch failed projectId={} event={}", projectId, event, e);
