@@ -78,7 +78,8 @@ export type StoreActionIntent =
   | { kind: 'tree.add'; treeKind: 'SHEET' | 'DOC'; parentId: string | null; position: number; node: unknown }
   | { kind: 'tree.move'; treeKind: 'SHEET' | 'DOC'; nodeId: string; newParentId: string | null; newPosition: number }
   | { kind: 'tree.delete'; treeKind: 'SHEET' | 'DOC'; nodeId: string }
-  | { kind: 'tree.rename'; treeKind: 'SHEET' | 'DOC'; nodeId: string; newName: string };
+  | { kind: 'tree.rename'; treeKind: 'SHEET' | 'DOC'; nodeId: string;
+      newName?: string; newIcon?: string };
 
 /**
  * Translate a store-level intent into a wire-format ClientOp. The
@@ -208,6 +209,7 @@ export function mapStoreActionToOp(
         treeKind: intent.treeKind,
         nodeId: intent.nodeId,
         newName: intent.newName,
+        newIcon: intent.newIcon,
         baseVersion,
         clientMsgId,
       });

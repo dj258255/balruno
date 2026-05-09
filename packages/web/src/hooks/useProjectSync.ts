@@ -77,7 +77,8 @@ export type ClientOp =
       baseVersion: number; clientMsgId: string; undo?: UndoMeta }
   | { type: 'tree.delete'; treeKind: 'SHEET' | 'DOC'; nodeId: string;
       baseVersion: number; clientMsgId: string; undo?: UndoMeta }
-  | { type: 'tree.rename'; treeKind: 'SHEET' | 'DOC'; nodeId: string; newName: string;
+  | { type: 'tree.rename'; treeKind: 'SHEET' | 'DOC'; nodeId: string;
+      newName?: string; newIcon?: string;
       baseVersion: number; clientMsgId: string; undo?: UndoMeta }
   | { type: 'presence'; userId: string; cursor?: unknown };
 

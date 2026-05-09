@@ -153,8 +153,18 @@ function applyTreeOp(projectId: string, op: UndoableOp): void {
   };
   switch (op.type) {
     case 'tree.rename':
-      setTree((tree) => renameNodeInTree(tree, op.nodeId, op.newName));
-      emitOp({ kind: 'tree.rename', treeKind: op.treeKind, nodeId: op.nodeId, newName: op.newName });
+      // newName / newIcon are both optional patches (extended
+      // 2026-05-10). Apply only the parts that landed in the op.
+      if (op.newName !== undefined) {
+        setTree((tree) => renameNodeInTree(tree, op.nodeId, op.newName!));
+      }
+      emitOp({
+        kind: 'tree.rename',
+        treeKind: op.treeKind,
+        nodeId: op.nodeId,
+        newName: op.newName,
+        newIcon: op.newIcon,
+      });
       break;
     case 'tree.add': {
       const node = op.node as TreeNode | null;

@@ -470,19 +470,45 @@ export default function WorkspaceShell({
     };
 
     return {
-      rename: (nodeId: string, newName: string) => {
+      rename: (nodeId: string, newName?: string, newIcon?: string) => {
         const current = localProject?.[treeField] ?? [];
         const node = findNodeInTree(current, nodeId);
         const oldName = node?.name ?? '';
-        setTree((tree) => renameNodeInTree(tree, nodeId, newName));
-        const renameMeta = node && oldName !== newName
+        const oldIcon = node?.icon;
+        const nameChanged = newName !== undefined && newName !== oldName;
+        const iconChanged = newIcon !== undefined && newIcon !== (oldIcon ?? '');
+        if (!nameChanged && !iconChanged) return;
+        setTree((tree) => {
+          let next = tree;
+          if (nameChanged) next = renameNodeInTree(next, nodeId, newName!);
+          if (iconChanged) {
+            // Patch icon via a one-shot mutator — lib/tree doesn't expose
+            // a typed helper for arbitrary node-meta yet, so the mutator
+            // walks in-place. Empty string clears (mirrors the backend
+            // semantics in TreeOpService.applyTreeRename).
+            const walk = (nodes: TreeNode[]): TreeNode[] =>
+              nodes.map((n) =>
+                n.id === nodeId
+                  ? { ...n, icon: newIcon === '' ? undefined : newIcon }
+                  : n.children
+                    ? { ...n, children: walk(n.children) }
+                    : n,
+              );
+            next = walk(next);
+          }
+          return next;
+        });
+        const renameMeta = node
           ? pushTreeUndo(
               'Tree rename',
-              [{ type: 'tree.rename', treeKind, nodeId, newName, baseVersion: 0, clientMsgId: '' }],
-              [{ type: 'tree.rename', treeKind, nodeId, newName: oldName, baseVersion: 0, clientMsgId: '' }],
+              [{ type: 'tree.rename', treeKind, nodeId, newName, newIcon, baseVersion: 0, clientMsgId: '' }],
+              [{ type: 'tree.rename', treeKind, nodeId,
+                  newName: nameChanged ? oldName : undefined,
+                  newIcon: iconChanged ? (oldIcon ?? '') : undefined,
+                  baseVersion: 0, clientMsgId: '' }],
             )
           : null;
-        emitOp({ kind: 'tree.rename', treeKind, nodeId, newName }, renameMeta);
+        emitOp({ kind: 'tree.rename', treeKind, nodeId, newName, newIcon }, renameMeta);
       },
       addFolder: () => {
         if (!project) return;
@@ -654,11 +680,12 @@ export default function WorkspaceShell({
       const d = (raw as CustomEvent<{
         kind: 'SHEET' | 'DOC';
         nodeId: string;
-        newName: string;
+        newName?: string;
+        newIcon?: string;
       }>).detail;
       if (!d) return;
       const ops = d.kind === 'DOC' ? docTreeOps : sheetTreeOps;
-      ops.rename(d.nodeId, d.newName);
+      ops.rename(d.nodeId, d.newName, d.newIcon);
     };
     window.addEventListener('balruno:tree-move', onMove);
     window.addEventListener('balruno:tree-add', onAdd);

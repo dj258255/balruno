@@ -94,7 +94,11 @@ function applyOne(project: Project, op: UndoableOp): Project {
       }));
 
     case 'tree.rename':
-      return mapTree(project, op.treeKind, (t) => renameNodeInTree(t, op.nodeId, op.newName));
+      // newName / newIcon are both optional patches on the wire
+      // (extended 2026-05-10). Skip the rename helper if newName is
+      // absent — icon-only patches don't change the displayed label.
+      if (op.newName === undefined) return project;
+      return mapTree(project, op.treeKind, (t) => renameNodeInTree(t, op.nodeId, op.newName!));
 
     case 'tree.add': {
       const node = op.node as TreeNode | null;

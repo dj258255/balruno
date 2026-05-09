@@ -33,11 +33,15 @@ function emitTreeDelete(nodeId: string): void {
     new CustomEvent('balruno:tree-delete', { detail: { kind: 'DOC', nodeId } }),
   );
 }
-function emitTreeRename(nodeId: string, newName: string): void {
+function emitTreeRename(
+  nodeId: string,
+  patch: { newName?: string; newIcon?: string },
+): void {
   if (typeof window === 'undefined') return;
+  if (patch.newName === undefined && patch.newIcon === undefined) return;
   window.dispatchEvent(
     new CustomEvent('balruno:tree-rename', {
-      detail: { kind: 'DOC', nodeId, newName },
+      detail: { kind: 'DOC', nodeId, ...patch },
     }),
   );
 }
@@ -150,11 +154,20 @@ export const createDocActions = (set: SetFn) => ({
             },
       ),
     }));
-    // Tree-level meta lives in doc_tree (name + position) and only
-    // emits when the value actually changes. content/icon/isExpanded
-    // are local-only or yjs-routed (body lives in Hocuspocus).
+    // Tree-level meta lives in doc_tree (name + icon + position).
+    // tree.rename op (extended 2026-05-10) carries both newName and
+    // newIcon as optional patches — we emit only the keys that
+    // actually changed. content/isExpanded are local-only / yjs-routed.
+    const patch: { newName?: string; newIcon?: string } = {};
     if (typeof updates.name === 'string' && updates.name.trim()) {
-      emitTreeRename(docId, updates.name.trim());
+      patch.newName = updates.name.trim();
+    }
+    if ('icon' in updates) {
+      // undefined / '' = clear the icon (picker reset to default).
+      patch.newIcon = updates.icon ?? '';
+    }
+    if (patch.newName !== undefined || patch.newIcon !== undefined) {
+      emitTreeRename(docId, patch);
     }
   },
 
