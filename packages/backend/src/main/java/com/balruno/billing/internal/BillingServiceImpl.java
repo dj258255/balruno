@@ -101,14 +101,14 @@ class BillingServiceImpl implements BillingService {
         }
     }
 
-    private void ensureConfigured() {
+    void ensureConfigured() {
         if (stripeSecretKey == null || stripeSecretKey.isBlank()) {
             throw new IllegalStateException(
                     "Billing not configured — set balruno.billing.stripe.secret-key");
         }
     }
 
-    private String resolvePriceId(String plan) {
+    String resolvePriceId(String plan) {
         return switch (plan) {
             case "PRO" -> priceIdPro;
             case "TEAM" -> priceIdTeam;

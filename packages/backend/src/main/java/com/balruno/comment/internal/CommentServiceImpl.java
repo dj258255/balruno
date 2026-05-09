@@ -41,9 +41,13 @@ class CommentServiceImpl implements CommentService {
     private final com.balruno.storage.WorkspaceStorageService workspaceStorage;
 
     /** databind autowired (tools.jackson) — kept private fasterxml
-     *  mapper for tree work in the webhook payload (project_sb4). */
+     *  mapper for tree work in the webhook payload (project_sb4).
+     *  JSR310 module registered so OffsetDateTime fields on Comment /
+     *  payload records serialise (test discovered the gap; the prod
+     *  paths happened not to hit timestamped payloads yet). */
     private final com.fasterxml.jackson.databind.ObjectMapper nodeMapperForHook =
-            new com.fasterxml.jackson.databind.ObjectMapper();
+            new com.fasterxml.jackson.databind.ObjectMapper()
+                    .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
     CommentServiceImpl(CommentRepository repo, MentionRepository mentions,
                        ProjectService projects, ProjectSyncService sync,

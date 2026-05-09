@@ -42,19 +42,27 @@ class JwtIssuer {
 
     String issueAccessToken(AuthenticatedUser user) {
         var now = Instant.now();
-        var claims = JwtClaimsSet.builder()
+        var builder = JwtClaimsSet.builder()
                 .issuer(props.issuer())
                 .subject(user.id().toString())
                 .audience(java.util.List.of("balruno-api"))
                 .issuedAt(now)
                 .expiresAt(now.plus(props.accessTokenTtl()))
-                .id(UUID.randomUUID().toString())
-                .claim("email", user.email())
-                .claim("name", user.name())
-                .claim("avatar_url", user.avatarUrl())
-                .claim("locale", user.locale())
-                .build();
+                .id(UUID.randomUUID().toString());
+        // Filter null-valued optional claims — NimbusJwtEncoder rejects
+        // null with IllegalArgumentException, so a provider returning
+        // a null display name (rare GitHub case, GDPR-anonymised users)
+        // would otherwise 500 the OAuth flow. Omitted claims are valid
+        // JWT shape; downstream verifiers tolerate absence.
+        addIfNotNull(builder, "email", user.email());
+        addIfNotNull(builder, "name", user.name());
+        addIfNotNull(builder, "avatar_url", user.avatarUrl());
+        addIfNotNull(builder, "locale", user.locale());
         var header = JwsHeader.with(MacAlgorithm.HS256).build();
-        return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+        return encoder.encode(JwtEncoderParameters.from(header, builder.build())).getTokenValue();
+    }
+
+    private static void addIfNotNull(JwtClaimsSet.Builder builder, String key, Object value) {
+        if (value != null) builder.claim(key, value);
     }
 }

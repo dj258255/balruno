@@ -129,12 +129,22 @@ class JwtIssuerTest {
             assertThat(claims.getExpirationTime()).isAfter(claims.getIssueTime());
         }
 
-        // NOTE: A "null optional fields" test was attempted but
-        // NimbusJwtEncoder rejects null claim values with
-        // IllegalArgumentException. Production OAuth flow always
-        // populates name/avatar, but if a provider ever returns null
-        // we'd get a 500 at issue time instead of a token with omitted
-        // claims. Tracked as a follow-up — JwtIssuer should filter
-        // null-valued claims defensively.
+        @Test
+        void null_optional_claims_are_omitted_not_serialised_as_null() throws Exception {
+            // Defensive filter — NimbusJwtEncoder rejects null claim
+            // values with IllegalArgumentException, so JwtIssuer must
+            // skip null fields rather than pass them through. The
+            // resulting token has the claim *absent*, which downstream
+            // verifiers tolerate (vs. a 500 at issue time).
+            var minimal = new com.balruno.user.AuthenticatedUser(
+                    UUID.randomUUID(), "u@x.com", null, null, "en");
+            var token = newIssuer(Duration.ofMinutes(15)).issueAccessToken(minimal);
+            var claims = SignedJWT.parse(token).getJWTClaimsSet();
+            // email + locale present (non-null), name + avatar_url absent.
+            assertThat(claims.getStringClaim("email")).isEqualTo("u@x.com");
+            assertThat(claims.getStringClaim("locale")).isEqualTo("en");
+            assertThat(claims.getClaim("name")).isNull();
+            assertThat(claims.getClaim("avatar_url")).isNull();
+        }
     }
 }

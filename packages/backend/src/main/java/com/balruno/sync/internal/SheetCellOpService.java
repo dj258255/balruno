@@ -383,7 +383,7 @@ class SheetCellOpService {
     // Stage B.4.2 will add row.* / column.* arms; the surrounding
     // transaction logic stays unchanged.
 
-    private void applyToData(ObjectNode data, SyncMessage op) {
+    void applyToData(ObjectNode data, SyncMessage op) {
         switch (op) {
             case SyncMessage.CellUpdate u      -> applyCellUpdate(data, u);
             case SyncMessage.CellStyleUpdate u -> applyCellStyleUpdate(data, u);
@@ -399,7 +399,7 @@ class SheetCellOpService {
         }
     }
 
-    private void applySheetMetadataUpdate(ObjectNode data, SyncMessage.SheetMetadataUpdate u) {
+    void applySheetMetadataUpdate(ObjectNode data, SyncMessage.SheetMetadataUpdate u) {
         var sheet = sheetOrThrow(data, u.sheetId());
         // patch is a partial map — keys present overwrite, missing keys
         // leave existing values intact. rows / columns are intentionally
@@ -421,7 +421,7 @@ class SheetCellOpService {
         });
     }
 
-    private void applyCellStyleUpdate(ObjectNode data, SyncMessage.CellStyleUpdate u) {
+    void applyCellStyleUpdate(ObjectNode data, SyncMessage.CellStyleUpdate u) {
         var sheet = sheetOrThrow(data, u.sheetId());
         var rows = ensureArray(sheet, "rows");
         var rowNode = findById(rows, u.rowId());
@@ -448,7 +448,7 @@ class SheetCellOpService {
         stylesMap.set(u.columnId().toString(), nodeMapper.valueToTree(u.style()));
     }
 
-    private void applyCellUpdate(ObjectNode data, SyncMessage.CellUpdate u) {
+    void applyCellUpdate(ObjectNode data, SyncMessage.CellUpdate u) {
         var sheet = sheetOrThrow(data, u.sheetId());
         var rows = ensureArray(sheet, "rows");
         var rowNode = findById(rows, u.rowId());
@@ -470,7 +470,7 @@ class SheetCellOpService {
      * seed shape) — a non-empty array would be a real shape mismatch
      * we don't want to silently drop, so we still replace but log.
      */
-    private ObjectNode ensureCellMap(ObjectNode rowNode) {
+    ObjectNode ensureCellMap(ObjectNode rowNode) {
         var existing = rowNode.get("cells");
         if (existing instanceof ObjectNode obj) return obj;
         var fresh = nodeMapper.createObjectNode();
@@ -478,7 +478,7 @@ class SheetCellOpService {
         return fresh;
     }
 
-    private void applyRowAdd(ObjectNode data, SyncMessage.RowAdd u) {
+    void applyRowAdd(ObjectNode data, SyncMessage.RowAdd u) {
         var sheet = sheetOrThrow(data, u.sheetId());
         var rows = ensureArray(sheet, "rows");
         // row.id is client-supplied (UUIDv7). Same id replayed → idempotency
@@ -494,13 +494,13 @@ class SheetCellOpService {
         }
     }
 
-    private void applyRowDelete(ObjectNode data, SyncMessage.RowDelete u) {
+    void applyRowDelete(ObjectNode data, SyncMessage.RowDelete u) {
         var sheet = sheetOrThrow(data, u.sheetId());
         var rows = ensureArray(sheet, "rows");
         removeById(rows, u.rowId());
     }
 
-    private void applyRowMove(ObjectNode data, SyncMessage.RowMove u) {
+    void applyRowMove(ObjectNode data, SyncMessage.RowMove u) {
         var sheet = sheetOrThrow(data, u.sheetId());
         var rows = ensureArray(sheet, "rows");
         var fromIdx = indexOfId(rows, u.rowId());
@@ -515,7 +515,7 @@ class SheetCellOpService {
         rows.insert(clamped, moving);
     }
 
-    private void applyColumnAdd(ObjectNode data, SyncMessage.ColumnAdd u) {
+    void applyColumnAdd(ObjectNode data, SyncMessage.ColumnAdd u) {
         var sheet = sheetOrThrow(data, u.sheetId());
         var columns = ensureArray(sheet, "columns");
         var node = nodeMapper.valueToTree(u.column());
@@ -527,7 +527,7 @@ class SheetCellOpService {
         }
     }
 
-    private void applyColumnUpdate(ObjectNode data, SyncMessage.ColumnUpdate u) {
+    void applyColumnUpdate(ObjectNode data, SyncMessage.ColumnUpdate u) {
         var sheet = sheetOrThrow(data, u.sheetId());
         var columns = ensureArray(sheet, "columns");
         var col = findById(columns, u.columnId());
@@ -549,7 +549,7 @@ class SheetCellOpService {
         });
     }
 
-    private void applyColumnDelete(ObjectNode data, SyncMessage.ColumnDelete u) {
+    void applyColumnDelete(ObjectNode data, SyncMessage.ColumnDelete u) {
         var sheet = sheetOrThrow(data, u.sheetId());
         var columns = ensureArray(sheet, "columns");
         removeById(columns, u.columnId());
