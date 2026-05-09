@@ -13,9 +13,10 @@
  * when the workspace switcher resolves the caller's role per workspace.
  */
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -31,11 +32,31 @@ import { useBackendAuthStore } from '@/stores/backendAuthStore';
 import { useWorkspaceListStore } from '@/stores/workspaceListStore';
 import { DangerConfirmDialog } from '@/components/workspace/DangerConfirmDialog';
 
-export default function WorkspaceSettingsPage() {
+interface WorkspaceSettingsClientProps {
+  /**
+   * When `workspaceSlug` is provided, the slug is read from props
+   * (modal usage from inside a workspace context). Falls back to
+   * useParams() for the legacy/standalone page route.
+   */
+  workspaceSlug?: string;
+  /**
+   * When provided, render as a centered overlay modal (portal to
+   * document.body) and call onClose for the X button + backdrop
+   * click. Without onClose the component renders as a full-page
+   * layout — same as the original `/w/{slug}/settings` route.
+   */
+  onClose?: () => void;
+}
+
+export default function WorkspaceSettingsClient({
+  workspaceSlug,
+  onClose,
+}: WorkspaceSettingsClientProps = {}) {
   const params = useParams<{ slug?: string; wsSlug?: string }>();
   const router = useRouter();
   const t = useTranslations('sidebar');
-  const slug = params?.slug ?? params?.wsSlug;
+  const slug = workspaceSlug ?? params?.slug ?? params?.wsSlug;
+  const isModal = Boolean(onClose);
 
   const refreshList = useWorkspaceListStore((s) => s.refresh);
 
@@ -128,40 +149,46 @@ export default function WorkspaceSettingsPage() {
   };
 
   if (loading) {
-    return (
-      <main className="flex items-center justify-center py-20">
+    return wrapShell(
+      <div className="flex items-center justify-center py-20">
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--text-tertiary)' }} />
-      </main>
+      </div>,
+      { isModal, onClose },
     );
   }
 
   if (error === 'not-found' || !workspace) {
-    return (
-      <main className="mx-auto max-w-2xl px-6 py-12">
-        <button
-          onClick={() => router.push('/workspaces')}
-          className="mb-4 inline-flex items-center gap-1 text-sm"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> 워크스페이스 목록
-        </button>
+    return wrapShell(
+      <div>
+        {!isModal && (
+          <button
+            onClick={() => router.push('/workspaces')}
+            className="mb-4 inline-flex items-center gap-1 text-sm"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> 워크스페이스 목록
+          </button>
+        )}
         <h1 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
           워크스페이스를 찾을 수 없습니다
         </h1>
-      </main>
+      </div>,
+      { isModal, onClose },
     );
   }
 
-  return (
-    <main className="mx-auto max-w-2xl px-6 py-12">
-      <button
-        onClick={() => router.push(`/${workspace.slug}`)}
-        className="mb-4 inline-flex items-center gap-1 text-sm"
-        style={{ color: 'var(--text-secondary)' }}
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        {t('settingsBack', { name: workspace.name })}
-      </button>
+  return wrapShell(
+    <>
+      {!isModal && (
+        <button
+          onClick={() => router.push(`/${workspace.slug}`)}
+          className="mb-4 inline-flex items-center gap-1 text-sm"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          {t('settingsBack', { name: workspace.name })}
+        </button>
+      )}
 
       <h1 className="text-2xl font-semibold mb-8" style={{ color: 'var(--text-primary)' }}>
         {t('settingsTitle')}
@@ -266,7 +293,59 @@ export default function WorkspaceSettingsPage() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmOpen(false)}
       />
-    </main>
+    </>,
+    { isModal, onClose },
+  );
+}
+
+/**
+ * Outer wrapper picker — modal mode renders a portal-based centered
+ * overlay (Notion / Linear settings UX), page mode renders the
+ * legacy `<main>` layout. The portal escapes the sidebar's
+ * translateX containing block so the overlay is viewport-anchored
+ * instead of sidebar-anchored.
+ */
+function wrapShell(
+  body: ReactNode,
+  { isModal, onClose }: { isModal: boolean; onClose?: () => void },
+): ReactNode {
+  if (!isModal) {
+    return <main className="mx-auto max-w-2xl px-6 py-12">{body}</main>;
+  }
+  if (typeof document === 'undefined') return null;
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.4)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-xl border shadow-xl flex flex-col overflow-hidden"
+        style={{
+          background: 'var(--bg-primary)',
+          borderColor: 'var(--border-primary)',
+          maxHeight: '85vh',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-end p-2 border-b" style={{ borderColor: 'var(--border-primary)' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-md hover:bg-[var(--bg-hover)]"
+            aria-label="close"
+          >
+            <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+          </button>
+        </div>
+        <div className="overflow-y-auto px-6 py-6">
+          {body}
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -43,6 +43,7 @@ import { useProjectHistory } from '@/hooks';
 import { usePanelStates } from '@/hooks/usePanelStates';
 import BottomDock from '@/components/BottomDock';
 import DockedToolbox from '@/components/DockedToolbox';
+import WorkspaceSettingsClient from '@/app/components/WorkspaceSettingsClient';
 import Sidebar from '@/components/layout/Sidebar';
 import SheetTabs from '@/components/layout/SheetTabs';
 import SidebarResizer from '@/app/components/SidebarResizer';
@@ -592,12 +593,17 @@ export default function WorkspaceShell({
   // bottom dock both control the same panels.
   const toggleTool = (id: keyof typeof toolPanels) => () =>
     toolPanels[id].setShow(!toolPanels[id].show);
+  // Workspace settings modal — Notion/Linear-style centered overlay
+  // triggered from the workspace switcher menu. Replaces the
+  // standalone `/{wsSlug}/settings` page nav for in-workspace use.
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const sidebarCallbacks = {
     onShowChart: toggleTool('chart'),
     onShowHelp: () => { /* OnboardingGuide not yet rewired */ },
     onShowCalculator: toggleTool('calculator'),
     onShowComparison: toggleTool('comparison'),
     onShowReferences: () => { /* ReferencesModal not yet rewired */ },
+    onShowSettings: () => setSettingsOpen(true),
     onShowPresetComparison: toggleTool('preset'),
     onShowImbalanceDetector: toggleTool('imbalance'),
     onShowGoalSolver: toggleTool('goal'),
@@ -859,6 +865,17 @@ export default function WorkspaceShell({
           screen bottom. Stays at the <main> level so it doesn't
           fight the body flex. */}
       <BottomDock panels={toolPanels} isModalOpen={templateModalOpen} />
+
+      {/* Workspace settings modal (Notion/Linear pattern). Mounted
+          here at <main> level so it portals to document.body
+          regardless of how the user opened it (sidebar dropdown,
+          command palette, etc.). */}
+      {settingsOpen && workspace && (
+        <WorkspaceSettingsClient
+          workspaceSlug={workspace.slug}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </main>
   );
 }

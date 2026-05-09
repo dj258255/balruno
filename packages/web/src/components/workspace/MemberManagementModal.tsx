@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -59,7 +60,15 @@ export function MemberManagementModal({ workspaceId, onClose }: MemberManagement
     members.find((m) => m.userId === currentUserId)?.role ?? 'VIEWER';
   const canAdmin = viewerRole === 'OWNER' || viewerRole === 'ADMIN';
 
-  return (
+  // Portal to document.body so the sidebar's translateX-bearing
+  // wrapper doesn't capture our fixed-position container as its
+  // own containing block (CSS spec: transform creates a new
+  // containing block for fixed descendants). Without this the
+  // modal renders pinned to the sidebar viewport rather than the
+  // window viewport — which is exactly the regression the user
+  // showed in the prod screenshot.
+  if (typeof document === 'undefined') return null;
+  return createPortal(
     <div
       role="dialog"
       aria-modal
@@ -135,7 +144,8 @@ export function MemberManagementModal({ workspaceId, onClose }: MemberManagement
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
