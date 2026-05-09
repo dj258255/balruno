@@ -26,8 +26,9 @@ class AuditEventListener {
     @EventListener
     public void on(AuditLogEvent event) {
         try {
-            repo.insert(event.workspaceId(), event.actorUserId(), event.action(),
-                    event.resourceType(), event.resourceId(), event.payload());
+            repo.save(new AuditEntryEntity(
+                    event.workspaceId(), event.actorUserId(), event.action(),
+                    event.resourceType(), event.resourceId(), event.payload()));
         } catch (Exception e) {
             // Audit log is fire-and-forget; failure here must never
             // bubble out of an afterCommit hook.

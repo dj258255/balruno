@@ -3,6 +3,7 @@ package com.balruno.audit.internal;
 
 import com.balruno.audit.AuditEntry;
 import com.balruno.audit.AuditService;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,10 @@ class AuditServiceImpl implements AuditService {
     @Override
     @Transactional(readOnly = true)
     public List<AuditEntry> listForWorkspace(UUID callerUserId, UUID workspaceId, int limit) {
-        return repo.findByWorkspace(workspaceId, limit);
+        var capped = Math.min(Math.max(limit, 1), 500);
+        return repo.findByWorkspaceIdOrderByIdDesc(workspaceId, Limit.of(capped))
+                .stream()
+                .map(AuditEntryEntity::toDto)
+                .toList();
     }
 }
