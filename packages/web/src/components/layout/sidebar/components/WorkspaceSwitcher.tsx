@@ -16,9 +16,8 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, Plus, Settings, Edit2, Users, Loader2 } from 'lucide-react';
+import { ChevronDown, Plus, Settings, Users, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ui';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
@@ -50,7 +49,6 @@ export function WorkspaceSwitcher({
   const workspaces = useWorkspaceListStore((s) => s.workspaces);
   const status = useWorkspaceListStore((s) => s.status);
   const bootstrap = useWorkspaceListStore((s) => s.bootstrap);
-  const renameRemote = useWorkspaceListStore((s) => s.rename);
 
   // First-render fetch — store handles dedup so re-mounts are free.
   useEffect(() => {
@@ -267,7 +265,7 @@ export function WorkspaceSwitcher({
         />
       )}
 
-      {ctxMenu && typeof document !== 'undefined' && createPortal(
+      {ctxMenu && typeof document !== 'undefined' && onOpenSettings && createPortal(
         <div
           ref={ctxMenuRef}
           className="fixed z-50 min-w-[180px] py-1 rounded-lg shadow-lg border"
@@ -278,45 +276,22 @@ export function WorkspaceSwitcher({
             borderColor: 'var(--border-primary)',
           }}
         >
+          {/* Workspace rename moved into the settings modal: a
+              prompt() popup felt out of place next to the rest of
+              the workspace settings, and the modal already has a
+              proper "Name" input wired to PATCH /workspaces/:id. */}
           <button
             type="button"
             onClick={() => {
-              if (!active) {
-                setCtxMenu(null);
-                return;
-              }
-              const next = window.prompt(t('sidebar.workspaceRenamePrompt'), active.name);
               setCtxMenu(null);
-              if (next && next.trim() && next.trim() !== active.name) {
-                // Backend mutation; the store refresh re-syncs the cache so
-                // the dropdown reflects the new name on next open.
-                void renameRemote(active.id, next).then(() => {
-                  toast.success(t('sidebar.workspaceRenamed'));
-                }).catch((e: unknown) => {
-                  toast.error(e instanceof Error ? e.message : 'rename failed');
-                });
-              }
+              onOpenSettings();
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
             style={{ color: 'var(--text-primary)' }}
           >
-            <Edit2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-            {t('sidebar.workspaceRename')}
+            <Settings className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            {t('sidebar.workspaceSettings')}
           </button>
-          {onOpenSettings && (
-            <button
-              type="button"
-              onClick={() => {
-                setCtxMenu(null);
-                onOpenSettings();
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              <Settings className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-              {t('sidebar.workspaceSettings')}
-            </button>
-          )}
         </div>,
         document.body,
       )}
