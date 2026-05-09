@@ -11,6 +11,7 @@ import { useToolLayoutStore, AllToolId } from '@/stores/toolLayoutStore';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 import { useWorkspaceListStore } from '@/stores/workspaceListStore';
 import { createProject as createProjectRest } from '@/lib/backend';
+import { handleQuotaError } from '@/lib/quotaToast';
 import { randomId } from '@/lib/uuid';
 
 // 드래그 상태 타입
@@ -246,6 +247,9 @@ export function useSidebarState() {
       setShowNewProject(false);
       router.replace(`/${ws.slug}/projects/${created.slug}`);
     } catch (e) {
+      // Quota gate (ADR 0016) — surface the upgrade CTA instead of a
+      // bare error message when the plan cap was hit.
+      if (handleQuotaError(e, ws.id)) return;
       toast.error(e instanceof Error ? e.message : '프로젝트 생성 실패');
     }
   }, [newProjectName, router, locale]);

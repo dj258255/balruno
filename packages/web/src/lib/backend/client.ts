@@ -52,6 +52,11 @@ export class BackendError extends Error {
   readonly code: string;
   readonly traceId?: string;
   readonly fields?: Array<{ field: string; message: string }>;
+  /** Raw ProblemDetail body — keeps extra properties (e.g. quotaKey,
+   *  current, limit, plan for QUOTA_EXCEEDED) reachable to callers
+   *  that want to surface them in a richer toast / modal. Null when
+   *  the failure happened before a body could be parsed. */
+  readonly body: ProblemDetail | null;
 
   constructor(status: number, body: ProblemDetail | null, fallbackMessage: string) {
     super(body?.detail ?? body?.title ?? fallbackMessage);
@@ -60,6 +65,7 @@ export class BackendError extends Error {
     this.code = body?.code ?? `HTTP_${status}`;
     this.traceId = body?.traceId;
     this.fields = body?.errors;
+    this.body = body;
   }
 
   /** True for 401 responses — caller should redirect to OAuth login. */
@@ -70,6 +76,28 @@ export class BackendError extends Error {
   /** True for 403 responses — caller lacks permission for the action. */
   get isForbidden(): boolean {
     return this.status === 403;
+  }
+
+  /** True when the backend rejected a write because the workspace is
+   *  at its plan-tier cap (ADR 0016). The body carries `quotaKey` /
+   *  `current` / `limit` / `plan` extras for richer surfaces. */
+  get isQuotaExceeded(): boolean {
+    return this.code === 'QUOTA_EXCEEDED';
+  }
+
+  /** Helper: typed accessor for the QUOTA_EXCEEDED extras. Returns
+   *  null when the body didn't carry the quota fields (e.g. an
+   *  unrelated 403). */
+  quotaInfo(): { key: string; current: number; limit: number; plan: string } | null {
+    if (!this.isQuotaExceeded || !this.body) return null;
+    const b = this.body as ProblemDetail & {
+      quotaKey?: string;
+      current?: number;
+      limit?: number;
+      plan?: string;
+    };
+    if (!b.quotaKey || b.current == null || b.limit == null || !b.plan) return null;
+    return { key: b.quotaKey, current: b.current, limit: b.limit, plan: b.plan };
   }
 }
 
