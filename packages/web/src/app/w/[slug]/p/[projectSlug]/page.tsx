@@ -669,12 +669,7 @@ export default function ProjectDetailPage() {
       </header>
 
       {sheets.length > 0 ? (
-        <div
-          className="md:grid md:gap-4"
-          style={{
-            gridTemplateColumns: commentPanelOpen ? '260px 1fr 320px' : '260px 1fr',
-          }}
-        >
+        <div className="md:flex md:gap-4 md:items-stretch">
           {/* Mobile drawer backdrop — clicks outside the sidebar
               dismiss the drawer. Hidden on desktop. */}
           {mobileSidebarOpen && (
@@ -700,7 +695,7 @@ export default function ProjectDetailPage() {
           <div
             className={
               'transition-transform '
-              + 'md:static md:translate-x-0 '
+              + 'md:static md:translate-x-0 md:w-[260px] md:flex-shrink-0 md:max-h-[calc(100vh-160px)] md:overflow-y-auto '
               + 'fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto '
               + (mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0')
             }
@@ -714,7 +709,7 @@ export default function ProjectDetailPage() {
               follow-up phase — needs server-canonical version of
               updateDoc / setCurrentDoc + HocuspocusProvider mount). */}
           <section
-            className="rounded-lg border overflow-hidden"
+            className="md:flex-1 md:min-w-0 rounded-lg border overflow-hidden"
             style={{
               borderColor: 'var(--border-primary)',
               background: 'var(--bg-primary)',
@@ -806,7 +801,7 @@ export default function ProjectDetailPage() {
             && commentSelection?.kind !== 'sheet-cell'
             && commentSelection?.kind !== 'doc-body' && (
             <aside
-              className="rounded-lg border p-4 text-sm"
+              className="md:w-[320px] md:flex-shrink-0 rounded-lg border p-4 text-sm"
               style={{
                 borderColor: 'var(--border-primary)',
                 background: 'var(--bg-primary)',
