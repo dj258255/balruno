@@ -23,8 +23,23 @@ interface UploadResult {
 export async function uploadAvatar(file: File): Promise<UploadResult> {
   const fd = new FormData();
   fd.append('file', file);
+  return postMultipart('/api/v1/uploads/avatar', fd);
+}
 
-  const res = await fetch(`${backendBaseUrl()}/api/v1/uploads/avatar`, {
+/**
+ * POST /api/v1/uploads/attachment — authenticated project-scoped
+ * upload. Server enforces 50MB cap + mime allowlist + magic-byte
+ * sniff + workspace storage quota in the same request.
+ */
+export async function uploadAttachment(projectId: string, file: File): Promise<UploadResult> {
+  const fd = new FormData();
+  fd.append('projectId', projectId);
+  fd.append('file', file);
+  return postMultipart('/api/v1/uploads/attachment', fd);
+}
+
+async function postMultipart(path: string, fd: FormData): Promise<UploadResult> {
+  const res = await fetch(`${backendBaseUrl()}${path}`, {
     method: 'POST',
     credentials: 'include',
     body: fd,
@@ -35,7 +50,7 @@ export async function uploadAvatar(file: File): Promise<UploadResult> {
       const text = await res.text();
       body = text ? JSON.parse(text) : null;
     } catch {
-      // ignore — fall through with body = null
+      // fall through with body = null
     }
     throw new BackendError(res.status, body as { detail?: string } | null, res.statusText);
   }

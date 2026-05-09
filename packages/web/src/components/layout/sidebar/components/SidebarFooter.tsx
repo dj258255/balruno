@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { formatRelativeTime } from '@/lib/utils';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+import { WorkspaceStorageBadge } from './WorkspaceStorageBadge';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/jfStPBidvpqieh3Z8';
 const DISCORD_URL = 'https://discord.gg/8cKDsfVYR';
@@ -39,6 +40,10 @@ export function SidebarFooter({
 
   return (
     <>
+      {/* Phase D — workspace storage usage. Hidden when no active
+          workspace (legacy local mode) or when the quota fetch fails. */}
+      <WorkspaceStorageBadge />
+
       {/* 선택된 행 */}
       {selectedRowsCount > 0 && (
         <div className="border-t px-3 py-2" style={{

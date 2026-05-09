@@ -23,12 +23,15 @@ import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import Image from '@tiptap/extension-image';
 import { History, Loader2, MessageSquarePlus } from 'lucide-react';
+import { toast } from 'sonner';
 
 import DocHistoryPanel from './DocHistoryPanel';
 import { useDocCollab } from '@/hooks/useDocCollab';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
-import { listCommentsForDoc } from '@/lib/backend';
+import { listCommentsForDoc, resolveMediaUrl, uploadAttachment } from '@/lib/backend';
+import { BackendError } from '@/lib/backend/client';
 import { MobileTiptapToolbar } from './MobileTiptapToolbar';
 
 interface ServerDocViewProps {
@@ -135,6 +138,12 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
         Placeholder.configure({
           placeholder: '내용을 입력하세요.',
         }),
+        // Inline image — uploaded via uploadAttachment (Phase D).
+        // inline=true keeps img inside paragraph nodes so cursor /
+        // typing flow stays natural; allowBase64=false forces the
+        // img src to be a real URL (no inline base64 bombs that
+        // would skip the server-side validation pipe).
+        Image.configure({ inline: true, allowBase64: false }),
         commentHighlightExt,
         ...collabExtensions,
       ],
@@ -146,9 +155,73 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
         const { from, to, empty } = ed.state.selection;
         setSelRange(empty ? null : { from, to });
       },
+      editorProps: {
+        // Drop / paste handlers — when the dropped/pasted DataTransfer
+        // contains image files, intercept and route through
+        // uploadAttachment so the bytes hit the backend pipeline
+        // (size cap + magic-byte + workspace quota) before reaching
+        // the editor. ProseMirror's default handlers would otherwise
+        // accept arbitrary base64 / blob URLs.
+        handleDrop(view, event) {
+          const items = event.dataTransfer?.files;
+          if (!items || items.length === 0) return false;
+          const images = Array.from(items).filter((f) => f.type.startsWith('image/'));
+          if (images.length === 0) return false;
+          event.preventDefault();
+          const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          const insertAt = coords?.pos ?? view.state.selection.from;
+          void insertImagesAt(images, insertAt);
+          return true;
+        },
+        handlePaste(_view, event) {
+          const items = event.clipboardData?.files;
+          if (!items || items.length === 0) return false;
+          const images = Array.from(items).filter((f) => f.type.startsWith('image/'));
+          if (images.length === 0) return false;
+          event.preventDefault();
+          void insertImagesAt(images, null);
+          return true;
+        },
+      },
     },
     [documentId, collabExtensions, commentHighlightExt],
   );
+
+  // Bound image-insert helper used by drop / paste / toolbar — uploads
+  // each file sequentially (so quota errors stop the chain rather than
+  // half-applying) and inserts the resulting <img> at the requested
+  // position (or at the current selection when null).
+  const insertImagesAt = async (
+    files: File[],
+    pos: number | null,
+  ): Promise<void> => {
+    if (!editor) return;
+    let cursor = pos;
+    for (const file of files) {
+      try {
+        const { url } = await uploadAttachment(projectId, file);
+        const resolved = resolveMediaUrl(url) ?? url;
+        const chain = editor.chain().focus();
+        const at = cursor ?? editor.state.selection.from;
+        chain.insertContentAt(at, {
+          type: 'image',
+          attrs: { src: resolved, alt: file.name },
+        }).run();
+        cursor = null; // subsequent images go at the live cursor
+      } catch (e) {
+        if (e instanceof BackendError && e.code === 'attachmentBytes') {
+          toast.error('워크스페이스 저장 용량이 가득 찼습니다');
+        } else if (e instanceof BackendError && e.status === 413) {
+          toast.error('이미지가 50MB 를 초과했습니다');
+        } else if (e instanceof BackendError && e.status === 415) {
+          toast.error('지원하지 않는 이미지 형식입니다');
+        } else {
+          toast.error(e instanceof Error ? e.message : '업로드 실패');
+        }
+        return;
+      }
+    }
+  };
 
   // Push the latest highlight set into the plugin state via a meta
   // transaction. The plugin's `apply` reads tr.getMeta(KEY) to swap

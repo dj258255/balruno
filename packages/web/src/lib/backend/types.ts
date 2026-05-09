@@ -49,6 +49,7 @@ export interface WorkspaceQuotaUsage {
   plan: WorkspacePlan;
   memberCount: number;
   projectCount: number;
+  attachmentBytes: number;
   limits: WorkspaceLimits;
 }
 

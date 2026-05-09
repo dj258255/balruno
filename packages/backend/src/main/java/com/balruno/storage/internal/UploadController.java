@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.storage.internal;
 
+import com.balruno.project.ProjectService;
 import com.balruno.storage.StorageService;
+import com.balruno.storage.WorkspaceStorageService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -46,6 +48,7 @@ import java.util.UUID;
 class UploadController {
 
     private static final long MAX_AVATAR_BYTES = 2L * 1024 * 1024;
+    private static final long MAX_ATTACHMENT_BYTES = 50L * 1024 * 1024;
     private static final Map<String, String> AVATAR_EXT_BY_MIME = Map.of(
             "image/png", "png",
             "image/jpeg", "jpg",
@@ -54,10 +57,37 @@ class UploadController {
     );
     private static final Set<String> ALLOWED_AVATAR_MIMES = AVATAR_EXT_BY_MIME.keySet();
 
-    private final StorageService storage;
+    /**
+     * Attachment allowlist — image set + a small office / archive set.
+     * SVG still excluded (XSS surface). Office formats (docx/xlsx/pptx)
+     * share the ZIP container so the magic-byte sniff returns the same
+     * "application/zip" signature; the declared content-type narrows it.
+     */
+    private static final Map<String, String> ATTACHMENT_EXT_BY_MIME = Map.ofEntries(
+            Map.entry("image/png", "png"),
+            Map.entry("image/jpeg", "jpg"),
+            Map.entry("image/webp", "webp"),
+            Map.entry("image/gif", "gif"),
+            Map.entry("application/pdf", "pdf"),
+            Map.entry("application/zip", "zip"),
+            Map.entry("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx"),
+            Map.entry("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
+            Map.entry("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx"),
+            Map.entry("text/csv", "csv"),
+            Map.entry("text/plain", "txt")
+    );
+    private static final Set<String> ALLOWED_ATTACHMENT_MIMES = ATTACHMENT_EXT_BY_MIME.keySet();
 
-    UploadController(StorageService storage) {
+    private final StorageService storage;
+    private final WorkspaceStorageService workspaceStorage;
+    private final ProjectService projects;
+
+    UploadController(StorageService storage,
+                     WorkspaceStorageService workspaceStorage,
+                     ProjectService projects) {
         this.storage = storage;
+        this.workspaceStorage = workspaceStorage;
+        this.projects = projects;
     }
 
     @PostMapping(path = "/uploads/avatar", version = "1", consumes = "multipart/form-data")
@@ -94,6 +124,112 @@ class UploadController {
         // can never reflect a hostile client's lie.
         storage.store(path, bytes, sniffedType);
         return new UploadResult("/media/" + path);
+    }
+
+    /**
+     * Project-scoped general attachment upload (Phase D).
+     *
+     * Path: {@code attachments/{projectId}/{sha256-prefix}.{ext}} —
+     * project scoping bounds enumeration cost and matches how doc /
+     * sheet content references will reach the file. The sha256 prefix
+     * dedupes identical content, enabling the same immutable
+     * Cache-Control as avatars.
+     *
+     * Quota: WorkspaceStorageService.incrementOrThrow runs against
+     * the project's owning workspace. The pre-mutation check inside
+     * incrementOrThrow holds a row lock on workspace_storage so two
+     * concurrent uploads can't collectively breach the cap.
+     */
+    @PostMapping(path = "/uploads/attachment", version = "1", consumes = "multipart/form-data")
+    UploadResult uploadAttachment(@AuthenticationPrincipal Jwt jwt,
+                                  @RequestParam("projectId") UUID projectId,
+                                  @RequestParam("file") MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "file is required");
+        }
+        if (file.getSize() > MAX_ATTACHMENT_BYTES) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE,
+                    "attachment may not exceed 50 MB");
+        }
+        var declaredType = normaliseContentType(file.getContentType());
+        if (!ALLOWED_ATTACHMENT_MIMES.contains(declaredType)) {
+            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "attachment mime not in allowlist");
+        }
+
+        // Auth + workspace lookup — non-members of the project throw
+        // ProjectException(PROJECT_NOT_FOUND) inside findById.
+        var callerId = UUID.fromString(jwt.getSubject());
+        var project = projects.findById(projectId, callerId);
+
+        var bytes = file.getBytes();
+        var sniffedType = sniffAttachmentType(bytes, declaredType);
+        if (sniffedType == null) {
+            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "attachment bytes do not match a recognised signature");
+        }
+        // For the Office / ZIP family the magic-byte sniff returns
+        // "application/zip" but the declared type may be the more
+        // specific docx/xlsx/pptx; trust the declaration once the
+        // container shape is verified.
+        var storedType = isZipFamily(declaredType) && "application/zip".equals(sniffedType)
+                ? declaredType
+                : sniffedType;
+        if (!storedType.equals(declaredType)) {
+            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "attachment bytes do not match the declared mime");
+        }
+
+        // Reserve quota first — throws QuotaException (mapped to 429
+        // by ApiExceptionHandler) when the workspace is at the cap.
+        // Doing this BEFORE storage.store keeps no orphan if quota
+        // refuses; doing it after would mean a successful R2 write
+        // followed by an unwind path.
+        workspaceStorage.incrementOrThrow(project.workspaceId(), file.getSize());
+
+        var hash = sha256Hex(bytes).substring(0, 32);
+        var ext = ATTACHMENT_EXT_BY_MIME.get(storedType);
+        var path = "attachments/%s/%s.%s".formatted(projectId, hash, ext);
+        storage.store(path, bytes, storedType);
+        return new UploadResult("/media/" + path);
+    }
+
+    private static boolean isZipFamily(String mime) {
+        return mime != null && (mime.startsWith("application/vnd.openxmlformats-")
+                || "application/zip".equals(mime));
+    }
+
+    /**
+     * Attachment magic-byte sniffer — image signatures from the avatar
+     * sniffer plus PDF / ZIP / plain text. The result is the broad
+     * type ("application/zip" for any docx/xlsx/pptx); the caller
+     * cross-checks against the declared type.
+     *
+     *   PDF    "%PDF-"
+     *   ZIP    PK\x03\x04 or PK\x05\x06 (empty) or PK\x07\x08 (spanned)
+     *   CSV    no signature — defer to declared type for the same shape
+     *   TXT    no signature — defer to declared type for the same shape
+     */
+    static String sniffAttachmentType(byte[] bytes, String declaredType) {
+        var imageType = sniffImageType(bytes);
+        if (imageType != null) return imageType;
+        if (bytes != null && bytes.length >= 4
+                && bytes[0] == '%' && bytes[1] == 'P' && bytes[2] == 'D' && bytes[3] == 'F') {
+            return "application/pdf";
+        }
+        if (bytes != null && bytes.length >= 4
+                && bytes[0] == 'P' && bytes[1] == 'K'
+                && (bytes[2] == 0x03 || bytes[2] == 0x05 || bytes[2] == 0x07)
+                && (bytes[3] == 0x04 || bytes[3] == 0x06 || bytes[3] == 0x08)) {
+            return "application/zip";
+        }
+        // text/csv and text/plain don't have signatures; trust the
+        // declared type AFTER the size + allowlist checks have
+        // already gated the upload.
+        if ("text/csv".equals(declaredType) || "text/plain".equals(declaredType)) {
+            return declaredType;
+        }
+        return null;
     }
 
     /**

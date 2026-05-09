@@ -4,6 +4,7 @@ package com.balruno.quota.internal;
 import com.balruno.project.ProjectService;
 import com.balruno.quota.UserQuota;
 import com.balruno.quota.WorkspaceQuotaUsage;
+import com.balruno.storage.WorkspaceStorageService;
 import com.balruno.workspace.WorkspaceLimits;
 import com.balruno.workspace.WorkspaceService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -29,10 +30,14 @@ class QuotaController {
 
     private final WorkspaceService workspaces;
     private final ProjectService projects;
+    private final WorkspaceStorageService workspaceStorage;
 
-    QuotaController(WorkspaceService workspaces, ProjectService projects) {
+    QuotaController(WorkspaceService workspaces,
+                    ProjectService projects,
+                    WorkspaceStorageService workspaceStorage) {
         this.workspaces = workspaces;
         this.projects = projects;
+        this.workspaceStorage = workspaceStorage;
     }
 
     @GetMapping(path = "/me/quota", version = "1")
@@ -48,6 +53,7 @@ class QuotaController {
                         ws.plan(),
                         workspaces.countMembers(ws.id()),
                         projects.countActiveInWorkspace(ws.id()),
+                        workspaceStorage.currentBytes(ws.id()),
                         WorkspaceLimits.forPlan(ws.plan())))
                 .toList();
 

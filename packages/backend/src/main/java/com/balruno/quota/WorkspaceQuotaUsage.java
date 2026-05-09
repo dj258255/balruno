@@ -20,5 +20,6 @@ public record WorkspaceQuotaUsage(
         WorkspacePlan plan,
         long memberCount,
         long projectCount,
+        long attachmentBytes,
         WorkspaceLimits limits
 ) {}
