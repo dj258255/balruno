@@ -54,26 +54,30 @@ class ShareServiceImpl implements ShareService {
     public ShareLink create(UUID callerUserId, CreateRequest req) {
         // Membership check — non-members get 404 from findById.
         projects.findById(req.projectId(), callerUserId);
-        return repo.insert(
+        var entity = new ShareLinkEntity(
                 req.projectId(),
                 req.sheetId(),
                 req.activeView(),
                 req.expiresAt(),
                 callerUserId);
+        return repo.save(entity).toDto();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ShareLink> listForProject(UUID callerUserId, UUID projectId) {
         projects.findById(projectId, callerUserId);
-        return repo.findByProjectId(projectId);
+        return repo.findByProjectIdOrderByCreatedAtDesc(projectId).stream()
+                .map(ShareLinkEntity::toDto)
+                .toList();
     }
 
     @Override
     @Transactional
     public void revoke(UUID callerUserId, UUID linkId) {
-        var link = repo.findById(linkId);
-        if (link == null) return; // idempotent — already gone
+        var entity = repo.findById(linkId).orElse(null);
+        if (entity == null) return; // idempotent — already gone
+        var link = entity.toDto();
         // Membership check on the parent project.
         projects.findById(link.projectId(), callerUserId);
         repo.revoke(linkId, OffsetDateTime.now());
@@ -81,10 +85,11 @@ class ShareServiceImpl implements ShareService {
 
     @Override
     public PublicReadResult read(UUID token, OffsetDateTime now) {
-        var link = repo.findActiveByToken(token);
-        if (link == null) {
+        var entity = repo.findByTokenAndRevokedAtIsNull(token).orElse(null);
+        if (entity == null) {
             throw new ShareLinkNotFoundException("share link not found or revoked");
         }
+        var link = entity.toDto();
         if (link.expiresAt() != null && link.expiresAt().isBefore(now)) {
             throw new ShareLinkNotFoundException("share link expired");
         }
@@ -97,8 +102,13 @@ class ShareServiceImpl implements ShareService {
             throw new ShareLinkNotFoundException("project deleted");
         }
 
-        // Diagnostic — best effort, errors swallowed inside repo.
-        repo.touchLastUsed(link.id(), now);
+        // Diagnostic — best effort, swallow errors so the public
+        // read succeeds even if the timestamp UPDATE fails.
+        try {
+            repo.touchLastUsed(link.id(), now);
+        } catch (Exception ignored) {
+            // ignore — diagnostic only
+        }
 
         return new PublicReadResult(link, snapshot);
     }

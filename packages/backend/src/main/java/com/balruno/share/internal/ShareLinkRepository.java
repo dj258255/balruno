@@ -1,126 +1,55 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.share.internal;
 
-import com.balruno.share.ShareLink;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
- * JdbcTemplate backed store for share_links. Plain JDBC mirrors the
- * rest of the project's repository style (CommentRepository,
- * OpIdempotencyRepository) — JPA wouldn't add value for a 10-column
- * table with one composite read.
+ * Persistence layer for the share_links table (ADR 0027). Spring
+ * Data JPA over the entity, with a couple of derived-method finders
+ * + native UPDATEs for the columns that don't go through Hibernate
+ * dirty-checking (revoke / touch — single-column, no entity load).
+ *
+ * Service layer maps {@link ShareLinkEntity} → {@link com.balruno.share.ShareLink}
+ * record at call sites that need the public DTO shape.
  */
-@Repository
-class ShareLinkRepository {
+interface ShareLinkRepository extends JpaRepository<ShareLinkEntity, UUID> {
 
-    private final JdbcTemplate jdbc;
+    /** All links for a project, newest first (UI shows the list this way). */
+    List<ShareLinkEntity> findByProjectIdOrderByCreatedAtDesc(UUID projectId);
 
-    ShareLinkRepository(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
-    }
+    /**
+     * Public-read lookup by token. The {@code revoked_at IS NULL}
+     * predicate hits the partial index from V15 so this stays
+     * index-only.
+     */
+    Optional<ShareLinkEntity> findByTokenAndRevokedAtIsNull(UUID token);
 
-    private static final RowMapper<ShareLink> ROW = (rs, i) -> new ShareLink(
-            rs.getObject("id", UUID.class),
-            rs.getObject("project_id", UUID.class),
-            rs.getObject("sheet_id", UUID.class),
-            rs.getString("active_view"),
-            rs.getObject("token", UUID.class),
-            getOffsetDateTime(rs, "expires_at"),
-            getOffsetDateTime(rs, "revoked_at"),
-            rs.getObject("created_by", UUID.class),
-            getOffsetDateTime(rs, "created_at"),
-            getOffsetDateTime(rs, "last_used_at")
-    );
+    /**
+     * Single-column UPDATE — going through native @Modifying skips
+     * the entity-load + dirty-check path Hibernate would otherwise
+     * use, and keeps the WHERE clause's {@code revoked_at IS NULL}
+     * idempotency guard explicit.
+     */
+    @Modifying
+    @Query(value = "UPDATE share_links SET revoked_at = :now "
+                 + " WHERE id = :id AND revoked_at IS NULL",
+           nativeQuery = true)
+    int revoke(@Param("id") UUID id, @Param("now") OffsetDateTime now);
 
-    private static OffsetDateTime getOffsetDateTime(ResultSet rs, String col) throws SQLException {
-        var ts = rs.getTimestamp(col);
-        return ts == null ? null : ts.toInstant().atOffset(java.time.ZoneOffset.UTC);
-    }
-
-    ShareLink insert(UUID projectId, UUID sheetId, String activeView,
-                     OffsetDateTime expiresAt, UUID createdBy) {
-        // PK + token come from PG defaults (uuidv7() / gen_random_uuid()).
-        // RETURNING gives the freshly-generated row in one round-trip.
-        return jdbc.queryForObject(
-                """
-                INSERT INTO share_links (project_id, sheet_id, active_view, expires_at, created_by)
-                VALUES (?, ?, ?, ?, ?)
-                RETURNING id, project_id, sheet_id, active_view, token,
-                          expires_at, revoked_at, created_by, created_at, last_used_at
-                """,
-                ROW,
-                projectId, sheetId, activeView,
-                expiresAt == null ? null : java.sql.Timestamp.from(expiresAt.toInstant()),
-                createdBy);
-    }
-
-    List<ShareLink> findByProjectId(UUID projectId) {
-        return jdbc.query(
-                """
-                SELECT id, project_id, sheet_id, active_view, token,
-                       expires_at, revoked_at, created_by, created_at, last_used_at
-                FROM share_links
-                WHERE project_id = ?
-                ORDER BY created_at DESC
-                """,
-                ROW, projectId);
-    }
-
-    ShareLink findById(UUID id) {
-        try {
-            return jdbc.queryForObject(
-                    """
-                    SELECT id, project_id, sheet_id, active_view, token,
-                           expires_at, revoked_at, created_by, created_at, last_used_at
-                    FROM share_links WHERE id = ?
-                    """,
-                    ROW, id);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        }
-    }
-
-    /** Public-read lookup by token. Filter on revoked_at = NULL is in
-     *  the partial index (V15) so the query is index-only. */
-    ShareLink findActiveByToken(UUID token) {
-        try {
-            return jdbc.queryForObject(
-                    """
-                    SELECT id, project_id, sheet_id, active_view, token,
-                           expires_at, revoked_at, created_by, created_at, last_used_at
-                    FROM share_links
-                    WHERE token = ? AND revoked_at IS NULL
-                    """,
-                    ROW, token);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        }
-    }
-
-    void revoke(UUID id, OffsetDateTime now) {
-        jdbc.update(
-                "UPDATE share_links SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL",
-                java.sql.Timestamp.from(now.toInstant()), id);
-    }
-
-    /** Best-effort touch — failures don't propagate (the public read
-     *  succeeds even if the diagnostic UPDATE fails). */
-    void touchLastUsed(UUID id, OffsetDateTime now) {
-        try {
-            jdbc.update(
-                    "UPDATE share_links SET last_used_at = ? WHERE id = ?",
-                    java.sql.Timestamp.from(now.toInstant()), id);
-        } catch (Exception ignored) {
-            // Diagnostic — never block the read on it.
-        }
-    }
+    /**
+     * Best-effort timestamp touch — the public read succeeds even if
+     * the diagnostic UPDATE fails (caller wraps in try/catch).
+     */
+    @Modifying
+    @Query(value = "UPDATE share_links SET last_used_at = :now WHERE id = :id",
+           nativeQuery = true)
+    int touchLastUsed(@Param("id") UUID id, @Param("now") OffsetDateTime now);
 }
