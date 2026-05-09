@@ -168,7 +168,7 @@
     "workspaceRenamePrompt": "Workspace name",
     "workspaceRename": "Rename",
     "workspaceRenamed": "Workspace renamed",
-    "workspaceSettings": "Settings",
+    "workspaceSettings": "Workspace settings",
     "settingsBack": "Back to {name}",
     "settingsTitle": "Workspace settings",
     "settingsGeneral": "General",
@@ -191,7 +191,6 @@
     "settingsDeleteConfirmAction": "Delete permanently",
     "settingsDeleteSuccess": "Workspace deleted",
     "confirmCancel": "Cancel",
-    "workspaceSettings": "Workspace settings",
     "newProjectShort": "New game",
     "fromTemplateGallery": "Start from template gallery",
     "sheetPurpose": "Sheet purpose",
@@ -1674,73 +1673,45 @@
     "connectedChanges": "Linked changes ({n})"
   },
   "views": {
+    "heatmap": {
+      "tab": "Heatmap",
+      "noSheet": "No sheet selected",
+      "noNumericColumns": "No numeric columns — heatmap cannot be rendered",
+      "rowHeader": "Row",
+      "legendLow": "Low",
+      "legendHigh": "High"
+    },
+    "curve": {
+      "tab": "Curves",
+      "noSheet": "No sheet selected",
+      "needTwoNumericColumns": "Need at least 2 numeric columns to overlay curves",
+      "xAxisLabel": "X axis",
+      "seriesLabel": "Series"
+    },
+    "probability": {
+      "tab": "Probability",
+      "noSheet": "No sheet selected",
+      "cantInfer": "No probability/weight column found (column name should contain weight, probability, or rate)",
+      "inferredHint": "Weight column: {weight}, label column: {label}",
+      "groupTotal": "{count} items · {total} of total",
+      "overall": "overall",
+      "weightsNote": "Total weight: {total} (normalized to ratios when not 1.0)"
+    },
+    "diff": {
+      "tab": "Diff",
+      "noSheetInBoth": "Sheet missing from both versions",
+      "added": "added",
+      "changed": "changed",
+      "removed": "removed",
+      "unchanged": "unchanged",
+      "rowHeader": "Row"
+    },
     "grid": "Grid",
     "form": "Form",
     "kanban": "Kanban",
     "calendar": "Calendar",
     "gallery": "Gallery",
-    "gantt": "Gantt",
-    "diagram": "Diagram",
-    "formHeading": "Add record to {name}",
-    "formEmpty": "No editable columns. Add a column first.",
-    "formAdd": "Add",
-    "comingSoon": "This view is coming soon.",
-    "kanbanNeedSelect": "Kanban view needs a select column",
-    "kanbanNeedSelectDesc": "Add a column or change an existing column type to select",
-    "kanbanGroupBy": "Group by",
-    "kanbanUngrouped": "Ungrouped",
-    "calendarNeedDate": "Calendar view needs a date column",
-    "calendarNeedDateDesc": "Add a column or change an existing column type to date",
-    "calendarDateColumn": "Date column",
-    "calendarToday": "Today",
-    "ganttNeedDate": "Gantt view needs a date column",
-    "ganttNeedDateDesc": "Add a column or change an existing column type to date",
-    "ganttDateColumn": "Date column",
-    "formYes": "Yes",
-    "formNo": "No",
-    "formSelectPlaceholder": "Select…",
-    "formNoOptions": "No options",
-    "formSubmitToast": "Record added",
-    "formShareHint": "External shareable form links require backend integration",
-    "formShareLinkTooltip": "External share link (backend required)",
-    "formShareLink": "Share link",
-    "formAutoAddToSheet": "Submitted records are added to the <sheet>{sheetName}</sheet> sheet.",
-    "formSessionCount": "· {count} submitted this session",
-    "formResetTooltip": "Reset fields",
-    "formReset": "Reset",
-    "formRecentSubmits": "Recent submissions ({count})",
-    "formRowTooltip": "Click: edit · Right-click: menu",
-    "formEmptyValue": "(empty)",
-    "filterDeleteSheet": "Delete sheet",
-    "kanbanCurrentSprintTooltip": "Show only cards in the active Sprint",
-    "kanbanCurrentSprintToggle": "Current Sprint only",
-    "kanbanCardSettings": "Card settings",
-    "kanbanCoverImage": "Cover image",
-    "kanbanNone": "None",
-    "kanbanUrlColFirst": "Create a url-type column first",
-    "kanbanCardFields": "Fields to show on cards",
-    "kanbanBoardAria": "{name} kanban board",
-    "kanbanColumnAria": "{label} · {count}",
-    "kanbanCardAria": "{label} card",
-    "kanbanInCurrentSprintTooltip": "Card in the active Sprint",
-    "ganttStart": "Start",
-    "ganttEnd": "End",
-    "ganttDepends": "Depends on",
-    "ganttSingleDay": "None (single day)",
-    "ganttNone": "None",
-    "ganttNoData": "No valid date data.",
-    "ganttWeekdays": "SMTWTFS",
-    "galleryUrlColFirst": "Create a url-type column first",
-    "galleryOnlyImage": "Only image files can be uploaded",
-    "galleryUploadOk": "Image uploaded",
-    "galleryUploadFail": "Upload failed: {error}",
-    "galleryAria": "{name} gallery",
-    "galleryNoRecords": "No records to display",
-    "galleryFirstRecord": "Add the first record",
-    "galleryRecordAria": "Record",
-    "galleryUploading": "Uploading…",
-    "galleryUploadTooltip": "Upload image (drag-drop supported)",
-    "galleryUploadAria": "Upload image"
+    "gantt": "Gantt"
   },
   "toolGroups": {
     "build": "Build",
@@ -3147,281 +3118,31 @@
     "importError": "An error occurred while importing."
   },
   "onboarding": {
-    "skip": "Skip",
-    "previous": "Previous",
+    "title": "Welcome",
+    "subtitle": {
+      "workspace": "Let's set up your workspace",
+      "project": "Create your first project",
+      "invite": "Invite teammates (optional)",
+      "done": "All set!"
+    },
+    "defaultWorkspaceName": "{name}'s workspace",
+    "defaultProjectName": "My first game",
+    "workspaceNameLabel": "Workspace name",
+    "projectNameLabel": "Project name",
+    "inviteLabel": "Emails",
+    "invitePlaceholder": "designer@studio.com, qa@studio.com",
+    "inviteHint": "Comma or space separated. All invited as editors.",
+    "inviteCta": "Send invites",
+    "inviteSkip": "Skip for now",
     "next": "Next",
-    "getStarted": "Get Started",
-    "guidelines": {
-      "ttk": {
-        "title": "TTK (Time To Kill)",
-        "items": {
-          "fps": {
-            "label": "FPS/Shooter",
-            "value": "0.3~1.5 sec",
-            "desc": "Fast combat, high tension"
-          },
-          "moba": {
-            "label": "MOBA",
-            "value": "3~8 sec",
-            "desc": "Team coordination time"
-          },
-          "mmorpg": {
-            "label": "MMO/RPG",
-            "value": "5~30 sec",
-            "desc": "Strategic skill usage"
-          }
-        }
-      },
-      "damage": {
-        "title": "Damage Formula",
-        "items": {
-          "minDamage": {
-            "label": "Min Damage",
-            "value": "10~20% of ATK",
-            "desc": "Prevent 0 damage"
-          },
-          "defReduction": {
-            "label": "DEF Reduction Cap",
-            "value": "50~70% cap",
-            "desc": "Tanks can still die"
-          },
-          "ehpRatio": {
-            "label": "EHP Ratio",
-            "value": "Tank 2~3x",
-            "desc": "Tank survival vs DPS"
-          }
-        }
-      },
-      "growth": {
-        "title": "Growth Curves",
-        "items": {
-          "linear": {
-            "label": "Linear",
-            "value": "+5~10% per level",
-            "desc": "Predictable, weak late"
-          },
-          "exponential": {
-            "label": "Exponential",
-            "value": "1.05~1.15 ratio",
-            "desc": "Rapid late growth"
-          },
-          "logarithmic": {
-            "label": "Logarithmic",
-            "value": "ln(level) coefficient",
-            "desc": "Fast early, slow late"
-          }
-        }
-      },
-      "economy": {
-        "title": "Economy System",
-        "items": {
-          "faucetSink": {
-            "label": "Faucet-Sink Ratio",
-            "value": "Gain:Spend = 1:0.7~0.9",
-            "desc": "Allow slight surplus"
-          },
-          "currencyRate": {
-            "label": "Currency Exchange",
-            "value": "Premium 1 = Regular 100",
-            "desc": "Payment value perception"
-          },
-          "inflation": {
-            "label": "Inflation Rate",
-            "value": "2~5% per week",
-            "desc": "Long-term operation"
-          }
-        }
-      },
-      "gacha": {
-        "title": "Gacha/Draw System",
-        "items": {
-          "topRate": {
-            "label": "Top Tier Rate",
-            "value": "0.5~3%",
-            "desc": "Maintain rarity"
-          },
-          "pity": {
-            "label": "Pity System",
-            "value": "70~100 pulls",
-            "desc": "Industry standard"
-          },
-          "expectedCost": {
-            "label": "Expected Cost",
-            "value": "$50~100 per top",
-            "desc": "Monetization baseline"
-          }
-        }
-      },
-      "flow": {
-        "title": "Flow Theory",
-        "items": {
-          "difficultyRate": {
-            "label": "Difficulty Increase",
-            "value": "5~15% per stage",
-            "desc": "Gradual challenge"
-          },
-          "failCount": {
-            "label": "Failure Tolerance",
-            "value": "2~3 times",
-            "desc": "Retry before frustration"
-          },
-          "rewardInterval": {
-            "label": "Reward Interval",
-            "value": "3~5 minutes",
-            "desc": "Maintain small victories"
-          }
-        }
-      }
-    },
-    "steps": {
-      "sampleSelect": {
-        "title": "What do you want to balance?",
-        "description": "Select a sample game to start with real data right away. Each sample comes with pre-configured formulas and example data.",
-        "tip": "Select a sample and click 'Start with this sample' to begin immediately!"
-      },
-      "welcome": {
-        "title": "Welcome to Game Balance Tool",
-        "description": "Manage character stats, weapon damage, level tables, and calculate them with game-specific formulas. Use it like Excel, but with built-in functions like DAMAGE, DPS, and SCALE.",
-        "tip": "Drag tools between the left sidebar and bottom dock to customize your workspace!"
-      },
-      "tools": {
-        "title": "14 Analysis Tools",
-        "description": "Once you input data, use various tools to analyze balance. Click tools in the left sidebar or bottom dock.",
-        "tip": "Tool panels can be resized by dragging and multiple panels can be used simultaneously!",
-        "categories": {
-          "calculation": {
-            "title": "Calculation Tools",
-            "tools": {
-              "calculator": "Calculator - Quick formula calculations",
-              "goalSolver": "Goal Solver - Find inputs from desired outputs",
-              "formulaHelper": "Formula Helper - Search/test game formulas"
-            }
-          },
-          "visualization": {
-            "title": "Visualization Tools",
-            "tools": {
-              "comparison": "Comparison - Compare multiple rows as charts",
-              "chart": "Growth Curve - Level-based growth graphs",
-              "presetComparison": "Preset Comparison - Compare saved versions"
-            }
-          },
-          "analysis": {
-            "title": "Analysis Tools",
-            "tools": {
-              "imbalanceDetector": "Imbalance Detector - Find outliers/OP characters",
-              "balanceAnalysis": "Balance Analysis - Analyze overall distribution",
-              "balanceValidator": "Balance Validator - Rule-based validation",
-              "dpsVariance": "DPS Variance - Probabilistic DPS distribution",
-              "curveFitting": "Curve Fitting - Find formulas that fit your data",
-              "difficultyCurve": "Difficulty Curve - Design stage difficulty"
-            }
-          },
-          "simulation": {
-            "title": "Simulation",
-            "tools": {
-              "simulation": "Battle Simulation - Test unit combat",
-              "economy": "Economy Simulator - Simulate currency flow"
-            }
-          }
-        }
-      },
-      "survey": {
-        "title": "Feedback & Open Source",
-        "description": "This is still in early stages with much room for improvement. Please let us know if you find any UI/UX issues, missing features, or areas that need work!",
-        "tip": "PC/Tablet recommended (mobile experience is limited)",
-        "feedbackRequest": "We're looking for feedback on:",
-        "feedbackItem1": "Pain points while using the tool",
-        "feedbackItem2": "Features you'd like to see",
-        "feedbackItem3": "Bug reports and errors",
-        "openSource": "It's open source - feel free to fork and run your own!"
-      },
-      "guidelines": {
-        "title": "Recommended Values Guide",
-        "description": "Industry-standard values commonly used in game balancing. Reference these during your work.",
-        "tip": "You can always access this guide from the \"References\" menu at the top."
-      },
-      "createProject": {
-        "title": "Step 1: Create Game",
-        "description": "Click the \"New Game\" button in the left sidebar.",
-        "action": "New Game → Enter name → Press Enter",
-        "tip": "Game = One game. You can manage multiple games separately."
-      },
-      "createSheet": {
-        "title": "Step 2: Create Sheet",
-        "description": "Create data sheets within your game. Click the \"+\" button in the top tabs.",
-        "action": "+ Button → Select template or empty sheet",
-        "tip": "Templates auto-generate basic structures for RPG characters, FPS weapons, etc."
-      },
-      "inputData": {
-        "title": "Step 3: Input Data",
-        "description": "Click any cell to start typing. Enter numbers or text.",
-        "action": "Click cell → Enter value → Press Enter",
-        "example": {
-          "input": "150",
-          "result": "150 (stored as number)"
-        },
-        "tip": "Enter to confirm, Esc to cancel"
-      },
-      "formulaBasic": {
-        "title": "Step 4: Using Formulas (Core!)",
-        "description": "Start with = to create a formula. Reference other cells or perform calculations.",
-        "action": "Click cell → Type = → Write formula → Press Enter",
-        "example": {
-          "before": "When ATK column has 100",
-          "input": "=ATK * 1.5",
-          "result": "150 (1.5x of ATK)"
-        },
-        "tip": "Use column names to reference values in the same row."
-      },
-      "formulaDamage": {
-        "title": "Step 5: Game Formula - DAMAGE",
-        "description": "Built-in damage calculation formulas commonly used in games.",
-        "example": {
-          "before": "ATK 100, DEF 50",
-          "input": "=DAMAGE(100, 50)",
-          "result": "66.67 (with reduction formula)"
-        },
-        "tip": "Formula: ATK × (100 ÷ (100 + DEF)). Higher DEF = lower damage."
-      },
-      "formulaDps": {
-        "title": "Step 6: Game Formula - DPS",
-        "description": "Calculate DPS (Damage Per Second) including critical hits.",
-        "example": {
-          "before": "DMG 50, AtkSpd 2, CritRate 20%, CritDmg 150%",
-          "input": "=DPS(50, 2, 0.2, 1.5)",
-          "result": "110 (with crit DPS)"
-        },
-        "tip": "Formula: Damage × AtkSpeed × (1 + CritRate × (CritDmg - 1))"
-      },
-      "formulaScale": {
-        "title": "Step 7: Game Formula - SCALE",
-        "description": "Calculate stat growth by level. Supports linear, exponential, logarithmic, and more.",
-        "example": {
-          "before": "Base 100, Level 10, Growth 1.1",
-          "input": "=SCALE(100, 10, 1.1, \"exponential\")",
-          "result": "259.37 (exponential growth)"
-        },
-        "tip": "Curve types: \"linear\", \"exponential\", \"logarithmic\", \"quadratic\""
-      },
-      "done": {
-        "title": "Ready to Go!",
-        "description": "Now try it yourself. Check the Formula Helper (bottom of screen) for all available functions.",
-        "tip": "Use the \"Test\" feature in Formula Helper to verify formulas first."
-      }
-    },
-    "starterPickerTitle": "What kind of game are you building?",
-    "starterPickerDesc": "Pick a genre and matching starter sheets will be created automatically. You can edit or delete them anytime.",
-    "starterPickerCount": "{count} starter packs",
-    "starterPickerFooter": "You can add more later from the sidebar + button",
-    "close": "Close",
-    "coachmarkAriaLabel": "{name} guide",
-    "coachmarkClose": "Close guide",
-    "coachmarkStepInfo": "{label} · Step {current} / {total}",
-    "prev": "Back",
-    "done": "Done",
-    "toolHintAriaLabel": "{title} tool usage tips",
-    "toolHintDismissAria": "Dismiss tip",
-    "toolHintGotIt": "Got it →"
+    "doneSubtitle": "Your workspace is ready. Let's get started.",
+    "goWorkspace": "Open workspace",
+    "mustLoginTitle": "Login required",
+    "mustLogin": "Please sign in to start onboarding",
+    "goLogin": "Go to login",
+    "errNoBackend": "Cannot connect to the server",
+    "errNetwork": "Network error",
+    "errGeneric": "Something went wrong"
   },
   "templates": {
     "genres": {
@@ -6014,33 +5735,6 @@
     "sheet": "Sheet",
     "doc": "Doc"
   },
-  "onboarding": {
-    "title": "Welcome",
-    "subtitle": {
-      "workspace": "Let's set up your workspace",
-      "project": "Create your first project",
-      "invite": "Invite teammates (optional)",
-      "done": "All set!"
-    },
-    "defaultWorkspaceName": "{name}'s workspace",
-    "defaultProjectName": "My first game",
-    "workspaceNameLabel": "Workspace name",
-    "projectNameLabel": "Project name",
-    "inviteLabel": "Emails",
-    "invitePlaceholder": "designer@studio.com, qa@studio.com",
-    "inviteHint": "Comma or space separated. All invited as editors.",
-    "inviteCta": "Send invites",
-    "inviteSkip": "Skip for now",
-    "next": "Next",
-    "doneSubtitle": "Your workspace is ready. Let's get started.",
-    "goWorkspace": "Open workspace",
-    "mustLoginTitle": "Login required",
-    "mustLogin": "Please sign in to start onboarding",
-    "goLogin": "Go to login",
-    "errNoBackend": "Cannot connect to the server",
-    "errNetwork": "Network error",
-    "errGeneric": "Something went wrong"
-  },
   "comments": {
     "panelTitle": "Comments ({count})",
     "empty": "No comments yet",
@@ -6088,40 +5782,5 @@
     "delete": "Delete",
     "confirmRestore": "Restore this snapshot? Save your current changes as a separate snapshot first if needed.",
     "confirmDelete": "Delete this snapshot?"
-  },
-  "views": {
-    "heatmap": {
-      "tab": "Heatmap",
-      "noSheet": "No sheet selected",
-      "noNumericColumns": "No numeric columns — heatmap cannot be rendered",
-      "rowHeader": "Row",
-      "legendLow": "Low",
-      "legendHigh": "High"
-    },
-    "curve": {
-      "tab": "Curves",
-      "noSheet": "No sheet selected",
-      "needTwoNumericColumns": "Need at least 2 numeric columns to overlay curves",
-      "xAxisLabel": "X axis",
-      "seriesLabel": "Series"
-    },
-    "probability": {
-      "tab": "Probability",
-      "noSheet": "No sheet selected",
-      "cantInfer": "No probability/weight column found (column name should contain weight, probability, or rate)",
-      "inferredHint": "Weight column: {weight}, label column: {label}",
-      "groupTotal": "{count} items · {total} of total",
-      "overall": "overall",
-      "weightsNote": "Total weight: {total} (normalized to ratios when not 1.0)"
-    },
-    "diff": {
-      "tab": "Diff",
-      "noSheetInBoth": "Sheet missing from both versions",
-      "added": "added",
-      "changed": "changed",
-      "removed": "removed",
-      "unchanged": "unchanged",
-      "rowHeader": "Row"
-    }
   }
 }

@@ -41,6 +41,23 @@ export default function Home() {
     if (status === 'idle' || status === 'loading') return;
 
     if (status === 'authenticated') {
+      // Direct-jump to the user's last visited workspace+project so
+      // the landing flow doesn't bounce through /workspaces and
+      // /w/[slug] (each is its own server round-trip + render). The
+      // localStorage hint is written by /w/[slug] and the project
+      // page; absent (or stale beyond the freshness window) we fall
+      // back to the /workspaces hop which auto-redirects from there.
+      // Linear / Notion / Figma all do this.
+      if (typeof window !== 'undefined') {
+        const lastWs = window.localStorage.getItem('balruno:lastWorkspace');
+        const lastProj = lastWs
+          ? window.localStorage.getItem(`balruno:lastProject:${lastWs}`)
+          : null;
+        if (lastWs && lastProj) {
+          router.replace(`/w/${lastWs}/p/${lastProj}`);
+          return;
+        }
+      }
       router.replace('/workspaces');
       return;
     }

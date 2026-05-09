@@ -17,7 +17,7 @@
  * emit goes through writeQueue.emitPresence in SheetTable's effect.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePresenceStore } from '@/stores/presenceStore';
 
 const NAME_KEY = 'balruno:user-name';
@@ -139,9 +139,23 @@ export function usePresence(projectId: string | null): {
   // writeQueue.emitPresence — these stubs only exist so existing
   // call sites compile. They can be removed once SheetTable drops
   // its publishActiveCell call.
-  const publishActiveCell = (_cell: PeerCellRef | null) => { void _cell; };
-  const publishSelectedCells = (_cells: PeerCellRef[]) => { void _cells; };
-  const publishEditing = (_editing: boolean) => { void _editing; };
+  //
+  // CRITICAL: keep these references stable. SheetTable subscribes
+  // them in a `[selectedCell, sheet.id, publishActiveCell]` effect
+  // dep array, and the effect mutates commentSelectionStore. If the
+  // hook returns a fresh closure each render, the effect re-fires
+  // every time the parent re-renders, the store update triggers
+  // another parent re-render, and React #185 (max update depth)
+  // fires within a few cycles. Stable refs break that loop.
+  const publishActiveCell = useCallback((_cell: PeerCellRef | null) => {
+    void _cell;
+  }, []);
+  const publishSelectedCells = useCallback((_cells: PeerCellRef[]) => {
+    void _cells;
+  }, []);
+  const publishEditing = useCallback((_editing: boolean) => {
+    void _editing;
+  }, []);
 
   return { peers, myName, myColor, publishActiveCell, publishSelectedCells, publishEditing };
 }

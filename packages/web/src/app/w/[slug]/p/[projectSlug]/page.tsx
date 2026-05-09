@@ -67,7 +67,6 @@ import {
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { CellCommentPanel } from '@/components/comments/CellCommentPanel';
 import { DocCommentPanel } from '@/components/comments/DocCommentPanel';
-import { InboxBell } from '@/components/comments/InboxBell';
 import { ServerDocView } from '@/components/docs/ServerDocView';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
 import SheetTable from '@/components/sheet/SheetTable';
@@ -207,6 +206,17 @@ export default function ProjectDetailPage() {
       };
     });
   }, [project]);
+
+  // Persist the last-visited (workspace, project) pair so the root
+  // / page can direct-jump back here next session instead of
+  // bouncing through /workspaces and /w/[slug]. Linear / Notion /
+  // Figma pattern. Writes are cheap; the read paths skip the hop
+  // when both keys are populated.
+  useEffect(() => {
+    if (!workspace || !project || typeof window === 'undefined') return;
+    window.localStorage.setItem('balruno:lastWorkspace', workspace.slug);
+    window.localStorage.setItem(`balruno:lastProject:${workspace.slug}`, project.slug);
+  }, [workspace, project]);
 
   // Bridge stays idle while projectId is unknown; once the resolve
   // effect populates `project`, useProjectSyncBridge opens
@@ -670,15 +680,6 @@ export default function ProjectDetailPage() {
             style={{ background: 'var(--bg-primary)' }}
           >
             <Sidebar {...sidebarCallbacks} activeTools={activeTools} />
-            {/* InboxBell — anchored to the sidebar's bottom-left
-                next to the SidebarFooter's ConnectionStatus, per
-                the user's "왼쪽아래 클라우드 연결 옆" request.
-                Absolute-positioned over the SidebarFooter's left
-                edge; SidebarFooter has its own h-9 strip so the
-                bell sits above the cloud icon area. */}
-            <div className="absolute bottom-2 left-2 z-10">
-              <InboxBell />
-            </div>
           </div>
           <SidebarResizer />
 
