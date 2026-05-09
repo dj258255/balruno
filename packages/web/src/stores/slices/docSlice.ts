@@ -3,15 +3,52 @@
  *
  * 문서(GDD · 설계안)의 CRUD. 이전엔 Y.Doc 경유 + observer 가 zustand 반사
  * 했지만, ADR 0008 §10 stage α 에서 cellSlice 와 동일하게 *직접 setState*
- * 패턴으로 전환. server-canonical 페이지는 doc tree 변경을 makeTreeHandlers
- * ('DOC') 의 tree.* op (별도 path) 로 처리하고, 이 slice 는 *legacy DocView
- * 의 호환* + *future inline-rename surface 용 base*.
+ * 패턴으로 전환. doc tree 변경(create/rename/move/delete)은 사이드바의
+ * 기존 호출자가 그대로 store action 을 부르고, 우리는 local set 으로 즉시
+ * 반영하면서 동시에 'balruno:tree-*' CustomEvent 를 dispatch — WorkspaceShell
+ * 의 makeTreeHandlers('DOC') listener 가 그 이벤트를 받아 tree.* op 를 sync
+ * bridge 로 흘려보낸다. 같은 패턴을 sheet 트리도 사용 (treeMutationSlice).
+ *
+ * 즉 사이드바 → store action → optimistic set + emitTree → docTreeOps → op
+ * → backend doc_tree column. ServerDocView 는 *본문* 만 yjs/Hocuspocus 로
+ * sync 하고 트리 메타 (이름, parent, position) 는 이 path 로 흐른다.
  */
 
 import { newId } from '@/lib/uuid';
 import type { StoreApi } from 'zustand';
 import type { Doc } from '@/types';
 import type { ProjectState, TabEntry } from '../projectStore';
+
+function emitTreeAdd(parentId: string | null, position: number, node: unknown): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent('balruno:tree-add', {
+      detail: { kind: 'DOC', parentId, position, node },
+    }),
+  );
+}
+function emitTreeDelete(nodeId: string): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent('balruno:tree-delete', { detail: { kind: 'DOC', nodeId } }),
+  );
+}
+function emitTreeRename(nodeId: string, newName: string): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent('balruno:tree-rename', {
+      detail: { kind: 'DOC', nodeId, newName },
+    }),
+  );
+}
+function emitTreeMove(nodeId: string, newParentId: string | null, newPosition: number): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent('balruno:tree-move', {
+      detail: { kind: 'DOC', nodeId, newParentId, newPosition },
+    }),
+  );
+}
 
 type SetFn = StoreApi<ProjectState>['setState'];
 
@@ -83,6 +120,14 @@ export const createDocActions = (set: SetFn) => ({
       currentSheetId: null,
       openTabs: withTab(state.openTabs, 'doc', id),
     }));
+    // Mirror into the doc_tree on the backend. WorkspaceShell's
+    // docTreeOps listener picks this up and emits a tree.add op so
+    // the new doc survives reload + becomes visible to peers.
+    emitTreeAdd(
+      newDoc.parentId ?? null,
+      Number.MAX_SAFE_INTEGER, // append; insertNodeAt clamps
+      { id, type: 'doc', name },
+    );
     return id;
   },
 
@@ -103,6 +148,12 @@ export const createDocActions = (set: SetFn) => ({
             },
       ),
     }));
+    // Tree-level meta lives in doc_tree (name + position) and only
+    // emits when the value actually changes. content/icon/isExpanded
+    // are local-only or yjs-routed (body lives in Hocuspocus).
+    if (typeof updates.name === 'string' && updates.name.trim()) {
+      emitTreeRename(docId, updates.name.trim());
+    }
   },
 
   deleteDoc: (projectId: string, docId: string) => {
@@ -130,6 +181,10 @@ export const createDocActions = (set: SetFn) => ({
         currentSheetId: next?.kind === 'sheet' ? next.id : null,
       };
     });
+    // Backend cascade: deleting a parent in the doc_tree wipes its
+    // descendants on the server side too, so a single tree.delete on
+    // the root id is enough — no need to emit per descendant.
+    emitTreeDelete(docId);
   },
 
   /** 부모 변경 — 트리 안에서 다른 위치로 이동. parentId === undefined 면 루트로. */
@@ -153,6 +208,11 @@ export const createDocActions = (set: SetFn) => ({
             },
       ),
     }));
+    emitTreeMove(
+      docId,
+      parentId ?? null,
+      position ?? Number.MAX_SAFE_INTEGER,
+    );
   },
 
   /** 사이드바 펼침/접힘 토글. */
