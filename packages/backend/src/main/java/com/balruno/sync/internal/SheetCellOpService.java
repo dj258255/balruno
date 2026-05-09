@@ -186,6 +186,13 @@ class SheetCellOpService {
             return new SyncResult.Cached(winning.getResultVersion(), winning.getResultPayload());
         }
 
+        // History — feed a SyncOpProcessedEvent to the history module
+        // so it can build a per-row Activity tab (ADR 0038 Stage A).
+        // afterCommit so a rolled-back op can't leave a phantom
+        // history row. Best-effort: any failure inside the listener
+        // is swallowed; the user's op already committed.
+        publishHistoryEvent(projectId, userId, op);
+
         // Webhook outbound — fire-and-forget. row.add is the only
         // sheet-cell op currently subscribed (KNOWN_EVENTS in
         // WebhookService). Hooked via afterCommit so a rolled-back
@@ -213,6 +220,108 @@ class SheetCellOpService {
         }
 
         return new SyncResult.Acked(newVersion, broadcast);
+    }
+
+    /**
+     * Build + publish a {@link com.balruno.events.SyncOpProcessedEvent}
+     * after the op's transaction commits (ADR 0038 Stage A). Action
+     * code mirrors the wire op type. Per-op coordinates (sheet/row/
+     * column ids) and a small payload preview let the history listener
+     * insert a useful {@code cell_history} row without re-parsing the
+     * data JSONB.
+     */
+    private void publishHistoryEvent(UUID projectId, UUID userId, SyncMessage op) {
+        var meta = historyMetaFor(op);
+        if (meta == null) return;
+        org.springframework.transaction.support.TransactionSynchronizationManager
+                .registerSynchronization(
+                        new org.springframework.transaction.support.TransactionSynchronization() {
+                            @Override
+                            public void afterCommit() {
+                                try {
+                                    events.publishEvent(new com.balruno.events.SyncOpProcessedEvent(
+                                            projectId, meta.sheetId, meta.rowId, meta.columnId,
+                                            userId, meta.action, meta.payload));
+                                } catch (Exception ignored) {
+                                    // History is best effort — never bubble out of afterCommit.
+                                }
+                            }
+                        });
+    }
+
+    private record HistoryMeta(
+            UUID sheetId, UUID rowId, UUID columnId,
+            String action, com.fasterxml.jackson.databind.JsonNode payload) {}
+
+    private HistoryMeta historyMetaFor(SyncMessage op) {
+        return switch (op) {
+            case SyncMessage.CellUpdate u -> new HistoryMeta(
+                    u.sheetId(), u.rowId(), u.columnId(),
+                    "cell.update",
+                    payloadObject(node -> node.set("value", nodeMapper.valueToTree(u.value()))));
+            case SyncMessage.CellStyleUpdate u -> new HistoryMeta(
+                    u.sheetId(), u.rowId(), u.columnId(),
+                    "cell.style.update",
+                    payloadObject(node -> node.set("style", nodeMapper.valueToTree(u.style()))));
+            case SyncMessage.SheetMetadataUpdate u -> new HistoryMeta(
+                    u.sheetId(), null, null,
+                    "sheet.metadata.update",
+                    payloadObject(node -> node.set("patch", nodeMapper.valueToTree(u.patch()))));
+            case SyncMessage.RowAdd u -> new HistoryMeta(
+                    u.sheetId(), rowIdOf(u.row()), null,
+                    "row.add",
+                    payloadObject(node -> node.set("row", nodeMapper.valueToTree(u.row()))));
+            case SyncMessage.RowDelete u -> new HistoryMeta(
+                    u.sheetId(), u.rowId(), null,
+                    "row.delete", null);
+            case SyncMessage.RowMove u -> new HistoryMeta(
+                    u.sheetId(), u.rowId(), null,
+                    "row.move",
+                    payloadObject(node -> node.put("toIndex", u.toIndex())));
+            case SyncMessage.ColumnAdd u -> new HistoryMeta(
+                    u.sheetId(), null, columnIdOf(u.column()),
+                    "column.add",
+                    payloadObject(node -> node.set("column", nodeMapper.valueToTree(u.column()))));
+            case SyncMessage.ColumnUpdate u -> new HistoryMeta(
+                    u.sheetId(), null, u.columnId(),
+                    "column.update",
+                    payloadObject(node -> node.set("patch", nodeMapper.valueToTree(u.patch()))));
+            case SyncMessage.ColumnDelete u -> new HistoryMeta(
+                    u.sheetId(), null, u.columnId(),
+                    "column.delete", null);
+            default -> null;
+        };
+    }
+
+    private com.fasterxml.jackson.databind.JsonNode payloadObject(
+            java.util.function.Consumer<com.fasterxml.jackson.databind.node.ObjectNode> filler) {
+        var node = nodeMapper.createObjectNode();
+        try {
+            filler.accept(node);
+        } catch (Exception ignored) {
+            // Payload is best effort; never block the publish.
+        }
+        return node;
+    }
+
+    private static UUID rowIdOf(Object row) {
+        if (row instanceof java.util.Map<?, ?> m) {
+            var id = m.get("id");
+            if (id instanceof String s) {
+                try { return UUID.fromString(s); } catch (IllegalArgumentException ignored) { }
+            }
+        }
+        return null;
+    }
+
+    private static UUID columnIdOf(Object column) {
+        if (column instanceof java.util.Map<?, ?> m) {
+            var id = m.get("id");
+            if (id instanceof String s) {
+                try { return UUID.fromString(s); } catch (IllegalArgumentException ignored) { }
+            }
+        }
+        return null;
     }
 
     // ── op-tree mutation ──────────────────────────────────────────────
