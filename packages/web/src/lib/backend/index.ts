@@ -75,8 +75,13 @@ export type { CatalogGroupSummary } from './catalog';
 export { fetchAuditLog } from './audit';
 export type { AuditEntry, FetchAuditLogOptions } from './audit';
 
-export { fetchRowHistory, fetchSheetHistory } from './history';
-export type { HistoryEntry, HistoryListOptions } from './history';
+export {
+  fetchRowHistory,
+  fetchSheetHistory,
+  fetchDocSnapshots,
+  downloadDocSnapshotState,
+} from './history';
+export type { HistoryEntry, HistoryListOptions, DocSnapshot } from './history';
 
 export {
   createComment,

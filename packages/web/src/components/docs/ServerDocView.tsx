@@ -23,7 +23,9 @@ import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Loader2, MessageSquarePlus } from 'lucide-react';
+import { History, Loader2, MessageSquarePlus } from 'lucide-react';
+
+import DocHistoryPanel from './DocHistoryPanel';
 import { useDocCollab } from '@/hooks/useDocCollab';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
 import { listCommentsForDoc } from '@/lib/backend';
@@ -50,6 +52,7 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
   // F.2). When the selection is empty, the button is disabled and
   // creating a comment falls back to doc-level (anchorPosition = null).
   const [selRange, setSelRange] = useState<{ from: number; to: number } | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const setCommentSelection = useCommentSelectionStore((s) => s.setSelection);
   const setCommentPanelOpen = useCommentSelectionStore((s) => s.setPanelOpen);
 
@@ -172,17 +175,29 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
       >
         <div className="flex items-start justify-between gap-3">
           <DocTitleEditor title={title} onTitleChange={onTitleChange} />
-          <button
-            type="button"
-            onClick={handleCommentSelection}
-            disabled={!selRange}
-            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:hover:bg-transparent"
-            style={{ color: 'var(--text-secondary)' }}
-            title={selRange ? '선택한 부분에 코멘트 달기' : '먼저 텍스트를 선택하세요'}
-          >
-            <MessageSquarePlus className="h-3.5 w-3.5" />
-            선택한 부분에 코멘트
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleCommentSelection}
+              disabled={!selRange}
+              className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:hover:bg-transparent"
+              style={{ color: 'var(--text-secondary)' }}
+              title={selRange ? '선택한 부분에 코멘트 달기' : '먼저 텍스트를 선택하세요'}
+            >
+              <MessageSquarePlus className="h-3.5 w-3.5" />
+              선택한 부분에 코멘트
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryOpen(true)}
+              className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs hover:bg-[var(--bg-hover)]"
+              style={{ color: 'var(--text-secondary)' }}
+              title="페이지 변경 이력"
+            >
+              <History className="h-3.5 w-3.5" />
+              변경 이력
+            </button>
+          </div>
         </div>
         <p className="mt-1 text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
           collab status: {status}
@@ -198,6 +213,14 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
           inside the component itself; pb-16 above leaves room so the
           editor content doesn't end behind the toolbar. */}
       <MobileTiptapToolbar editor={editor} />
+
+      {historyOpen && (
+        <DocHistoryPanel
+          docId={documentId}
+          docTitle={title}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
     </div>
   );
 }
