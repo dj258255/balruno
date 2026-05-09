@@ -44,6 +44,7 @@ interface SidebarProps {
   onShowCurveFitting?: () => void;
   onShowSettings?: () => void;
   onShowAccountSettings?: () => void;
+  onShowNotificationSettings?: () => void;
   onShowExportModal?: () => void;
   onShowImportModal?: () => void;
   onToggleFormulaHelper?: () => void;
@@ -85,6 +86,7 @@ export default function Sidebar({
   onShowCurveFitting,
   onShowSettings,
   onShowAccountSettings,
+  onShowNotificationSettings,
   onShowExportModal,
   onShowImportModal,
   onToggleFormulaHelper,
@@ -252,6 +254,7 @@ export default function Sidebar({
         <WorkspaceSwitcher
           onOpenSettings={onShowSettings}
           onOpenAccountSettings={onShowAccountSettings}
+          onOpenNotificationSettings={onShowNotificationSettings}
         />
 
         <SidebarQuickAccess />

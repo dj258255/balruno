@@ -15,24 +15,25 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, Plus, Settings, Edit2, Sparkles, Users, Loader2 } from 'lucide-react';
+import { ChevronDown, Plus, Settings, Edit2, Users, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ui';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 import { useWorkspaceListStore } from '@/stores/workspaceListStore';
-import { useProductIntro } from '@/stores/productIntroStore';
 import { MemberManagementModal } from '@/components/workspace/MemberManagementModal';
 
 interface WorkspaceSwitcherProps {
   onOpenSettings?: () => void;
   onOpenAccountSettings?: () => void;
+  onOpenNotificationSettings?: () => void;
 }
 
 export function WorkspaceSwitcher({
   onOpenSettings,
   onOpenAccountSettings,
+  onOpenNotificationSettings,
 }: WorkspaceSwitcherProps) {
   const tMembers = useTranslations('members');
   const [showMembers, setShowMembers] = useState(false);
@@ -53,7 +54,6 @@ export function WorkspaceSwitcher({
     void bootstrap();
   }, [bootstrap]);
 
-  const openProductIntro = useProductIntro((s) => s.openIntro);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -191,20 +191,6 @@ export function WorkspaceSwitcher({
               </span>
             </button>
 
-            {/* 앱 소개 다시 보기 */}
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                openProductIntro();
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              <Sparkles className="w-4 h-4 shrink-0" style={{ color: 'var(--accent)' }} />
-              <span>{t('sidebar.appIntroAgain')}</span>
-            </button>
-
             {/* 멤버 관리 */}
             <button
               type="button"
@@ -249,6 +235,22 @@ export function WorkspaceSwitcher({
               >
                 <Settings className="w-4 h-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
                 <span>계정 설정</span>
+              </button>
+            )}
+
+            {/* 알림 설정 (per-user notification preferences) */}
+            {onOpenNotificationSettings && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onOpenNotificationSettings();
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                <Settings className="w-4 h-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
+                <span>알림 설정</span>
               </button>
             )}
           </div>

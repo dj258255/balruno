@@ -45,6 +45,7 @@ import BottomDock from '@/components/BottomDock';
 import DockedToolbox from '@/components/DockedToolbox';
 import WorkspaceSettingsClient from '@/app/components/WorkspaceSettingsClient';
 import AccountSettingsClient from '@/app/components/AccountSettingsClient';
+import NotificationSettingsClient from '@/app/components/NotificationSettingsClient';
 import Sidebar from '@/components/layout/Sidebar';
 import SheetTabs from '@/components/layout/SheetTabs';
 import SidebarResizer from '@/app/components/SidebarResizer';
@@ -599,6 +600,7 @@ export default function WorkspaceShell({
   // standalone /{wsSlug}/settings + /settings/account routes.
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const sidebarCallbacks = {
     onShowChart: toggleTool('chart'),
     onShowHelp: () => { /* OnboardingGuide not yet rewired */ },
@@ -607,6 +609,7 @@ export default function WorkspaceShell({
     onShowReferences: () => { /* ReferencesModal not yet rewired */ },
     onShowSettings: () => setSettingsOpen(true),
     onShowAccountSettings: () => setAccountOpen(true),
+    onShowNotificationSettings: () => setNotificationsOpen(true),
     onShowPresetComparison: toggleTool('preset'),
     onShowImbalanceDetector: toggleTool('imbalance'),
     onShowGoalSolver: toggleTool('goal'),
@@ -880,6 +883,9 @@ export default function WorkspaceShell({
       )}
       {accountOpen && (
         <AccountSettingsClient onClose={() => setAccountOpen(false)} />
+      )}
+      {notificationsOpen && (
+        <NotificationSettingsClient onClose={() => setNotificationsOpen(false)} />
       )}
     </main>
   );
