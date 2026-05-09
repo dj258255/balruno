@@ -25,6 +25,7 @@ import type { Sheet, Project } from '@/types';
 import type { SheetMetadataPatch } from '@/lib/sync/opMapper';
 import {
   deleteProject as deleteProjectRest,
+  duplicateSheet as duplicateSheetRest,
   setProjectPosition,
   updateProject as updateProjectRest,
 } from '@/lib/backend';
@@ -295,10 +296,28 @@ export const createTreeMutationActions = (set: SetFn, get: GetFn) => ({
     return '';
   }) as (projectId: string) => string,
 
+  /**
+   * Server-side sheet duplicate. Backend deep-clones the source sheet
+   * with fresh ids, inserts a new tree leaf next to the source, and
+   * broadcasts sync.full so peers re-hydrate. We can't return the new
+   * sheet id synchronously (the legacy signature expected an immediate
+   * string), so we kick off the request, wait for the response, then
+   * setCurrentSheet to the duplicate. Returning '' for the legacy
+   * signature is harmless — none of the callers use the return value.
+   */
   duplicateSheet: ((projectId: string, sheetId: string) => {
-    void projectId;
-    void sheetId;
-    toast.error('시트 복제는 곧 지원됩니다.');
+    void (async () => {
+      try {
+        const { newSheetId } = await duplicateSheetRest(projectId, sheetId);
+        // Sync.full from the backend will hydrate the duplicated sheet
+        // into the store; pointing the active selection at it lets the
+        // sidebar + main panel land on the new sheet without a manual
+        // click.
+        get().setCurrentSheet(newSheetId);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : '시트 복제 실패');
+      }
+    })();
     return '';
   }) as (projectId: string, sheetId: string) => string,
 });

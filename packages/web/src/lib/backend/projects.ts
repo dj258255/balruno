@@ -74,3 +74,17 @@ export function setProjectPosition(id: string, sortKey: string): Promise<Project
     body: { sortKey },
   });
 }
+
+/**
+ * Server-side sheet duplicate. Backend deep-clones the source sheet
+ * (regenerates ids), grafts a new tree leaf next to the source, and
+ * broadcasts sync.full so every connected peer rehydrates with the
+ * extra sheet visible. Caller usually setCurrentSheet to the
+ * returned id so the user lands on the duplicate.
+ */
+export function duplicateSheet(projectId: string, sheetId: string): Promise<{ newSheetId: string }> {
+  return request<{ newSheetId: string }>(
+    `/api/v1/projects/${projectId}/sheets/${sheetId}/duplicate`,
+    { method: 'POST' },
+  );
+}

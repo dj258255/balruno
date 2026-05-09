@@ -36,9 +36,11 @@ import java.util.UUID;
 class ProjectController {
 
     private final ProjectService projects;
+    private final SheetDuplicateService sheetDuplicate;
 
-    ProjectController(ProjectService projects) {
+    ProjectController(ProjectService projects, SheetDuplicateService sheetDuplicate) {
         this.projects = projects;
+        this.sheetDuplicate = sheetDuplicate;
     }
 
     @PostMapping(path = "/workspaces/{wsId}/projects", version = "1")
@@ -113,6 +115,21 @@ class ProjectController {
         return projects.updateSortKey(id, callerId(jwt), body.sortKey());
     }
 
+    /**
+     * Sidebar 시트 컨텍스트 메뉴의 "복제". Server-side deep-clone — id
+     * 들을 모두 새로 부여하고 sheet_tree 의 source 옆에 새 leaf 를 graft
+     * 한 뒤 sync.full broadcast 로 peer 동기화. 응답으로 새 sheet id 만
+     * 반환하면 클라이언트가 그쪽으로 setCurrentSheet 한다.
+     */
+    @PostMapping(path = "/projects/{projectId}/sheets/{sheetId}/duplicate", version = "1")
+    @ResponseStatus(HttpStatus.CREATED)
+    DuplicateSheetResponse duplicateSheet(@AuthenticationPrincipal Jwt jwt,
+                                          @PathVariable UUID projectId,
+                                          @PathVariable UUID sheetId) {
+        var newId = sheetDuplicate.duplicate(projectId, callerId(jwt), sheetId);
+        return new DuplicateSheetResponse(newId);
+    }
+
     private static UUID callerId(Jwt jwt) {
         return UUID.fromString(jwt.getSubject());
     }
@@ -129,4 +146,6 @@ class ProjectController {
 
     record PositionRequest(
             @NotBlank @Size(min = 1, max = 64) String sortKey) {}
+
+    record DuplicateSheetResponse(UUID newSheetId) {}
 }

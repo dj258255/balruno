@@ -61,6 +61,7 @@ export type { CreateInviteOptions } from './workspaces';
 export {
   createProject,
   deleteProject,
+  duplicateSheet,
   getProject,
   listProjects,
   setProjectPosition,
