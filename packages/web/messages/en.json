@@ -5637,7 +5637,28 @@
     "errRateLimited": "Too many attempts. Please try again later.",
     "errNoBackend": "Cannot connect to the server. Check your environment.",
     "errNetwork": "Network error",
-    "errGeneric": "Something went wrong. Please try again."
+    "errGeneric": "Something went wrong. Please try again.",
+    "oauth": {
+      "title": "Sign in to Balruno",
+      "subtitle": "Continue with one of your existing accounts. We never store passwords — verification happens at your provider.",
+      "continueWithGithub": "Continue with GitHub",
+      "continueWithGoogle": "Continue with Google",
+      "redirecting": "Redirecting...",
+      "tos": "By continuing you agree to the {terms} and {privacy}.",
+      "terms": "Terms",
+      "privacy": "Privacy Policy",
+      "errUnverified": "This email is already linked to another account but the new provider could not verify it. Sign in with the original method instead.",
+      "errGeneric": "Login failed. Please try again.",
+      "brandTagline": "A workspace for game designers",
+      "brandSubtagline": "Spreadsheet precision meets document context. Built for balancing, design, and live ops — without juggling tools.",
+      "feature1Title": "Sheets + Docs",
+      "feature1Body": "Notion-style docs and Excel-style sheets that link naturally inside one workspace.",
+      "feature2Title": "Realtime collaboration",
+      "feature2Body": "Linear-grade sync with offline cache. Your work doesn't stop when the network does.",
+      "feature3Title": "Open source",
+      "feature3Body": "MIT frontend + AGPL backend. Self-host or start with the SaaS — your choice.",
+      "switchLanguage": "Switch language"
+    }
   },
   "invite": {
     "title": "Workspace invitation",

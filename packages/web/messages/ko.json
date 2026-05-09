@@ -5637,7 +5637,28 @@
     "errRateLimited": "잠시 후 다시 시도해 주세요 (로그인 시도 제한)",
     "errNoBackend": "서버에 연결할 수 없습니다. 환경 설정을 확인해 주세요",
     "errNetwork": "네트워크 오류가 발생했습니다",
-    "errGeneric": "오류가 발생했습니다. 잠시 후 다시 시도해 주세요"
+    "errGeneric": "오류가 발생했습니다. 잠시 후 다시 시도해 주세요",
+    "oauth": {
+      "title": "Balruno 로그인",
+      "subtitle": "기존 계정으로 계속하세요. 비밀번호는 저장되지 않으며 인증은 제공자 측에서 처리됩니다.",
+      "continueWithGithub": "GitHub로 계속하기",
+      "continueWithGoogle": "Google로 계속하기",
+      "redirecting": "이동 중...",
+      "tos": "계속하면 {terms} 및 {privacy}에 동의합니다.",
+      "terms": "이용약관",
+      "privacy": "개인정보처리방침",
+      "errUnverified": "이 이메일은 다른 계정과 연결돼 있지만 새 제공자가 인증할 수 없습니다. 원래 가입한 방법으로 로그인해 주세요.",
+      "errGeneric": "로그인에 실패했습니다. 다시 시도해 주세요.",
+      "brandTagline": "게임 디자인을 위한 워크스페이스",
+      "brandSubtagline": "스프레드시트의 정밀함과 문서의 컨텍스트를 한 곳에서. 밸런싱·기획·라이브 운영까지 자연스럽게 이어집니다.",
+      "feature1Title": "시트 + 문서",
+      "feature1Body": "Notion 같은 문서와 Excel 같은 시트를 한 워크스페이스에서 묶어두고 서로 참조합니다.",
+      "feature2Title": "실시간 협업",
+      "feature2Body": "Linear 수준의 즉시 동기화 + 오프라인 캐시. 네트워크가 끊겨도 작업은 멈추지 않습니다.",
+      "feature3Title": "오픈소스",
+      "feature3Body": "MIT 프론트엔드 + AGPL 백엔드. 직접 호스팅하거나 SaaS 로 바로 시작할 수 있습니다.",
+      "switchLanguage": "언어 전환"
+    }
   },
   "invite": {
     "title": "워크스페이스 초대",
