@@ -1,53 +1,31 @@
 'use client';
 
 /**
- * Public landing — anonymous multiplayer demo (ADR 0035, 2026-05-08).
+ * Root entry — auth probe + redirect.
  *
- * Excalidraw home pattern. Three branches off the auth probe:
+ * Authenticated users jump to their last visited workspace+project
+ * (localStorage hint written by the workspace/project pages); when
+ * the hint is absent we fall back to /workspaces which auto-routes
+ * from there. Unauthenticated users are sent to /login.
  *
- *   - 'authenticated' → /workspaces (existing onboarding redirect)
- *   - 'anonymous'     → POST /api/v1/demo/anonymous-session, which
- *                       sets the balruno_session cookie bound to the
- *                       seeded demo user, then push /w/demo/p/playground
- *   - 'idle' / 'loading' → minimal loader (do not flash to a logged-in
- *                       user before the cookie probe resolves)
- *
- * The demo session uses the same cookie + JWT path as OAuth login,
- * so the project page renders without any anonymous-specific code on
- * its side. Membership checks on every other workspace/project
- * naturally reject the demo token (it's only a member of the demo
- * workspace) — no extra guards needed downstream.
- *
- * Why no marketing landing here: the user explicitly chose the
- * Excalidraw / Figma-FigJam pattern of dropping a visitor straight
- * onto a working canvas. Marketing copy and pricing live at /pricing
- * and /about; the root URL's job is "show, don't tell".
+ * The previous Excalidraw-style anonymous demo (ADR 0035) was
+ * reverted on 2026-05-08; nothing here should touch a demo session
+ * anymore.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useBackendAuthStore } from '@/stores/backendAuthStore';
-import { startAnonymousDemoSession } from '@/lib/backend';
 
 export default function Home() {
   const router = useRouter();
   const status = useBackendAuthStore((s) => s.status);
-  const setUser = useBackendAuthStore((s) => s.setUser);
-  const triggered = useRef(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'idle' || status === 'loading') return;
 
     if (status === 'authenticated') {
-      // Direct-jump to the user's last visited workspace+project so
-      // the landing flow doesn't bounce through /workspaces and
-      // /w/[slug] (each is its own server round-trip + render). The
-      // localStorage hint is written by /w/[slug] and the project
-      // page; absent (or stale beyond the freshness window) we fall
-      // back to the /workspaces hop which auto-redirects from there.
-      // Linear / Notion / Figma all do this.
       if (typeof window !== 'undefined') {
         const lastWs = window.localStorage.getItem('balruno:lastWorkspace');
         const lastProj = lastWs
@@ -62,57 +40,15 @@ export default function Home() {
       return;
     }
 
-    // status === 'anonymous'
-    if (triggered.current) return;
-    triggered.current = true;
-
-    (async () => {
-      try {
-        const session = await startAnonymousDemoSession();
-        // Reflect the just-issued cookie in the auth store so any
-        // BackendAuthBootstrap-driven UI (presence avatar, write
-        // gates) sees an authenticated principal immediately
-        // instead of waiting for a page-level /me round-trip.
-        setUser({
-          id: '00000000-0000-0000-0000-0000000d3000',
-          email: 'demo@balruno.local',
-          name: session.displayName,
-          avatarUrl: null,
-          locale: 'ko',
-        });
-        router.replace(`/${session.workspaceSlug}/projects/${session.projectSlug}`);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : '데모 세션을 시작하지 못했어요.');
-        triggered.current = false;
-      }
-    })();
-  }, [status, router, setUser]);
+    router.replace('/login');
+  }, [status, router]);
 
   return (
     <main
       className="flex min-h-screen items-center justify-center"
       style={{ background: 'var(--bg-primary)', color: 'var(--text-tertiary)' }}
     >
-      {error ? (
-        <div className="flex flex-col items-center gap-3 text-sm">
-          <p style={{ color: 'var(--text-primary)' }}>{error}</p>
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-              triggered.current = false;
-              // Re-trigger the effect by nudging a state value through router.
-              router.replace('/');
-            }}
-            className="rounded-md border px-3 py-1.5"
-            style={{ borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}
-          >
-            다시 시도
-          </button>
-        </div>
-      ) : (
-        <p className="text-sm">데모 워크스페이스 불러오는 중…</p>
-      )}
+      <p className="text-sm">불러오는 중…</p>
     </main>
   );
 }

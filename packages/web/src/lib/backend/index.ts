@@ -162,6 +162,3 @@ export type { Plan } from './billing';
 
 export { searchProject } from './search';
 export type { SearchHit } from './search';
-
-export { startAnonymousDemoSession } from './demo';
-export type { AnonymousDemoSession } from './demo';
