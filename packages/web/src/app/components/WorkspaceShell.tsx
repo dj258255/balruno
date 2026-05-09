@@ -66,6 +66,7 @@ import {
   renameNodeInTree,
   removeNodeFromTree,
   moveNodeInTree,
+  insertNodeAt,
   isDescendant,
   locateNodeParent,
   findNodeInTree,
@@ -367,6 +368,31 @@ export default function WorkspaceShell({
       ? sheets.find((s) => s.id === selection.id)
       : undefined;
   const selectedSheetId = selection?.kind === 'sheet' ? selection.id : null;
+
+  // Sidebar sheet click goes through useProjectStore.setCurrentSheet —
+  // mirror that into the local selection so the main panel actually
+  // re-renders the chosen sheet. Without this the explicit selection
+  // state above ignored every sidebar click and the sheet area kept
+  // showing whichever sheet was the default.
+  const storeCurrentSheetId = useProjectStore((s) => s.currentSheetId);
+  const storeCurrentDocId = useProjectStore((s) => s.currentDocId);
+  useEffect(() => {
+    if (storeCurrentSheetId) {
+      if (selection?.kind === 'sheet' && selection.id === storeCurrentSheetId) return;
+      if (sheets.some((s) => s.id === storeCurrentSheetId)) {
+        setSelection({ kind: 'sheet', id: storeCurrentSheetId });
+      }
+    } else if (storeCurrentDocId) {
+      if (selection?.kind === 'doc' && selection.id === storeCurrentDocId) return;
+      if (findNodeName(docTree, storeCurrentDocId) !== null) {
+        setSelection({ kind: 'doc', id: storeCurrentDocId });
+      }
+    }
+    // selection / sheets / docTree intentionally omitted — re-running on
+    // every sheets array reference change would fight the user's manual
+    // selection. Only react to the store id changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeCurrentSheetId, storeCurrentDocId]);
   const selectedDocId = selection?.kind === 'doc' ? selection.id : null;
   // Selected doc's title from the tree leaf — falls back to a
   // generic label while the broadcast for a freshly-added doc races
@@ -487,6 +513,23 @@ export default function WorkspaceShell({
         }, addLeafMeta);
         setSelection({ kind: leafType, id: leafId });
       },
+      // addAt is the parameterised counterpart used by the sidebar
+      // CustomEvent bridge. addLeaf / addFolder above stay 0-arg
+      // because they're wired to the no-context "add at root" buttons.
+      addAt: (parentId: string | null, position: number, node: TreeNode) => {
+        // Position MAX_SAFE_INTEGER from the sidebar = "append";
+        // insertNodeAt clamps to the children length internally.
+        setTree((tree) => insertNodeAt(tree, parentId, position, node));
+        const addMeta = pushTreeUndo(
+          'Tree add',
+          [{ type: 'tree.add', treeKind, parentId, position, node, baseVersion: 0, clientMsgId: '' }],
+          [{ type: 'tree.delete', treeKind, nodeId: node.id, baseVersion: 0, clientMsgId: '' }],
+        );
+        emitOp({ kind: 'tree.add', treeKind, parentId, position, node }, addMeta);
+        if (node.type === 'sheet' || node.type === 'doc') {
+          setSelection({ kind: node.type, id: node.id });
+        }
+      },
       deleteNode: (nodeId: string) => {
         const current = localProject?.[treeField] ?? [];
         const node = findNodeInTree(current, nodeId);
@@ -552,25 +595,62 @@ export default function WorkspaceShell({
   const docTreeOps = makeTreeHandlers('DOC');
 
   // Bridge for legacy store mutations re-wired in treeMutationSlice.
-  // Sidebar drag-drop on sheets / folders dispatches a CustomEvent
-  // ('balruno:tree-move') with { kind, nodeId, newParentId, newPosition };
-  // we forward it to the matching sheetTreeOps/docTreeOps.move so a
-  // single tree.move op is emitted + broadcast through the sync bridge.
+  // Sidebar mutations dispatch CustomEvents we forward to the matching
+  // sheetTreeOps / docTreeOps so a single tree.* op is emitted and
+  // broadcast through the sync bridge. Same pattern works for add /
+  // delete / rename / move — store actions stay free of React/hook
+  // context, the shell owns the actual op emit.
   useEffect(() => {
-    const handler = (raw: Event) => {
-      const e = raw as CustomEvent<{
+    const onMove = (raw: Event) => {
+      const d = (raw as CustomEvent<{
         kind: 'SHEET' | 'DOC';
         nodeId: string;
         newParentId: string | null;
         newPosition: number;
-      }>;
-      const d = e.detail;
+      }>).detail;
       if (!d) return;
       const ops = d.kind === 'DOC' ? docTreeOps : sheetTreeOps;
       ops.move(d.nodeId, d.newParentId, d.newPosition);
     };
-    window.addEventListener('balruno:tree-move', handler);
-    return () => window.removeEventListener('balruno:tree-move', handler);
+    const onAdd = (raw: Event) => {
+      const d = (raw as CustomEvent<{
+        kind: 'SHEET' | 'DOC';
+        parentId: string | null;
+        position: number;
+        node: unknown;
+      }>).detail;
+      if (!d) return;
+      const ops = d.kind === 'DOC' ? docTreeOps : sheetTreeOps;
+      // The op layer treats `node` as opaque; sidebar emits the
+      // shape (sheet leaf / group) the wire op expects.
+      ops.addAt(d.parentId, d.position, d.node as TreeNode);
+    };
+    const onDelete = (raw: Event) => {
+      const d = (raw as CustomEvent<{ kind: 'SHEET' | 'DOC'; nodeId: string }>).detail;
+      if (!d) return;
+      const ops = d.kind === 'DOC' ? docTreeOps : sheetTreeOps;
+      ops.deleteNode(d.nodeId);
+    };
+    const onRename = (raw: Event) => {
+      const d = (raw as CustomEvent<{
+        kind: 'SHEET' | 'DOC';
+        nodeId: string;
+        newName: string;
+      }>).detail;
+      if (!d) return;
+      const ops = d.kind === 'DOC' ? docTreeOps : sheetTreeOps;
+      ops.rename(d.nodeId, d.newName);
+    };
+    window.addEventListener('balruno:tree-move', onMove);
+    window.addEventListener('balruno:tree-add', onAdd);
+    window.addEventListener('balruno:tree-delete', onDelete);
+    window.addEventListener('balruno:tree-rename', onRename);
+    return () => {
+      window.removeEventListener('balruno:tree-move', onMove);
+      window.removeEventListener('balruno:tree-add', onAdd);
+      window.removeEventListener('balruno:tree-delete', onDelete);
+      window.removeEventListener('balruno:tree-rename', onRename);
+    };
   }, [sheetTreeOps, docTreeOps]);
 
   // Stage F — "Add from template" modal state. Backend mutates +

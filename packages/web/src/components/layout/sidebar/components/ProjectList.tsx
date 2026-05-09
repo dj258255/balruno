@@ -583,6 +583,12 @@ export function ProjectList({
                       }}
                       onClick={() => {
                         if (editingSheetId !== sheet.id) {
+                          // Cross-project sheet click: nudge the URL
+                          // to the target project so WorkspaceShell
+                          // re-hydrates with that project's data.
+                          if (currentProjectId !== project.id) {
+                            setCurrentProject(project.id);
+                          }
                           setCurrentSheet(sheet.id);
                         }
                       }}

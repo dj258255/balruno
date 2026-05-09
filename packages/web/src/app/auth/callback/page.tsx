@@ -16,6 +16,7 @@
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { listWorkspaces } from '@/lib/backend';
 import { useBackendAuthStore } from '@/stores/backendAuthStore';
 import { AuthShell } from '@/components/auth/AuthShell';
 
@@ -47,7 +48,42 @@ function CallbackInner() {
     // `authStatus`. 'idle' / 'loading' = still in flight.
     if (authStatus === 'authenticated') {
       const next = readPostLoginRedirect();
-      router.replace(next ?? '/workspaces');
+      if (next) {
+        router.replace(next);
+        return;
+      }
+      // Skip the /workspaces hop. Resolve the destination directly:
+      //   1. last-visited workspace+project (localStorage hint set by
+      //      the workspace and project pages) → deepest possible URL
+      //   2. last-visited workspace alone (no project hint) → /{ws}
+      //   3. backend listWorkspaces — single ws goes to /{slug}, multi
+      //      goes through the picker, zero gets created inline by the
+      //      /workspaces page's empty-state seed.
+      void (async () => {
+        const w = typeof window !== 'undefined' ? window : null;
+        const lastWs = w?.localStorage.getItem('balruno:lastWorkspace');
+        const lastProj = lastWs
+          ? w?.localStorage.getItem(`balruno:lastProject:${lastWs}`)
+          : null;
+        if (lastWs && lastProj) {
+          router.replace(`/${lastWs}/projects/${lastProj}`);
+          return;
+        }
+        if (lastWs) {
+          router.replace(`/${lastWs}`);
+          return;
+        }
+        try {
+          const list = await listWorkspaces();
+          if (list.length === 1) {
+            router.replace(`/${list[0].slug}`);
+            return;
+          }
+          router.replace('/workspaces');
+        } catch {
+          router.replace('/workspaces');
+        }
+      })();
     } else if (authStatus === 'anonymous') {
       router.replace('/login?status=error');
     }

@@ -21,10 +21,15 @@
  */
 import { toast } from 'sonner';
 import type { StoreApi } from 'zustand';
-import type { Sheet } from '@/types';
+import type { Sheet, Project } from '@/types';
 import type { SheetMetadataPatch } from '@/lib/sync/opMapper';
-import { setProjectPosition } from '@/lib/backend';
+import {
+  deleteProject as deleteProjectRest,
+  setProjectPosition,
+  updateProject as updateProjectRest,
+} from '@/lib/backend';
 import { midpoint } from '@/lib/lexorank';
+import { newId } from '@/lib/uuid';
 import type { ProjectState } from '../projectStore';
 
 type SetFn = StoreApi<ProjectState>['setState'];
@@ -37,10 +42,46 @@ interface TreeMoveEventDetail {
   newPosition: number;
 }
 
+interface TreeAddEventDetail {
+  kind: 'SHEET' | 'DOC';
+  parentId: string | null;
+  position: number;
+  node: unknown; // tree leaf or group; shape matches the on-wire op
+}
+
+interface TreeDeleteEventDetail {
+  kind: 'SHEET' | 'DOC';
+  nodeId: string;
+}
+
+interface TreeRenameEventDetail {
+  kind: 'SHEET' | 'DOC';
+  nodeId: string;
+  newName: string;
+}
+
 function emitTreeMove(detail: TreeMoveEventDetail): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(
     new CustomEvent<TreeMoveEventDetail>('balruno:tree-move', { detail }),
+  );
+}
+function emitTreeAdd(detail: TreeAddEventDetail): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<TreeAddEventDetail>('balruno:tree-add', { detail }),
+  );
+}
+function emitTreeDelete(detail: TreeDeleteEventDetail): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<TreeDeleteEventDetail>('balruno:tree-delete', { detail }),
+  );
+}
+function emitTreeRename(detail: TreeRenameEventDetail): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<TreeRenameEventDetail>('balruno:tree-rename', { detail }),
   );
 }
 
@@ -146,6 +187,120 @@ export const createTreeMutationActions = (set: SetFn, get: GetFn) => ({
   ) => {
     get().updateSheetMetadata(projectId, sheetId, updates as SheetMetadataPatch);
   }) as (projectId: string, sheetId: string, updates: Partial<Sheet>) => void,
+
+  // ── Sheet / folder tree mutations (sheet_tree.* ops) ────────────────
+
+  /**
+   * Create a new sheet under the given project (root) or folder.
+   * Emits tree.add + cell-set seed via WorkspaceShell's sheetTreeOps.
+   * Sheet metadata (rows/columns) is populated by the bridge from the
+   * default empty-sheet shape — server-canonical mode.
+   */
+  createSheet: ((projectId: string, name: string, folderId?: string) => {
+    void projectId;
+    const sheetId = newId();
+    emitTreeAdd({
+      kind: 'SHEET',
+      parentId: folderId ?? null,
+      position: Number.MAX_SAFE_INTEGER, // append; insertNodeAt clamps
+      node: { id: sheetId, type: 'sheet', name },
+    });
+    return sheetId;
+  }) as (...args: unknown[]) => string,
+
+  createFolder: ((projectId: string, name: string, parentId?: string) => {
+    void projectId;
+    const folderId = newId();
+    emitTreeAdd({
+      kind: 'SHEET',
+      parentId: parentId ?? null,
+      position: Number.MAX_SAFE_INTEGER,
+      node: { id: folderId, type: 'folder', name, children: [] },
+    });
+    return folderId;
+  }) as (...args: unknown[]) => string,
+
+  deleteSheet: ((projectId: string, sheetId: string) => {
+    void projectId;
+    emitTreeDelete({ kind: 'SHEET', nodeId: sheetId });
+  }) as (projectId: string, sheetId: string) => void,
+
+  deleteFolder: ((projectId: string, folderId: string) => {
+    void projectId;
+    emitTreeDelete({ kind: 'SHEET', nodeId: folderId });
+  }) as (projectId: string, folderId: string) => void,
+
+  // Folder rename (sheet rename uses sheet.metadata.update via the
+  // updateSheet override above — sheet leaf names live on the sheet
+  // metadata, group node names live on the tree node).
+  updateFolder: ((projectId: string, folderId: string, updates: { name?: string }) => {
+    void projectId;
+    if (typeof updates?.name === 'string' && updates.name.trim()) {
+      emitTreeRename({
+        kind: 'SHEET',
+        nodeId: folderId,
+        newName: updates.name.trim(),
+      });
+    }
+  }) as (projectId: string, folderId: string, updates: unknown) => void,
+
+  // ── Project-level mutations (REST) ──────────────────────────────────
+
+  updateProject: ((projectId: string, updates: Partial<Project> & { visibility?: unknown }) => {
+    if ('visibility' in updates) {
+      toast.error('프로젝트 가시성(Private/Teamspace) 은 곧 지원됩니다.');
+      return;
+    }
+    const patch: { name?: string; slug?: string; description?: string | null } = {};
+    if (typeof updates.name === 'string' && updates.name.trim()) patch.name = updates.name.trim();
+    if (typeof updates.description === 'string' || updates.description === null) {
+      patch.description = updates.description as string | null;
+    }
+    if (Object.keys(patch).length === 0) return;
+    void (async () => {
+      try {
+        const updated = await updateProjectRest(projectId, patch);
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? { ...p, name: updated.name, description: updated.description ?? undefined }
+              : p,
+          ),
+        }));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : '프로젝트 업데이트 실패');
+      }
+    })();
+  }) as (projectId: string, updates: Partial<Project>) => void,
+
+  deleteProject: ((projectId: string) => {
+    void (async () => {
+      try {
+        await deleteProjectRest(projectId);
+        set((state) => ({
+          projects: state.projects.filter((p) => p.id !== projectId),
+          currentProjectId:
+            state.currentProjectId === projectId ? null : state.currentProjectId,
+          currentSheetId: state.currentProjectId === projectId ? null : state.currentSheetId,
+        }));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : '프로젝트 삭제 실패');
+      }
+    })();
+  }) as (projectId: string) => void,
+
+  duplicateProject: ((projectId: string) => {
+    void projectId;
+    toast.error('프로젝트 복제는 곧 지원됩니다.');
+    return '';
+  }) as (projectId: string) => string,
+
+  duplicateSheet: ((projectId: string, sheetId: string) => {
+    void projectId;
+    void sheetId;
+    toast.error('시트 복제는 곧 지원됩니다.');
+    return '';
+  }) as (projectId: string, sheetId: string) => string,
 });
 
 export type { TreeMoveEventDetail };
