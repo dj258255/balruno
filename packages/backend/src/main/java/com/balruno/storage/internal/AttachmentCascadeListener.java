@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.storage.internal;
 
+import com.balruno.events.AvatarReplacedEvent;
 import com.balruno.events.ProjectSoftDeletedEvent;
 import com.balruno.storage.StorageService;
 import com.balruno.storage.WorkspaceStorageService;
@@ -49,6 +50,28 @@ class AttachmentCascadeListener {
         } catch (Exception e) {
             log.error("project_soft_delete cascade failed — projectId={} prefix={}",
                     event.projectId(), prefix, e);
+        }
+    }
+
+    /**
+     * Avatar orphan cleanup. The user module emits this on PATCH
+     * /me when the avatarUrl changes, and on GDPR account-delete
+     * with the per-user prefix. We accept both shapes:
+     *   - "avatars/{userId}/{hash}.{ext}" — single-blob delete
+     *   - "avatars/{userId}/"             — full per-user wipe
+     */
+    @EventListener
+    public void onAvatarReplaced(AvatarReplacedEvent event) {
+        var path = event.previousMediaPath();
+        if (path == null || path.isBlank()) return;
+        try {
+            if (path.endsWith("/")) {
+                storage.deleteByPrefix(path);
+            } else {
+                storage.delete(path);
+            }
+        } catch (Exception e) {
+            log.error("avatar cascade failed — path={}", path, e);
         }
     }
 }

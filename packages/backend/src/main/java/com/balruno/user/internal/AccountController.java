@@ -44,14 +44,11 @@ class AccountController {
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper json = new ObjectMapper();
-    private final com.balruno.storage.StorageService storage;
     private final org.springframework.context.ApplicationEventPublisher events;
 
     AccountController(JdbcTemplate jdbc,
-                      com.balruno.storage.StorageService storage,
                       org.springframework.context.ApplicationEventPublisher events) {
         this.jdbc = jdbc;
-        this.storage = storage;
         this.events = events;
     }
 
@@ -206,20 +203,21 @@ class AccountController {
                 """);
 
         // GDPR cascade — afterCommit so a rolled-back DELETE doesn't
-        // wipe the R2 blobs. Avatar prefix is user-scoped; project
-        // attachments are cascaded via the same event the project
-        // module emits (sharing the AttachmentCascadeListener).
+        // wipe the R2 blobs. Avatar prefix and project attachments are
+        // both cascaded via events; the storage module listens. Direct
+        // storage call would create a user → storage Modulith arch
+        // cycle (storage already depends on project, project on user).
         var capturedUserId = userId;
         org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
                 new org.springframework.transaction.support.TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        try {
-                            storage.deleteByPrefix("avatars/" + capturedUserId + "/");
-                        } catch (Exception e) {
-                            // Best-effort; orphan avatar blobs are benign
-                            // and a future R2 lifecycle rule sweeps them.
-                        }
+                        // Avatar wipe — encoded as a "replaced with empty"
+                        // event so storage's AttachmentCascadeListener can
+                        // call deleteByPrefix("avatars/{userId}/").
+                        events.publishEvent(
+                                new com.balruno.events.AvatarReplacedEvent(
+                                        "avatars/" + capturedUserId + "/"));
                         for (var row : projectsToCascade) {
                             var pid = (java.util.UUID) row.get("id");
                             var wid = (java.util.UUID) row.get("workspace_id");

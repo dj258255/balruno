@@ -28,17 +28,14 @@ class UserAuthServiceImpl implements UserAuthService {
     private final OAuthAccountRepository oauthRepo;
     private final WorkspaceService workspaceService;
     private final ApplicationEventPublisher events;
-    private final com.balruno.storage.StorageService storage;
 
     UserAuthServiceImpl(UserRepository userRepo, OAuthAccountRepository oauthRepo,
                         WorkspaceService workspaceService,
-                        ApplicationEventPublisher events,
-                        com.balruno.storage.StorageService storage) {
+                        ApplicationEventPublisher events) {
         this.userRepo = userRepo;
         this.oauthRepo = oauthRepo;
         this.workspaceService = workspaceService;
         this.events = events;
-        this.storage = storage;
     }
 
     @Override
@@ -186,14 +183,12 @@ class UserAuthServiceImpl implements UserAuthService {
     }
 
     /**
-     * Schedule the orphan avatar delete after the surrounding tx
-     * commits — same pattern CommentServiceImpl uses for wss + webhook
-     * fanout. A rolled-back updateProfile must not delete the old
-     * blob; failure during delete must not roll back the user mutation.
+     * Publish the orphan avatar delete request after the surrounding
+     * tx commits — storage module listens for AvatarReplacedEvent and
+     * best-effort deletes the blob. Decoupled via event so user module
+     * doesn't need a static dep on storage (Modulith arch cycle).
      */
     private void deleteAvatarBlobAfterCommit(String mediaUrl) {
-        // mediaUrl is "/media/avatars/{userId}/{hash}.{ext}" — strip
-        // the "/media/" prefix to get the StorageService key.
         var path = mediaUrl.startsWith("/media/")
                 ? mediaUrl.substring("/media/".length())
                 : mediaUrl;
@@ -203,14 +198,10 @@ class UserAuthServiceImpl implements UserAuthService {
                             @Override
                             public void afterCommit() {
                                 try {
-                                    storage.delete(path);
-                                } catch (Exception e) {
-                                    // Orphan is benign — re-upload of
-                                    // same image returns same hash so
-                                    // re-conflicts on PUT, never breaks
-                                    // the user. Worst case: 2MB R2
-                                    // leak, swept by future R2
-                                    // lifecycle rule.
+                                    events.publishEvent(
+                                            new com.balruno.events.AvatarReplacedEvent(path));
+                                } catch (Exception ignored) {
+                                    // Failure during event publish is benign.
                                 }
                             }
                         });
