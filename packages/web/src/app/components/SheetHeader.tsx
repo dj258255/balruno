@@ -1,12 +1,18 @@
 import { useTranslations } from 'next-intl';
 import type { Sheet } from '@/types';
+import PresenceIndicator from '@/components/PresenceIndicator';
 
 interface SheetHeaderProps {
   sheet: Sheet;
+  /** Drives the live-collaborators chrome on the right. Optional —
+   *  passing null hides the indicator (useful for legacy local-mode
+   *  callers that don't have a server-canonical project id). */
+  projectId?: string | null;
 }
 
 export default function SheetHeader({
   sheet,
+  projectId = null,
 }: SheetHeaderProps) {
   const t = useTranslations();
 
@@ -40,6 +46,7 @@ export default function SheetHeader({
           </p>
         </div>
       </div>
+      {projectId && <PresenceIndicator projectId={projectId} />}
     </div>
   );
 }

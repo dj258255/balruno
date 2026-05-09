@@ -376,6 +376,7 @@ export default function WorkspaceShell({
   // showing whichever sheet was the default.
   const storeCurrentSheetId = useProjectStore((s) => s.currentSheetId);
   const storeCurrentDocId = useProjectStore((s) => s.currentDocId);
+  const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
   useEffect(() => {
     if (storeCurrentSheetId) {
       if (selection?.kind === 'sheet' && selection.id === storeCurrentSheetId) return;
@@ -393,6 +394,24 @@ export default function WorkspaceShell({
     // selection. Only react to the store id changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeCurrentSheetId, storeCurrentDocId]);
+
+  // Auto-derived first-sheet selection needs to flow back into the
+  // store so SheetTabs (browser-tab pattern, reads openTabs) shows
+  // the active tab on first paint. Without this the strip stayed
+  // empty until the user explicitly clicked a sidebar item.
+  useEffect(() => {
+    if (
+      !explicitSelection &&
+      selection?.kind === 'sheet' &&
+      selection.id !== storeCurrentSheetId
+    ) {
+      setCurrentSheet(selection.id);
+    }
+    // selection.id is the only piece that matters; restricting deps
+    // keeps the effect from firing every render when sheets reference
+    // shifts but the active id is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection?.kind, selection?.id, explicitSelection, storeCurrentSheetId]);
   const selectedDocId = selection?.kind === 'doc' ? selection.id : null;
   // Selected doc's title from the tree leaf — falls back to a
   // generic label while the broadcast for a freshly-added doc races
@@ -862,7 +881,7 @@ export default function WorkspaceShell({
                 className="flex-1 flex flex-col p-3 sm:p-4 lg:p-6 pb-[140px] min-h-0 overflow-hidden relative"
               >
                 <StickerLayer containerRef={sheetContainerRef} />
-                <SheetHeader sheet={selectedSheet} />
+                <SheetHeader sheet={selectedSheet} projectId={project.id} />
                 <PmBadgeStrip sheet={selectedSheet} />
                 <ViewSwitcher projectId={project.id} sheet={selectedSheet} />
                 <div className="flex-1 min-h-0 overflow-hidden">

@@ -1727,6 +1727,7 @@
     "formResetTooltip": "Clear all inputs",
     "formRowTooltip": "Jump to this row",
     "formSelectPlaceholder": "Select…",
+    "formAutoAddToSheet": "Submissions are appended as rows to the <sheet>{sheetName}</sheet> sheet.",
     "formSessionCount": "{count} entries",
     "formShareHint": "Share this link so teammates can submit the form only.",
     "formShareLink": "Share link",
@@ -5767,7 +5768,11 @@
   },
   "presence": {
     "activeUsers": "{count} active",
-    "you": "(you)"
+    "you": "(you)",
+    "singleViewer": "{name} is here",
+    "multipleViewers": "{name} and {others} others",
+    "overflowTooltip": "{count} more",
+    "selfOnline": "Online"
   },
   "connection": {
     "idle": "Idle",
