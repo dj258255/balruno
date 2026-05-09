@@ -2,95 +2,57 @@
 package com.balruno.history.internal;
 
 import com.balruno.history.DocSnapshot;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Limit;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository
-class DocSnapshotRepository {
+/**
+ * Persistence for doc_snapshots (V27).
+ *
+ * The list path returns a {@link DocSnapshot} DTO via JPQL
+ * constructor projection — the yjs_state BYTEA isn't selected, so
+ * a 100-row history page that would otherwise pull tens of MB stays
+ * cheap. The state-bytes path is a separate native SELECT.
+ *
+ * findProjectIdForDoc reads from the documents table to resolve
+ * the project for retention / auth. The discord/audit modules don't
+ * mount documents as a JPA entity here, so a one-line native @Query
+ * is the lightest option that still avoids JdbcTemplate.
+ */
+interface DocSnapshotRepository extends JpaRepository<DocSnapshotEntity, UUID> {
 
-    private final JdbcTemplate jdbc;
+    @Query("""
+           SELECT new com.balruno.history.DocSnapshot(
+                   s.id, s.docId, s.projectId, s.actorId, s.summary, s.createdAt)
+             FROM DocSnapshotEntity s
+            WHERE s.docId = :docId
+              AND s.createdAt >= :cutoff
+            ORDER BY s.createdAt DESC
+           """)
+    List<DocSnapshot> listForDoc(@Param("docId") UUID docId,
+                                 @Param("cutoff") OffsetDateTime cutoff,
+                                 Limit limit);
 
-    DocSnapshotRepository(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
-    }
+    @Query("""
+           SELECT new com.balruno.history.DocSnapshot(
+                   s.id, s.docId, s.projectId, s.actorId, s.summary, s.createdAt)
+             FROM DocSnapshotEntity s
+            WHERE s.id = :snapshotId
+           """)
+    Optional<DocSnapshot> findMetadataById(@Param("snapshotId") UUID snapshotId);
 
-    /**
-     * Newest-first list of snapshot metadata for a doc, cut at the
-     * caller-supplied retention timestamp. Hits {@code
-     * doc_snapshots_doc_idx}.
-     */
-    List<DocSnapshot> listForDoc(UUID docId, OffsetDateTime cutoff, int limit) {
-        return jdbc.query(
-                "SELECT id, doc_id, project_id, actor_id, summary, created_at "
-              + "FROM doc_snapshots "
-              + "WHERE doc_id = ? AND created_at >= ? "
-              + "ORDER BY created_at DESC "
-              + "LIMIT ?",
-                (rs, i) -> new DocSnapshot(
-                        (UUID) rs.getObject("id"),
-                        (UUID) rs.getObject("doc_id"),
-                        (UUID) rs.getObject("project_id"),
-                        (UUID) rs.getObject("actor_id"),
-                        rs.getString("summary"),
-                        rs.getObject("created_at", OffsetDateTime.class)),
-                docId, cutoff, limit);
-    }
+    @Query(value = "SELECT yjs_state FROM doc_snapshots WHERE id = :id",
+           nativeQuery = true)
+    Optional<byte[]> findStateBytes(@Param("id") UUID id);
 
-    /**
-     * Single-row metadata + project/doc ids for the auth check.
-     * Returned without the bytes so the auth layer can decide before
-     * we pay the BYTEA pull.
-     */
-    Optional<DocSnapshot> findById(UUID snapshotId) {
-        try {
-            var row = jdbc.queryForObject(
-                    "SELECT id, doc_id, project_id, actor_id, summary, created_at "
-                  + "FROM doc_snapshots WHERE id = ?",
-                    (rs, i) -> new DocSnapshot(
-                            (UUID) rs.getObject("id"),
-                            (UUID) rs.getObject("doc_id"),
-                            (UUID) rs.getObject("project_id"),
-                            (UUID) rs.getObject("actor_id"),
-                            rs.getString("summary"),
-                            rs.getObject("created_at", OffsetDateTime.class)),
-                    snapshotId);
-            return Optional.ofNullable(row);
-        } catch (EmptyResultDataAccessException e) {
-            return Optional.empty();
-        }
-    }
-
-    Optional<byte[]> findStateBytes(UUID snapshotId) {
-        try {
-            return Optional.ofNullable(
-                    jdbc.queryForObject(
-                            "SELECT yjs_state FROM doc_snapshots WHERE id = ?",
-                            byte[].class,
-                            snapshotId));
-        } catch (EmptyResultDataAccessException e) {
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * Resolves the project_id for a doc — the page-history list
-     * needs it to look up the workspace plan + retention cutoff.
-     */
-    Optional<UUID> findProjectIdForDoc(UUID docId) {
-        try {
-            return Optional.ofNullable(
-                    jdbc.queryForObject(
-                            "SELECT project_id FROM documents WHERE id = ? AND deleted_at IS NULL",
-                            UUID.class,
-                            docId));
-        } catch (EmptyResultDataAccessException e) {
-            return Optional.empty();
-        }
-    }
+    @Query(value = "SELECT project_id FROM documents "
+                 + "WHERE id = :docId AND deleted_at IS NULL",
+           nativeQuery = true)
+    Optional<UUID> findProjectIdForDoc(@Param("docId") UUID docId);
 }

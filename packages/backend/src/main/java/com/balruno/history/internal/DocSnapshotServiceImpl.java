@@ -8,6 +8,7 @@ import com.balruno.project.ProjectService;
 import com.balruno.workspace.WorkspaceLimits;
 import com.balruno.workspace.WorkspaceRole;
 import com.balruno.workspace.WorkspaceService;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,12 +39,12 @@ class DocSnapshotServiceImpl implements DocSnapshotService {
         var projectId = repo.findProjectIdForDoc(docId).orElse(null);
         if (projectId == null) return Collections.emptyList();
         var cutoff = authorisedCutoff(projectId, callerUserId);
-        return repo.listForDoc(docId, cutoff, clampLimit(limit));
+        return repo.listForDoc(docId, cutoff, Limit.of(clampLimit(limit)));
     }
 
     @Override
     public Optional<byte[]> readState(UUID snapshotId, UUID callerUserId) {
-        var meta = repo.findById(snapshotId).orElse(null);
+        var meta = repo.findMetadataById(snapshotId).orElse(null);
         if (meta == null) return Optional.empty();
         // Auth check before pulling the BYTEA — saves a wasted read on
         // a stranger probing the snapshot id.
