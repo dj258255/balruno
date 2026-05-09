@@ -20,6 +20,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Bell, Loader2, Mail, Trash2, ShieldCheck, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
   type NotificationPreference,
   type DigestFrequency,
@@ -35,11 +36,11 @@ import {
   isWebPushSupported,
 } from '@/lib/notification/webpush';
 
-const DIGEST_OPTIONS: Array<{ value: DigestFrequency; label: string }> = [
-  { value: 'instant', label: '즉시 (이벤트마다 1통)' },
-  { value: 'daily', label: '하루 1통 요약' },
-  { value: 'weekly', label: '주 1통 요약' },
-  { value: 'off', label: '이메일 끔' },
+const DIGEST_KEYS: Array<{ value: DigestFrequency; key: string }> = [
+  { value: 'instant', key: 'digestInstant' },
+  { value: 'daily', key: 'digestDaily' },
+  { value: 'weekly', key: 'digestWeekly' },
+  { value: 'off', key: 'digestOff' },
 ];
 
 interface NotificationSettingsClientProps {
@@ -47,6 +48,7 @@ interface NotificationSettingsClientProps {
 }
 
 export default function NotificationSettingsClient({ onClose }: NotificationSettingsClientProps = {}) {
+  const t = useTranslations('notificationSettings');
   const isModal = Boolean(onClose);
   const [pref, setPref] = useState<NotificationPreference | null>(null);
   const [subs, setSubs] = useState<BackendWebPushSubscription[] | null>(null);
@@ -62,12 +64,12 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
         setSubs(s);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : '로드 실패');
+        if (!cancelled) setError(e instanceof Error ? e.message : t('loadFailed'));
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const update = async (patch: Partial<NotificationPreference>) => {
     if (saving) return;
@@ -76,7 +78,7 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
       const next = await updateNotificationPreference(patch);
       setPref(next);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : '저장 실패');
+      toast.error(e instanceof Error ? e.message : t('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -87,35 +89,35 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
       try {
         const ok = await enableWebPush();
         if (!ok) {
-          toast.error('브라우저 알림 권한이 필요합니다');
+          toast.error(t('permissionRequired'));
           return;
         }
         const fresh = await listWebPushSubscriptions();
         setSubs(fresh);
         await update({ pushOnMention: true });
-        toast.success('이 기기에서 푸시 알림을 받습니다');
+        toast.success(t('pushEnabled'));
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : '구독 실패');
+        toast.error(e instanceof Error ? e.message : t('subscribeFailed'));
       }
     } else {
       try {
         await disableWebPush();
         await update({ pushOnMention: false });
-        toast.success('이 기기 구독 해제');
+        toast.success(t('pushDisabled'));
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : '해제 실패');
+        toast.error(e instanceof Error ? e.message : t('unsubscribeFailed'));
       }
     }
   };
 
   const removeSubscription = async (sub: BackendWebPushSubscription) => {
-    if (!window.confirm('이 기기의 푸시 구독을 삭제할까요?')) return;
+    if (!window.confirm(t('confirmDeleteDevice'))) return;
     try {
       await deleteWebPushSubscription(sub.id);
       setSubs((prev) => prev?.filter((s) => s.id !== sub.id) ?? prev);
-      toast.success('삭제됨');
+      toast.success(t('deviceDeleted'));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : '삭제 실패');
+      toast.error(e instanceof Error ? e.message : t('deleteDeviceFailed'));
     }
   };
 
@@ -143,10 +145,10 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
     <div className="space-y-6">
       <header>
         <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-          알림 설정
+          {t('title')}
         </h1>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          @멘션 / 답글에 대한 알림 채널을 선택합니다. 이메일은 자체호스트 시 SMTP 설정이 필요하며, Web Push 는 브라우저 표준 (VAPID) 으로 영구 무료입니다.
+          {t('subtitle')}
         </p>
       </header>
 
@@ -155,21 +157,21 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
         style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
       >
         <h2 className="mb-3 flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-          <Mail className="h-4 w-4" /> 이메일
+          <Mail className="h-4 w-4" /> {t('emailSection')}
         </h2>
         <Toggle
-          label="@멘션을 받았을 때"
+          label={t('emailMention')}
           checked={pref.emailOnMention}
           onChange={(v) => update({ emailOnMention: v })}
         />
         <Toggle
-          label="내 코멘트에 답글이 달렸을 때"
+          label={t('emailReply')}
           checked={pref.emailOnCommentReply}
           onChange={(v) => update({ emailOnCommentReply: v })}
         />
         <div className="mt-4">
           <label className="mb-2 block text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            발송 빈도
+            {t('frequency')}
           </label>
           <select
             value={pref.digestFrequency}
@@ -177,8 +179,8 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
             className="w-full rounded border px-3 py-2 text-sm"
             style={{ borderColor: 'var(--border-primary)', background: 'transparent', color: 'var(--text-primary)' }}
           >
-            {DIGEST_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+            {DIGEST_KEYS.map((o) => (
+              <option key={o.value} value={o.value}>{t(o.key)}</option>
             ))}
           </select>
         </div>
@@ -189,22 +191,22 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
         style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
       >
         <h2 className="mb-3 flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-          <Bell className="h-4 w-4" /> 브라우저 푸시
+          <Bell className="h-4 w-4" /> {t('pushSection')}
         </h2>
         {!supported && (
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            이 브라우저는 Web Push 를 지원하지 않습니다.
+            {t('pushUnsupported')}
           </p>
         )}
         {supported && (
           <>
             <Toggle
-              label="@멘션을 받았을 때 (이 기기)"
+              label={t('pushMention')}
               checked={pref.pushOnMention}
               onChange={togglePush}
             />
             <Toggle
-              label="내 코멘트에 답글이 달렸을 때 (이 기기)"
+              label={t('pushReply')}
               checked={pref.pushOnCommentReply}
               onChange={(v) => update({ pushOnCommentReply: v })}
             />
@@ -212,7 +214,7 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
             {subs.length > 0 && (
               <div className="mt-4">
                 <p className="mb-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  구독 중인 기기 ({subs.length})
+                  {t('subscribedDevices', { count: subs.length })}
                 </p>
                 <ul className="space-y-1.5">
                   {subs.map((sub) => (
@@ -232,7 +234,7 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
                         type="button"
                         onClick={() => removeSubscription(sub)}
                         className="rounded p-1 hover:bg-red-50 dark:hover:bg-red-950/30"
-                        title="삭제"
+                        title={t('deleteDevice')}
                       >
                         <Trash2 className="h-3 w-3 text-red-600" />
                       </button>

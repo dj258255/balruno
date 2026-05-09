@@ -16,6 +16,7 @@ import { useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Trash2, AlertTriangle, Loader2, X, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { deleteMyAccount, downloadDataExport } from '@/lib/backend';
 
 interface AccountSettingsClientProps {
@@ -28,6 +29,7 @@ interface AccountSettingsClientProps {
 }
 
 export default function AccountSettingsClient({ onClose }: AccountSettingsClientProps = {}) {
+  const t = useTranslations('accountSettings');
   const [deleting, setDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -38,9 +40,9 @@ export default function AccountSettingsClient({ onClose }: AccountSettingsClient
     setExporting(true);
     try {
       await downloadDataExport();
-      toast.success('내 데이터 JSON 을 내려받았습니다.');
+      toast.success(t('exportSuccess'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '데이터 내려받기 실패');
+      toast.error(err instanceof Error ? err.message : t('exportFailed'));
     } finally {
       setExporting(false);
     }
@@ -51,10 +53,10 @@ export default function AccountSettingsClient({ onClose }: AccountSettingsClient
     setDeleting(true);
     try {
       await deleteMyAccount();
-      toast.success('계정이 삭제되었습니다.');
+      toast.success(t('deleteSuccess'));
       window.location.href = '/login';
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '계정 삭제 실패');
+      toast.error(err instanceof Error ? err.message : t('deleteFailed'));
     } finally {
       setDeleting(false);
     }
@@ -64,11 +66,10 @@ export default function AccountSettingsClient({ onClose }: AccountSettingsClient
     <div className="space-y-6">
       <header>
         <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-          계정
+          {t('title')}
         </h1>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          계정 삭제는 soft-delete 입니다. 다른 멤버가 있는 워크스페이스는
-          먼저 소유자 이양이 필요합니다.
+          {t('subtitle')}
         </p>
       </header>
 
@@ -78,19 +79,19 @@ export default function AccountSettingsClient({ onClose }: AccountSettingsClient
       >
         <h2 className="mb-2 flex items-center gap-2 text-sm font-medium" style={{ color: '#dc2626' }}>
           <AlertTriangle className="h-4 w-4" />
-          계정 삭제 (위험)
+          {t('dangerHeading')}
         </h2>
         <p className="mb-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          본인 user 행을 soft-delete 하고, 본인이 *유일한 owner* 인 workspace 도 함께 soft-delete 합니다. 다른 멤버가 있는 workspace 는 먼저 owner 권한을 이양해야 합니다.
+          {t('dangerExplain')}
         </p>
         <p className="mb-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          확인을 위해 아래에 <code>DELETE</code> 를 입력하세요.
+          {t('confirmTypeDelete')}
         </p>
         <input
           type="text"
           value={confirmText}
           onChange={(e) => setConfirmText(e.target.value)}
-          placeholder="DELETE"
+          placeholder={t('deletePlaceholder')}
           className="mb-2 w-full rounded border px-3 py-2 text-xs"
           style={{ borderColor: 'var(--border-primary)', background: 'transparent', color: 'var(--text-primary)' }}
         />
@@ -105,7 +106,7 @@ export default function AccountSettingsClient({ onClose }: AccountSettingsClient
           ) : (
             <Trash2 className="h-3 w-3" />
           )}
-          계정 삭제
+          {t('deleteButton')}
         </button>
       </section>
 
@@ -121,7 +122,7 @@ export default function AccountSettingsClient({ onClose }: AccountSettingsClient
           style={{ color: 'var(--text-tertiary)' }}
         >
           {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-          내 데이터 내려받기 (GDPR)
+          {t('exportLink')}
         </button>
       </div>
     </div>,

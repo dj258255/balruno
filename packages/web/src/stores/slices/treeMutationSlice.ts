@@ -21,6 +21,8 @@
  */
 import { toast } from 'sonner';
 import type { StoreApi } from 'zustand';
+import type { Sheet } from '@/types';
+import type { SheetMetadataPatch } from '@/lib/sync/opMapper';
 import type { ProjectState } from '../projectStore';
 
 type SetFn = StoreApi<ProjectState>['setState'];
@@ -88,6 +90,19 @@ export const createTreeMutationActions = (_set: SetFn, get: GetFn) => ({
   reorderProjects: ((..._args: unknown[]) => {
     toast.error('프로젝트 순서 변경은 곧 지원됩니다.');
   }) as (...args: unknown[]) => void,
+
+  // Sheet metadata mutations (kind, exportClassName, name, icon, view
+  // settings...). The legacy `updateSheet(projectId, sheetId, patch)` API
+  // is preserved so the sidebar context menus don't have to know about
+  // the new shape; we just forward to sheetSlice.updateSheetMetadata,
+  // which already emits a sheet.metadata.update op via emitOp.
+  updateSheet: ((
+    projectId: string,
+    sheetId: string,
+    updates: Partial<Sheet>,
+  ) => {
+    get().updateSheetMetadata(projectId, sheetId, updates as SheetMetadataPatch);
+  }) as (projectId: string, sheetId: string, updates: Partial<Sheet>) => void,
 });
 
 export type { TreeMoveEventDetail };

@@ -5932,5 +5932,47 @@
       "discord": "Discord",
       "pricing": "Pricing"
     }
+  },
+  "notificationSettings": {
+    "title": "Notifications",
+    "subtitle": "Pick channels for @mentions and replies. Email needs SMTP when self-hosting; Web Push is browser-standard (VAPID) and free forever.",
+    "emailSection": "Email",
+    "emailMention": "When I'm @mentioned",
+    "emailReply": "When someone replies to my comment",
+    "frequency": "Delivery frequency",
+    "digestInstant": "Instant (one per event)",
+    "digestDaily": "Daily digest",
+    "digestWeekly": "Weekly digest",
+    "digestOff": "Email off",
+    "pushSection": "Browser push",
+    "pushUnsupported": "This browser does not support Web Push.",
+    "pushMention": "When I'm @mentioned (this device)",
+    "pushReply": "When someone replies to my comment (this device)",
+    "subscribedDevices": "Subscribed devices ({count})",
+    "deleteDevice": "Delete",
+    "loadFailed": "Failed to load",
+    "saveFailed": "Failed to save",
+    "permissionRequired": "Browser notification permission is required",
+    "pushEnabled": "Push notifications enabled on this device",
+    "subscribeFailed": "Failed to subscribe",
+    "pushDisabled": "Unsubscribed from this device",
+    "unsubscribeFailed": "Failed to unsubscribe",
+    "confirmDeleteDevice": "Delete this device's push subscription?",
+    "deviceDeleted": "Deleted",
+    "deleteDeviceFailed": "Failed to delete"
+  },
+  "accountSettings": {
+    "title": "Account",
+    "subtitle": "Account deletion is a soft-delete. Workspaces with other members require owner transfer first.",
+    "dangerHeading": "Delete account (dangerous)",
+    "dangerExplain": "Soft-deletes your user row and any workspace where you are the only owner. Workspaces with other members need owner transfer first.",
+    "confirmTypeDelete": "Type DELETE below to confirm.",
+    "deletePlaceholder": "DELETE",
+    "deleteButton": "Delete account",
+    "exportLink": "Download my data (GDPR)",
+    "exportSuccess": "Downloaded your data as JSON.",
+    "exportFailed": "Data download failed",
+    "deleteSuccess": "Account deleted.",
+    "deleteFailed": "Account deletion failed"
   }
 }

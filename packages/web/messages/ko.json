@@ -5932,5 +5932,47 @@
       "discord": "Discord",
       "pricing": "요금제"
     }
+  },
+  "notificationSettings": {
+    "title": "알림 설정",
+    "subtitle": "@멘션 / 답글에 대한 알림 채널을 선택합니다. 이메일은 자체호스트 시 SMTP 설정이 필요하며, Web Push 는 브라우저 표준(VAPID) 으로 영구 무료입니다.",
+    "emailSection": "이메일",
+    "emailMention": "@멘션을 받았을 때",
+    "emailReply": "내 코멘트에 답글이 달렸을 때",
+    "frequency": "발송 빈도",
+    "digestInstant": "즉시 (이벤트마다 1통)",
+    "digestDaily": "하루 1통 요약",
+    "digestWeekly": "주 1통 요약",
+    "digestOff": "이메일 끔",
+    "pushSection": "브라우저 푸시",
+    "pushUnsupported": "이 브라우저는 Web Push 를 지원하지 않습니다.",
+    "pushMention": "@멘션을 받았을 때 (이 기기)",
+    "pushReply": "내 코멘트에 답글이 달렸을 때 (이 기기)",
+    "subscribedDevices": "구독 중인 기기 ({count})",
+    "deleteDevice": "삭제",
+    "loadFailed": "로드 실패",
+    "saveFailed": "저장 실패",
+    "permissionRequired": "브라우저 알림 권한이 필요합니다",
+    "pushEnabled": "이 기기에서 푸시 알림을 받습니다",
+    "subscribeFailed": "구독 실패",
+    "pushDisabled": "이 기기 구독 해제됨",
+    "unsubscribeFailed": "해제 실패",
+    "confirmDeleteDevice": "이 기기의 푸시 구독을 삭제할까요?",
+    "deviceDeleted": "삭제됨",
+    "deleteDeviceFailed": "삭제 실패"
+  },
+  "accountSettings": {
+    "title": "계정",
+    "subtitle": "계정 삭제는 soft-delete 입니다. 다른 멤버가 있는 워크스페이스는 먼저 소유자 이양이 필요합니다.",
+    "dangerHeading": "계정 삭제 (위험)",
+    "dangerExplain": "본인 user 행을 soft-delete 하고, 본인이 유일한 owner 인 workspace 도 함께 soft-delete 합니다. 다른 멤버가 있는 workspace 는 먼저 owner 권한을 이양해야 합니다.",
+    "confirmTypeDelete": "확인을 위해 아래에 DELETE 를 입력하세요.",
+    "deletePlaceholder": "DELETE",
+    "deleteButton": "계정 삭제",
+    "exportLink": "내 데이터 내려받기 (GDPR)",
+    "exportSuccess": "내 데이터 JSON 을 내려받았습니다.",
+    "exportFailed": "데이터 내려받기 실패",
+    "deleteSuccess": "계정이 삭제되었습니다.",
+    "deleteFailed": "계정 삭제 실패"
   }
 }
