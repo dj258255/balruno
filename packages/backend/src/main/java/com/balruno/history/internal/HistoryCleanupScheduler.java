@@ -3,7 +3,6 @@ package com.balruno.history.internal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,14 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link DocSnapshotServiceImpl}; this scheduler is a disk-protection
  * net so a noisy workspace doesn't bloat the table indefinitely.
  *
- * Runs at 03:00 UTC — same window
- * {@link com.balruno.notification.internal.DigestScheduler} uses, so
- * Postgres locks / vacuum windows align.
- *
- * Splits into two statements rather than one TRUNCATE-style sweep so
- * the two indexes ({@code cell_history_created_idx} /
- * {@code doc_snapshots_created_idx}) are hit by a precise predicate
- * — Postgres can use them as range scans.
+ * Runs at 03:00 UTC. Both DELETEs run as native @Modifying queries
+ * on the matching repositories — they hit the
+ * {@code *_created_idx} range scans and stay off JdbcTemplate.
  */
 @Component
 class HistoryCleanupScheduler {
@@ -38,22 +32,20 @@ class HistoryCleanupScheduler {
      */
     private static final int MAX_RETENTION_DAYS = 180;
 
-    private final JdbcTemplate jdbc;
+    private final HistoryRepository history;
+    private final DocSnapshotRepository snapshots;
 
-    HistoryCleanupScheduler(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    HistoryCleanupScheduler(HistoryRepository history, DocSnapshotRepository snapshots) {
+        this.history = history;
+        this.snapshots = snapshots;
     }
 
     @Scheduled(cron = "0 0 3 * * *", zone = "UTC")
     @Transactional
     public void prune() {
         try {
-            var cellRows = jdbc.update(
-                    "DELETE FROM cell_history WHERE created_at < now() - make_interval(days => ?)",
-                    MAX_RETENTION_DAYS);
-            var snapshotRows = jdbc.update(
-                    "DELETE FROM doc_snapshots WHERE created_at < now() - make_interval(days => ?)",
-                    MAX_RETENTION_DAYS);
+            var cellRows = history.pruneOlderThan(MAX_RETENTION_DAYS);
+            var snapshotRows = snapshots.pruneOlderThan(MAX_RETENTION_DAYS);
             if (cellRows > 0 || snapshotRows > 0) {
                 log.info("history cleanup pruned cell_history={} doc_snapshots={}",
                         cellRows, snapshotRows);

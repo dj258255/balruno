@@ -4,6 +4,7 @@ package com.balruno.history.internal;
 import com.balruno.history.DocSnapshot;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -55,4 +56,10 @@ interface DocSnapshotRepository extends JpaRepository<DocSnapshotEntity, UUID> {
                  + "WHERE id = :docId AND deleted_at IS NULL",
            nativeQuery = true)
     Optional<UUID> findProjectIdForDoc(@Param("docId") UUID docId);
+
+    @Modifying
+    @Query(value = "DELETE FROM doc_snapshots "
+                 + " WHERE created_at < now() - make_interval(days => :days)",
+           nativeQuery = true)
+    int pruneOlderThan(@Param("days") int days);
 }

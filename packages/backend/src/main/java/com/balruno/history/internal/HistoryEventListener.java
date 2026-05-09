@@ -2,7 +2,6 @@
 package com.balruno.history.internal;
 
 import com.balruno.events.SyncOpProcessedEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -23,9 +22,6 @@ class HistoryEventListener {
     private static final Logger log = LoggerFactory.getLogger(HistoryEventListener.class);
 
     private final HistoryRepository repo;
-    // Same Spring Boot 4 ObjectMapper trap as HistoryRepository — see
-    // memory project_sb4_abstractions.
-    private final ObjectMapper mapper = new ObjectMapper();
 
     HistoryEventListener(HistoryRepository repo) {
         this.repo = repo;
@@ -34,18 +30,15 @@ class HistoryEventListener {
     @EventListener
     public void on(SyncOpProcessedEvent event) {
         try {
-            var payloadJson = event.payload() == null
-                    ? null
-                    : mapper.writeValueAsString(event.payload());
-            repo.insert(
+            repo.save(new HistoryEntryEntity(
                     event.projectId(),
                     event.sheetId(),
                     event.rowId(),
                     event.columnId(),
                     event.actorUserId(),
                     event.action(),
-                    payloadJson);
-        } catch (RuntimeException | com.fasterxml.jackson.core.JsonProcessingException e) {
+                    event.payload()));
+        } catch (RuntimeException e) {
             // Swallow — best effort. cell_history is a side-channel
             // for the user's Activity tab; missing rows aren't data
             // loss for the actual sheet content.

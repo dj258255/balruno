@@ -8,6 +8,7 @@ import com.balruno.project.ProjectService;
 import com.balruno.workspace.WorkspaceLimits;
 import com.balruno.workspace.WorkspaceRole;
 import com.balruno.workspace.WorkspaceService;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,14 +34,14 @@ class HistoryServiceImpl implements HistoryService {
     public List<HistoryEntry> listForRow(UUID projectId, UUID sheetId, UUID rowId,
                                          UUID callerUserId, int limit) {
         var cutoff = authorisedCutoff(projectId, callerUserId);
-        return repo.listForRow(projectId, sheetId, rowId, cutoff, clampLimit(limit));
+        return repo.listForRow(projectId, sheetId, rowId, cutoff, Limit.of(clampLimit(limit)));
     }
 
     @Override
     public List<HistoryEntry> listForSheet(UUID projectId, UUID sheetId,
                                            UUID callerUserId, int limit) {
         var cutoff = authorisedCutoff(projectId, callerUserId);
-        return repo.listForSheet(projectId, sheetId, cutoff, clampLimit(limit));
+        return repo.listForSheet(projectId, sheetId, cutoff, Limit.of(clampLimit(limit)));
     }
 
     /**
