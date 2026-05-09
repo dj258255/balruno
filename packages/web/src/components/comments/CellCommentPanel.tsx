@@ -32,6 +32,7 @@ import {
 } from '@/lib/backend';
 import { useAuthStore } from '@/stores/authStore';
 import { useProjectStore } from '@/stores/projectStore';
+import { CommentBody } from './CommentBody';
 import MentionEditor, { type MentionEditorHandle } from './MentionEditor';
 
 interface CellCommentPanelProps {
@@ -315,9 +316,12 @@ function CommentItem({ c, isMe, onResolve, onDelete, onReply, isReplying }: Comm
         <span className="font-mono">{c.authorUserId.slice(0, 8)}</span>
         <span>{new Date(c.createdAt).toLocaleString()}</span>
       </div>
-      <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
-        {extractPlainText(c.bodyJson)}
-      </p>
+      <CommentBody
+        body={c.bodyJson}
+        className="text-sm"
+        style={{ color: 'var(--text-primary)' }}
+        fallback={<span style={{ color: 'var(--text-tertiary)' }}>(내용 없음)</span>}
+      />
       <div className="mt-2 flex items-center gap-2">
         <button
           type="button"

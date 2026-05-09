@@ -309,6 +309,8 @@ const MentionList = forwardRef<MentionListHandle, MentionListProps>(function Men
     return (
       <div
         className="rounded-md border px-3 py-2 text-xs shadow-lg"
+        role="status"
+        aria-live="polite"
         style={{
           background: 'var(--bg-primary)',
           borderColor: 'var(--border-primary)',
@@ -323,15 +325,22 @@ const MentionList = forwardRef<MentionListHandle, MentionListProps>(function Men
   return (
     <ul
       className="max-h-64 min-w-[220px] overflow-y-auto rounded-md border py-1 shadow-lg"
+      role="listbox"
+      aria-label="멤버 멘션"
+      aria-live="polite"
+      aria-activedescendant={`mention-opt-${items[selected]?.id ?? ''}`}
       style={{
         background: 'var(--bg-primary)',
         borderColor: 'var(--border-primary)',
       }}
     >
       {items.map((item, idx) => (
-        <li key={item.id}>
+        <li key={item.id} role="presentation">
           <button
             type="button"
+            id={`mention-opt-${item.id}`}
+            role="option"
+            aria-selected={idx === selected}
             onMouseEnter={() => setSelected(idx)}
             onClick={() => pick(idx)}
             className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm"

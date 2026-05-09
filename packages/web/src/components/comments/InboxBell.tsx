@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Bell } from 'lucide-react';
 
 import { listInbox, type BackendComment } from '@/lib/backend';
+import { CommentBody } from './CommentBody';
 
 const POLL_MS = 60_000;
 
@@ -123,12 +124,11 @@ export function InboxBell() {
                     <span className="font-mono">{c.authorUserId.slice(0, 8)}</span>
                     <span>{new Date(c.createdAt).toLocaleString()}</span>
                   </div>
-                  <p
+                  <CommentBody
+                    body={c.bodyJson}
                     className="line-clamp-2 text-sm"
                     style={{ color: 'var(--text-primary)' }}
-                  >
-                    {extractPlainText(c.bodyJson)}
-                  </p>
+                  />
                 </li>
               ))}
             </ul>
@@ -137,29 +137,4 @@ export function InboxBell() {
       )}
     </div>
   );
-}
-
-function extractPlainText(body: unknown): string {
-  if (!body || typeof body !== 'object') return '';
-  const out: string[] = [];
-  walk(body, out);
-  return out.join(' ').trim();
-}
-
-function walk(node: unknown, out: string[]): void {
-  if (!node || typeof node !== 'object') return;
-  const obj = node as { type?: string; text?: unknown; attrs?: { label?: unknown; id?: unknown }; content?: unknown };
-  if (obj.type === 'text' && typeof obj.text === 'string') {
-    out.push(obj.text);
-  } else if (obj.type === 'mention') {
-    const label = typeof obj.attrs?.label === 'string'
-      ? obj.attrs.label
-      : typeof obj.attrs?.id === 'string'
-        ? obj.attrs.id
-        : '';
-    if (label) out.push(`@${label}`);
-  }
-  if (Array.isArray(obj.content)) {
-    for (const child of obj.content) walk(child, out);
-  }
 }

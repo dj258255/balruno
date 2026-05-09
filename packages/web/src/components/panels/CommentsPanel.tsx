@@ -25,6 +25,7 @@ import {
 } from '@/lib/backend';
 import { useProjectStore } from '@/stores/projectStore';
 import { useAuthStore } from '@/stores/authStore';
+import { CommentBody } from '@/components/comments/CommentBody';
 
 interface CommentsPanelProps {
   onClose?: () => void;
@@ -215,9 +216,12 @@ export default function CommentsPanel({ onClose }: CommentsPanelProps) {
                     </span>
                     <span>{relativeTime(c.createdAt)}</span>
                   </div>
-                  <p className="line-clamp-2 text-sm" style={{ color: 'var(--text-primary)' }}>
-                    {extractPlainText(c.bodyJson) || <span style={{ color: 'var(--text-tertiary)' }}>(내용 없음)</span>}
-                  </p>
+                  <CommentBody
+                    body={c.bodyJson}
+                    className="line-clamp-2 text-sm"
+                    style={{ color: 'var(--text-primary)' }}
+                    fallback={<span style={{ color: 'var(--text-tertiary)' }}>(내용 없음)</span>}
+                  />
                 </button>
               </li>
             ))}
@@ -304,31 +308,6 @@ function bodyMentionsUser(body: unknown, userId: string): boolean {
     }
   }
   return false;
-}
-
-function extractPlainText(body: unknown): string {
-  if (!body || typeof body !== 'object') return '';
-  const out: string[] = [];
-  walkText(body, out);
-  return out.join(' ').trim();
-}
-
-function walkText(node: unknown, out: string[]): void {
-  if (!node || typeof node !== 'object') return;
-  const obj = node as { type?: string; text?: unknown; attrs?: { label?: unknown; id?: unknown }; content?: unknown };
-  if (obj.type === 'text' && typeof obj.text === 'string') {
-    out.push(obj.text);
-  } else if (obj.type === 'mention') {
-    const label = typeof obj.attrs?.label === 'string'
-      ? obj.attrs.label
-      : typeof obj.attrs?.id === 'string'
-        ? obj.attrs.id
-        : '';
-    if (label) out.push(`@${label}`);
-  }
-  if (Array.isArray(obj.content)) {
-    for (const child of obj.content) walkText(child, out);
-  }
 }
 
 function relativeTime(iso: string): string {
