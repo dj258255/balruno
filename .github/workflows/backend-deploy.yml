@@ -221,14 +221,17 @@ jobs:
 
       - name: Smoke-test via Cloudflare
         run: |
+          # Probe readiness specifically (not the combined /actuator/health)
+          # so the smoke test fails when liveness is OK but readiness is
+          # not — the exact distinction the cutover step relied on. ADR 0044.
           for i in $(seq 1 12); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' https://api.balruno.com/actuator/health || true)
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://api.balruno.com/actuator/health/readiness || true)
             if [ "$code" = "200" ]; then
-              echo "api.balruno.com -> 200 OK after ${i} retries"
+              echo "api.balruno.com /actuator/health/readiness -> 200 after ${i} retries"
               exit 0
             fi
             echo "  retry ${i}/12 — got '${code}', waiting 5s"
             sleep 5
           done
-          echo "ERROR: api.balruno.com never returned 200"
+          echo "ERROR: api.balruno.com /actuator/health/readiness never returned 200"
           exit 1
