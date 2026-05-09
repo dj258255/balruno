@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,34 +20,25 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * Self-service GDPR endpoints (right to be forgotten + data
- * portability).
+ * GDPR endpoints — Article 20 export + Article 17 delete.
  *
- *   GET    /v1/me/export-data         — JSON dump of everything keyed
- *                                       to the caller's user_id
- *   DELETE /v1/me/account?confirm=... — soft-delete the user. The
- *                                       owner-of-only-workspace case
- *                                       returns 409 with a guard.
- *
- * Soft-delete semantics: rows in workspaces / projects / comments
- * stay (other members still own them) but the user row gets
- * {@code deleted_at} so OAuth login is rejected and the email is
- * stripped from member listings. Cascade hard-delete is *avoided*
- * for the same reason GitHub keeps "ghost" attribution — orphaning
- * other users' work is worse than one nullified row.
+ * The actual SQL lives in {@link UserAccountRepository}; this class
+ * is the route + auth layer only. Kept thin so the GDPR-critical
+ * confirm-by-typing flow + ownership-blocker rules sit in plain
+ * sight, not buried under JDBC plumbing.
  */
 @RestController
 @Tag(name = "Account")
 @SecurityRequirement(name = "bearerAuth")
 class AccountController {
 
-    private final JdbcTemplate jdbc;
+    private final UserAccountRepository repo;
     private final ObjectMapper json = new ObjectMapper();
     private final org.springframework.context.ApplicationEventPublisher events;
 
-    AccountController(JdbcTemplate jdbc,
+    AccountController(UserAccountRepository repo,
                       org.springframework.context.ApplicationEventPublisher events) {
-        this.jdbc = jdbc;
+        this.repo = repo;
         this.events = events;
     }
 
@@ -60,69 +50,26 @@ class AccountController {
         root.put("exportedAt", java.time.OffsetDateTime.now().toString());
         root.put("userId", userId.toString());
 
-        // user row (sanitised — no internal flags)
-        var userRows = jdbc.queryForList(
-                "SELECT id, email, name, avatar_url, locale, created_at "
-              + "FROM users WHERE id = ? AND deleted_at IS NULL",
-                userId);
+        var userRows = repo.userRow(userId);
         root.set("user", json.valueToTree(userRows.isEmpty() ? null : userRows.get(0)));
 
-        // memberships
         ArrayNode memberships = root.putArray("memberships");
-        for (var m : jdbc.queryForList(
-                "SELECT workspace_id, role, created_at FROM workspace_members WHERE user_id = ?",
-                userId)) {
-            memberships.add(json.valueToTree(m));
-        }
+        for (var m : repo.memberships(userId)) memberships.add(json.valueToTree(m));
 
-        // workspaces the user owns or is admin of
         ArrayNode workspaces = root.putArray("workspaces");
-        for (var w : jdbc.queryForList(
-                "SELECT w.id, w.slug, w.name, w.created_at "
-              + "FROM workspaces w JOIN workspace_members m ON m.workspace_id = w.id "
-              + "WHERE m.user_id = ? AND w.deleted_at IS NULL",
-                userId)) {
-            workspaces.add(json.valueToTree(w));
-        }
+        for (var w : repo.workspacesForUser(userId)) workspaces.add(json.valueToTree(w));
 
-        // projects in those workspaces
         ArrayNode projects = root.putArray("projects");
-        for (var p : jdbc.queryForList(
-                """
-                SELECT p.id, p.workspace_id, p.slug, p.name, p.description,
-                       p.data, p.sheet_tree, p.doc_tree,
-                       p.data_version, p.sheet_tree_version, p.doc_tree_version,
-                       p.created_at, p.updated_at
-                FROM projects p
-                JOIN workspace_members m ON m.workspace_id = p.workspace_id
-                WHERE m.user_id = ? AND p.deleted_at IS NULL
-                """,
-                userId)) {
-            projects.add(json.valueToTree(p));
-        }
+        for (var p : repo.projectsForUser(userId)) projects.add(json.valueToTree(p));
 
-        // comments authored by the user
         ArrayNode comments = root.putArray("comments");
-        for (var c : jdbc.queryForList(
-                "SELECT id, project_id, scope_kind, body_json, created_at, updated_at "
-              + "FROM comments WHERE author_user_id = ? AND deleted_at IS NULL",
-                userId)) {
-            comments.add(json.valueToTree(c));
-        }
+        for (var c : repo.commentsByAuthor(userId)) comments.add(json.valueToTree(c));
 
-        // notification preferences + push subscriptions
-        var prefs = jdbc.queryForList(
-                "SELECT * FROM user_notification_preferences WHERE user_id = ?",
-                userId);
+        var prefs = repo.notificationPreferences(userId);
         root.set("notificationPreferences", json.valueToTree(prefs.isEmpty() ? null : prefs.get(0)));
 
         ArrayNode pushSubs = root.putArray("webPushSubscriptions");
-        for (var s : jdbc.queryForList(
-                "SELECT id, endpoint, user_agent, created_at, last_used_at "
-              + "FROM web_push_subscriptions WHERE user_id = ?",
-                userId)) {
-            pushSubs.add(json.valueToTree(s));
-        }
+        for (var s : repo.webPushSubscriptions(userId)) pushSubs.add(json.valueToTree(s));
 
         return root;
     }
@@ -143,28 +90,12 @@ class AccountController {
                     .body(java.util.Map.of("error", "type DELETE in confirm to proceed"));
         }
 
-        // Owner-of-only-workspace guard: if the user is the sole
-        // owner of any workspace + that workspace has other members,
-        // reject. They must transfer ownership or remove members
-        // first. Solo owners with no other members can proceed —
-        // workspace gets soft-deleted in the same tx.
-        var blockers = jdbc.queryForList(
-                """
-                SELECT w.id, w.slug
-                FROM workspaces w
-                WHERE w.deleted_at IS NULL
-                  AND EXISTS (
-                      SELECT 1 FROM workspace_members
-                      WHERE workspace_id = w.id AND user_id = ? AND role = 'OWNER')
-                  AND (
-                      SELECT COUNT(*) FROM workspace_members
-                      WHERE workspace_id = w.id AND role = 'OWNER'
-                            AND user_id <> ?) = 0
-                  AND (
-                      SELECT COUNT(*) FROM workspace_members
-                      WHERE workspace_id = w.id AND user_id <> ?) > 0
-                """,
-                userId, userId, userId);
+        // Owner-of-only-workspace guard: if the user is the sole owner
+        // of any workspace + that workspace has other members, reject.
+        // They must transfer ownership or remove members first. Solo
+        // owners with no other members can proceed — workspace gets
+        // soft-deleted in the same tx via the cascade below.
+        var blockers = repo.ownershipBlockers(userId);
         if (!blockers.isEmpty()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(java.util.Map.of(
@@ -172,35 +103,11 @@ class AccountController {
                             "workspaces", blockers));
         }
 
-        // Soft-delete cascade: user row + sole-owner workspaces +
-        // those workspaces' projects.
-        jdbc.update("UPDATE users SET deleted_at = now(), email = NULL WHERE id = ?", userId);
-        jdbc.update(
-                """
-                UPDATE workspaces SET deleted_at = now()
-                WHERE deleted_at IS NULL
-                  AND id IN (
-                      SELECT workspace_id FROM workspace_members
-                      WHERE user_id = ? AND role = 'OWNER')
-                """,
-                userId);
         // Snapshot the projects we're about to soft-delete so we can
         // emit storage cascade events for each (R2 attachments cleanup
         // happens in AttachmentCascadeListener).
-        var projectsToCascade = jdbc.queryForList(
-                """
-                SELECT id, workspace_id FROM projects
-                WHERE deleted_at IS NULL
-                  AND workspace_id IN (
-                      SELECT id FROM workspaces WHERE deleted_at IS NOT NULL)
-                """);
-        jdbc.update(
-                """
-                UPDATE projects SET deleted_at = now()
-                WHERE deleted_at IS NULL
-                  AND workspace_id IN (
-                      SELECT id FROM workspaces WHERE deleted_at IS NOT NULL)
-                """);
+        var projectsToCascade = repo.projectsToCascade();
+        repo.softDeleteUserAndOwnedWorkspaces(userId);
 
         // GDPR cascade — afterCommit so a rolled-back DELETE doesn't
         // wipe the R2 blobs. Avatar prefix and project attachments are

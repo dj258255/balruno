@@ -38,7 +38,6 @@ class CommentServiceImpl implements CommentService {
     private final com.balruno.storage.AttachmentReferenceService attachmentRefs;
     private final com.balruno.storage.StorageService storage;
     private final com.balruno.storage.WorkspaceStorageService workspaceStorage;
-    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     /** databind autowired (tools.jackson) — kept private fasterxml
      *  mapper for tree work in the webhook payload (project_sb4). */
@@ -49,8 +48,7 @@ class CommentServiceImpl implements CommentService {
                        org.springframework.context.ApplicationEventPublisher events,
                        com.balruno.storage.AttachmentReferenceService attachmentRefs,
                        com.balruno.storage.StorageService storage,
-                       com.balruno.storage.WorkspaceStorageService workspaceStorage,
-                       org.springframework.jdbc.core.JdbcTemplate jdbc) {
+                       com.balruno.storage.WorkspaceStorageService workspaceStorage) {
         this.repo = repo;
         this.projects = projects;
         this.sync = sync;
@@ -58,7 +56,6 @@ class CommentServiceImpl implements CommentService {
         this.attachmentRefs = attachmentRefs;
         this.storage = storage;
         this.workspaceStorage = workspaceStorage;
-        this.jdbc = jdbc;
     }
 
     /**
@@ -267,22 +264,10 @@ class CommentServiceImpl implements CommentService {
 
     /**
      * Walk back from a soft-deleted comment id to its workspace.
-     * The comment row is gone from the {@code findByIdOrThrow} read
-     * model (deleted_at IS NULL filter), so we go through the
-     * project the comment scoped to. Done lazily to avoid leaking
-     * extra reads on the happy path of comments without attachments.
+     * Persistence sits in {@link CommentRepository#workspaceIdOf}.
      */
     private UUID commentWorkspaceId(UUID commentId) {
-        // Single SELECT joining comments → projects → workspaces.
-        // Bypasses the soft-delete filter so we still see the row.
-        return jdbc.queryForObject(
-                """
-                SELECT p.workspace_id
-                FROM comments c
-                JOIN projects p ON p.id = c.project_id
-                WHERE c.id = ?
-                """,
-                java.util.UUID.class, commentId);
+        return repo.workspaceIdOf(commentId);
     }
 
     @Override

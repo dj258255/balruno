@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,12 +37,12 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 class SearchController {
 
-    private final JdbcTemplate jdbc;
+    private final ProjectSearchRepository repo;
     private final ProjectService projects;
     private final ObjectMapper json = new ObjectMapper();
 
-    SearchController(JdbcTemplate jdbc, ProjectService projects) {
-        this.jdbc = jdbc;
+    SearchController(ProjectSearchRepository repo, ProjectService projects) {
+        this.repo = repo;
         this.projects = projects;
     }
 
@@ -68,14 +67,7 @@ class SearchController {
         // downstream pruning. For multi-MB projects we can switch
         // to streaming the rows but the median project is well
         // under 1 MB — load + walk in JVM is faster than two queries.
-        var rows = jdbc.queryForList(
-                """
-                SELECT data::text AS data_text, sheet_tree::text AS st_text,
-                       doc_tree::text AS dt_text
-                FROM projects
-                WHERE id = ? AND deleted_at IS NULL
-                """,
-                projectId);
+        var rows = repo.loadJsonBlobs(projectId);
         if (rows.isEmpty()) return Map.of("hits", List.of());
 
         var hits = new ArrayList<Map<String, Object>>();
@@ -90,16 +82,7 @@ class SearchController {
 
         // Comments — separate query so we can use the comments_body_text
         // index. Limited to 50 to keep the panel responsive.
-        var commentRows = jdbc.queryForList(
-                """
-                SELECT id, project_id, scope_kind, sheet_id, row_id, document_id,
-                       body_json::text AS body_text
-                FROM comments
-                WHERE project_id = ? AND deleted_at IS NULL
-                  AND body_json::text ILIKE ?
-                LIMIT 50
-                """,
-                projectId, "%" + trimmed + "%");
+        var commentRows = repo.searchComments(projectId, "%" + trimmed + "%");
         for (var c : commentRows) {
             var snippet = extractText((String) c.get("body_text"), 200);
             var hit = new HashMap<String, Object>();

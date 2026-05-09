@@ -182,6 +182,24 @@ class CommentRepository {
                 java.sql.Timestamp.from(since.toInstant()));
     }
 
+    /**
+     * Resolve a (possibly soft-deleted) comment to its owning
+     * workspace via project. Used by the Tier 2b orphan-cleanup
+     * path so the storage counter decrement targets the right
+     * workspace_storage row even when the comment row was
+     * soft-deleted in the same transaction.
+     */
+    UUID workspaceIdOf(UUID commentId) {
+        return jdbc.queryForObject(
+                """
+                SELECT p.workspace_id
+                FROM comments c
+                JOIN projects p ON p.id = c.project_id
+                WHERE c.id = ?
+                """,
+                UUID.class, commentId);
+    }
+
     void insertMentions(UUID commentId, List<UUID> mentionedUsers) {
         if (mentionedUsers.isEmpty()) return;
         // Batch insert; ignore conflicts so re-edit of a mention-bearing
