@@ -5849,7 +5849,7 @@
       "lead": "게임 디자이너의 일상에 맞춘 도구 — 10가지 뷰 + 실시간 협업 + 외부 통합 + 엔진 export.",
       "views": {
         "title": "10가지 뷰",
-        "desc": "Grid · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff. 마지막 4개는 게임 밸런싱 도메인 전용 — Notion / Airtable 에 없습니다."
+        "desc": "Grid · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff. 마지막 4개는 게임 밸런싱 도메인 전용 — 곡선, 매트릭스, 가챠 트리, 데이터 비교까지."
       },
       "collab": {
         "title": "실시간 협업",
@@ -5874,7 +5874,7 @@
     },
     "integrationsSection": {
       "title": "기존 워크플로 와 연결",
-      "lead": "GitHub / Discord / Slack / Notion 끊지 말고 Balruno 와 양방향. 데이터 lock-in 없음 — 언제든 CSV / JSON 으로 내보내기.",
+      "lead": "기존에 쓰던 도구와 양방향으로 연결. 데이터 lock-in 없음 — 언제든 CSV / JSON 으로 내보내기.",
       "items": {
         "github": "GitHub PR / 이슈 → 시트에 자동 row 추가",
         "discord": "Discord /balruno bug \"...\" 슬래시 명령",

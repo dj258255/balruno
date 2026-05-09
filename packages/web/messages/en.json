@@ -5849,7 +5849,7 @@
       "lead": "Built for game designers — 10 views + real-time collab + integrations + engine export.",
       "views": {
         "title": "10 views",
-        "desc": "Grid · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff. The last four are game-balancing native — Notion / Airtable don't have them."
+        "desc": "Grid · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff. The last four are game-balancing native — curves, matrices, gacha trees, side-by-side diffs."
       },
       "collab": {
         "title": "Real-time collaboration",
@@ -5874,7 +5874,7 @@
     },
     "integrationsSection": {
       "title": "Plugs into your workflow",
-      "lead": "Stay on GitHub / Discord / Slack / Notion — Balruno talks both ways. No data lock-in: export to CSV / JSON anytime.",
+      "lead": "Two-way bridges to the tools you already use. No data lock-in: export to CSV / JSON anytime.",
       "items": {
         "github": "GitHub PR / issue → row added automatically",
         "discord": "Discord /balruno bug \"...\" slash command",

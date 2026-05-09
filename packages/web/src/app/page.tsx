@@ -15,9 +15,12 @@
  */
 
 import { useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
+
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   ArrowRight,
   Github,
@@ -108,6 +111,8 @@ function LocaleToggle() {
 
 function Header() {
   const t = useTranslations('marketing.header');
+  const { theme } = useTheme();
+  const iconSrc = theme === 'dark' ? '/icon-dark.svg' : '/icon.svg';
   return (
     <header
       className="sticky top-0 z-30 border-b backdrop-blur-md"
@@ -122,12 +127,14 @@ function Header() {
           className="flex items-center gap-2 text-base font-semibold tracking-tight"
           style={{ color: 'var(--text-primary)' }}
         >
-          <span
-            className="grid h-7 w-7 place-items-center rounded-md text-base text-white"
-            style={{ background: 'var(--accent)' }}
-          >
-            ★
-          </span>
+          <Image
+            src={iconSrc}
+            alt=""
+            width={28}
+            height={28}
+            priority
+            className="h-7 w-7 rounded-md"
+          />
           Balruno
         </Link>
         <nav className="flex items-center gap-2 text-sm">
