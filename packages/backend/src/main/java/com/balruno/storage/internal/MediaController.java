@@ -8,10 +8,10 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.HandlerMapping;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -35,7 +35,12 @@ import java.util.concurrent.TimeUnit;
  * {@link UploadController}); served bytes are public reads. Avatar
  * URLs are predictable but not enumerable (UUIDv7 + content hash).
  */
-@RestController
+// @Controller (not @RestController) so WebConfig.configurePathMatch's
+// `/api/{version}` prefix predicate skips us — /media/* is a static-
+// file surface, not a versioned API. The single GET method opts back
+// into JSON-style body resolution via @ResponseBody at the method
+// level.
+@Controller
 @Tag(name = "Media")
 @RequestMapping("/media")
 class MediaController {
@@ -47,6 +52,7 @@ class MediaController {
     }
 
     @GetMapping("/**")
+    @ResponseBody
     ResponseEntity<InputStreamResource> serve(HttpServletRequest request) throws IOException {
         var fullPath = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
         if (fullPath == null) fullPath = request.getRequestURI();
@@ -65,6 +71,11 @@ class MediaController {
         headers.setContentType(MediaType.parseMediaType(obj.contentType()));
         if (obj.contentLength() >= 0) headers.setContentLength(obj.contentLength());
         headers.setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic().immutable());
+        // Defence-in-depth — UploadController already verifies bytes via
+        // magic-byte sniffing, but nosniff blocks the historical IE
+        // browser-side sniffer that promoted PNG-tagged HTML to text/html.
+        // Cheap header, broad coverage.
+        headers.add("X-Content-Type-Options", "nosniff");
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(new InputStreamResource(obj.content()));
