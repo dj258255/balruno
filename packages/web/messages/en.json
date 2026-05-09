@@ -3911,7 +3911,11 @@
       "discord_linked": "Linked Discord",
       "discord_unlinked": "Unlinked Discord",
       "share_link_created": "Created a share link",
-      "share_link_revoked": "Revoked a share link"
+      "share_link_revoked": "Revoked a share link",
+      "doc_created": "Created a document",
+      "doc_renamed": "Renamed a document",
+      "doc_moved": "Moved a document",
+      "doc_deleted": "Deleted a document"
     }
   },
   "fpsTeamSim": {

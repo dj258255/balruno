@@ -73,12 +73,16 @@ class TreeOpService {
     private final com.fasterxml.jackson.databind.ObjectMapper nodeMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
+    private final org.springframework.context.ApplicationEventPublisher events;
+
     TreeOpService(JdbcTemplate jdbc,
                   OpIdempotencyRepository idempotency,
-                  ObjectMapper json) {
+                  ObjectMapper json,
+                  org.springframework.context.ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.idempotency = idempotency;
         this.json = json;
+        this.events = events;
     }
 
     @Transactional
@@ -219,7 +223,90 @@ class TreeOpService {
             return new SyncResult.Cached(winning.getResultVersion(), winning.getResultPayload());
         }
 
+        // Doc tree changes (create / rename / move / delete) get
+        // published into the workspace audit log so the share-dock
+        // ChangeHistoryPanel surfaces them next to project / member /
+        // comment events. Sheet tree changes stay out — they're
+        // micro-edits already captured by cell_history (ADR 0038
+        // Stage A); duplicating them in the workspace narrative
+        // would drown out the bigger sheet/project sense.
+        if (treeKind == SyncMessage.TreeKind.DOC) {
+            publishDocTreeAuditEvent(projectId, userId, op);
+        }
+
         return new SyncResult.Acked(newVersion, broadcast);
+    }
+
+    /**
+     * Maps the doc tree op to a workspace AuditLogEvent, hooked to
+     * afterCommit so a rolled-back tree.* never appears in the audit
+     * narrative. Mirrors the existing webhook publish in
+     * SheetCellOpService — same lifecycle, same Modulith-friendly
+     * leaf event package.
+     */
+    private void publishDocTreeAuditEvent(UUID projectId, UUID userId, SyncMessage op) {
+        // Resolve workspaceId off the project — separate read so we
+        // don't reach across modules. Cheap (PK lookup) and only
+        // runs on doc tree ops.
+        var workspaceId = jdbc.queryForObject(
+                "SELECT workspace_id FROM projects WHERE id = ?",
+                UUID.class, projectId);
+        if (workspaceId == null) return;
+
+        String action;
+        UUID nodeId;
+        var payload = nodeMapper.createObjectNode();
+        payload.put("projectId", projectId.toString());
+        switch (op) {
+            case SyncMessage.TreeAdd add -> {
+                action = "doc.created";
+                nodeId = nodeIdOf(add.node());
+                payload.set("node", nodeMapper.valueToTree(add.node()));
+            }
+            case SyncMessage.TreeRename rn -> {
+                action = "doc.renamed";
+                nodeId = rn.nodeId();
+                if (rn.newName() != null) payload.put("newName", rn.newName());
+                if (rn.newIcon() != null) payload.put("newIcon", rn.newIcon());
+            }
+            case SyncMessage.TreeMove mv -> {
+                action = "doc.moved";
+                nodeId = mv.nodeId();
+                if (mv.newParentId() != null) payload.put("newParentId", mv.newParentId().toString());
+                payload.put("newPosition", mv.newPosition());
+            }
+            case SyncMessage.TreeDelete del -> {
+                action = "doc.deleted";
+                nodeId = del.nodeId();
+            }
+            default -> { return; }
+        }
+        final var actionFinal = action;
+        final var nodeIdFinal = nodeId;
+        org.springframework.transaction.support.TransactionSynchronizationManager
+                .registerSynchronization(
+                        new org.springframework.transaction.support.TransactionSynchronization() {
+                            @Override
+                            public void afterCommit() {
+                                try {
+                                    events.publishEvent(new com.balruno.events.AuditLogEvent(
+                                            workspaceId, userId, actionFinal, "doc",
+                                            nodeIdFinal, payload));
+                                } catch (Exception ignored) {
+                                    // Audit publish must never bubble.
+                                }
+                            }
+                        });
+    }
+
+    private static UUID nodeIdOf(Object node) {
+        if (node instanceof java.util.Map<?, ?> m) {
+            var id = m.get("id");
+            if (id instanceof String s) {
+                try { return UUID.fromString(s); } catch (IllegalArgumentException ignored) { }
+            }
+        }
+        return null;
     }
 
     /**

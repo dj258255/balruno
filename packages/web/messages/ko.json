@@ -3911,7 +3911,11 @@
       "discord_linked": "Discord 를 연결했습니다",
       "discord_unlinked": "Discord 연결을 해제했습니다",
       "share_link_created": "공유 링크를 만들었습니다",
-      "share_link_revoked": "공유 링크를 폐기했습니다"
+      "share_link_revoked": "공유 링크를 폐기했습니다",
+      "doc_created": "문서를 만들었습니다",
+      "doc_renamed": "문서 이름을 변경했습니다",
+      "doc_moved": "문서 위치를 옮겼습니다",
+      "doc_deleted": "문서를 삭제했습니다"
     }
   },
   "fpsTeamSim": {
