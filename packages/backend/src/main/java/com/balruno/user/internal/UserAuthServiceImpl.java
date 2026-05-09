@@ -5,7 +5,7 @@ import com.balruno.user.AuthenticatedUser;
 import com.balruno.user.OAuthLogin;
 import com.balruno.user.UserAuthException;
 import com.balruno.user.UserAuthService;
-import com.balruno.user.UserCreatedEvent;
+import com.balruno.events.UserCreatedEvent;
 import com.balruno.workspace.WorkspaceService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;

@@ -3,7 +3,7 @@ package com.balruno.project.internal;
 
 import com.balruno.project.ProjectException;
 import com.balruno.project.ProjectService;
-import com.balruno.sync.ProjectSyncApi;
+import com.balruno.sync.ProjectSyncService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -43,13 +43,13 @@ class TemplateImportService {
     private final JdbcTemplate jdbc;
     private final StarterPackSeeder seeder;
     private final ProjectService projects;
-    private final ProjectSyncApi sync;
+    private final ProjectSyncService sync;
     private final ObjectMapper mapper = new ObjectMapper();
 
     TemplateImportService(JdbcTemplate jdbc,
                           StarterPackSeeder seeder,
                           ProjectService projects,
-                          ProjectSyncApi sync) {
+                          ProjectSyncService sync) {
         this.jdbc = jdbc;
         this.seeder = seeder;
         this.projects = projects;

@@ -4,7 +4,7 @@ package com.balruno.comment.internal;
 import com.balruno.comment.Comment;
 import com.balruno.comment.CommentService;
 import com.balruno.project.ProjectService;
-import com.balruno.sync.ProjectSyncApi;
+import com.balruno.sync.ProjectSyncService;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
@@ -34,7 +34,7 @@ class CommentServiceImpl implements CommentService {
     private final CommentRepository repo;
     private final MentionRepository mentions;
     private final ProjectService projects;
-    private final ProjectSyncApi sync;
+    private final ProjectSyncService sync;
     private final org.springframework.context.ApplicationEventPublisher events;
     private final com.balruno.storage.AttachmentReferenceService attachmentRefs;
     private final com.balruno.storage.StorageService storage;
@@ -46,7 +46,7 @@ class CommentServiceImpl implements CommentService {
             new com.fasterxml.jackson.databind.ObjectMapper();
 
     CommentServiceImpl(CommentRepository repo, MentionRepository mentions,
-                       ProjectService projects, ProjectSyncApi sync,
+                       ProjectService projects, ProjectSyncService sync,
                        org.springframework.context.ApplicationEventPublisher events,
                        com.balruno.storage.AttachmentReferenceService attachmentRefs,
                        com.balruno.storage.StorageService storage,
@@ -65,7 +65,7 @@ class CommentServiceImpl implements CommentService {
      * Schedules a wss broadcast after the current transaction
      * commits — a rolled-back tx can't push a misleading event to
      * peers. Failure inside the broadcast is swallowed
-     * (ProjectSyncApi logs internally) so the surrounding HTTP
+     * (ProjectSyncService logs internally) so the surrounding HTTP
      * response stays successful.
      */
     private void broadcastAfterCommit(UUID projectId, String type, Comment payload) {

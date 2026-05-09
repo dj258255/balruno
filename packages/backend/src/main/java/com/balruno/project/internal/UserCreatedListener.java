@@ -2,7 +2,7 @@
 package com.balruno.project.internal;
 
 import com.balruno.project.ProjectService;
-import com.balruno.user.UserCreatedEvent;
+import com.balruno.events.UserCreatedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

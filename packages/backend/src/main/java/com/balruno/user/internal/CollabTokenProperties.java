@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-package com.balruno.user;
+package com.balruno.user.internal;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -23,7 +23,7 @@ import java.time.Duration;
  *     this in its JWT verify call (packages/collab/src/auth.ts).
  */
 @ConfigurationProperties(prefix = "balruno.collab.token")
-public record CollabTokenProperties(
+record CollabTokenProperties(
         String secret,
         Duration ttl,
         String audience

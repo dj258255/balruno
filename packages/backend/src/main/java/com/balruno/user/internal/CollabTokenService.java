@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-package com.balruno.user;
+package com.balruno.user.internal;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -16,9 +16,8 @@ import java.util.UUID;
 
 /**
  * Issues short-lived collab JWTs that the Hocuspocus container verifies
- * on every WebSocket connection. Lives next to the user-module's
- * AuthenticatedUser surface so the controller can stay in
- * {@code internal} without re-exporting types.
+ * on every WebSocket connection. Module-private since only the
+ * neighbouring CollabTokenController calls it.
  *
  * Authorisation note: this service signs whatever {@code (userId, documentId)}
  * pair the controller hands it. The controller is the right place to
@@ -31,7 +30,7 @@ import java.util.UUID;
  * document directory exists.
  */
 @Service
-public class CollabTokenService {
+class CollabTokenService {
 
     private final byte[] keyBytes;
     private final CollabTokenProperties props;
@@ -48,7 +47,7 @@ public class CollabTokenService {
         }
     }
 
-    public IssuedCollabToken issue(UUID userId, UUID documentId) {
+    IssuedCollabToken issue(UUID userId, UUID documentId) {
         var now = Instant.now();
         var exp = now.plus(props.ttl());
         var claims = new JWTClaimsSet.Builder()
@@ -67,5 +66,5 @@ public class CollabTokenService {
         return new IssuedCollabToken(jwt.serialize(), exp);
     }
 
-    public record IssuedCollabToken(String token, Instant expiresAt) {}
+    record IssuedCollabToken(String token, Instant expiresAt) {}
 }

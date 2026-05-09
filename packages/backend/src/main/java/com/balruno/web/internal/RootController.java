@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-package com.balruno.web;
+package com.balruno.web.internal;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,7 +12,7 @@ import java.util.Map;
  * the real routing this just confirms "Cloudflare → nginx → Spring" works.
  */
 @RestController
-public class RootController {
+class RootController {
 
     @GetMapping("/")
     public Map<String, Object> root() {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.sync.internal;
 
-import com.balruno.sync.ProjectSyncApi;
+import com.balruno.sync.ProjectSyncService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.UUID;
 
 /**
- * Implementation of {@link ProjectSyncApi}. Lives in
+ * Implementation of {@link ProjectSyncService}. Lives in
  * {@code sync.internal} alongside the WebSocket plumbing it depends on
  * (state loader + session registry); the public interface keeps the
  * cross-module surface narrow.
@@ -23,15 +23,15 @@ import java.util.UUID;
  * because one stale WebSocket couldn't be flushed.
  */
 @Service
-class ProjectSyncApiImpl implements ProjectSyncApi {
+class ProjectSyncServiceImpl implements ProjectSyncService {
 
-    private static final Logger log = LoggerFactory.getLogger(ProjectSyncApiImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(ProjectSyncServiceImpl.class);
 
     private final ProjectStateLoader stateLoader;
     private final SessionRegistry sessions;
     private final ObjectMapper json;
 
-    ProjectSyncApiImpl(ProjectStateLoader stateLoader,
+    ProjectSyncServiceImpl(ProjectStateLoader stateLoader,
                        SessionRegistry sessions,
                        ObjectMapper json) {
         this.stateLoader = stateLoader;

@@ -4,7 +4,7 @@ package com.balruno.user.internal;
 import com.balruno.user.OAuthLogin;
 import com.balruno.user.OAuthProvider;
 import com.balruno.user.UserAuthException;
-import com.balruno.user.UserCreatedEvent;
+import com.balruno.events.UserCreatedEvent;
 import com.balruno.workspace.Workspace;
 import com.balruno.workspace.WorkspaceService;
 import org.junit.jupiter.api.DisplayName;

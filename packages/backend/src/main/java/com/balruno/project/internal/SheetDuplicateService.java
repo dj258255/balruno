@@ -3,7 +3,7 @@ package com.balruno.project.internal;
 
 import com.balruno.project.ProjectException;
 import com.balruno.project.ProjectService;
-import com.balruno.sync.ProjectSyncApi;
+import com.balruno.sync.ProjectSyncService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -33,10 +33,10 @@ class SheetDuplicateService {
 
     private final JdbcTemplate jdbc;
     private final ProjectService projects;
-    private final ProjectSyncApi sync;
+    private final ProjectSyncService sync;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    SheetDuplicateService(JdbcTemplate jdbc, ProjectService projects, ProjectSyncApi sync) {
+    SheetDuplicateService(JdbcTemplate jdbc, ProjectService projects, ProjectSyncService sync) {
         this.jdbc = jdbc;
         this.projects = projects;
         this.sync = sync;

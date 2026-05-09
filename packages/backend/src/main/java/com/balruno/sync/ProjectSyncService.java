@@ -17,7 +17,7 @@ import java.util.UUID;
  * WS path — please tell every connected client to re-hydrate", which
  * is what {@link #broadcastFullStateSnapshot} does.
  */
-public interface ProjectSyncApi {
+public interface ProjectSyncService {
 
     /**
      * Snapshot the project's current data + sheet_tree + doc_tree +
