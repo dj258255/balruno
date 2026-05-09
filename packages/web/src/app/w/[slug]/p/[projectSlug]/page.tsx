@@ -45,6 +45,8 @@ import BottomDock from '@/components/BottomDock';
 import DockedToolbox from '@/components/DockedToolbox';
 import Sidebar from '@/components/layout/Sidebar';
 import SheetTabs from '@/components/layout/SheetTabs';
+import SidebarResizer from '@/app/components/SidebarResizer';
+import { useToolLayoutStore } from '@/stores/toolLayoutStore';
 import StickerLayer from '@/components/sheet/StickerLayer';
 import { PmBadgeStrip } from '@/components/sheet/PmBadgeStrip';
 import SheetHeader from '@/app/components/SheetHeader';
@@ -669,17 +671,10 @@ export default function ProjectDetailPage() {
               Mobile: still uses translateX off-canvas pattern (ADR 0022
               stage A) — Sidebar.tsx itself is desktop-positioned, so
               we wrap it for the drawer behaviour. */}
-          <div
-            className={
-              'relative transition-transform '
-              + 'md:static md:translate-x-0 md:flex-shrink-0 md:h-full md:overflow-y-auto '
-              + 'fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto '
-              + (mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0')
-            }
-            style={{ background: 'var(--bg-primary)' }}
-          >
+          <SidebarBoundary open={mobileSidebarOpen}>
             <Sidebar {...sidebarCallbacks} activeTools={activeTools} />
-          </div>
+          </SidebarBoundary>
+          <SidebarResizer />
 
           {/* Main column — SheetTabs strip on top, sheet/doc view
               filling the rest. The flex column ensures the strip
@@ -820,5 +815,42 @@ export default function ProjectDetailPage() {
           fight the body flex. */}
       <BottomDock panels={toolPanels} isModalOpen={templateModalOpen} />
     </main>
+  );
+}
+
+/**
+ * Sidebar wrapper that owns the boundary between the sidebar and
+ * the main column. The Sidebar component itself stays at a locked
+ * 280px inner width so its layout never reflows; this wrapper takes
+ * the user's resizer drag (toolLayoutStore.sidebarWidth, min 280)
+ * and adds any extra space as right padding. Dragging the resizer
+ * widens the sidebar's *visible area* (more empty space alongside
+ * the inner content) without restructuring the inner items, which
+ * is the behaviour the user asked for.
+ */
+function SidebarBoundary({
+  open,
+  children,
+}: {
+  open: boolean;
+  children: React.ReactNode;
+}) {
+  const stored = useToolLayoutStore((s) => s.sidebarWidth);
+  const width = Math.max(280, stored || 280);
+  return (
+    <div
+      className={
+        'relative transition-transform '
+        + 'md:static md:translate-x-0 md:flex-shrink-0 md:h-full '
+        + 'fixed inset-y-0 left-0 z-40 overflow-hidden '
+        + (open ? 'translate-x-0' : '-translate-x-full md:translate-x-0')
+      }
+      style={{
+        width: `${width}px`,
+        background: 'var(--bg-primary)',
+      }}
+    >
+      {children}
+    </div>
   );
 }
