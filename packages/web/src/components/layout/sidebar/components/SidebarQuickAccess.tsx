@@ -20,6 +20,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Home, Inbox, Zap, Bug, Gamepad2, Clock,
   ChevronDown, ChevronRight, Check, CheckCheck, Plus, LayoutTemplate, Trash2,
@@ -192,7 +193,7 @@ export default function SidebarQuickAccess() {
         </div>
       )}
 
-      {ctxMenu && (
+      {ctxMenu && typeof document !== 'undefined' && createPortal(
         <div
           ref={ctxMenuRef}
           className="fixed z-50 min-w-[180px] py-1 rounded-lg shadow-lg border"
@@ -285,7 +286,8 @@ export default function SidebarQuickAccess() {
               />
             </>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

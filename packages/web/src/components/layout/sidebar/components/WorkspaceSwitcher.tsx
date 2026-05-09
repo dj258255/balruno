@@ -13,6 +13,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Plus, Settings, Edit2, Users, Loader2 } from 'lucide-react';
@@ -266,7 +267,7 @@ export function WorkspaceSwitcher({
         />
       )}
 
-      {ctxMenu && (
+      {ctxMenu && typeof document !== 'undefined' && createPortal(
         <div
           ref={ctxMenuRef}
           className="fixed z-50 min-w-[180px] py-1 rounded-lg shadow-lg border"
@@ -316,7 +317,8 @@ export function WorkspaceSwitcher({
               {t('sidebar.workspaceSettings')}
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

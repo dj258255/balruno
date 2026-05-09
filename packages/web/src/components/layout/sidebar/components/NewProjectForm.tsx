@@ -2,6 +2,7 @@
  * NewProjectForm - 새 프로젝트 생성 폼 컴포넌트
  */
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { FolderPlus, Check, X, LayoutTemplate, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useProjectStore } from '@/stores/projectStore';
@@ -82,7 +83,7 @@ export function NewProjectForm({
           {t('sidebar.templateGallery')}
         </button>
 
-        {ctxMenu && (
+        {ctxMenu && typeof document !== 'undefined' && createPortal(
           <div
             ref={ctxMenuRef}
             className="fixed z-50 min-w-[200px] py-1 rounded-lg shadow-lg border"
@@ -142,7 +143,8 @@ export function NewProjectForm({
               <LayoutTemplate className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
               {t('sidebar.allSamples')}
             </button>
-          </div>
+          </div>,
+          document.body,
         )}
       </div>
     );
