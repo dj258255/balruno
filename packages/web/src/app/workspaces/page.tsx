@@ -46,7 +46,7 @@ export default function WorkspacesPage() {
         // pattern. The list page only earns its keep when the user
         // has 2+ workspaces or wants to create another.
         if (list.length === 1) {
-          router.replace(`/w/${list[0].slug}`);
+          router.replace(`/${list[0].slug}`);
           return;
         }
         // Zero-workspace path — accounts that pre-date the OAuth
@@ -63,7 +63,7 @@ export default function WorkspacesPage() {
           const wsName = me?.name ? `${me.name}'s Workspace` : 'My Workspace';
           const created = await createWorkspace(slugBase, wsName);
           if (cancelled) return;
-          router.replace(`/w/${created.slug}`);
+          router.replace(`/${created.slug}`);
           return;
         }
         setWorkspaces(list);
@@ -165,7 +165,7 @@ export default function WorkspacesPage() {
               style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
             >
               <Link
-                href={`/w/${ws.slug}`}
+                href={`/${ws.slug}`}
                 className="flex flex-1 items-center justify-between px-4 py-3"
               >
                 <div className="flex items-center gap-2">

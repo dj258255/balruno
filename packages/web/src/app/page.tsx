@@ -54,7 +54,7 @@ export default function Home() {
           ? window.localStorage.getItem(`balruno:lastProject:${lastWs}`)
           : null;
         if (lastWs && lastProj) {
-          router.replace(`/w/${lastWs}/p/${lastProj}`);
+          router.replace(`/${lastWs}/projects/${lastProj}`);
           return;
         }
       }
@@ -80,7 +80,7 @@ export default function Home() {
           avatarUrl: null,
           locale: 'ko',
         });
-        router.replace(`/w/${session.workspaceSlug}/p/${session.projectSlug}`);
+        router.replace(`/${session.workspaceSlug}/projects/${session.projectSlug}`);
       } catch (e) {
         setError(e instanceof Error ? e.message : '데모 세션을 시작하지 못했어요.');
         triggered.current = false;

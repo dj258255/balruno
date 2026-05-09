@@ -13,6 +13,36 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   // Standalone bundle must include monorepo workspace files outside packages/web.
   outputFileTracingRoot: path.resolve(__dirname, '../..'),
+  // URL migration — Linear-style routes (/{ws}, /{ws}/projects/{p},
+  // /{ws}/settings) are the new canonical paths. The previous
+  // /w/{slug}/* paths stay alive via 308 permanent redirect so any
+  // bookmark / share-link / external reference keeps resolving.
+  // Browser + search-engine caches update on first hit. The
+  // redirect is cheap on Vercel and the right thing to keep
+  // forever — GitHub / Notion / Linear all follow the same pattern
+  // for renamed-resource URLs.
+  async redirects() {
+    return [
+      // /w/{slug}/p/{projectSlug} → /{slug}/projects/{projectSlug}
+      {
+        source: '/w/:slug/p/:projectSlug',
+        destination: '/:slug/projects/:projectSlug',
+        permanent: true,
+      },
+      // /w/{slug}/settings → /{slug}/settings
+      {
+        source: '/w/:slug/settings',
+        destination: '/:slug/settings',
+        permanent: true,
+      },
+      // /w/{slug} → /{slug}
+      {
+        source: '/w/:slug',
+        destination: '/:slug',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 // Sentry build-time integration. Wraps the build to inject runtime

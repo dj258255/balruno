@@ -648,7 +648,7 @@ export default function WorkspaceShell({
     return (
       <main className="mx-auto max-w-2xl px-6 py-12">
         <button
-          onClick={() => router.push(slug ? `/w/${slug}` : '/workspaces')}
+          onClick={() => router.push(slug ? `/${slug}` : '/workspaces')}
           className="mb-4 inline-flex items-center gap-1 text-sm"
           style={{ color: 'var(--text-secondary)' }}
         >
