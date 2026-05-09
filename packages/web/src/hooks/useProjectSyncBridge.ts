@@ -305,24 +305,41 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       break;
     }
     case 'tree.rename': {
+      // tree.rename was extended on 2026-05-10 to carry an optional
+      // newIcon patch alongside newName (ADR 0018 v2.1). Either or
+      // both may be present — peer apply has to walk the tree once
+      // and patch whichever fields landed in the op.
       const op = msg.op as {
         treeKind?: 'SHEET' | 'DOC';
         nodeId?: string;
         newName?: string;
+        newIcon?: string;
       } | null;
-      if (!op?.nodeId || !op.newName || !op.treeKind) break;
+      if (!op?.nodeId || !op.treeKind) break;
+      if (op.newName === undefined && op.newIcon === undefined) break;
       const treeKey = treeFieldFor(op.treeKind);
       if (!treeKey) break;
+      const patchNode = (nodes: TreeNode[]): TreeNode[] =>
+        nodes.map((n) => {
+          if (n.id === op.nodeId) {
+            return {
+              ...n,
+              ...(op.newName !== undefined ? { name: op.newName } : {}),
+              ...(op.newIcon !== undefined
+                ? { icon: op.newIcon === '' ? undefined : op.newIcon }
+                : {}),
+            };
+          }
+          return n.children ? { ...n, children: patchNode(n.children) } : n;
+        });
       useProjectStore.setState((state) => ({
         projects: state.projects.map((p) =>
           p.id !== projectId
             ? p
             : {
                 ...p,
-                [treeKey]: renameNodeInTree(
+                [treeKey]: patchNode(
                   (p[treeKey] as TreeNode[] | undefined) ?? [],
-                  op.nodeId!,
-                  op.newName!,
                 ),
               },
         ),
