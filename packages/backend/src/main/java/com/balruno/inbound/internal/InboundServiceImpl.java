@@ -29,30 +29,34 @@ class InboundServiceImpl implements InboundService {
     @Transactional
     public InboundWebhook create(UUID callerUserId, UUID projectId, CreateInput input) {
         validateProvider(input.provider());
-        return repo.insert(projectId, input.provider(), input.targetSheetId(),
+        var entity = new InboundWebhookEntity(
+                projectId, input.provider(), input.targetSheetId(),
                 input.columnMapping(), callerUserId);
+        return repo.save(entity).toDto();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<InboundWebhook> listForProject(UUID callerUserId, UUID projectId) {
-        return repo.findByProjectId(projectId);
+        return repo.findByProjectIdOrderByCreatedAtDesc(projectId).stream()
+                .map(InboundWebhookEntity::toDto)
+                .toList();
     }
 
     @Override
     public InboundWebhook findById(UUID inboundId) {
-        return repo.findById(inboundId);
+        return repo.findById(inboundId).map(InboundWebhookEntity::toDto).orElse(null);
     }
 
     @Override
     @Transactional
     public void delete(UUID callerUserId, UUID inboundId) {
-        repo.delete(inboundId);
+        repo.deleteById(inboundId);
     }
 
     @Override
     public ReceiveResult receive(UUID inboundId, String eventType, JsonNode body) {
-        var hook = repo.findById(inboundId);
+        var hook = repo.findById(inboundId).map(InboundWebhookEntity::toDto).orElse(null);
         if (hook == null) return new ReceiveResult.Failed("not found");
         if (!hook.active()) return new ReceiveResult.Ignored("inactive");
 
