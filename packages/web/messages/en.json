@@ -5504,7 +5504,7 @@
   "filterBuilder": {
     "title": "Filter",
     "reset": "Reset",
-    "empty": "Add a condition to start filtering.",
+    "empty": "No active filters",
     "valuePlaceholder": "Value",
     "removeCondition": "Remove condition",
     "noColumnsTooltip": "No columns in the sheet — add a column first",

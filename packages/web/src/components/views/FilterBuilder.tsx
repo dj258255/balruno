@@ -86,6 +86,37 @@ export function FilterBuilder({ columns, value, onChange }: Props) {
 
   const clearAll = () => onChange(undefined);
 
+  // Empty state: a slim one-row strip — Notion / Linear filter chrome
+  // patterns. The full bordered card felt heavy on first paint when
+  // there's nothing to show; here the icon + status + add button live
+  // on a single row with no fill, no border. The card style only kicks
+  // in once at least one condition exists, where the extra weight
+  // earns its keep around the actual editor controls.
+  if (group.conditions.length === 0) {
+    return (
+      <div className="flex items-center gap-2 px-1 py-1.5">
+        <Filter className="h-3.5 w-3.5" style={{ color: 'var(--text-tertiary)' }} />
+        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+          {t('empty')}
+        </span>
+        <button
+          type="button"
+          onClick={addCondition}
+          disabled={columns.length === 0}
+          className="ml-auto inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{
+            borderColor: 'var(--border-primary)',
+            color: 'var(--accent)',
+          }}
+          title={columns.length === 0 ? t('noColumnsTooltip') : t('addConditionTooltip')}
+        >
+          <Plus className="h-3 w-3" />
+          {t('addCondition')}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       className="rounded-lg p-3 space-y-2"
@@ -116,23 +147,15 @@ export function FilterBuilder({ columns, value, onChange }: Props) {
             </div>
           )}
         </div>
-        {group.conditions.length > 0 && (
-          <button
-            type="button"
-            onClick={clearAll}
-            className="text-caption opacity-70 hover:opacity-100 transition-opacity"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            {t('reset')}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={clearAll}
+          className="text-caption opacity-70 hover:opacity-100 transition-opacity"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          {t('reset')}
+        </button>
       </div>
-
-      {group.conditions.length === 0 && (
-        <p className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
-          {t('empty')}
-        </p>
-      )}
 
       {group.conditions.map((cond, idx) => {
         const col = columns.find((c) => c.id === cond.columnId);

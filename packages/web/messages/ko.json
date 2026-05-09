@@ -5504,7 +5504,7 @@
   "filterBuilder": {
     "title": "필터",
     "reset": "초기화",
-    "empty": "조건 추가 버튼으로 필터를 시작하세요.",
+    "empty": "활성 필터 없음",
     "valuePlaceholder": "값",
     "removeCondition": "조건 제거",
     "noColumnsTooltip": "시트에 컬럼이 없어 필터를 만들 수 없어요 — 컬럼을 먼저 추가하세요",
