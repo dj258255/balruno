@@ -85,6 +85,12 @@ const server = new Server({
    * project tree. Until Stage B exposes a "register document" endpoint
    * the row must already exist — created by whichever backend path
    * mints the document metadata.
+   *
+   * Also writes a sparse {@code doc_snapshots} row for the page-history
+   * surface (ADR 0038 stage C). Throttle = "every 50 store calls OR 5
+   * minutes since the last snapshot, whichever first" — every keystroke
+   * already debounces into one onStoreDocument, so this is roughly
+   * "1 snapshot per 50 edit-bursts or per 5 idle minutes".
    */
   async onStoreDocument(data) {
     const documentId = data.documentName;
@@ -97,9 +103,99 @@ const server = new Server({
     );
     if (r.rowCount === 0) {
       console.warn(`[collab] no active document row, dropped save: ${documentId}`);
+      return;
     }
+    await maybeWriteSnapshot(data, update);
   },
 });
+
+interface SnapshotState {
+  storesSinceSnapshot: number;
+  lastSnapshotAt: number;
+}
+
+const SNAPSHOT_EVERY_N_STORES = 50;
+const SNAPSHOT_EVERY_MS = 5 * 60 * 1000;
+const snapshotState = new Map<string, SnapshotState>();
+
+interface StoreData {
+  documentName: string;
+  context?: { userId?: string };
+  document: Y.Doc;
+}
+
+async function maybeWriteSnapshot(data: StoreData, update: Uint8Array): Promise<void> {
+  const documentId = data.documentName;
+  const now = Date.now();
+  const state = snapshotState.get(documentId)
+    ?? { storesSinceSnapshot: 0, lastSnapshotAt: 0 };
+  state.storesSinceSnapshot += 1;
+  const dueByCount = state.storesSinceSnapshot >= SNAPSHOT_EVERY_N_STORES;
+  const dueByTime = now - state.lastSnapshotAt >= SNAPSHOT_EVERY_MS;
+  if (!dueByCount && !dueByTime) {
+    snapshotState.set(documentId, state);
+    return;
+  }
+
+  // Pull projectId from documents row — needed for the snapshot's
+  // FK + the retention scheduler's per-workspace plan lookup.
+  const meta = await pool.query<{ project_id: string }>(
+    'SELECT project_id FROM documents WHERE id = $1 AND deleted_at IS NULL',
+    [documentId],
+  );
+  const projectId = meta.rowCount && meta.rowCount > 0 && meta.rows[0]
+    ? meta.rows[0].project_id
+    : null;
+  if (!projectId) {
+    // Document disappeared between UPDATE and snapshot read — drop
+    // silently. The next save attempt will re-evaluate.
+    return;
+  }
+
+  const summary = extractSummary(data.document);
+  const actorId = data.context?.userId ?? null;
+  try {
+    await pool.query(
+      `INSERT INTO doc_snapshots
+         (doc_id, project_id, actor_id, yjs_state, summary)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [documentId, projectId, actorId, Buffer.from(update), summary],
+    );
+    state.storesSinceSnapshot = 0;
+    state.lastSnapshotAt = now;
+    snapshotState.set(documentId, state);
+  } catch (err) {
+    // Snapshot is best-effort; the user's edits already saved to
+    // documents.ydoc_state above. A failed snapshot just means the
+    // page-history list misses one moment.
+    console.warn(`[collab] doc_snapshots insert failed for ${documentId}`, err);
+  }
+}
+
+/**
+ * First ~120 chars of the document's plain text — used as a preview
+ * in the page-history list so the user can pick a moment without
+ * downloading the full yjs state. Best-effort: walks the default
+ * 'default' fragment and gives up gracefully on shape mismatches.
+ */
+function extractSummary(doc: Y.Doc): string | null {
+  try {
+    const fragments = ['default', 'doc', 'content'];
+    for (const name of fragments) {
+      const xml = doc.getXmlFragment(name);
+      const text = xml.toString();
+      if (text && text.length > 0) {
+        // toString returns serialised XML; strip tags for the preview.
+        const plain = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (plain.length > 0) return plain.slice(0, 120);
+      }
+    }
+  } catch {
+    // Shape we don't know how to walk — let the snapshot land
+    // without a summary.
+  }
+  return null;
+}
 
 server
   .listen()
