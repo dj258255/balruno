@@ -5649,14 +5649,6 @@
       "privacy": "Privacy Policy",
       "errUnverified": "This email is already linked to another account but the new provider could not verify it. Sign in with the original method instead.",
       "errGeneric": "Login failed. Please try again.",
-      "brandTagline": "A workspace for game designers",
-      "brandSubtagline": "Spreadsheet precision meets document context. Built for balancing, design, and live ops — without juggling tools.",
-      "feature1Title": "Sheets + Docs",
-      "feature1Body": "Notion-style docs and Excel-style sheets that link naturally inside one workspace.",
-      "feature2Title": "Realtime collaboration",
-      "feature2Body": "Linear-grade sync with offline cache. Your work doesn't stop when the network does.",
-      "feature3Title": "Open source",
-      "feature3Body": "MIT frontend + AGPL backend. Self-host or start with the SaaS — your choice.",
       "switchLanguage": "Switch language"
     }
   },
