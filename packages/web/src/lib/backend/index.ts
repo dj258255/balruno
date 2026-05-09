@@ -82,6 +82,7 @@ export {
   deleteComment,
   listCommentsForCell,
   listCommentsForDoc,
+  listCommentsForProject,
   listInbox,
 } from './comments';
 export type {

@@ -151,6 +151,15 @@ class CommentRepository {
                 rowMapper, projectId, documentId);
     }
 
+    List<Comment> listForProject(UUID projectId) {
+        return jdbc.query(
+                BASE_SELECT
+              + " WHERE project_id = ? "
+              + "   AND deleted_at IS NULL "
+              + " ORDER BY created_at DESC LIMIT 200",
+                rowMapper, projectId);
+    }
+
     List<Comment> listUnreadMentions(UUID userId, int limit) {
         return jdbc.query(
                 BASE_SELECT

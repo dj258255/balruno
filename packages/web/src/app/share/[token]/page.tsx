@@ -218,25 +218,6 @@ function useViewComponent(activeView: string) {
         case 'gallery':
           mod = await import('@/components/views/GalleryView');
           break;
-        case 'heatmap': {
-          const m = await import('@/components/views/BalanceHeatmap');
-          if (cancelled) return;
-          // BalanceHeatmap takes sheetId only — wrap.
-          setComp(() => ({ sheet }: ViewProps) => <m.BalanceHeatmap sheetId={sheet.id} />);
-          return;
-        }
-        case 'curve': {
-          const m = await import('@/components/views/CurveOverlay');
-          if (cancelled) return;
-          setComp(() => ({ sheet }: ViewProps) => <m.CurveOverlay sheetId={sheet.id} />);
-          return;
-        }
-        case 'probability': {
-          const m = await import('@/components/views/ProbabilityTree');
-          if (cancelled) return;
-          setComp(() => ({ sheet }: ViewProps) => <m.ProbabilityTree sheetId={sheet.id} />);
-          return;
-        }
         default:
           mod = await import('@/components/sheet/SheetTable');
       }

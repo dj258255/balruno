@@ -81,10 +81,6 @@ import CalendarView from '@/components/views/CalendarView';
 import GanttView from '@/components/views/GanttView';
 import FormView from '@/components/views/FormView';
 import GalleryView from '@/components/views/GalleryView';
-import { BalanceHeatmap } from '@/components/views/BalanceHeatmap';
-import { CurveOverlay } from '@/components/views/CurveOverlay';
-import { ProbabilityTree } from '@/components/views/ProbabilityTree';
-import ServerDiffView from '@/components/views/ServerDiffView';
 import ViewSwitcher from '@/components/views/ViewSwitcher';
 import { TemplateImportModal } from '@/components/sheet/TemplateImportModal';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
@@ -912,21 +908,11 @@ export default function WorkspaceShell({
                     <FormView projectId={project.id} sheet={selectedSheet} />
                   ) : selectedSheet.activeView === 'gallery' ? (
                     <GalleryView projectId={project.id} sheet={selectedSheet} />
-                  ) : selectedSheet.activeView === 'heatmap' ? (
-                    <BalanceHeatmap sheetId={selectedSheet.id} />
-                  ) : selectedSheet.activeView === 'curve' ? (
-                    <CurveOverlay sheetId={selectedSheet.id} />
-                  ) : selectedSheet.activeView === 'probability' ? (
-                    <ProbabilityTree sheetId={selectedSheet.id} />
-                  ) : selectedSheet.activeView === 'diff' ? (
-                    // ServerDiffView walks op_idempotency.inverse_payload
-                    // backward from the current project to synthesise a
-                    // "before" snapshot inside the 120-min reversible
-                    // window (ADR 0021 v3.0 Phase 5). Picker chooses
-                    // how far back. Per-tab + per-user scope (Baserow
-                    // pattern) — solo dev sees their own edit history.
-                    <ServerDiffView projectId={project.id} sheetId={selectedSheet.id} />
                   ) : (
+                    // Legacy 'heatmap'/'curve'/'probability'/'diff'/'diagram'
+                    // 시트는 이 분기로 떨어져 grid 폴백. 동일 표현은
+                    // BottomDock 의 matchupMatrix / chart+powerCurveCompare /
+                    // lootSimulator / snapshotCompare 로 이동.
                     <SheetTable projectId={project.id} sheet={selectedSheet} />
                   )}
                 </div>

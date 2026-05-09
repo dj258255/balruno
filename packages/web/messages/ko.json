@@ -1626,39 +1626,6 @@
     "connectedChanges": "연결된 변경 ({n})"
   },
   "views": {
-    "heatmap": {
-      "tab": "히트맵",
-      "noSheet": "시트가 선택되지 않았습니다",
-      "noNumericColumns": "수치형 컬럼이 없어 히트맵을 만들 수 없습니다",
-      "rowHeader": "행",
-      "legendLow": "낮음",
-      "legendHigh": "높음"
-    },
-    "curve": {
-      "tab": "곡선",
-      "noSheet": "시트가 선택되지 않았습니다",
-      "needTwoNumericColumns": "수치형 컬럼이 2개 이상 있어야 곡선 비교가 가능합니다",
-      "xAxisLabel": "X축",
-      "seriesLabel": "비교 시리즈"
-    },
-    "probability": {
-      "tab": "확률 트리",
-      "noSheet": "시트가 선택되지 않았습니다",
-      "cantInfer": "확률/가중치 컬럼을 찾을 수 없습니다 (column 이름에 weight, probability, rate 포함 필요)",
-      "inferredHint": "가중치 컬럼: {weight}, 라벨 컬럼: {label}",
-      "groupTotal": "{count}개 항목 · 전체의 {total}",
-      "overall": "전체",
-      "weightsNote": "총 가중치 합계: {total} (1.0 이 아니면 정규화된 비율로 표시됨)"
-    },
-    "diff": {
-      "tab": "비교",
-      "noSheetInBoth": "두 버전 모두에 해당 시트가 없습니다",
-      "added": "추가",
-      "changed": "변경",
-      "removed": "삭제",
-      "unchanged": "동일",
-      "rowHeader": "행"
-    },
     "grid": "시트",
     "form": "폼",
     "kanban": "칸반",

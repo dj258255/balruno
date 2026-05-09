@@ -162,19 +162,18 @@ export interface FilterGroup {
   groups?: FilterGroup[];
 }
 
-// 뷰 타입 — 'heatmap'/'curve'/'probability'/'diff' 는 game-domain 차별 view (v0.5+)
+// 뷰 타입 — Notion/Airtable 6 표준 (data shape 표현).
+// 게임 도메인 비교/검증 (heatmap/curve/probability/diff) 은 BottomDock
+// 도구 (matchupMatrix / chart+powerCurveCompare / lootSimulator /
+// snapshotCompare) 가 시트 옆 docked panel 로 더 잘 처리하므로 view
+// 에서는 빠짐. 기존 시트가 그 type 이거나 legacy 'diagram' 이면 grid 폴백.
 export type ViewType =
   | 'grid'
   | 'form'
   | 'kanban'
   | 'calendar'
   | 'gallery'
-  | 'gantt'
-  | 'diagram'
-  | 'heatmap'
-  | 'curve'
-  | 'probability'
-  | 'diff';
+  | 'gantt';
 
 /** 시트 용도 — export 정책, 사이드바 분류, AI 컨텍스트 가중치 결정 */
 export type SheetKind = 'game-data' | 'pm' | 'analysis' | 'reference';

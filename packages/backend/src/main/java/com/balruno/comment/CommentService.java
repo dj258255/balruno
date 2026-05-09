@@ -44,6 +44,14 @@ public interface CommentService {
     /** List comments on a document body. */
     List<Comment> listForDoc(UUID callerUserId, UUID projectId, UUID documentId);
 
+    /**
+     * Project-wide comment browse used by the dock CommentsPanel —
+     * every non-deleted comment in the project, newest first, capped
+     * at 200. Replies are included; the panel groups them client-side.
+     * Auth: caller must be a member of the project.
+     */
+    List<Comment> listForProject(UUID callerUserId, UUID projectId);
+
     /** Inbox — unread mentions for a user across all projects. */
     List<Comment> listUnreadMentions(UUID userId, int limit);
 

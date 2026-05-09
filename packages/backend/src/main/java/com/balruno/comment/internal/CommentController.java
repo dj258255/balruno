@@ -87,11 +87,15 @@ class CommentController {
     List<Comment> list(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID projectId,
-            @RequestParam Comment.ScopeKind scope,
+            @RequestParam(required = false) Comment.ScopeKind scope,
             @RequestParam(required = false) UUID sheetId,
             @RequestParam(required = false) UUID rowId,
             @RequestParam(required = false) UUID columnId,
             @RequestParam(required = false) UUID documentId) {
+        // scope omitted → project-wide browse (CommentsPanel dock).
+        if (scope == null) {
+            return comments.listForProject(callerId(jwt), projectId);
+        }
         return switch (scope) {
             case SHEET_CELL -> {
                 if (sheetId == null || rowId == null || columnId == null) {

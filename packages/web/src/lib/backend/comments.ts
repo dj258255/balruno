@@ -89,3 +89,13 @@ export function listCommentsForDoc(
 export function listInbox(limit = 50): Promise<BackendComment[]> {
   return request<BackendComment[]>(`/api/v1/me/inbox?limit=${limit}`);
 }
+
+/**
+ * Project-wide browse — every non-deleted comment in the project,
+ * newest first, server-capped at 200. Backing the dock CommentsPanel.
+ * scope param is omitted so the backend short-circuits to the
+ * project-wide path.
+ */
+export function listCommentsForProject(projectId: string): Promise<BackendComment[]> {
+  return request<BackendComment[]>(`/api/v1/projects/${projectId}/comments`);
+}

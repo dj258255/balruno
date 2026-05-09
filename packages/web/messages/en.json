@@ -1626,39 +1626,6 @@
     "connectedChanges": "Linked changes ({n})"
   },
   "views": {
-    "heatmap": {
-      "tab": "Heatmap",
-      "noSheet": "No sheet selected",
-      "noNumericColumns": "No numeric columns — heatmap cannot be rendered",
-      "rowHeader": "Row",
-      "legendLow": "Low",
-      "legendHigh": "High"
-    },
-    "curve": {
-      "tab": "Curves",
-      "noSheet": "No sheet selected",
-      "needTwoNumericColumns": "Need at least 2 numeric columns to overlay curves",
-      "xAxisLabel": "X axis",
-      "seriesLabel": "Series"
-    },
-    "probability": {
-      "tab": "Probability",
-      "noSheet": "No sheet selected",
-      "cantInfer": "No probability/weight column found (column name should contain weight, probability, or rate)",
-      "inferredHint": "Weight column: {weight}, label column: {label}",
-      "groupTotal": "{count} items · {total} of total",
-      "overall": "overall",
-      "weightsNote": "Total weight: {total} (normalized to ratios when not 1.0)"
-    },
-    "diff": {
-      "tab": "Diff",
-      "noSheetInBoth": "Sheet missing from both versions",
-      "added": "added",
-      "changed": "changed",
-      "removed": "removed",
-      "unchanged": "unchanged",
-      "rowHeader": "Row"
-    },
     "grid": "Grid",
     "form": "Form",
     "kanban": "Kanban",

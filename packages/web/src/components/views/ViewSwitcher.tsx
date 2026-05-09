@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Filter, Flame, TrendingUp, GitFork, GitCompare, Share2, Plug, Inbox, Download, Code2 } from 'lucide-react';
+import { Table2, FileText, Columns3, Calendar, Image, GanttChart, Plus, Bookmark, X, Filter, Share2, Plug, Inbox, Download, Code2 } from 'lucide-react';
 import { downloadSheetCsv } from '@/lib/sheet/csvExport';
 import { downloadCSharpStruct } from '@/lib/sheet/csharpExport';
 import { useTranslations } from 'next-intl';
@@ -24,8 +24,11 @@ interface ViewSwitcherProps {
   sheet: Sheet;
 }
 
-// diagram 뷰는 경제 워크벤치 패널(DockedToolbox) 로 이관돼 여기서 제외됨.
-// legacy 데이터 (sheet.activeView === 'diagram') 는 page.tsx 에서 grid 로 폴백.
+// game-domain 비교/검증 (heatmap/curve/probability/diff) 은 BottomDock 도구
+// (matchupMatrix / chart+powerCurveCompare / lootSimulator /
+// snapshotCompare) 가 시트 옆 docked panel 로 더 잘 처리하므로 view 에서
+// 빠짐. 기존 시트가 그 type 이거나 legacy 'diagram' 이면 grid 로 폴백
+// (WorkspaceShell + share/[token]/page).
 const VIEWS: Array<{ id: ViewType; labelKey: string; icon: typeof Table2 }> = [
   { id: 'grid', labelKey: 'views.grid', icon: Table2 },
   { id: 'form', labelKey: 'views.form', icon: FileText },
@@ -33,17 +36,10 @@ const VIEWS: Array<{ id: ViewType; labelKey: string; icon: typeof Table2 }> = [
   { id: 'calendar', labelKey: 'views.calendar', icon: Calendar },
   { id: 'gallery', labelKey: 'views.gallery', icon: Image },
   { id: 'gantt', labelKey: 'views.gantt', icon: GanttChart },
-  // game-domain views — Balruno 차별점
-  { id: 'heatmap', labelKey: 'views.heatmap.tab', icon: Flame },
-  { id: 'curve', labelKey: 'views.curve.tab', icon: TrendingUp },
-  { id: 'probability', labelKey: 'views.probability.tab', icon: GitFork },
-  { id: 'diff', labelKey: 'views.diff.tab', icon: GitCompare },
 ];
 
 const VIEW_ICON: Record<ViewType, typeof Table2> = {
   grid: Table2, form: FileText, kanban: Columns3, calendar: Calendar, gallery: Image, gantt: GanttChart,
-  diagram: Table2,
-  heatmap: Flame, curve: TrendingUp, probability: GitFork, diff: GitCompare,
 };
 
 export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {

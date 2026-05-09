@@ -227,6 +227,12 @@ class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    public List<Comment> listForProject(UUID callerUserId, UUID projectId) {
+        projects.findById(projectId, callerUserId);
+        return repo.listForProject(projectId);
+    }
+
+    @Override
     public List<Comment> listUnreadMentions(UUID userId, int limit) {
         // No project-level auth — the user is just looking at their
         // own inbox. The repository filters on mentioned_user = userId.

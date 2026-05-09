@@ -3,10 +3,10 @@
  *
  * Sibling of {@link applyUndoableOps}: same op semantics but takes
  * a Project value and returns a new Project. Doesn't mutate input,
- * doesn't emit wire ops, doesn't touch the store. Used by
- * SheetDiffView to reconstruct historical baselines from
- * op_idempotency.inverse_payload — apply N inverses in sequence
- * to currentProject and you get the project state from N edits ago.
+ * doesn't emit wire ops, doesn't touch the store. Used to
+ * reconstruct historical baselines from op_idempotency.inverse_payload
+ * — apply N inverses in sequence to currentProject and you get the
+ * project state from N edits ago.
  *
  * Each branch mirrors the matching cellSlice / tree action so the
  * reconstruction matches what the live store would compute.
