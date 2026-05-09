@@ -61,3 +61,16 @@ export function updateProject(
 export function deleteProject(id: string): Promise<void> {
   return request<void>(`/api/v1/projects/${id}`, { method: 'DELETE' });
 }
+
+/**
+ * Sidebar drag-drop reorder. The caller computes a lexorank midpoint
+ * between the two siblings the project lands between (lib/lexorank);
+ * backend stores it in projects.sort_key (V25). listProjects orders
+ * by sort_key, so the next list fetch reflects the new order.
+ */
+export function setProjectPosition(id: string, sortKey: string): Promise<Project> {
+  return request<Project>(`/api/v1/projects/${id}/position`, {
+    method: 'POST',
+    body: { sortKey },
+  });
+}

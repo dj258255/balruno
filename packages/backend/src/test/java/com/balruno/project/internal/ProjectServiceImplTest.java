@@ -84,7 +84,7 @@ class ProjectServiceImplTest {
 
         @Test
         void list_returns_only_active_projects_in_workspace() {
-            when(projects.findByWorkspaceIdAndDeletedAtIsNullOrderByCreatedAtAsc(wsId))
+            when(projects.findByWorkspaceIdAndDeletedAtIsNullOrderBySortKeyAscCreatedAtAsc(wsId))
                     .thenReturn(java.util.List.of(
                             stamp(new ProjectEntity(wsId, "p1", "P1", null, userId)),
                             stamp(new ProjectEntity(wsId, "p2", "P2", null, userId))));

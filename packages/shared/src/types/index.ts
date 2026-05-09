@@ -46,6 +46,13 @@ export interface Project {
   createdAt: number;
   updatedAt: number;
   sheets: Sheet[];
+  /** Owning workspace id — populated by the sync bridge in
+   *  server-canonical mode, undefined for legacy local mode. */
+  workspaceId?: string;
+  /** Lexorank fractional sort key (V25). Populated by the sync
+   *  bridge from the backend Project DTO. Drives the sidebar list
+   *  order in server-canonical mode. */
+  sortKey?: string;
   /**
    * Optional Notion-style nested tree of sheet groups + sheet
    * leaves. Server-canonical mode hydrates this from

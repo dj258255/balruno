@@ -100,6 +100,19 @@ class ProjectController {
         projects.softDelete(id, callerId(jwt));
     }
 
+    /**
+     * Sidebar drag-drop reorder. Frontend computes a lexorank midpoint
+     * between the two siblings the project lands between and POSTs it
+     * here; only this single row is updated. listInWorkspace orders
+     * by sort_key so the next list fetch reflects the new position.
+     */
+    @PostMapping(path = "/projects/{id}/position", version = "1")
+    Project setPosition(@AuthenticationPrincipal Jwt jwt,
+                        @PathVariable UUID id,
+                        @RequestBody @Valid PositionRequest body) {
+        return projects.updateSortKey(id, callerId(jwt), body.sortKey());
+    }
+
     private static UUID callerId(Jwt jwt) {
         return UUID.fromString(jwt.getSubject());
     }
@@ -113,4 +126,7 @@ class ProjectController {
             @Size(min = 3, max = 30) String slug,
             @Size(min = 1, max = 120) String name,
             String description) {}
+
+    record PositionRequest(
+            @NotBlank @Size(min = 1, max = 64) String sortKey) {}
 }

@@ -23,6 +23,8 @@ import { toast } from 'sonner';
 import type { StoreApi } from 'zustand';
 import type { Sheet } from '@/types';
 import type { SheetMetadataPatch } from '@/lib/sync/opMapper';
+import { setProjectPosition } from '@/lib/backend';
+import { midpoint } from '@/lib/lexorank';
 import type { ProjectState } from '../projectStore';
 
 type SetFn = StoreApi<ProjectState>['setState'];
@@ -42,7 +44,7 @@ function emitTreeMove(detail: TreeMoveEventDetail): void {
   );
 }
 
-export const createTreeMutationActions = (_set: SetFn, get: GetFn) => ({
+export const createTreeMutationActions = (set: SetFn, get: GetFn) => ({
   reorderSheets: ((projectId: string, fromIndex: number, toIndex: number) => {
     if (fromIndex === toIndex) return;
     const project = get().projects.find((p) => p.id === projectId);
@@ -87,8 +89,49 @@ export const createTreeMutationActions = (_set: SetFn, get: GetFn) => ({
     toast.error('다른 프로젝트로 시트 이동은 곧 지원됩니다.');
   },
 
-  reorderProjects: ((..._args: unknown[]) => {
-    toast.error('프로젝트 순서 변경은 곧 지원됩니다.');
+  /**
+   * Sidebar drag-drop project reorder. Computes a lexorank midpoint
+   * between the two siblings the dragged project lands between,
+   * POSTs `/projects/:id/position`, and on success patches the
+   * dragged project's sortKey in the local store + re-sorts the list.
+   *
+   * No optimistic splice on the way out — the local rows carry
+   * sheet/tree state hydrated by the sync bridge, and we don't want
+   * to risk drifting that off the canonical row order while the
+   * write is in flight. The backend round-trip on a single project
+   * is fast enough that the post-confirm re-sort lands within the
+   * same drag's animation window.
+   */
+  reorderProjects: ((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const all = get().projects;
+    const moved = all[fromIndex];
+    if (!moved) return;
+    // Walk a hypothetical post-move list to pick the dragged
+    // project's new neighbours; their sortKeys define the midpoint.
+    const reordered = [...all];
+    reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    const left = reordered[toIndex - 1];
+    const right = reordered[toIndex + 1];
+    const newKey = midpoint(left?.sortKey, right?.sortKey);
+
+    void (async () => {
+      try {
+        await setProjectPosition(moved.id, newKey);
+        // Patch the moved row's sortKey in place, then re-sort the
+        // entire list by sortKey so the sidebar reflects the new
+        // position without losing per-row sheet/tree state.
+        set((state) => ({
+          projects: state.projects
+            .map((p) => (p.id === moved.id ? { ...p, sortKey: newKey } : p))
+            .slice()
+            .sort((a, b) => (a.sortKey ?? '').localeCompare(b.sortKey ?? '')),
+        }));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : '순서 변경 실패');
+      }
+    })();
   }) as (...args: unknown[]) => void,
 
   // Sheet metadata mutations (kind, exportClassName, name, icon, view

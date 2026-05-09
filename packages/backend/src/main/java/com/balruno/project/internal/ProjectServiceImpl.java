@@ -51,6 +51,7 @@ class ProjectServiceImpl implements ProjectService {
 
         var fresh = new ProjectEntity(workspaceId, slug, name, description, callerUserId);
         fresh.seedInitialData(buildDefaultSheetJson());
+        fresh.changeSortKey(nextBottomSortKey(workspaceId));
         var entity = saveOrThrow(fresh);
         return toDto(entity);
     }
@@ -80,6 +81,7 @@ class ProjectServiceImpl implements ProjectService {
             // StarterPackSeeder.
             fresh.seedInitialData(buildDefaultSheetJson());
         }
+        fresh.changeSortKey(nextBottomSortKey(workspaceId));
         var entity = saveOrThrow(fresh);
         return toDto(entity);
     }
@@ -126,7 +128,7 @@ class ProjectServiceImpl implements ProjectService {
     @Transactional(readOnly = true)
     public List<Project> listInWorkspace(UUID workspaceId, UUID callerUserId) {
         workspaces.requireRole(workspaceId, callerUserId, WorkspaceRole.VIEWER);
-        return projects.findByWorkspaceIdAndDeletedAtIsNullOrderByCreatedAtAsc(workspaceId).stream()
+        return projects.findByWorkspaceIdAndDeletedAtIsNullOrderBySortKeyAscCreatedAtAsc(workspaceId).stream()
                 .map(ProjectServiceImpl::toDto)
                 .toList();
     }
@@ -166,6 +168,39 @@ class ProjectServiceImpl implements ProjectService {
         return projects.countByWorkspaceIdAndDeletedAtIsNull(workspaceId);
     }
 
+    @Override
+    public Project updateSortKey(UUID projectId, UUID callerUserId, String newSortKey) {
+        if (newSortKey == null) {
+            throw new ProjectException(
+                    ProjectException.Reason.SLUG_INVALID,
+                    "sort_key required.");
+        }
+        var trimmed = newSortKey.trim();
+        if (trimmed.isEmpty() || trimmed.length() > 64
+                || !trimmed.matches("[a-z]+")) {
+            throw new ProjectException(
+                    ProjectException.Reason.SLUG_INVALID,
+                    "sort_key must be 1-64 lowercase letters.");
+        }
+        var entity = loadActive(projectId);
+        workspaces.requireRole(entity.getWorkspaceId(), callerUserId, WorkspaceRole.BUILDER);
+        entity.changeSortKey(trimmed);
+        return toDto(saveOrThrow(entity));
+    }
+
+    /**
+     * Returns a sort_key that lands a new project after the current
+     * tail in the workspace. Picks the lexicographic successor of the
+     * highest existing key (e.g. 'm' → 'mm', 'zm' → 'zmm') so the
+     * frontend midpoint generator never has to worry about the empty
+     * or single-row case. The 'a' fallback is for an empty workspace.
+     */
+    private String nextBottomSortKey(UUID workspaceId) {
+        return projects.findMaxSortKey(workspaceId)
+                .map(k -> k + "m")
+                .orElse("m");
+    }
+
     // ── helpers ────────────────────────────────────────────────────────
 
     private ProjectEntity loadActive(UUID projectId) {
@@ -194,6 +229,6 @@ class ProjectServiceImpl implements ProjectService {
         return new Project(
                 e.getId(), e.getWorkspaceId(), e.getSlug(), e.getName(),
                 e.getDescription(), e.getCreatedBy(),
-                e.getCreatedAt(), e.getUpdatedAt());
+                e.getCreatedAt(), e.getUpdatedAt(), e.getSortKey());
     }
 }

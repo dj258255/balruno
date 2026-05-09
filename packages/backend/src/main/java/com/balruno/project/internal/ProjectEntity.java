@@ -55,6 +55,18 @@ class ProjectEntity {
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 
+    /**
+     * Lexorank-style fractional sort key for the per-workspace sidebar
+     * project list (V25). Inserts between two siblings generate a new
+     * key between the two existing values, so drag-drop reorder is a
+     * single-row UPDATE regardless of list length. The 'a' default
+     * keeps brand-new projects above any backfilled rows by design;
+     * ProjectService rebases new inserts to the end of the active
+     * list so they actually land at the bottom of the sidebar.
+     */
+    @Column(name = "sort_key", nullable = false, length = 64)
+    private String sortKey = "a";
+
     // ── sync phase columns (V8) ───────────────────────────────────────
     // 3 영역 (시트 셀 / 시트 트리 / 문서 트리) 의 JSONB blob + version.
     // ADR 0008 v2.0 그대로. JSON 직렬화는 String 으로 두고 jsonb_set
@@ -162,6 +174,8 @@ class ProjectEntity {
     void rename(String newName) { this.name = newName; }
     void changeSlug(String newSlug) { this.slug = newSlug; }
     void changeDescription(String newDescription) { this.description = newDescription; }
+    void changeSortKey(String newSortKey) { this.sortKey = newSortKey; }
+    public String getSortKey() { return sortKey; }
     void softDelete() {
         if (this.deletedAt == null) {
             this.deletedAt = OffsetDateTime.now(ZoneOffset.UTC);

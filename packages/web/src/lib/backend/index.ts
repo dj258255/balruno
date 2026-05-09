@@ -63,6 +63,7 @@ export {
   deleteProject,
   getProject,
   listProjects,
+  setProjectPosition,
   updateProject,
 } from './projects';
 export type { CreateProjectInput } from './projects';

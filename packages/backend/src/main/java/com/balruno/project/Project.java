@@ -16,5 +16,6 @@ public record Project(
         String description,
         UUID createdBy,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        OffsetDateTime updatedAt,
+        String sortKey
 ) {}

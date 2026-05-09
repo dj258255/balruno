@@ -112,4 +112,6 @@ export interface Project {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  /** Lexorank fractional key driving the sidebar list order (V25). */
+  sortKey: string;
 }

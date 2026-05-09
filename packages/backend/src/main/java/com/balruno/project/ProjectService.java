@@ -46,6 +46,16 @@ public interface ProjectService {
     void softDelete(UUID projectId, UUID callerUserId);
 
     /**
+     * Update a single project's lexorank sort_key. Used by the sidebar
+     * drag-drop reorder. Caller must be Builder+ on the parent
+     * workspace. The frontend computes the key as a midpoint between
+     * the two siblings the project lands between, so collisions /
+     * rebalances stay rare enough to not warrant a server-side
+     * arithmetic generator. Server only validates length + alphabet.
+     */
+    Project updateSortKey(UUID projectId, UUID callerUserId, String newSortKey);
+
+    /**
      * Active project count for quota readouts. Operator-internal: callers
      * are responsible for ensuring the user is allowed to see the
      * workspace before exposing this number.
