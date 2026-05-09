@@ -60,15 +60,18 @@ class SheetCellOpService {
             new com.fasterxml.jackson.databind.ObjectMapper();
 
     private final org.springframework.context.ApplicationEventPublisher events;
+    private final com.balruno.workspace.LimitGuard limitGuard;
 
     SheetCellOpService(JdbcTemplate jdbc,
                        OpIdempotencyRepository idempotency,
                        ObjectMapper json,
-                       org.springframework.context.ApplicationEventPublisher events) {
+                       org.springframework.context.ApplicationEventPublisher events,
+                       com.balruno.workspace.LimitGuard limitGuard) {
         this.jdbc = jdbc;
         this.idempotency = idempotency;
         this.json = json;
         this.events = events;
+        this.limitGuard = limitGuard;
     }
 
     /**
@@ -150,6 +153,15 @@ class SheetCellOpService {
                     : nodeMapper.createArrayNode();
             data = nodeMapper.createObjectNode();
             data.set("sheets", sheets);
+            // Per-plan caps before mutation: row.add hits maxRowsPerSheet
+            // and maxCellsPerProject. Other ops (cell.update, column.add,
+            // ...) don't grow these axes (column.add adds a column but
+            // 'cells' counted is rows × columns — same total *until* a
+            // row exists; the next row.add will be guarded). Reads the
+            // workspace plan via a single PK join inside the same tx.
+            if (op instanceof SyncMessage.RowAdd rowAdd) {
+                requireRowAddBelowPlanLimit(projectId, sheets, rowAdd);
+            }
             applyToData(data, op);
         } catch (Exception e) {
             throw new IllegalStateException("failed to apply op to projects.data", e);
@@ -322,6 +334,70 @@ class SheetCellOpService {
             }
         }
         return null;
+    }
+
+    /**
+     * Per-plan caps for {@code row.add} (ADR 0016 / WorkspaceLimits):
+     *   - rowsPerSheet: target sheet's current rows + 1 ≤ limit
+     *   - cellsPerProject: total (rows × columns) across all sheets
+     *     in the project, after the new row, ≤ limit
+     *
+     * Reads the workspace plan via a single PK join inside the existing
+     * transaction. cell counts are computed off the in-memory sheets
+     * array (already parsed for the mutation), so no extra disk read.
+     * Skips silently when the project / sheet is missing — the next
+     * mutation step will fail with a clearer error.
+     */
+    private void requireRowAddBelowPlanLimit(UUID projectId, ArrayNode sheets,
+                                             SyncMessage.RowAdd op) {
+        var plan = workspacePlanFor(projectId);
+        if (plan == null) return;
+        var limits = com.balruno.workspace.WorkspaceLimits.forPlan(plan);
+
+        var target = sheets.path(0); // unused fallback
+        int rowsInTarget = -1;
+        int columnsInTarget = 0;
+        long totalCells = 0;
+        var sheetIdStr = op.sheetId().toString();
+        for (var sheet : sheets) {
+            if (!sheet.isObject()) continue;
+            var rows = sheet.path("rows");
+            var cols = sheet.path("columns");
+            int rcount = rows.isArray() ? rows.size() : 0;
+            int ccount = cols.isArray() ? cols.size() : 0;
+            totalCells += (long) rcount * (long) ccount;
+            if (sheetIdStr.equals(sheet.path("id").asText())) {
+                target = sheet;
+                rowsInTarget = rcount;
+                columnsInTarget = ccount;
+            }
+        }
+        if (rowsInTarget < 0) return; // sheet not found — let the apply step fail
+
+        limitGuard.requireBelow(plan, "rowsPerSheet",
+                rowsInTarget, limits.maxRowsPerSheet());
+        // cells gain = columns of the target sheet (one new row × M cols).
+        var cellsAfter = totalCells + columnsInTarget;
+        limitGuard.requireBelow(plan, "cellsPerProject",
+                cellsAfter - 1, limits.maxCellsPerProject());
+    }
+
+    /**
+     * Resolves the owning workspace's billing plan for a project id.
+     * Same shape as TreeOpService.workspacePlanFor — duplicated rather
+     * than shared to keep the sync module's static dep graph thin.
+     */
+    private com.balruno.workspace.WorkspacePlan workspacePlanFor(UUID projectId) {
+        try {
+            var name = jdbc.queryForObject(
+                    "SELECT w.plan::text "
+                  + "FROM workspaces w JOIN projects p ON p.workspace_id = w.id "
+                  + "WHERE p.id = ? AND p.deleted_at IS NULL",
+                    String.class, projectId);
+            return name == null ? null : com.balruno.workspace.WorkspacePlan.valueOf(name);
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return null;
+        }
     }
 
     // ── op-tree mutation ──────────────────────────────────────────────

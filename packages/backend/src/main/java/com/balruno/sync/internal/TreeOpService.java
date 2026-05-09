@@ -74,15 +74,18 @@ class TreeOpService {
             new com.fasterxml.jackson.databind.ObjectMapper();
 
     private final org.springframework.context.ApplicationEventPublisher events;
+    private final com.balruno.workspace.LimitGuard limitGuard;
 
     TreeOpService(JdbcTemplate jdbc,
                   OpIdempotencyRepository idempotency,
                   ObjectMapper json,
-                  org.springframework.context.ApplicationEventPublisher events) {
+                  org.springframework.context.ApplicationEventPublisher events,
+                  com.balruno.workspace.LimitGuard limitGuard) {
         this.jdbc = jdbc;
         this.idempotency = idempotency;
         this.json = json;
         this.events = events;
+        this.limitGuard = limitGuard;
     }
 
     @Transactional
@@ -150,6 +153,15 @@ class TreeOpService {
         try {
             JsonNode parsed = nodeMapper.readTree(row.treeJson);
             roots = parsed.isArray() ? (ArrayNode) parsed : nodeMapper.createArrayNode();
+            // Per-plan cap before mutating — tree.add of a sheet leaf
+            // hits maxSheetsPerProject, doc leaf hits maxDocumentsPerProject.
+            // Reads the plan via a project→workspace JDBC join inside
+            // the same transaction. WorkspaceLimits.forPlan(...) lookup is
+            // local; only the workspace_id+plan SELECT is on the wire.
+            // Folder leaves are uncapped.
+            if (op instanceof SyncMessage.TreeAdd add) {
+                requireTreeAddBelowPlanLimit(projectId, treeKind, roots, add);
+            }
             deletedNodeIds = applyToTree(roots, op);
         } catch (Exception e) {
             throw new IllegalStateException("failed to apply op to projects."
@@ -379,6 +391,70 @@ class TreeOpService {
      * uses these to cascade-soft-delete {@code documents} rows when
      * the affected tree is the doc tree.
      */
+    /**
+     * Per-plan cap for {@code tree.add} — sheet leaves count toward
+     * {@code maxSheetsPerProject}, doc leaves toward
+     * {@code maxDocumentsPerProject}. Folder nodes are uncapped (they
+     * don't carry sheet/doc rows). Reads the workspace plan via a
+     * single JDBC join inside the existing transaction.
+     */
+    private void requireTreeAddBelowPlanLimit(UUID projectId, SyncMessage.TreeKind kind,
+                                              ArrayNode currentRoots, SyncMessage.TreeAdd op) {
+        var node = nodeMapper.valueToTree(op.node());
+        if (!(node instanceof ObjectNode obj)) return;
+        var typeField = obj.get("type");
+        if (typeField == null || typeField.isNull()) return;
+        var leafType = typeField.asText();
+        var plan = workspacePlanFor(projectId);
+        if (plan == null) return;
+        var limits = com.balruno.workspace.WorkspaceLimits.forPlan(plan);
+        if (kind == SyncMessage.TreeKind.SHEET && "sheet".equals(leafType)) {
+            var current = countLeavesByType(currentRoots, "sheet");
+            limitGuard.requireBelow(plan, "sheetsPerProject", current, limits.maxSheetsPerProject());
+        } else if (kind == SyncMessage.TreeKind.DOC && "doc".equals(leafType)) {
+            var current = countLeavesByType(currentRoots, "doc");
+            limitGuard.requireBelow(plan, "documentsPerProject", current, limits.maxDocumentsPerProject());
+        }
+    }
+
+    /** Recursive walk over the tree counting leaves with the given type. */
+    private static long countLeavesByType(ArrayNode roots, String type) {
+        long count = 0;
+        var stack = new java.util.ArrayDeque<JsonNode>();
+        stack.push(roots);
+        while (!stack.isEmpty()) {
+            var n = stack.pop();
+            if (n.isArray()) {
+                for (var c : n) stack.push(c);
+            } else if (n instanceof ObjectNode obj) {
+                var t = obj.get("type");
+                if (t != null && type.equals(t.asText())) count++;
+                var children = obj.get("children");
+                if (children != null && children.isArray()) stack.push(children);
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Resolves the owning workspace's billing plan for a project id.
+     * Single-row PK join; returns null when the project is missing or
+     * soft-deleted (the cap is skipped in that case — the broader
+     * tree.add will fail on the next read anyway).
+     */
+    private com.balruno.workspace.WorkspacePlan workspacePlanFor(UUID projectId) {
+        try {
+            var name = jdbc.queryForObject(
+                    "SELECT w.plan::text "
+                  + "FROM workspaces w JOIN projects p ON p.workspace_id = w.id "
+                  + "WHERE p.id = ? AND p.deleted_at IS NULL",
+                    String.class, projectId);
+            return name == null ? null : com.balruno.workspace.WorkspacePlan.valueOf(name);
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+
     private Set<UUID> applyToTree(ArrayNode roots, SyncMessage op) {
         return switch (op) {
             case SyncMessage.TreeAdd u    -> { applyTreeAdd(roots, u);    yield Collections.emptySet(); }

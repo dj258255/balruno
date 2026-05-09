@@ -6,6 +6,7 @@ import com.balruno.workspace.LimitGuard;
 import com.balruno.workspace.Workspace;
 import com.balruno.workspace.WorkspaceException;
 import com.balruno.workspace.WorkspaceInvite;
+import com.balruno.workspace.WorkspaceLimits;
 import com.balruno.workspace.WorkspaceMember;
 import com.balruno.workspace.WorkspaceRole;
 import com.balruno.workspace.WorkspaceService;
@@ -235,14 +236,28 @@ class WorkspaceServiceImpl implements WorkspaceService {
                     WorkspaceException.Reason.INVITE_EXPIRED,
                     "Invite has expired.");
         }
-        loadActive(invite.getWorkspaceId());
+        var workspace = loadActive(invite.getWorkspaceId());
 
         // Idempotent member creation: if the user is already a member,
         // mark the invite consumed but don't change the existing role —
         // explicit role changes go through changeMemberRole.
         var existing = memberRepo.findByWorkspaceIdAndUserId(invite.getWorkspaceId(), userId);
-        var membership = existing.orElseGet(() -> memberRepo.save(
-                new WorkspaceMemberEntity(invite.getWorkspaceId(), userId, invite.getRole())));
+        WorkspaceMemberEntity membership;
+        if (existing.isPresent()) {
+            membership = existing.get();
+        } else {
+            // Per-plan member cap (ADR 0016 / WorkspaceLimits) — checked
+            // *only* on net-new memberships so an idempotent re-accept
+            // doesn't trip the limit. countMembers happens inside this
+            // transaction so a parallel accept can't slip past in a race
+            // (the cap may briefly under-count by ~1 under contention,
+            // which is acceptable for FREE/PRO plans).
+            var limit = WorkspaceLimits.forPlan(workspace.getPlan()).maxMembersPerWorkspace();
+            var current = memberRepo.countByWorkspaceId(invite.getWorkspaceId());
+            limitGuard.requireBelow(workspace.getPlan(), "membersPerWorkspace", current, limit);
+            membership = memberRepo.save(
+                    new WorkspaceMemberEntity(invite.getWorkspaceId(), userId, invite.getRole()));
+        }
         invite.markAccepted(userId);
         inviteRepo.save(invite);
         return toMemberDto(membership);
