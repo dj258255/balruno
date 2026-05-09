@@ -54,7 +54,7 @@
     }
   },
   "sidebar": {
-    "newProject": "새 게임",
+    "newProject": "새 프로젝트",
     "projects": "게임",
     "emptyCta": {
       "heading": "샘플로 바로 시작",
@@ -191,7 +191,7 @@
     "settingsDeleteConfirmAction": "영구 삭제",
     "settingsDeleteSuccess": "워크스페이스가 삭제되었습니다",
     "confirmCancel": "취소",
-    "newProjectShort": "새 게임",
+    "newProjectShort": "새 프로젝트",
     "fromTemplateGallery": "템플릿 갤러리에서 시작",
     "sheetPurpose": "시트 용도",
     "autoDetect": "자동 감지",
@@ -200,7 +200,7 @@
     "qaMySprint": "내 Sprint",
     "qaMyBugs": "내 버그",
     "qaRecentEdits": "최근 편집",
-    "qaNewProject": "새 게임",
+    "qaNewProject": "새 프로젝트",
     "qaTemplateGallery": "템플릿 갤러리",
     "qaOpenInbox": "Inbox 열기",
     "qaMarkAllRead": "모두 읽음 표시",
@@ -1272,7 +1272,7 @@
     "teamPmTitle": "팀 PM (Studio)",
     "teamPmSubtitle": "스프린트 / 버그 / 에픽 로드맵",
     "startGuide": "왼쪽 사이드바에서",
-    "startButton": "새 게임",
+    "startButton": "새 프로젝트",
     "startEnd": "를 만들어 시작하세요"
   },
   "tooltip": {
@@ -1769,7 +1769,7 @@
     "tools": "도구",
     "functions": "수식 함수",
     "settings": "설정",
-    "newProject": "새 게임",
+    "newProject": "새 프로젝트",
     "newSheet": "새 시트",
     "toggleTheme": "다크/라이트 테마 전환",
     "recent": "최근",
@@ -3621,7 +3621,7 @@
     "confirm": "확인"
   },
   "projectGallery": {
-    "newProjectStart": "새 게임 시작",
+    "newProjectStart": "새 프로젝트 시작",
     "newProjectDesc": "템플릿으로 빠르게 시작하거나 빈 게임을 만드세요",
     "startWithAi": "AI 로 시작"
   },
@@ -4529,7 +4529,7 @@
     "helpAlt": "단축키 도움말 (수정자 버전)",
     "undo": "되돌리기",
     "redo": "다시 실행",
-    "newProject": "새 게임",
+    "newProject": "새 프로젝트",
     "newSheet": "새 시트",
     "formulaHelper": "Formula Helper",
     "themeToggle": "테마 토글",

@@ -45,7 +45,6 @@ import BottomDock from '@/components/BottomDock';
 import DockedToolbox from '@/components/DockedToolbox';
 import Sidebar from '@/components/layout/Sidebar';
 import SheetTabs from '@/components/layout/SheetTabs';
-import SidebarResizer from '@/app/components/SidebarResizer';
 import StickerLayer from '@/components/sheet/StickerLayer';
 import { PmBadgeStrip } from '@/components/sheet/PmBadgeStrip';
 import SheetHeader from '@/app/components/SheetHeader';
@@ -681,7 +680,6 @@ export default function ProjectDetailPage() {
           >
             <Sidebar {...sidebarCallbacks} activeTools={activeTools} />
           </div>
-          <SidebarResizer />
 
           {/* Main column — SheetTabs strip on top, sheet/doc view
               filling the rest. The flex column ensures the strip

@@ -54,7 +54,7 @@
     }
   },
   "sidebar": {
-    "newProject": "New Game",
+    "newProject": "New Project",
     "projects": "Games",
     "emptyCta": {
       "heading": "Start from a sample",
@@ -191,7 +191,7 @@
     "settingsDeleteConfirmAction": "Delete permanently",
     "settingsDeleteSuccess": "Workspace deleted",
     "confirmCancel": "Cancel",
-    "newProjectShort": "New game",
+    "newProjectShort": "New project",
     "fromTemplateGallery": "Start from template gallery",
     "sheetPurpose": "Sheet purpose",
     "autoDetect": "Auto-detect",
@@ -200,7 +200,7 @@
     "qaMySprint": "My Sprint",
     "qaMyBugs": "My bugs",
     "qaRecentEdits": "Recent edits",
-    "qaNewProject": "New game",
+    "qaNewProject": "New project",
     "qaTemplateGallery": "Template gallery",
     "qaOpenInbox": "Open Inbox",
     "qaMarkAllRead": "Mark all as read",
@@ -1272,7 +1272,7 @@
     "teamPmTitle": "Team PM (Studio)",
     "teamPmSubtitle": "Sprint / Bug / Epic Roadmap",
     "startGuide": "Click",
-    "startButton": "New Game",
+    "startButton": "New Project",
     "startEnd": "in the sidebar to get started"
   },
   "tooltip": {
@@ -1769,7 +1769,7 @@
     "tools": "Tools",
     "functions": "Formulas",
     "settings": "Settings",
-    "newProject": "New Game",
+    "newProject": "New Project",
     "newSheet": "New Sheet",
     "toggleTheme": "Toggle Dark/Light Theme",
     "recent": "Recent",
@@ -3621,8 +3621,8 @@
     "confirm": "Got it"
   },
   "projectGallery": {
-    "newProjectStart": "Start a new game",
-    "newProjectDesc": "Begin from a template or create a blank game",
+    "newProjectStart": "Start a new project",
+    "newProjectDesc": "Begin from a template or create a blank project",
     "startWithAi": "Start with AI"
   },
   "dockedToolbox": {
@@ -4529,7 +4529,7 @@
     "helpAlt": "Shortcut help (modifier variant)",
     "undo": "Undo",
     "redo": "Redo",
-    "newProject": "New game",
+    "newProject": "New project",
     "newSheet": "New sheet",
     "formulaHelper": "Formula Helper",
     "themeToggle": "Toggle theme",

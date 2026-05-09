@@ -232,7 +232,15 @@ export default function Sidebar({
       <div
         className="flex flex-col h-full border-r shrink-0 transition-opacity duration-150"
         style={{
-          width: `${effectiveWidth}px`,
+          // Locked at 280px (the v0.5 default) instead of binding to
+          // useToolLayoutStore.sidebarWidth. The user explicitly asked
+          // that dragging the SidebarResizer not reflow the inner
+          // content (workspace switcher truncation, button width,
+          // text-density jumps) — only the boundary between sidebar
+          // and main should move. With the inner sidebar at fixed
+          // width, that's automatic; the resizer change is decoupled
+          // until we re-design what the resize *should* mean.
+          width: '280px',
           background: 'var(--bg-primary)',
           borderColor: 'var(--border-primary)',
           opacity: mounted ? 1 : 0,
