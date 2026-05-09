@@ -830,22 +830,32 @@ export default function SheetTable({ projectId, sheet }: SheetTableProps) {
     rowVirtualizer.measure();
   }, [rowHeights, zoomLevel, rowVirtualizer]);
 
-  // ========== balruno:focus-row — 멘션/changelog 에서 특정 행으로 이동 ==========
+  // ========== balruno:focus-row — 멘션/changelog/CommentsPanel 에서 특정 행/셀로 이동 ==========
+  // detail.columnId 가 있으면 셀까지 select (CommentsPanel jump 경로),
+  // 없으면 행만 flash (changelog 경로). flash 는 1.5s 노란 하이라이트.
   const [flashRowId, setFlashRowId] = useState<string | null>(null);
   useEffect(() => {
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ sheetId: string; rowId: string }>).detail;
+      const detail = (e as CustomEvent<{
+        sheetId: string;
+        rowId: string;
+        columnId?: string;
+      }>).detail;
       if (!detail || detail.sheetId !== sheet.id) return;
       const index = sheet.rows.findIndex((r) => r.id === detail.rowId);
       if (index < 0) return;
       rowVirtualizer.scrollToIndex(index, { align: 'center' });
+      if (detail.columnId && sheet.columns.some((c) => c.id === detail.columnId)) {
+        setSelectedCell({ rowId: detail.rowId, columnId: detail.columnId });
+        setSelectedCells([{ rowId: detail.rowId, columnId: detail.columnId }]);
+      }
       setFlashRowId(detail.rowId);
       const t = setTimeout(() => setFlashRowId(null), 1500);
       return () => clearTimeout(t);
     };
     window.addEventListener('balruno:focus-row', handler);
     return () => window.removeEventListener('balruno:focus-row', handler);
-  }, [sheet.id, sheet.rows, rowVirtualizer]);
+  }, [sheet.id, sheet.rows, sheet.columns, rowVirtualizer, setSelectedCell, setSelectedCells]);
 
   // ========== RENDER ==========
   return (

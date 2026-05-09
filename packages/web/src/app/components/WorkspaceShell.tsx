@@ -372,6 +372,7 @@ export default function WorkspaceShell({
   const storeCurrentSheetId = useProjectStore((s) => s.currentSheetId);
   const storeCurrentDocId = useProjectStore((s) => s.currentDocId);
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
+  const setCurrentDoc = useProjectStore((s) => s.setCurrentDoc);
   useEffect(() => {
     if (storeCurrentSheetId) {
       if (selection?.kind === 'sheet' && selection.id === storeCurrentSheetId) return;
@@ -407,6 +408,48 @@ export default function WorkspaceShell({
     // shifts but the active id is stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection?.kind, selection?.id, explicitSelection, storeCurrentSheetId]);
+
+  // CommentsPanel (BottomDock 의 share-comments) 가 발행하는 jump
+  // 이벤트를 받아 시트/문서를 활성화하고, 시트인 경우 한 프레임
+  // 뒤에 balruno:focus-row 를 재발행해서 SheetTable 이 행 + 셀까지
+  // scroll/select 하게 한다. 시트가 이미 활성 상태면 타이머 없이
+  // 즉시 재발행해도 안전하지만, 다른 시트로 전환되는 경로가 더
+  // 흔하므로 한 박자 늦춰서 마운트를 기다린다.
+  const projectId = project?.id ?? null;
+  useEffect(() => {
+    if (!projectId) return;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        kind: 'cell' | 'doc';
+        projectId: string;
+        sheetId?: string;
+        rowId?: string;
+        columnId?: string;
+        documentId?: string;
+      }>).detail;
+      if (!detail || detail.projectId !== projectId) return;
+      if (detail.kind === 'cell' && detail.sheetId && detail.rowId) {
+        if (storeCurrentSheetId !== detail.sheetId) {
+          setCurrentSheet(detail.sheetId);
+        }
+        const rowId = detail.rowId;
+        const columnId = detail.columnId;
+        const sheetId = detail.sheetId;
+        window.setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent('balruno:focus-row', {
+              detail: { sheetId, rowId, columnId },
+            }),
+          );
+        }, 80);
+      } else if (detail.kind === 'doc' && detail.documentId) {
+        setCurrentDoc(detail.documentId);
+      }
+    };
+    window.addEventListener('balruno:comment-jump', handler);
+    return () => window.removeEventListener('balruno:comment-jump', handler);
+  }, [projectId, storeCurrentSheetId, setCurrentSheet, setCurrentDoc]);
+
   const selectedDocId = selection?.kind === 'doc' ? selection.id : null;
   // Selected doc's title from the tree leaf — falls back to a
   // generic label while the broadcast for a freshly-added doc races
