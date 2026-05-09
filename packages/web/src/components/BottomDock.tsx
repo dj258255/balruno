@@ -20,7 +20,6 @@ import {
   BarChart3,
   Bot,
   Share2,
-  Wand2,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -265,46 +264,10 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
       })()}
 
       <div className="liquid-glass-dock flex items-center gap-1 px-2 py-1.5 pointer-events-auto transition-all duration-200 max-w-[92vw] overflow-x-auto touch-pan-x">
-        {/* AI 로 시작 — 상시 접근 Quick Action */}
-        <div
-          className="dock-item-wrapper relative"
-          onMouseEnter={() => setHoveredIdx(-1)}
-          onMouseLeave={() => setHoveredIdx(null)}
-        >
-          <button
-            type="button"
-            className="dock-item flex flex-col items-center gap-0.5"
-            aria-label={t('bottomDock.aiStartAria')}
-            title={t('bottomDock.aiStartTitle')}
-            onClick={() => {
-              if (isModalOpen) return;
-              window.dispatchEvent(new Event('balruno:open-ai-setup'));
-            }}
-            style={{
-              transform: `scale(${hoveredIdx === -1 ? 1.4 : 1}) translateY(${hoveredIdx === -1 ? -8 : 0}px)`,
-              zIndex: hoveredIdx === -1 ? 100 : 1,
-              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            }}
-          >
-            <Wand2
-              className="w-5 h-5 pointer-events-none"
-              style={{ color: '#8b5cf6' }}
-            />
-            <span
-              className="text-caption font-medium pointer-events-none leading-tight whitespace-nowrap mt-0.5"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {t('bottomDock.aiStartLabel')}
-            </span>
-          </button>
-        </div>
-
-        {/* 구분선 */}
-        <div
-          className="w-px self-stretch mx-0.5"
-          style={{ background: 'var(--border-primary)', opacity: 0.5 }}
-          aria-hidden
-        />
+        {/* "AI 로 시작" quick action removed — the AI setup flow it
+            triggered (balruno:open-ai-setup → AISetupModal) was
+            retired as part of the strip-AI cleanup; the dock now
+            opens straight into the tool groups. */}
 
         {visibleGroups.map((group, idx) => {
           const Icon = GROUP_ICONS[group.id];

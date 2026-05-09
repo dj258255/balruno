@@ -50,25 +50,41 @@ export default function CreateWorkspaceModal({ onClose }: CreateWorkspaceModalPr
   const [teamName, setTeamName] = useState('');
   const [created, setCreated] = useState<Workspace | null>(null);
 
-  // Personal: derive slug from user id (stable + globally unique)
-  // and use the user's display name. One click, no prompt.
+  // Personal: derive slug from user id + a 4-char random suffix so
+  // the user can create more than one personal workspace without
+  // colliding with their previous one. The user's display name
+  // becomes the workspace name.
   const handlePersonal = async () => {
     if (creating) return;
     setCreating(true);
     try {
-      const slugBase = me
+      const userPrefix = me
         ? `user-${me.id.replace(/-/g, '').slice(0, 8)}`
         : `ws-${Math.random().toString(36).slice(2, 10)}`;
       const wsName = me?.name ? `${me.name}'s Workspace` : '내 워크스페이스';
-      const ws = await createWorkspace(slugBase, wsName);
-      await refreshWorkspaceList();
-      onClose();
-      router.push(`/${ws.slug}`);
+
+      // Up to 3 retries with fresh random suffixes when SLUG_TAKEN
+      // bounces — covers the rare race where two tabs grab the same
+      // suffix simultaneously.
+      let lastErr: unknown;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const suffix = Math.random().toString(36).slice(2, 6);
+        const slug = `${userPrefix}-${suffix}`;
+        try {
+          const ws = await createWorkspace(slug, wsName);
+          await refreshWorkspaceList();
+          onClose();
+          router.push(`/${ws.slug}`);
+          return;
+        } catch (e) {
+          lastErr = e;
+          if (!(e instanceof BackendError) || e.code !== 'SLUG_TAKEN') break;
+          // else loop with a new suffix
+        }
+      }
+      throw lastErr ?? new Error('워크스페이스 생성 실패');
     } catch (e) {
-      const msg = e instanceof BackendError && e.code === 'SLUG_TAKEN'
-        ? '이미 같은 슬러그의 워크스페이스가 있습니다 (재시도하면 다른 슬러그로 만들어드려요)'
-        : e instanceof Error ? e.message : '워크스페이스 생성 실패';
-      toast.error(msg);
+      toast.error(e instanceof Error ? e.message : '워크스페이스 생성 실패');
     } finally {
       setCreating(false);
     }
