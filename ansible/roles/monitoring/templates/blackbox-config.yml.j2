@@ -17,6 +17,13 @@ modules:
         insecure_skip_verify: false
       follow_redirects: true
       enable_http2: true
+{% if vault_actuator_internal_token is defined and vault_actuator_internal_token | length > 0 %}
+      # ADR 0045 — actuator gate. Sent on every http_2xx probe; targets
+      # that don't enforce the token (balruno.com, collab.balruno.com,
+      # ...) simply ignore it.
+      headers:
+        X-Internal-Token: "{{ vault_actuator_internal_token }}"
+{% endif %}
 
   http_401_ok:
     prober: http

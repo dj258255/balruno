@@ -61,12 +61,25 @@ server {
     proxy_set_header Connection $connection_upgrade;
   }
 
-  # Spring Boot Actuator — only allow Cloudflare-routed requests AND require
-  # a future internal token (Phase B-7). For now the rule above already
-  # blocks non-CF traffic, so /actuator works through the same gate.
-  location /actuator/health {
-    proxy_pass http://balruno_backend/actuator/health;
+  # Spring Boot Actuator — Cloudflare gate + optional internal-token gate
+  # (ADR 0045). The `/actuator/health` subtree is also a noisy probe path
+  # so access_log is off for it.
+  #
+  # Graceful gating: when vault_actuator_internal_token is undefined the
+  # token block is skipped entirely, so the location behaves exactly like
+  # before this ADR landed. Once the operator adds the secret to vault.yml
+  # and re-applies, the gate activates with no further config change.
+  location /actuator {
+{% if vault_actuator_internal_token is defined and vault_actuator_internal_token | length > 0 %}
+    if ($http_x_internal_token != "{{ vault_actuator_internal_token }}") {
+      return 403;
+    }
+{% endif %}
+    proxy_pass http://balruno_backend;
     proxy_set_header Host $host;
+    proxy_set_header X-Real-IP        $remote_addr;
+    proxy_set_header X-Forwarded-For  $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
     access_log off;
   }
 }

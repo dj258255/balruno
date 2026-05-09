@@ -52,6 +52,11 @@ env:
   PROD_USER: rocky
   INSTALL_DIR: /opt/balruno/backend
   MODE: ${{ github.event.inputs.mode || 'normal' }}
+  # ADR 0045 — optional actuator gate token. Empty string when the
+  # secret is unset, in which case the smoke test hits the gate without
+  # the X-Internal-Token header. nginx mirrors the same graceful-gating
+  # pattern, so an unset secret matches an unset vault token end-to-end.
+  ACTUATOR_TOKEN: ${{ secrets.ACTUATOR_INTERNAL_TOKEN }}
 
 jobs:
   build-and-deploy:
@@ -221,11 +226,16 @@ jobs:
 
       - name: Smoke-test via Cloudflare
         run: |
-          # Probe readiness specifically (not the combined /actuator/health)
-          # so the smoke test fails when liveness is OK but readiness is
-          # not — the exact distinction the cutover step relied on. ADR 0044.
+          # Probe readiness (not combined /actuator/health) so the smoke
+          # test fails when liveness is OK but readiness is not (ADR 0044).
+          # Optional X-Internal-Token header for the actuator gate (ADR
+          # 0045) — only added when ACTUATOR_TOKEN is non-empty.
+          header_args=()
+          if [ -n "$ACTUATOR_TOKEN" ]; then
+            header_args+=(-H "X-Internal-Token: $ACTUATOR_TOKEN")
+          fi
           for i in $(seq 1 12); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' https://api.balruno.com/actuator/health/readiness || true)
+            code=$(curl -s -o /dev/null -w '%{http_code}' "${header_args[@]}" https://api.balruno.com/actuator/health/readiness || true)
             if [ "$code" = "200" ]; then
               echo "api.balruno.com /actuator/health/readiness -> 200 after ${i} retries"
               exit 0
