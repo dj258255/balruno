@@ -58,7 +58,7 @@ async function initDB(): Promise<IDBPDatabase<BalrunoDB>> {
 
 /**
  * 과거 버전 (9자 random id) 으로 저장된 프로젝트들의 중복 sheet/column/row id 자동 수복.
- * 로드 시점에 검사 → 중복 발견 시 uuid 재발급 + cells/cellStyles/cellMemos 키 remap.
+ * 로드 시점에 검사 → 중복 발견 시 uuid 재발급 + cells/cellStyles 키 remap.
  * project.id 자체 중복은 다른 프로젝트이므로 그쪽 id 만 재발급.
  */
 function migrateDuplicateIds(projects: Project[]): { projects: Project[]; changed: boolean } {
@@ -130,7 +130,6 @@ function migrateDuplicateIds(projects: Project[]): { projects: Project[]; change
             ...row,
             cells: remap(row.cells) ?? {},
             cellStyles: remap(row.cellStyles),
-            cellMemos: remap(row.cellMemos),
           };
         });
 

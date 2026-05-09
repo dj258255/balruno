@@ -285,20 +285,6 @@
     "aiGenerating": "생성 중",
     "aiGenerate": "생성",
     "aiApply": "적용",
-    "stickerColorYellow": "노랑",
-    "stickerColorPink": "분홍",
-    "stickerColorBlue": "파랑",
-    "stickerColorGreen": "초록",
-    "stickerColorPurple": "보라",
-    "stickerColorOrange": "주황",
-    "stickerColorSky": "하늘",
-    "stickerColorGray": "회색",
-    "stickerFontSmall": "글씨 작게",
-    "stickerFontLarge": "글씨 크게",
-    "stickerColorChange": "색상 변경",
-    "stickerDelete": "삭제",
-    "stickerMemoPlaceholder": "메모 입력...",
-    "stickerClickToInput": "클릭하여 입력...",
     "kindGameDataTitle": "게임 데이터 시트",
     "kindGameDataIntro": "빌드에 들어가는 정적 밸런스 데이터를 행 단위로 관리합니다. Unity/Unreal/JSON 으로 export 가능.",
     "kindGameDataEx1": "캐릭터 (이름, HP, ATK, DEF, 스킬)",
@@ -433,7 +419,6 @@
     "paste": "붙여넣기",
     "undo": "실행 취소",
     "redo": "다시 실행",
-    "memo": "메모",
     "help": "도움말",
     "change": "변경",
     "fullscreen": "전체화면",
@@ -544,19 +529,12 @@
     "deleteColumn": "열 삭제",
     "clearRowValues": "행 값만 지우기",
     "clearColumnValues": "열 값만 지우기",
-    "addMemo": "메모 추가",
-    "editMemo": "메모 편집",
-    "deleteMemo": "메모 삭제",
     "resetWidth": "너비 초기화",
     "resetHeight": "높이 초기화",
     "headerFontSize": "열 헤더 글꼴 크기",
     "headerHeight": "열 헤더 높이",
     "rowHeaderFontSize": "행 헤더 글꼴 크기",
     "rowHeaderWidth": "행 헤더 너비"
-  },
-  "memo": {
-    "content": "메모 내용",
-    "placeholder": "메모를 입력하세요..."
   },
   "toolbar": {
     "undo": "실행 취소",
@@ -1148,9 +1126,6 @@
     "rowAdd": "행 추가",
     "rowDelete": "행 삭제",
     "cellEdit": "셀 수정",
-    "memoAdd": "메모 추가",
-    "memoDelete": "메모 삭제",
-    "memoEdit": "메모 수정",
     "projectRename": "게임 이름 변경",
     "projectDesc": "게임 설명 변경",
     "records": "{count}개 기록"
@@ -1226,28 +1201,6 @@
     "playtestSessions": {
       "name": "플레이테스트 세션",
       "description": "밸런스 변경 → 플레이테스트 → 피드백 → 액션 아이템의 전 사이클을 한 곳에서"
-    },
-    "stickers": {
-      "rpgCharacter": {
-        "dps": "[DPS가 필요한 이유]\nDPS(초당 피해량)는 공격 속도가 다른 캐릭터를 비교할 수 있게 합니다. 느리지만 강한 캐릭터 vs 빠르지만 약한 캐릭터, 누가 더 강할까요?",
-        "ehp": "[EHP가 필요한 이유]\nEHP(유효 체력)는 실제 생존력을 보여줍니다. DEF는 받는 피해를 줄이므로, DEF 50인 HP 1000이 DEF 0인 HP 1200보다 실제로 더 단단합니다.",
-        "balance": "[밸런스 체크]\nDPS와 EHP 비율을 비교하세요. 어쌔신이 팔라딘 대비 DPS 3배, EHP 0.5배라면 균형이 맞을까요? 역할이 뚜렷하면서 공정하도록 스탯을 조정하세요."
-      },
-      "weaponBalance": {
-        "efficiency": "[효율이 필요한 이유]\n효율 = DPS/가격. 비싼 무기가 가치 있는지 알 수 있습니다. 5000골드 검이 100골드 검의 2배 DPS라면 실제로는 가성비가 나쁩니다!",
-        "crit": "[DPS에 크리티컬이 필요한 이유]\n크리티컬은 순간 폭발력을 더합니다. 공식: 공격력*속도*(1+치명타율*0.5). 0.5는 50% 치명타 데미지를 가정합니다. 게임에 맞게 조정하세요.",
-        "balance": "[밸런스 체크]\n효율 이상치를 찾으세요. 아이스 대거가 다른 무기의 2배 효율이라면 성장을 망칩니다. 너프하거나 대안을 버프하세요."
-      },
-      "expCurve": {
-        "exponential": "[지수 성장이 필요한 이유]\n100*1.15^(레벨-1)은 부드러운 난이도 증가를 만듭니다. 선형 성장은 후반에 너무 쉽습니다. 지수 성장은 도전감을 일정하게 유지합니다.",
-        "playtime": "[플레이 시간이 필요한 이유]\n총경험치/50은 각 레벨 도달 시간(분)을 추정합니다 (분당 50 경험치 가정). 이걸로 레벨20이 목표 플레이 시간 내에 도달 가능한지 확인하세요.",
-        "tuning": "[튜닝 팁]\n- 1.10 = 캐주얼 (느린 성장)\n- 1.15 = 표준 RPG\n- 1.25 = 하드코어 그라인드\n기본값(1.15)을 바꿔서 게임 느낌을 조정하세요."
-      },
-      "gachaRates": {
-        "expected": "[기대 뽑기가 필요한 이유]\n100/확률은 평균 필요 뽑기 수입니다. 천장이 있으면 MIN()으로 상한을 둡니다. 이는 플레이어의 현실적인 비용을 보여줍니다.",
-        "pity": "[천장 시스템이 필요한 이유]\n천장은 90뽑 내 SSR을 보장합니다. 없으면 일부 플레이어는 영원히 SSR을 못 얻습니다(불운 보호). MaxCost는 최악의 지출을 보여줍니다.",
-        "monetization": "[수익화 체크]\nMaxCost가 10만원 이상이면 고려하세요: 게임이 F2P 친화적인가요? 업계 표준과 비교하세요 (원신: 보장까지 ~25만원)."
-      }
     }
   },
   "bottomTabs": {
@@ -3963,7 +3916,35 @@
     "jumpToCell": "해당 셀로 이동",
     "reasonPlaceholder": "왜 이렇게 바꿨나요?",
     "saveLabel": "저장",
-    "addReason": "이유 추가"
+    "addReason": "이유 추가",
+    "heading": "변경 이력",
+    "refresh": "새로고침",
+    "close": "닫기",
+    "loadFailed": "이력을 불러오지 못했습니다",
+    "empty": "최근 변경 내역이 없습니다",
+    "selectWorkspaceHint": "활성 워크스페이스가 없습니다 — 사이드바에서 하나 선택하세요.",
+    "actorSelf": "나",
+    "actorSystem": "시스템",
+    "actionFallback": "{action} 작업을 수행했습니다",
+    "actions": {
+      "project_created": "새 프로젝트를 만들었습니다",
+      "project_renamed": "프로젝트 이름을 변경했습니다",
+      "project_deleted": "프로젝트를 삭제했습니다",
+      "project_visibility_changed": "프로젝트 공개 범위를 변경했습니다",
+      "workspace_member_added": "멤버를 워크스페이스에 추가했습니다",
+      "workspace_member_removed": "멤버를 워크스페이스에서 제외했습니다",
+      "workspace_member_role_changed": "멤버 역할을 변경했습니다",
+      "workspace_renamed": "워크스페이스 이름을 변경했습니다",
+      "comment_created": "코멘트를 작성했습니다",
+      "comment_deleted": "코멘트를 삭제했습니다",
+      "comment_resolved": "코멘트 스레드를 해결했습니다",
+      "webhook_created": "웹훅을 만들었습니다",
+      "webhook_deleted": "웹훅을 삭제했습니다",
+      "discord_linked": "Discord 를 연결했습니다",
+      "discord_unlinked": "Discord 연결을 해제했습니다",
+      "share_link_created": "공유 링크를 만들었습니다",
+      "share_link_revoked": "공유 링크를 폐기했습니다"
+    }
   },
   "fpsTeamSim": {
     "titleHeader": "FPS 팀 전투 시뮬",

@@ -30,7 +30,6 @@ export interface SheetCellProps {
   value: CellValue;
   displayValue: string | number;
   cellStyle?: CellStyle;
-  cellMemo?: string;
 
   // 상태
   isSelected: boolean;
@@ -51,12 +50,10 @@ export interface SheetCellProps {
 
   // 이벤트 핸들러 - Pointer Events (마우스/터치/펜 통합)
   onPointerDown: (rowId: string, columnId: string, e: React.PointerEvent) => void;
-  onPointerEnter: (rowId: string, columnId: string, e: React.PointerEvent, memo?: string) => void;
-  onPointerLeave: (rowId: string, columnId: string, memo?: string) => void;
+  onPointerEnter: (rowId: string, columnId: string, e: React.PointerEvent) => void;
   onDoubleClick: (rowId: string, columnId: string) => void;
   onContextMenu: (e: React.MouseEvent, rowId: string, columnId: string) => void;
   onFillHandlePointerDown: (e: React.PointerEvent) => void;
-  onMemoClick: (rowId: string, columnId: string, memo: string) => void;
 
   // 번역
   dragToFillText: string;
@@ -99,7 +96,6 @@ function arePropsEqual(prevProps: SheetCellProps, nextProps: SheetCellProps): bo
   // 상태 플래그 변경
   if (prevProps.isLocked !== nextProps.isLocked) return false;
   if (prevProps.cellHasFormula !== nextProps.cellHasFormula) return false;
-  if (prevProps.cellMemo !== nextProps.cellMemo) return false;
   if (prevProps.isCopyMode !== nextProps.isCopyMode) return false;
 
   // Peer cursor / range / typing
@@ -121,7 +117,6 @@ const SheetCell = memo(function SheetCell({
   value,
   displayValue,
   cellStyle,
-  cellMemo,
   isSelected,
   isMultiSelected,
   isFillPreview,
@@ -137,11 +132,9 @@ const SheetCell = memo(function SheetCell({
   backgroundColor,
   onPointerDown,
   onPointerEnter,
-  onPointerLeave,
   onDoubleClick,
   onContextMenu,
   onFillHandlePointerDown,
-  onMemoClick,
   dragToFillText,
   defaultFontSize,
   inlineControl,
@@ -165,12 +158,8 @@ const SheetCell = memo(function SheetCell({
   }, [onPointerDown, rowId, columnId]);
 
   const handlePointerEnter = useCallback((e: React.PointerEvent) => {
-    onPointerEnter(rowId, columnId, e, cellMemo);
-  }, [onPointerEnter, rowId, columnId, cellMemo]);
-
-  const handlePointerLeave = useCallback(() => {
-    onPointerLeave(rowId, columnId, cellMemo);
-  }, [onPointerLeave, rowId, columnId, cellMemo]);
+    onPointerEnter(rowId, columnId, e);
+  }, [onPointerEnter, rowId, columnId]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -186,13 +175,6 @@ const SheetCell = memo(function SheetCell({
   // right-click contextmenu, so the same handler covers all input
   // types without per-platform branching.
   const longPress = useLongPress();
-
-  const handleMemoClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (cellMemo) {
-      onMemoClick(rowId, columnId, cellMemo);
-    }
-  }, [onMemoClick, rowId, columnId, cellMemo]);
 
   // outline 스타일 계산
   // isEditing일 때는 CellEditor가 테두리를 그리므로 여기선 숨김
@@ -230,7 +212,6 @@ const SheetCell = memo(function SheetCell({
       tabIndex={isSelected ? 0 : -1}
       onPointerDown={handlePointerDown}
       onPointerEnter={handlePointerEnter}
-      onPointerLeave={handlePointerLeave}
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenuClick}
       {...longPress}
@@ -320,18 +301,6 @@ const SheetCell = memo(function SheetCell({
             />
           )}
         </span>
-      )}
-
-      {/* 메모 표시 (삼각형) */}
-      {cellMemo && (
-        <div
-          className="absolute top-0 right-0 w-0 h-0 cursor-pointer"
-          style={{
-            borderLeft: '12px solid transparent',
-            borderTop: '12px solid var(--warning)',
-          }}
-          onClick={handleMemoClick}
-        />
       )}
 
       {/* 채우기 핸들 (선택된 셀의 오른쪽 하단) - 편집 중에도 표시 */}

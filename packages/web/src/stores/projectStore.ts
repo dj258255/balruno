@@ -224,8 +224,6 @@ export interface ProjectState {
   toggleFolderExpanded: (projectId: string, folderId: string) => void;
   closeSheetTab: (sheetId: string) => void;
   reorderOpenTabs: (fromIndex: number, toIndex: number) => void;
-  updateSticker: (sheetId: string, stickerId: string, updates: unknown) => void;
-  deleteSticker: (sheetId: string, stickerId: string) => void;
   exportProject: (projectId: string) => unknown;
   importProject: (data: unknown) => void;
 }

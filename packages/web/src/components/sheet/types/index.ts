@@ -47,22 +47,6 @@ export interface RowContextMenuState {
   rowIndex: number;
 }
 
-// 메모 모달 상태
-export interface MemoModalState {
-  rowId: string;
-  columnId: string;
-  memo: string;
-}
-
-// 메모 호버 상태
-export interface MemoHoverState {
-  rowId: string;
-  columnId: string;
-  memo: string;
-  x: number;
-  y: number;
-}
-
 // 삭제 확인 상태
 export interface DeleteColumnConfirmState {
   columnId: string;
@@ -83,7 +67,6 @@ export interface ResizeContextMenuState {
 export interface SheetTableProps {
   projectId: string;
   sheet: Sheet;
-  onAddMemo?: () => void;
 }
 
 // 열/행 범위 (드래그 선택용)

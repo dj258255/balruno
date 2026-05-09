@@ -3,8 +3,6 @@ import {
   Copy,
   ClipboardPaste,
   Scissors,
-  Trash2,
-  Plus,
   ArrowUp,
   ArrowDown,
   ArrowLeft,
@@ -12,8 +10,6 @@ import {
   Type,
   Columns,
   Rows,
-  MessageSquare,
-  MessageSquarePlus
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -31,13 +27,10 @@ interface CellContextMenuProps {
   onInsertColumnRight: () => void;
   onDeleteRow: () => void;
   onDeleteColumn: () => void;
-  onAddMemo: () => void;
-  onDeleteMemo?: () => void;
   canPaste: boolean;
   isMultiSelect: boolean;
   isRowNumberCell?: boolean;
   isHeaderCell?: boolean;
-  hasMemo?: boolean;
 }
 
 interface MenuItem {
@@ -64,13 +57,10 @@ export default function CellContextMenu({
   onInsertColumnRight,
   onDeleteRow,
   onDeleteColumn,
-  onAddMemo,
-  onDeleteMemo,
   canPaste,
   isMultiSelect,
   isRowNumberCell,
   isHeaderCell,
-  hasMemo,
 }: CellContextMenuProps) {
   const t = useTranslations();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -138,25 +128,9 @@ export default function CellContextMenu({
       icon: <Type className="w-4 h-4" />,
       onClick: onDelete,
       shortcut: 'Del',
-    },
-    {
-      label: hasMemo ? t('contextMenu.editMemo') : t('contextMenu.addMemo'),
-      icon: hasMemo ? <MessageSquare className="w-4 h-4" /> : <MessageSquarePlus className="w-4 h-4" />,
-      onClick: onAddMemo,
-      divider: !hasMemo,
+      divider: true,
     },
   ];
-
-  // 메모가 있을 때만 삭제 옵션 표시
-  if (hasMemo && onDeleteMemo) {
-    menuItems.push({
-      label: t('contextMenu.deleteMemo'),
-      icon: <Trash2 className="w-4 h-4" />,
-      onClick: onDeleteMemo,
-      danger: true,
-      divider: true,
-    });
-  }
 
   menuItems.push(
     {

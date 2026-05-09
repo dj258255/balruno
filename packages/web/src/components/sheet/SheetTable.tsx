@@ -13,7 +13,6 @@
  */
 
 import React, { useState, useMemo, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   useReactTable,
@@ -21,7 +20,7 @@ import {
   flexRender,
   type ColumnDef,
 } from '@tanstack/react-table';
-import { Trash2, X, MessageSquare, EyeOff } from 'lucide-react';
+import { Trash2, X, EyeOff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 // 타입
@@ -64,7 +63,6 @@ import ColumnModal from './ColumnModal';
 import CellContextMenu from './CellContextMenu';
 import ColumnContextMenu from './ColumnContextMenu';
 import RowContextMenu from './RowContextMenu';
-import MemoEditModal from './MemoEditModal';
 import SheetToolbar from './SheetToolbar';
 import { ConfirmDialog } from '@/components/ui';
 
@@ -76,7 +74,7 @@ import { usePresence } from '@/hooks/usePresence';
 import { emitPresence } from '@/lib/sync/writeQueue';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
 
-export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTableProps) {
+export default function SheetTable({ projectId, sheet }: SheetTableProps) {
   const t = useTranslations();
 
   // Store actions — destructured via individual selectors so the
@@ -414,13 +412,11 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
     columnContextMenu,
     rowContextMenu,
     resizeContextMenu,
-    memoModal,
     deleteColumnConfirm,
     setContextMenu,
     setColumnContextMenu,
     setRowContextMenu,
     setResizeContextMenu,
-    setMemoModal,
     setDeleteColumnConfirm,
     handleContextMenu,
     insertRowAbove,
@@ -445,13 +441,6 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
     left: number;
     width: number;
     height: number;
-  } | null>(null);
-
-  // 메모 툴팁 상태
-  const [hoveredMemo, setHoveredMemo] = useState<{
-    content: string;
-    x: number;
-    y: number;
   } | null>(null);
 
   // ========== 계산된 값 ==========
@@ -549,28 +538,6 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
     [selectedCells, updateCellsStyle, projectId, sheet.id, pushState, t]
   );
 
-  // 메모 툴팁 핸들러 - 셀 진입 시 바로 표시, 셀 기준 아래에 위치
-  const handleCellMouseEnterForMemo = useCallback(
-    (rowId: string, columnId: string, e: React.MouseEvent, memo?: string) => {
-      if (memo) {
-        // 셀 요소의 위치 가져오기
-        const cellElement = (e.target as HTMLElement).closest('[data-cell-id]');
-        if (cellElement) {
-          const rect = cellElement.getBoundingClientRect();
-          setHoveredMemo({
-            content: memo,
-            x: rect.left,
-            y: rect.bottom + 4, // 셀 아래 4px
-          });
-        }
-      }
-    },
-    []
-  );
-
-  const handleCellMouseLeaveForMemo = useCallback(() => {
-    setHoveredMemo(null);
-  }, []);
 
   /**
    * 셀 Pointer Down 핸들러 - x-spreadsheet 패턴: selector.set(ri, ci)
@@ -665,13 +632,10 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
   );
 
   const handleCellPointerEnter = useCallback(
-    (rowId: string, columnId: string, e: React.PointerEvent, memo?: string) => {
-      // 드래그 선택 처리
+    (rowId: string, columnId: string) => {
       handleCellPointerEnterThrottled(rowId, columnId);
-      // 메모 툴팁 처리 (PointerEvent를 MouseEvent로 캐스팅 - 호환됨)
-      handleCellMouseEnterForMemo(rowId, columnId, e as unknown as React.MouseEvent, memo);
     },
-    [handleCellPointerEnterThrottled, handleCellMouseEnterForMemo]
+    [handleCellPointerEnterThrottled]
   );
 
   /**
@@ -773,19 +737,8 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
         id: col.id,
         accessorKey: col.id,
         header: col.name,
-        cell: ({ row }) => {
-          const rowIndex = sheet.rows.findIndex((r) => r.id === row.original.id);
-          const computedValue = computedRows[rowIndex]?.[col.id];
-          const rawValue = row.original.cells[col.id];
-          const displayValue = computedValue ?? rawValue ?? '';
-          const cellStyle = row.original.cellStyles?.[col.id];
-          const cellMemo = row.original.cellMemos?.[col.id];
-
-          const cellHasFormula = typeof rawValue === 'string' && rawValue.startsWith('=');
-          const usesColumnFormula = !!(col.type === 'formula' && col.formula && !rawValue);
-          const hasCellOverride = rawValue !== null && rawValue !== undefined && rawValue !== '';
-
-          // 실제 SheetCell 렌더는 아래 1494 라인에서 직접 수행 (react-table cell renderer 미사용)
+        cell: () => {
+          // 실제 SheetCell 렌더는 아래 직접 수행 (react-table cell renderer 미사용)
           return null;
         },
         size: col.width || 120,
@@ -956,7 +909,6 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
         onStyleChange={handleStyleChange}
         onUndo={handleUndo}
         onRedo={handleRedo}
-        onAddMemo={onAddMemo}
       />
 
       {/* 수식바 */}
@@ -1555,7 +1507,6 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                         const displayValue = computedValue ?? rawValue ?? '';
 
                         const cellStyle = rowData.cellStyles?.[columnId];
-                        const cellMemo = rowData.cellMemos?.[columnId];
 
                         const cellHasFormula = typeof rawValue === 'string' && rawValue.startsWith('=');
                         const usesColumnFormula = !!(column.type === 'formula' && column.formula && !rawValue);
@@ -1722,7 +1673,6 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                                 return undefined;
                               })()}
                               cellStyle={cellStyle}
-                              cellMemo={cellMemo}
                               isSelected={isSelected}
                               isMultiSelected={isMultiSelected && !isSelected}
                               isFillPreview={isFillPreview}
@@ -1738,11 +1688,9 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
                               backgroundColor={getCellBackgroundColor()}
                               onPointerDown={handleCellPointerDown}
                               onPointerEnter={handleCellPointerEnter}
-                              onPointerLeave={handleCellMouseLeaveForMemo}
                               onDoubleClick={startEditing}
                               onContextMenu={handleContextMenu}
                               onFillHandlePointerDown={handleFillHandlePointerDown}
-                              onMemoClick={() => {}}
                               dragToFillText={t('table.dragToFill')}
                               defaultFontSize={defaultCellStyle.fontSize || 13}
                             />
@@ -1835,51 +1783,27 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
         />
       )}
 
-      {contextMenu && (() => {
-        const row = sheet.rows.find(r => r.id === contextMenu.rowId);
-        const existingMemo = row?.cellMemos?.[contextMenu.columnId];
-        return (
-          <CellContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            onClose={() => setContextMenu(null)}
-            onCopy={copySelectedCells}
-            onCut={cutSelectedCells}
-            onPaste={pasteToSelectedCells}
-            onDelete={clearSelectedCells}
-            onInsertRowAbove={insertRowAbove}
-            onInsertRowBelow={insertRowBelow}
-            onInsertColumnLeft={insertColumnLeft}
-            onInsertColumnRight={insertColumnRight}
-            onDeleteRow={deleteSelectedRows}
-            onDeleteColumn={deleteSelectedColumn}
-            onAddMemo={() => {
-              setMemoModal({
-                rowId: contextMenu.rowId,
-                columnId: contextMenu.columnId,
-                memo: existingMemo || '',
-              });
-              setContextMenu(null);
-            }}
-            onDeleteMemo={existingMemo ? () => {
-              const row = sheet.rows.find(r => r.id === contextMenu.rowId);
-              if (row) {
-                const newMemos = { ...row.cellMemos };
-                delete newMemos[contextMenu.columnId];
-                updateRow(projectId, sheet.id, contextMenu.rowId, {
-                  cellMemos: Object.keys(newMemos).length > 0 ? newMemos : undefined,
-                });
-              }
-              setContextMenu(null);
-            } : undefined}
-            canPaste={true}
-            isMultiSelect={selectedCells.length > 1}
-            isRowNumberCell={contextMenu.isRowNumberCell}
-            isHeaderCell={contextMenu.isHeaderCell}
-            hasMemo={!!existingMemo}
-          />
-        );
-      })()}
+      {contextMenu && (
+        <CellContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onCopy={copySelectedCells}
+          onCut={cutSelectedCells}
+          onPaste={pasteToSelectedCells}
+          onDelete={clearSelectedCells}
+          onInsertRowAbove={insertRowAbove}
+          onInsertRowBelow={insertRowBelow}
+          onInsertColumnLeft={insertColumnLeft}
+          onInsertColumnRight={insertColumnRight}
+          onDeleteRow={deleteSelectedRows}
+          onDeleteColumn={deleteSelectedColumn}
+          canPaste={true}
+          isMultiSelect={selectedCells.length > 1}
+          isRowNumberCell={contextMenu.isRowNumberCell}
+          isHeaderCell={contextMenu.isHeaderCell}
+        />
+      )}
 
       {columnContextMenu && (
         <ColumnContextMenu
@@ -2046,72 +1970,6 @@ export default function SheetTable({ projectId, sheet, onAddMemo }: SheetTablePr
         />
       )}
 
-      {/* 메모 편집 모달 */}
-      {memoModal && (
-        <MemoEditModal
-          isOpen={!!memoModal}
-          initialContent={memoModal.memo}
-          onSave={(content) => {
-            const row = sheet.rows.find(r => r.id === memoModal.rowId);
-            if (row) {
-              const newMemos = { ...row.cellMemos };
-              if (content.trim()) {
-                newMemos[memoModal.columnId] = content;
-              } else {
-                delete newMemos[memoModal.columnId];
-              }
-              updateRow(projectId, sheet.id, memoModal.rowId, {
-                cellMemos: Object.keys(newMemos).length > 0 ? newMemos : undefined,
-              });
-            }
-            setMemoModal(null);
-          }}
-          onClose={() => setMemoModal(null)}
-        />
-      )}
-
-      {/* 메모 툴팁 - 포탈로 렌더링 */}
-      {hoveredMemo && typeof window !== 'undefined' && createPortal(
-        <div
-          className="fixed z-[1100] pointer-events-none animate-fadeIn"
-          style={{
-            left: hoveredMemo.x,
-            top: hoveredMemo.y,
-          }}
-        >
-          {/* 말풍선 화살표 */}
-          <div
-            className="absolute -top-2 left-3 w-0 h-0"
-            style={{
-              borderLeft: '8px solid transparent',
-              borderRight: '8px solid transparent',
-              borderBottom: '8px solid rgba(251, 191, 36, 0.85)',
-            }}
-          />
-          {/* 메모 내용 - glass-card 스타일 */}
-          <div
-            className="relative px-3 py-2 text-sm rounded-lg"
-            style={{
-              background: 'rgba(254, 243, 199, 0.85)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              color: 'var(--warning-dark, #92400e)',
-              border: '1px solid rgba(251, 191, 36, 0.5)',
-              maxWidth: '280px',
-              minWidth: '120px',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
-            }}
-          >
-            <div className="flex items-start gap-2">
-              <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
-              <span className="flex-1">{hoveredMemo.content}</span>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   );
 }

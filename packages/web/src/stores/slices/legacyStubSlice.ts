@@ -15,7 +15,6 @@
  *       → not part of v0.7; defer until UX brief calls for them again
  *   - closeSheetTab / reorderOpenTabs → real impls live on sheetSlice
  *     (purely client-side openTabs mutations, no REST round-trip)
- *   - updateSticker / deleteSticker → sticker JSONB column not yet added
  *
  * The Sidebar / SheetTabs / BranchModal / etc. import these by name;
  * stubbing here lets the UI render and shows a visible alert when the
@@ -106,14 +105,6 @@ export const createLegacyStubActions = () => ({
     projectId: string,
     folderId: string,
   ) => void,
-
-  // Sticker-level
-  updateSticker: todo('스티커 업데이트') as (
-    sheetId: string,
-    stickerId: string,
-    updates: unknown,
-  ) => void,
-  deleteSticker: todo('스티커 삭제') as (sheetId: string, stickerId: string) => void,
 
   // Export (used by ProjectMenu — wires to file-download)
   exportProject: ((projectId: string) => {

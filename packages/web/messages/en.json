@@ -285,20 +285,6 @@
     "aiGenerating": "Generating",
     "aiGenerate": "Generate",
     "aiApply": "Apply",
-    "stickerColorYellow": "Yellow",
-    "stickerColorPink": "Pink",
-    "stickerColorBlue": "Blue",
-    "stickerColorGreen": "Green",
-    "stickerColorPurple": "Purple",
-    "stickerColorOrange": "Orange",
-    "stickerColorSky": "Sky",
-    "stickerColorGray": "Gray",
-    "stickerFontSmall": "Smaller text",
-    "stickerFontLarge": "Larger text",
-    "stickerColorChange": "Change color",
-    "stickerDelete": "Delete",
-    "stickerMemoPlaceholder": "Type a note...",
-    "stickerClickToInput": "Click to type...",
     "kindGameDataTitle": "Game data sheet",
     "kindGameDataIntro": "Manage static balance data row-by-row that ships with the build. Exportable to Unity / Unreal / JSON.",
     "kindGameDataEx1": "Characters (name, HP, ATK, DEF, skills)",
@@ -433,7 +419,6 @@
     "paste": "Paste",
     "undo": "Undo",
     "redo": "Redo",
-    "memo": "Memo",
     "help": "Help",
     "change": "Change",
     "fullscreen": "Fullscreen",
@@ -544,19 +529,12 @@
     "deleteColumn": "Delete column",
     "clearRowValues": "Clear row values",
     "clearColumnValues": "Clear column values",
-    "addMemo": "Add memo",
-    "editMemo": "Edit memo",
-    "deleteMemo": "Delete memo",
     "resetWidth": "Reset Width",
     "resetHeight": "Reset Height",
     "headerFontSize": "Column Header Font Size",
     "headerHeight": "Column Header Height",
     "rowHeaderFontSize": "Row Header Font Size",
     "rowHeaderWidth": "Row Header Width"
-  },
-  "memo": {
-    "content": "Memo content",
-    "placeholder": "Enter memo..."
   },
   "toolbar": {
     "undo": "Undo",
@@ -1148,9 +1126,6 @@
     "rowAdd": "Row Added",
     "rowDelete": "Row Deleted",
     "cellEdit": "Cell Edited",
-    "memoAdd": "Memo Added",
-    "memoDelete": "Memo Deleted",
-    "memoEdit": "Memo Edited",
     "projectRename": "Game Renamed",
     "projectDesc": "Game Description Changed",
     "records": "{count} records"
@@ -1226,28 +1201,6 @@
     "playtestSessions": {
       "name": "Playtest Sessions",
       "description": "Balance change → playtest → feedback → action items — full loop in one place"
-    },
-    "stickers": {
-      "rpgCharacter": {
-        "dps": "[Why DPS?]\nDPS (Damage Per Second) helps compare characters with different attack speeds. A slow but powerful character vs a fast but weak one - which is stronger?",
-        "ehp": "[Why EHP?]\nEHP (Effective HP) shows true survivability. DEF reduces damage taken, so 1000 HP with 50 DEF is actually tankier than 1200 HP with 0 DEF.",
-        "balance": "[Balance Check]\nCompare DPS and EHP ratios. If Assassin has 3x DPS but only 0.5x EHP vs Paladin, is that balanced? Adjust stats until roles feel distinct but fair."
-      },
-      "weaponBalance": {
-        "efficiency": "[Why Efficiency?]\nEfficiency = DPS/Price. This reveals if expensive weapons are worth it. A 5000g sword with 2x DPS of a 100g sword is actually worse value!",
-        "crit": "[Why Crit in DPS?]\nCrit adds burst potential. Formula: ATK*Speed*(1+CritRate*0.5). The 0.5 multiplier assumes 50% crit damage bonus. Adjust based on your game.",
-        "balance": "[Balance Check]\nLook for efficiency outliers. If Ice Dagger has 2x efficiency of others, it breaks progression. Either nerf it or buff alternatives."
-      },
-      "expCurve": {
-        "exponential": "[Why Exponential?]\n100*1.15^(Level-1) creates smooth difficulty scaling. Linear growth feels too easy late-game. Exponential keeps challenge consistent.",
-        "playtime": "[Why PlayTime?]\nTotalEXP/50 estimates minutes to reach each level (assuming 50 EXP/min). Use this to ensure Lv20 is reachable in your target playtime.",
-        "tuning": "[Tuning Tips]\n- 1.10 = casual (slow growth)\n- 1.15 = standard RPG\n- 1.25 = hardcore grind\nChange the base (1.15) to adjust your game feel."
-      },
-      "gachaRates": {
-        "expected": "[Why Expected Pulls?]\n100/Rate gives average pulls needed. But with Pity, we use MIN() to cap it. This shows realistic cost for players.",
-        "pity": "[Why Pity System?]\nPity guarantees SSR at 90 pulls max. Without it, some players never get SSR (bad luck protection). MaxCost shows worst-case spending.",
-        "monetization": "[Monetization Check]\nIf MaxCost > $100 USD equivalent, consider: Is your game F2P friendly? Compare with industry standards (Genshin: ~$200 for guarantee)."
-      }
     }
   },
   "bottomTabs": {

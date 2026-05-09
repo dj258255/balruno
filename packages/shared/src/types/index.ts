@@ -318,7 +318,6 @@ export interface Row {
   id: string;
   cells: Record<string, CellValue>;
   cellStyles?: Record<string, CellStyle>;  // 셀별 스타일 (columnId -> CellStyle)
-  cellMemos?: Record<string, string>;       // 셀별 메모 (columnId -> memo text)
   locked?: boolean;  // 행 잠금 여부
   height?: number;   // 행 높이 (px)
 }

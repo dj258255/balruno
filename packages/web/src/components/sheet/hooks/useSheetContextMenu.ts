@@ -7,8 +7,6 @@ import type {
   ColumnContextMenuState,
   RowContextMenuState,
   ResizeContextMenuState,
-  MemoModalState,
-  MemoHoverState,
   DeleteColumnConfirmState,
 } from '../types';
 
@@ -27,17 +25,13 @@ export function useSheetContextMenu({
   setSelectedCell,
   setSelectedCells,
 }: UseSheetContextMenuProps) {
-  const { insertRow, deleteRow, insertColumn, deleteColumn, updateRow } = useProjectStore();
+  const { insertRow, deleteRow, insertColumn, deleteColumn } = useProjectStore();
 
   // 컨텍스트 메뉴 상태
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [columnContextMenu, setColumnContextMenu] = useState<ColumnContextMenuState | null>(null);
   const [rowContextMenu, setRowContextMenu] = useState<RowContextMenuState | null>(null);
   const [resizeContextMenu, setResizeContextMenu] = useState<ResizeContextMenuState | null>(null);
-
-  // 메모 상태
-  const [memoModal, setMemoModal] = useState<MemoModalState | null>(null);
-  const [memoHover, setMemoHover] = useState<MemoHoverState | null>(null);
 
   // 삭제 확인 상태 (열만 - 행은 바로 삭제)
   const [deleteColumnConfirm, setDeleteColumnConfirm] = useState<DeleteColumnConfirmState | null>(null);
@@ -149,8 +143,6 @@ export function useSheetContextMenu({
     columnContextMenu,
     rowContextMenu,
     resizeContextMenu,
-    memoModal,
-    memoHover,
     deleteColumnConfirm,
 
     // setters
@@ -158,8 +150,6 @@ export function useSheetContextMenu({
     setColumnContextMenu,
     setRowContextMenu,
     setResizeContextMenu,
-    setMemoModal,
-    setMemoHover,
     setDeleteColumnConfirm,
 
     // 핸들러

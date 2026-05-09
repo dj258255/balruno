@@ -24,7 +24,7 @@
  * placeholder so each phase ships behind a green CI run.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Menu } from 'lucide-react';
 
@@ -52,7 +52,6 @@ import Sidebar from '@/components/layout/Sidebar';
 import SheetTabs from '@/components/layout/SheetTabs';
 import SidebarResizer from '@/app/components/SidebarResizer';
 import { useToolLayoutStore } from '@/stores/toolLayoutStore';
-import StickerLayer from '@/components/sheet/StickerLayer';
 import { PmBadgeStrip } from '@/components/sheet/PmBadgeStrip';
 import SheetHeader from '@/app/components/SheetHeader';
 import { useProjectSyncBridge } from '@/hooks/useProjectSyncBridge';
@@ -735,11 +734,6 @@ export default function WorkspaceShell({
   // path the inline sheet table uses, so no extra rewiring needed.
   const { panels: toolPanels } = usePanelStates();
 
-  // Container ref for the StickerLayer — sticky notes are positioned
-  // relative to this rect (v0.5 behaviour). Currently a no-op render
-  // until the sticker JSONB column lands (see StickerLayer placeholder).
-  const sheetContainerRef = useRef<HTMLDivElement>(null);
-
   // v0.5 Sidebar tool-toggle callbacks — pass-through to the
   // floating dock's DraggablePanel state so the side rail and
   // bottom dock both control the same panels.
@@ -903,11 +897,7 @@ export default function WorkspaceShell({
                 legacyStubSlice alert pending E-4 follow-up. */}
             {localProject ? <SheetTabs project={localProject} /> : null}
             {selection?.kind === 'sheet' && selectedSheet ? (
-              <div
-                ref={sheetContainerRef}
-                className="flex-1 flex flex-col p-3 sm:p-4 lg:p-6 pb-[140px] min-h-0 overflow-hidden relative"
-              >
-                <StickerLayer containerRef={sheetContainerRef} />
+              <div className="flex-1 flex flex-col p-3 sm:p-4 lg:p-6 pb-[140px] min-h-0 overflow-hidden relative">
                 <SheetHeader sheet={selectedSheet} projectId={project.id} />
                 <PmBadgeStrip sheet={selectedSheet} />
                 <ViewSwitcher projectId={project.id} sheet={selectedSheet} />

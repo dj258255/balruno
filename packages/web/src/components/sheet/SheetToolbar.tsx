@@ -112,7 +112,6 @@ interface SheetToolbarProps {
   onStyleChange?: (style: Partial<CellStyle>) => void;
   onUndo?: () => void;
   onRedo?: () => void;
-  onAddMemo?: () => void;
   disabled?: boolean;
 }
 
@@ -120,7 +119,6 @@ export default function SheetToolbar({
   onStyleChange,
   onUndo,
   onRedo,
-  onAddMemo,
   disabled = false,
 }: SheetToolbarProps) {
   const t = useTranslations();
@@ -626,23 +624,6 @@ export default function SheetToolbar({
           document.body
         )}
       </div>
-
-      <Divider />
-
-      {/* 메모 버튼 */}
-      <Tooltip label={t('common.memo')}>
-        <button
-          onClick={onAddMemo}
-          className={`${buttonClass} ${hoverClass} flex items-center gap-1`}
-          style={{
-            background: 'var(--warning-light, rgba(251, 191, 36, 0.15))',
-            color: 'var(--warning, #f59e0b)',
-            border: '1px solid var(--warning, #f59e0b)',
-          }}
-        >
-          <StickyNote className="w-5 h-5 sm:w-4 sm:h-4" />
-        </button>
-      </Tooltip>
 
       {/* 스페이서 */}
       <div className="flex-1" />
