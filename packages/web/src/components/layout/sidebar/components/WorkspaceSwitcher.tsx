@@ -28,12 +28,14 @@ interface WorkspaceSwitcherProps {
   onOpenSettings?: () => void;
   onOpenAccountSettings?: () => void;
   onOpenNotificationSettings?: () => void;
+  onOpenCreateWorkspace?: () => void;
 }
 
 export function WorkspaceSwitcher({
   onOpenSettings,
   onOpenAccountSettings,
   onOpenNotificationSettings,
+  onOpenCreateWorkspace,
 }: WorkspaceSwitcherProps) {
   const tMembers = useTranslations('members');
   const [showMembers, setShowMembers] = useState(false);
@@ -176,12 +178,12 @@ export function WorkspaceSwitcher({
           </div>
 
           <div className="border-t" style={{ borderColor: 'var(--border-primary)' }}>
-            {/* 새 워크스페이스 — 전용 페이지로 이동 */}
+            {/* 새 워크스페이스 — Notion 식 2단계 모달 (개인용 / 업무용) */}
             <button
               type="button"
               onClick={() => {
                 setOpen(false);
-                router.push('/workspaces');
+                onOpenCreateWorkspace?.();
               }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
             >

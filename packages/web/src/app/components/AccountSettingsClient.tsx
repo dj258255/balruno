@@ -14,12 +14,9 @@
 
 import { useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, Trash2, AlertTriangle, Loader2, X } from 'lucide-react';
+import { Trash2, AlertTriangle, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  downloadDataExport,
-  deleteMyAccount,
-} from '@/lib/backend';
+import { deleteMyAccount } from '@/lib/backend';
 
 interface AccountSettingsClientProps {
   /**
@@ -31,23 +28,9 @@ interface AccountSettingsClientProps {
 }
 
 export default function AccountSettingsClient({ onClose }: AccountSettingsClientProps = {}) {
-  const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const isModal = Boolean(onClose);
-
-  const handleExport = async () => {
-    if (exporting) return;
-    setExporting(true);
-    try {
-      await downloadDataExport();
-      toast.success('내 데이터 JSON 을 내려받았습니다.');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '데이터 내려받기 실패');
-    } finally {
-      setExporting(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (deleting || confirmText !== 'DELETE') return;
@@ -70,31 +53,11 @@ export default function AccountSettingsClient({ onClose }: AccountSettingsClient
           계정
         </h1>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          GDPR 권리 — 데이터 내려받기 + 계정 삭제. 둘 다 자체 서비스로 처리합니다.
+          계정 삭제 — soft-delete 후 다른 멤버 있는 워크스페이스는 owner 이양 필요.
+          (데이터 export 는 백엔드 GET /api/v1/me/export-data 가 살아있어
+          self-host 운영자가 직접 호출 가능 — UI 에서는 제거)
         </p>
       </header>
-
-      <section
-        className="rounded-lg border p-4"
-        style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
-      >
-        <h2 className="mb-2 flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-          <Download className="h-4 w-4" />
-          데이터 export
-        </h2>
-        <p className="mb-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          유저 정보 + 멤버십 + 본인이 멤버인 workspace / project (JSONB 스냅샷) + 본인 코멘트 + 알림 설정 + Web Push 구독 정보를 JSON 한 파일로 다운로드합니다.
-        </p>
-        <button
-          type="button"
-          onClick={handleExport}
-          disabled={exporting}
-          className="rounded-md border px-3 py-1.5 text-xs disabled:opacity-50"
-          style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
-        >
-          {exporting ? <Loader2 className="inline h-3 w-3 animate-spin" /> : '내 데이터 다운로드'}
-        </button>
-      </section>
 
       <section
         className="rounded-lg border p-4"
