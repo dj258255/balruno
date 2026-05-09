@@ -6,12 +6,12 @@ import com.balruno.comment.CommentService;
 import com.balruno.project.ProjectService;
 import com.balruno.sync.ProjectSyncApi;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +32,7 @@ import java.util.UUID;
 class CommentServiceImpl implements CommentService {
 
     private final CommentRepository repo;
+    private final MentionRepository mentions;
     private final ProjectService projects;
     private final ProjectSyncApi sync;
     private final org.springframework.context.ApplicationEventPublisher events;
@@ -44,12 +45,14 @@ class CommentServiceImpl implements CommentService {
     private final com.fasterxml.jackson.databind.ObjectMapper nodeMapperForHook =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
-    CommentServiceImpl(CommentRepository repo, ProjectService projects, ProjectSyncApi sync,
+    CommentServiceImpl(CommentRepository repo, MentionRepository mentions,
+                       ProjectService projects, ProjectSyncApi sync,
                        org.springframework.context.ApplicationEventPublisher events,
                        com.balruno.storage.AttachmentReferenceService attachmentRefs,
                        com.balruno.storage.StorageService storage,
                        com.balruno.storage.WorkspaceStorageService workspaceStorage) {
         this.repo = repo;
+        this.mentions = mentions;
         this.projects = projects;
         this.sync = sync;
         this.events = events;
@@ -94,10 +97,7 @@ class CommentServiceImpl implements CommentService {
         // Auth — non-members of req.projectId throw here.
         projects.findById(req.projectId(), callerUserId);
 
-        var id = UUID.randomUUID();
-        var now = OffsetDateTime.now();
-        var draft = new Comment(
-                id,
+        var entity = new CommentEntity(
                 req.projectId(),
                 req.scopeKind(),
                 req.sheetId(),
@@ -108,12 +108,10 @@ class CommentServiceImpl implements CommentService {
                 req.anchorLength(),
                 req.parentId(),
                 callerUserId,
-                req.bodyJson(),
-                false, null, null,
-                now, now);
-        var saved = repo.insert(draft);
-        var mentions = MentionExtractor.parse(req.bodyJson());
-        repo.insertMentions(saved.id(), mentions);
+                req.bodyJson());
+        var saved = repo.save(entity).toDto();
+        var mentioned = MentionExtractor.parse(req.bodyJson());
+        insertMentionRows(saved.id(), mentioned);
         broadcastAfterCommit(saved.projectId(), "comment.added", saved);
         // Outbound webhook fanout — fires after the same afterCommit
         // gate so a rolled-back create can't notify external receivers.
@@ -124,7 +122,7 @@ class CommentServiceImpl implements CommentService {
         // (ADR 0024 Stage I). The notification module listens via
         // @EventListener so the comment module never imports it.
         var bodyText = MentionExtractor.flatten(req.bodyJson());
-        for (var mentionedUser : mentions) {
+        for (var mentionedUser : mentioned) {
             webhookHook(saved.projectId(), "mention.created",
                     java.util.Map.of(
                             "commentId", saved.id().toString(),
@@ -133,6 +131,12 @@ class CommentServiceImpl implements CommentService {
                     callerUserId, bodyText);
         }
         return saved;
+    }
+
+    private void insertMentionRows(UUID commentId, List<UUID> mentionedUsers) {
+        for (var userId : mentionedUsers) {
+            mentions.insertIgnore(commentId, userId);
+        }
     }
 
     private void mentionEventAfterCommit(
@@ -178,17 +182,18 @@ class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public Comment updateBody(UUID callerUserId, UUID commentId, JsonNode bodyJson) {
-        var existing = repo.findByIdOrThrow(commentId);
+        var existing = findByIdOrThrow(commentId);
         if (!existing.authorUserId().equals(callerUserId)) {
             throw new IllegalStateException("only the author can edit the body");
         }
         // Auth on the project too — defence-in-depth.
         projects.findById(existing.projectId(), callerUserId);
 
-        var updated = repo.updateBody(commentId, bodyJson);
+        repo.updateBody(commentId, bodyJson);
         // Re-extract mentions; new entries get inserted (existing
         // (comment_id, user) pairs are no-op via ON CONFLICT DO NOTHING).
-        repo.insertMentions(commentId, MentionExtractor.parse(bodyJson));
+        insertMentionRows(commentId, MentionExtractor.parse(bodyJson));
+        var updated = findByIdOrThrow(commentId);
         broadcastAfterCommit(updated.projectId(), "comment.updated", updated);
         return updated;
     }
@@ -196,12 +201,17 @@ class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public Comment setResolved(UUID callerUserId, UUID commentId, boolean resolved) {
-        var existing = repo.findByIdOrThrow(commentId);
+        var existing = findByIdOrThrow(commentId);
         projects.findById(existing.projectId(), callerUserId);
         // Author-or-admin check is done in production via WorkspaceRole;
         // for now, any project member can resolve (matches Linear /
         // Notion default — restrictive flag lands in Stage G).
-        var updated = repo.setResolved(commentId, resolved, resolved ? callerUserId : null);
+        if (resolved) {
+            repo.setResolved(commentId, callerUserId);
+        } else {
+            repo.setUnresolved(commentId);
+        }
+        var updated = findByIdOrThrow(commentId);
         broadcastAfterCommit(updated.projectId(), "comment.updated", updated);
         return updated;
     }
@@ -209,7 +219,7 @@ class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public void remove(UUID callerUserId, UUID commentId) {
-        var existing = repo.findByIdOrThrow(commentId);
+        var existing = findByIdOrThrow(commentId);
         if (!existing.authorUserId().equals(callerUserId)) {
             throw new IllegalStateException("only the author can delete the comment");
         }
@@ -222,6 +232,12 @@ class CommentServiceImpl implements CommentService {
         // workspace counter decremented. Runs afterCommit so a
         // rolled-back delete can't free still-referenced bytes.
         attachmentCleanupAfterCommit(commentId);
+    }
+
+    private Comment findByIdOrThrow(UUID id) {
+        return repo.findByIdAndDeletedAtIsNull(id)
+                .map(CommentEntity::toDto)
+                .orElseThrow(() -> new IllegalStateException("comment not found: " + id));
     }
 
     private void attachmentCleanupAfterCommit(UUID commentId) {
@@ -250,7 +266,6 @@ class CommentServiceImpl implements CommentService {
                                 // theory, but project membership pins the comment
                                 // to one project + one workspace. Pull the workspace
                                 // off the comment we just removed.
-                                // (existing snapshot above already has projectId)
                                 workspaceStorage.decrement(
                                         commentWorkspaceId(commentId), total);
                             }
@@ -264,10 +279,12 @@ class CommentServiceImpl implements CommentService {
 
     /**
      * Walk back from a soft-deleted comment id to its workspace.
-     * Persistence sits in {@link CommentRepository#workspaceIdOf}.
+     * Persistence sits in {@link CommentRepository#findWorkspaceIdOf}.
      */
     private UUID commentWorkspaceId(UUID commentId) {
-        return repo.workspaceIdOf(commentId);
+        return repo.findWorkspaceIdOf(commentId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "comment workspace lookup failed: " + commentId));
     }
 
     @Override
@@ -278,31 +295,38 @@ class CommentServiceImpl implements CommentService {
             UUID rowId,
             UUID columnId) {
         projects.findById(projectId, callerUserId);
-        return repo.listForCell(projectId, sheetId, rowId, columnId);
+        return repo.findByProjectIdAndScopeKindAndSheetIdAndRowIdAndColumnIdAndDeletedAtIsNullOrderByCreatedAtAsc(
+                        projectId, Comment.ScopeKind.SHEET_CELL, sheetId, rowId, columnId)
+                .stream().map(CommentEntity::toDto).toList();
     }
 
     @Override
     public List<Comment> listForDoc(UUID callerUserId, UUID projectId, UUID documentId) {
         projects.findById(projectId, callerUserId);
-        return repo.listForDoc(projectId, documentId);
+        return repo.findByProjectIdAndScopeKindAndDocumentIdAndDeletedAtIsNullOrderByCreatedAtAsc(
+                        projectId, Comment.ScopeKind.DOC_BODY, documentId)
+                .stream().map(CommentEntity::toDto).toList();
     }
 
     @Override
     public List<Comment> listForProject(UUID callerUserId, UUID projectId) {
         projects.findById(projectId, callerUserId);
-        return repo.listForProject(projectId);
+        return repo.findByProjectIdAndDeletedAtIsNullOrderByCreatedAtDesc(projectId, Limit.of(200))
+                .stream().map(CommentEntity::toDto).toList();
     }
 
     @Override
     public List<Comment> listUnreadMentions(UUID userId, int limit) {
         // No project-level auth — the user is just looking at their
         // own inbox. The repository filters on mentioned_user = userId.
-        return repo.listUnreadMentions(userId, Math.max(1, Math.min(limit, 200)));
+        return repo.listUnreadMentions(userId, Limit.of(Math.max(1, Math.min(limit, 200))))
+                .stream().map(CommentEntity::toDto).toList();
     }
 
     @Override
     public List<Comment> listMentionsSinceForUser(UUID userId, java.time.OffsetDateTime since) {
-        return repo.listMentionsSinceForUser(userId, since);
+        return repo.listMentionsSinceForUser(userId, since, Limit.of(200))
+                .stream().map(CommentEntity::toDto).toList();
     }
 
     /**
