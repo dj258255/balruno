@@ -202,10 +202,20 @@ public sealed interface SyncMessage {
         }
     }
 
-    record TreeRename(TreeKind treeKind, UUID nodeId, String newName, long baseVersion, UUID clientMsgId,
+    /**
+     * Tree node label patch. {@code newName} stays the canonical text
+     * label; {@code newIcon} (added 2026-05-10) is an optional emoji
+     * patch used by the doc tree's icon picker. Either field may be
+     * present; the handler patches whichever non-null fields arrive
+     * so a clean frontend can send only the changed value. Existing
+     * clients that send {@code newIcon=null} keep the old behaviour
+     * (rename-only).
+     */
+    record TreeRename(TreeKind treeKind, UUID nodeId, String newName, String newIcon,
+                      long baseVersion, UUID clientMsgId,
                       UndoMeta undo) implements SyncMessage {
         public TreeRename(TreeKind treeKind, UUID nodeId, String newName, long baseVersion, UUID clientMsgId) {
-            this(treeKind, nodeId, newName, baseVersion, clientMsgId, null);
+            this(treeKind, nodeId, newName, null, baseVersion, clientMsgId, null);
         }
     }
 

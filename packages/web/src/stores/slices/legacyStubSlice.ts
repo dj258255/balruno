@@ -11,8 +11,10 @@
  *       → sheet_tree REST mutations under /api/v1/projects/:id/sheets
  *   - createFolder / updateFolder / deleteFolder / moveSheetToFolder
  *       → tree mutation hooks (sheetTreeOps in /w/[slug]/p/[slug]/page.tsx)
- *   - reorderProjects / reorderSheets / closeSheetTab / reorderOpenTabs
+ *   - reorderProjects / reorderSheets
  *       → not part of v0.7; defer until UX brief calls for them again
+ *   - closeSheetTab / reorderOpenTabs → real impls live on sheetSlice
+ *     (purely client-side openTabs mutations, no REST round-trip)
  *   - updateSticker / deleteSticker → sticker JSONB column not yet added
  *
  * The Sidebar / SheetTabs / BranchModal / etc. import these by name;
@@ -104,10 +106,6 @@ export const createLegacyStubActions = () => ({
     projectId: string,
     folderId: string,
   ) => void,
-
-  // Tab-level
-  closeSheetTab: todo('탭 닫기') as (sheetId: string) => void,
-  reorderOpenTabs: todo('탭 순서 변경') as (...args: unknown[]) => void,
 
   // Sticker-level
   updateSticker: todo('스티커 업데이트') as (

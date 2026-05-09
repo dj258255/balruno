@@ -448,19 +448,41 @@ class TreeOpService {
     }
 
     private void applyTreeRename(ArrayNode roots, SyncMessage.TreeRename u) {
-        validateRenameNewName(u.newName());
+        // newName is patched only when present — the frontend may send
+        // an icon-only patch (newIcon set, newName null) for the doc
+        // icon picker. At least one of the two must be present;
+        // validateRenameNewName runs only when newName is set.
+        var hasName = u.newName() != null;
+        var hasIcon = u.newIcon() != null;
+        if (!hasName && !hasIcon) {
+            throw new IllegalArgumentException("tree.rename requires newName or newIcon");
+        }
+        if (hasName) validateRenameNewName(u.newName());
         var node = findById(roots, u.nodeId());
         if (node == null) {
             throw new IllegalArgumentException("node not found: " + u.nodeId());
         }
-        // Both regions store the user-visible label under "name" (sheet
-        // tree) or "title" (doc tree). The frontend always sends one
-        // canonical "newName"; we update whichever field is present, with
-        // "name" as the default so a fresh node is also covered.
-        if (node.has("title")) {
-            node.put("title", u.newName());
-        } else {
-            node.put("name", u.newName());
+        if (hasName) {
+            // Both regions store the user-visible label under "name" (sheet
+            // tree) or "title" (doc tree). The frontend always sends one
+            // canonical "newName"; we update whichever field is present,
+            // with "name" as the default so a fresh node is also covered.
+            if (node.has("title")) {
+                node.put("title", u.newName());
+            } else {
+                node.put("name", u.newName());
+            }
+        }
+        if (hasIcon) {
+            // Empty string clears the icon (picker reset to default);
+            // any other value is stored verbatim. Doc tree only — sheet
+            // tree leaves don't carry icons today, but writing it on a
+            // sheet node is harmless (just unused metadata).
+            if (u.newIcon().isEmpty()) {
+                node.remove("icon");
+            } else {
+                node.put("icon", u.newIcon());
+            }
         }
     }
 

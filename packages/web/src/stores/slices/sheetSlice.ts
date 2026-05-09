@@ -22,6 +22,15 @@ const hasTab = (tabs: TabEntry[], kind: TabEntry['kind'], id: string) =>
 const withTab = (tabs: TabEntry[], kind: TabEntry['kind'], id: string): TabEntry[] =>
   hasTab(tabs, kind, id) ? tabs : [...tabs, { kind, id }];
 
+const withoutTab = (tabs: TabEntry[], kind: TabEntry['kind'], id: string): TabEntry[] =>
+  tabs.filter((t) => !(t.kind === kind && t.id === id));
+
+/** Pick the next neighbour to focus after closing a tab — last is fine because
+ *  insertion is append-only, so the rightmost remaining tab is the one the
+ *  user most recently visited (browser convention). */
+const nextActiveAfterClose = (tabs: TabEntry[]): TabEntry | null =>
+  tabs.length > 0 ? tabs[tabs.length - 1] : null;
+
 export const createSheetActions = (set: SetFn, get: GetFn) => ({
   /**
    * Patch sheet view metadata — activeView toggle, group column pick,
@@ -68,6 +77,41 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
     } else {
       set({ currentSheetId: id });
     }
+  },
+
+  /** Browser-tab close — drop the entry from openTabs only. The sheet
+   *  itself stays on the server; reopening from the sidebar puts the
+   *  tab back. If the closed tab was the active one, fall through to
+   *  the rightmost remaining tab so the main panel never goes blank
+   *  while other tabs are open. */
+  closeSheetTab: (sheetId: string) => {
+    set((state) => {
+      const newTabs = withoutTab(state.openTabs, 'sheet', sheetId);
+      if (state.currentSheetId !== sheetId) {
+        return { openTabs: newTabs };
+      }
+      const next = nextActiveAfterClose(newTabs);
+      return {
+        openTabs: newTabs,
+        currentSheetId: next?.kind === 'sheet' ? next.id : null,
+        currentDocId: next?.kind === 'doc' ? next.id : null,
+      };
+    });
+  },
+
+  /** Reorder by index — drag-and-drop on the SheetTabs strip. Pure UI
+   *  state, no server round-trip (each user keeps their own tab order
+   *  the same way browsers do). */
+  reorderOpenTabs: (fromIndex: number, toIndex: number) => {
+    set((state) => {
+      if (fromIndex === toIndex) return state;
+      if (fromIndex < 0 || fromIndex >= state.openTabs.length) return state;
+      if (toIndex < 0 || toIndex >= state.openTabs.length) return state;
+      const next = [...state.openTabs];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return { openTabs: next };
+    });
   },
 
   getCurrentSheet: (): Sheet | null => {
