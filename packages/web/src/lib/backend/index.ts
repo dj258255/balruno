@@ -72,6 +72,9 @@ export type { CreateProjectInput } from './projects';
 export { listCatalog, importTemplate } from './catalog';
 export type { CatalogGroupSummary } from './catalog';
 
+export { fetchAuditLog } from './audit';
+export type { AuditEntry, FetchAuditLogOptions } from './audit';
+
 export {
   createComment,
   updateCommentBody,
