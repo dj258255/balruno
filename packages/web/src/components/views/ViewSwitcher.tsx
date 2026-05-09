@@ -127,7 +127,7 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
     <div
       role="tablist"
       aria-label={t('viewSwitcher.sheetViewAria')}
-      className="flex items-center gap-0.5 px-2 py-1 border-b"
+      className="flex flex-row flex-nowrap items-center gap-0.5 px-2 py-1 border-b"
       style={{ borderColor: 'var(--border-primary)' }}
     >
       {/* 탭 영역만 가로 스크롤 — 저장 버튼/팝오버는 밖에 둬서 clip 방지 */}
@@ -211,6 +211,12 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
 
       </div>{/* /스크롤 영역 */}
 
+      {/* Actions cluster — defensive flex-row wrapper. Without this
+          some viewports (narrow main column after a wide-sidebar
+          drag, comment panel open + dock panel open) ended up
+          stacking the buttons vertically; flex-nowrap on the outer
+          + ml-auto on this cluster keeps the row identity. */}
+      <div className="flex flex-row flex-nowrap items-center gap-1 flex-shrink-0 ml-auto">
       {/* + 저장 버튼 — 스크롤 영역 밖이라 popover clip 없음 */}
       <div className="relative flex-shrink-0">
         <button
@@ -332,7 +338,7 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
           <Code2 className="w-3 h-3" />
           C#
         </button>
-      </div>
+      </div>{/* /actions cluster */}
     </div>
 
     {showShare && (
