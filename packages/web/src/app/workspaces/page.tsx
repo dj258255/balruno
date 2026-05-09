@@ -49,6 +49,23 @@ export default function WorkspacesPage() {
           router.replace(`/w/${list[0].slug}`);
           return;
         }
+        // Zero-workspace path — accounts that pre-date the OAuth
+        // auto-create or that deleted their default workspace.
+        // Seed one inline so the user never lands on an empty
+        // create form (the v0.5 onboarding pattern the user
+        // explicitly asked us to keep). Slug derived from the
+        // logged-in user's id; name picks up the display name.
+        if (list.length === 0) {
+          const me = useBackendAuthStore.getState().user;
+          const slugBase = me
+            ? `user-${me.id.replace(/-/g, '').slice(0, 8)}`
+            : `ws-${Math.random().toString(36).slice(2, 10)}`;
+          const wsName = me?.name ? `${me.name}'s Workspace` : 'My Workspace';
+          const created = await createWorkspace(slugBase, wsName);
+          if (cancelled) return;
+          router.replace(`/w/${created.slug}`);
+          return;
+        }
         setWorkspaces(list);
         setQuota(q);
       } catch (e) {
@@ -180,48 +197,12 @@ export default function WorkspacesPage() {
         </ul>
       )}
 
-      <form
-        onSubmit={handleCreate}
-        className="rounded-lg border p-5"
-        style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
-      >
-        <h2 className="mb-3 text-base font-medium" style={{ color: 'var(--text-primary)' }}>
-          새 워크스페이스 만들기
-        </h2>
-
-        <div className="space-y-3">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="이름 (예: 우리 팀)"
-            required
-            minLength={1}
-            maxLength={80}
-            disabled={creating}
-            className="w-full rounded-md border px-3 py-2 text-sm disabled:opacity-50"
-            style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}
-          />
-          <input
-            type="text"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value.toLowerCase())}
-            placeholder="slug (a-z, 0-9, -)"
-            required
-            pattern="[a-z0-9][-a-z0-9]{2,29}"
-            disabled={creating}
-            className="w-full rounded-md border px-3 py-2 text-sm font-mono disabled:opacity-50"
-            style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}
-          />
-          <button
-            type="submit"
-            disabled={creating || !slug || !name}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-800 disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200"
-          >
-            {creating ? '만드는 중...' : '만들기'}
-          </button>
-        </div>
-      </form>
+      {/* The "새 워크스페이스 만들기" form was removed in v0.7 — first
+          login auto-seeds via the OAuth callback, the empty-state
+          path inline-creates a default workspace + redirects, and
+          existing 2+ workspace users just use the picker above.
+          Adding more workspaces is rare enough to live in the
+          workspace settings menu rather than the front door. */}
     </main>
   );
 }

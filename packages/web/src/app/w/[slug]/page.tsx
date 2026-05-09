@@ -92,6 +92,28 @@ export default function WorkspaceDetailPage() {
           router.replace(`/w/${found.slug}/p/${target.slug}`);
           return;
         }
+        // Zero-project workspace — accounts that pre-date the
+        // OAuth-callback auto-create or that deleted their default.
+        // Auto-seed a fresh project with the full starter pack
+        // (ADR 0020) so the user lands on populated content
+        // instead of a blank create form (the v0.5 onboarding
+        // pattern the user explicitly asked us to keep).
+        try {
+          const created = await createProject(found.id, {
+            slug: 'main',
+            name: '내 첫 게임',
+            withStarterPack: true,
+          });
+          if (cancelled) return;
+          router.replace(`/w/${found.slug}/p/${created.slug}`);
+          return;
+        } catch (seedErr) {
+          // Fall through to the picker page so the user can retry
+          // manually if the seed fails (e.g. quota cap, slug taken
+          // from a partially-deleted prior project).
+          if (cancelled) return;
+          setError(seedErr instanceof Error ? seedErr.message : '기본 프로젝트를 만들지 못했습니다.');
+        }
         setProjects(ps);
       } catch (e) {
         if (cancelled) return;
@@ -291,48 +313,12 @@ export default function WorkspaceDetailPage() {
         )}
       </section>
 
-      <form
-        onSubmit={handleCreate}
-        className="rounded-lg border p-5"
-        style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
-      >
-        <h2 className="mb-3 text-base font-medium" style={{ color: 'var(--text-primary)' }}>
-          새 프로젝트 만들기
-        </h2>
-        <div className="space-y-3">
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="이름 (예: 메인 게임)"
-            required
-            minLength={1}
-            maxLength={120}
-            disabled={creating}
-            className="w-full rounded-md border px-3 py-2 text-sm disabled:opacity-50"
-            style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}
-          />
-          <input
-            type="text"
-            value={newSlug}
-            onChange={(e) => setNewSlug(e.target.value.toLowerCase())}
-            placeholder="slug (a-z, 0-9, -)"
-            required
-            pattern="[a-z0-9][-a-z0-9]{2,29}"
-            disabled={creating}
-            className="w-full rounded-md border px-3 py-2 text-sm font-mono disabled:opacity-50"
-            style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-secondary)' }}
-          />
-          <button
-            type="submit"
-            disabled={creating || !newSlug || !newName}
-            className="inline-flex items-center gap-1 rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-800 disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            {creating ? '만드는 중...' : '만들기'}
-          </button>
-        </div>
-      </form>
+      {/* The "새 프로젝트 만들기" form was removed in v0.7 — first
+          login auto-seeds a starter-pack project via the OAuth
+          callback, the empty-state path inline-creates one with
+          ADR 0020 starters + redirects, and adding more projects
+          lives behind the sidebar's "+ 새 게임" button which uses
+          the same starter-pack seed. */}
 
       {membersOpen && (
         <MemberManagementModal

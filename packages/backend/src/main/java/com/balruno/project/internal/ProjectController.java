@@ -3,6 +3,7 @@ package com.balruno.project.internal;
 
 import com.balruno.project.Project;
 import com.balruno.project.ProjectService;
+import com.balruno.user.UserAuthService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,17 +37,35 @@ import java.util.UUID;
 class ProjectController {
 
     private final ProjectService projects;
+    private final UserAuthService users;
 
-    ProjectController(ProjectService projects) {
+    ProjectController(ProjectService projects, UserAuthService users) {
         this.projects = projects;
+        this.users = users;
     }
 
     @PostMapping(path = "/workspaces/{wsId}/projects", version = "1")
     @ResponseStatus(HttpStatus.CREATED)
     Project create(@AuthenticationPrincipal Jwt jwt,
                    @PathVariable UUID wsId,
+                   @RequestParam(name = "withStarterPack", defaultValue = "false")
+                       boolean withStarterPack,
                    @RequestBody @Valid CreateRequest body) {
-        return projects.create(wsId, callerId(jwt), body.slug(), body.name(), body.description());
+        var caller = callerId(jwt);
+        if (withStarterPack) {
+            // Seed the full ADR 0020 starter catalog (12 starters in
+            // the bundled locale json) instead of the minimal Sheet 1
+            // path. Used by the empty-state auto-create on
+            // /workspaces and /w/[slug] so the user lands on a
+            // populated project the first time they hit those
+            // routes — matches the OAuth-callback first-login
+            // behaviour for accounts that pre-date the auto-create
+            // logic or that deleted their default project.
+            var locale = users.findById(caller).locale();
+            return projects.createWithStarterPack(
+                    wsId, caller, body.slug(), body.name(), body.description(), locale);
+        }
+        return projects.create(wsId, caller, body.slug(), body.name(), body.description());
     }
 
     @GetMapping(path = "/workspaces/{wsId}/projects", version = "1")

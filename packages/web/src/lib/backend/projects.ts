@@ -9,12 +9,25 @@ export interface CreateProjectInput {
   slug: string;
   name: string;
   description?: string;
+  /**
+   * When true, the backend seeds the new project with the full
+   * ADR 0020 starter pack (12 starters from
+   * resources/starter/catalog-{locale}.json) instead of the
+   * minimal Sheet 1. Used by the empty-state auto-seed on
+   * /workspaces and /w/[slug] so a user with no projects yet
+   * lands on a populated project on first visit.
+   */
+  withStarterPack?: boolean;
 }
 
 export function createProject(workspaceId: string, input: CreateProjectInput): Promise<Project> {
-  return request<Project>(`/api/v1/workspaces/${workspaceId}/projects`, {
+  const { withStarterPack, ...body } = input;
+  const path = withStarterPack
+    ? `/api/v1/workspaces/${workspaceId}/projects?withStarterPack=true`
+    : `/api/v1/workspaces/${workspaceId}/projects`;
+  return request<Project>(path, {
     method: 'POST',
-    body: input,
+    body,
   });
 }
 
