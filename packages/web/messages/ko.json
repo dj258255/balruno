@@ -5774,6 +5774,18 @@
     "overflowTooltip": "그 외 {count}명",
     "selfOnline": "온라인"
   },
+  "feedback": {
+    "modalTitle": "피드백 보내기",
+    "modalSubtitle": "어느 채널이 편하세요? 둘 다 직접 운영자가 읽습니다.",
+    "close": "닫기",
+    "gformTitle": "Google 폼",
+    "gformDesc": "버그 리포트 · 기능 제안 · 사용성 의견을 정리해서 보내고 싶을 때.",
+    "gformCta": "폼 열기",
+    "discordTitle": "Discord 커뮤니티",
+    "discordDesc": "실시간 질문 · 다른 사용자와 대화 · 빠른 운영자 응답이 필요할 때.",
+    "discordCta": "서버 참여",
+    "hint": "두 채널 모두 무료 + 익명 OK. 응답에 시간이 걸릴 수 있어요."
+  },
   "connection": {
     "idle": "대기",
     "connecting": "연결 중",

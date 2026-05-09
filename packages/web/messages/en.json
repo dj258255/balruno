@@ -5774,6 +5774,18 @@
     "overflowTooltip": "{count} more",
     "selfOnline": "Online"
   },
+  "feedback": {
+    "modalTitle": "Send feedback",
+    "modalSubtitle": "Pick the channel that fits — the operator reads both.",
+    "close": "Close",
+    "gformTitle": "Google Form",
+    "gformDesc": "For structured bug reports, feature requests, or usability notes.",
+    "gformCta": "Open form",
+    "discordTitle": "Discord community",
+    "discordDesc": "Live chat with other users and the operator — best for quick questions.",
+    "discordCta": "Join server",
+    "hint": "Both channels are free and anonymous OK. Replies may take a bit."
+  },
   "connection": {
     "idle": "Idle",
     "connecting": "Connecting",

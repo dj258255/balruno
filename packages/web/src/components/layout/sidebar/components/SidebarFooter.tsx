@@ -1,10 +1,15 @@
 /**
  * SidebarFooter - 사이드바 하단 컴포넌트
  */
+import { useState } from 'react';
 import { Globe, MessageSquare } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { formatRelativeTime } from '@/lib/utils';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+
+const FEEDBACK_FORM_URL = 'https://forms.gle/jfStPBidvpqieh3Z8';
+const DISCORD_URL = 'https://discord.gg/8cKDsfVYR';
 
 interface SidebarFooterProps {
   selectedRowsCount: number;
@@ -64,8 +69,6 @@ export function SidebarFooter({
   );
 }
 
-const FEEDBACK_FORM_URL = 'https://forms.gle/jfStPBidvpqieh3Z8';
-
 interface SaveStatusProps {
   lastSaved: number | null;
   onShowSettings?: () => void;
@@ -74,12 +77,19 @@ interface SaveStatusProps {
 export function SaveStatus({ lastSaved, onShowSettings }: SaveStatusProps) {
   const t = useTranslations();
   const locale = useLocale();
+  const [showFeedback, setShowFeedback] = useState(false);
 
   return (
     <div className="px-4 py-2.5 border-t text-xs flex items-center justify-between" style={{
       borderColor: 'var(--border-primary)',
       color: 'var(--text-tertiary)'
     }}>
+      <FeedbackModal
+        open={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        feedbackFormUrl={FEEDBACK_FORM_URL}
+        discordUrl={DISCORD_URL}
+      />
       <div className="flex items-center gap-3 min-w-0">
         {lastSaved ? (
           <div className="flex items-center gap-2">
@@ -90,10 +100,9 @@ export function SaveStatus({ lastSaved, onShowSettings }: SaveStatusProps) {
         <ConnectionStatus compact />
       </div>
       <div className="flex items-center gap-1.5">
-        <a
-          href={FEEDBACK_FORM_URL}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => setShowFeedback(true)}
           className="flex items-center gap-1 px-2 py-1 rounded border transition-colors hover:bg-[var(--bg-hover)]"
           style={{
             color: 'var(--accent)',
@@ -104,7 +113,7 @@ export function SaveStatus({ lastSaved, onShowSettings }: SaveStatusProps) {
         >
           <MessageSquare className="w-3.5 h-3.5" aria-hidden="true" />
           <span className="text-xs font-medium">{t('sidebar.feedback')}</span>
-        </a>
+        </button>
         {onShowSettings && (
           <button
             onClick={onShowSettings}
