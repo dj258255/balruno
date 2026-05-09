@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Toaster } from "sonner";
 import { DesktopBootstrap } from "./components/DesktopBootstrap";
 import { BackendAuthBootstrap } from "./components/BackendAuthBootstrap";
@@ -80,6 +81,7 @@ export default async function RootLayout({
         <Toaster richColors position="bottom-right" />
         <AnonymousDemoBanner />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
