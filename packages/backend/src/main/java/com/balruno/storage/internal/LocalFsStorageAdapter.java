@@ -38,7 +38,14 @@ class LocalFsStorageAdapter implements StorageService {
             Files.createDirectories(root);
             log.info("local storage root = {}", root);
         } catch (IOException e) {
-            throw new IllegalStateException("cannot create storage root: " + root, e);
+            // Don't kill the boot — degrade to "writes will throw later".
+            // Spring Boot startup blocking on a non-essential mkdir leaves
+            // the deploy stuck (no /actuator/health response, no clue why)
+            // which is exactly what tripped Phase B+ in prod. Logging is
+            // loud + the actual upload paths still throw if they can't
+            // write, so the failure surface stays visible.
+            log.error("local storage root not writable — uploads will fail until {} is fixed: {}",
+                    root, e.getMessage());
         }
     }
 

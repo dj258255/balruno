@@ -46,6 +46,10 @@ class R2StorageAdapter implements StorageService {
 
     private static final Logger log = LoggerFactory.getLogger(R2StorageAdapter.class);
 
+    // Nullable when env vars are absent — see constructor. Storage
+    // operations call requireConfigured() so a misconfigured deploy
+    // surfaces as a 500 with a clear message instead of a silent
+    // boot-time exception.
     private final S3Client s3;
     private final String bucket;
 
@@ -56,8 +60,16 @@ class R2StorageAdapter implements StorageService {
                 || isBlank(r2.bucket())
                 || isBlank(r2.accessKey())
                 || isBlank(r2.secretKey())) {
-            throw new IllegalStateException(
-                    "balruno.storage.backend=r2 but BALRUNO_R2_* env vars are not set");
+            // Loud log + degraded boot rather than throwing — Spring Boot
+            // startup-time exceptions hide the symptom (container 502s
+            // forever with no actuator response) while operators chase
+            // the wrong cause. Set bucket=null so any storage call later
+            // raises a clear IOException the service handler can map to
+            // a 500 with a readable message.
+            log.error("balruno.storage.backend=r2 but BALRUNO_R2_* env vars are not set — uploads will fail");
+            this.bucket = null;
+            this.s3 = null;
+            return;
         }
         this.bucket = r2.bucket();
         this.s3 = S3Client.builder()
@@ -70,8 +82,15 @@ class R2StorageAdapter implements StorageService {
         log.info("R2 storage configured (bucket={}, endpoint={})", bucket, r2.endpoint());
     }
 
+    private void requireConfigured() throws IOException {
+        if (s3 == null || bucket == null) {
+            throw new IOException("R2 storage not configured — check BALRUNO_R2_* env");
+        }
+    }
+
     @Override
     public void store(String path, byte[] bytes, String contentType) throws IOException {
+        requireConfigured();
         try {
             var req = PutObjectRequest.builder()
                     .bucket(bucket)
@@ -90,6 +109,7 @@ class R2StorageAdapter implements StorageService {
         if (prefix == null || prefix.isBlank()) {
             throw new IllegalArgumentException("prefix must be non-empty (whole-bucket wipe blocked)");
         }
+        requireConfigured();
         long totalBytes = 0L;
         String continuation = null;
         try {
@@ -130,6 +150,7 @@ class R2StorageAdapter implements StorageService {
 
     @Override
     public void delete(String path) throws IOException {
+        requireConfigured();
         try {
             s3.deleteObject(DeleteObjectRequest.builder()
                     .bucket(bucket)
@@ -146,6 +167,7 @@ class R2StorageAdapter implements StorageService {
 
     @Override
     public Optional<StoredObject> read(String path) throws IOException {
+        requireConfigured();
         ResponseInputStream<GetObjectResponse> response;
         try {
             response = s3.getObject(GetObjectRequest.builder()
