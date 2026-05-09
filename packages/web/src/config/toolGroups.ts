@@ -174,6 +174,34 @@ export function findGroupForTool(toolId: ToolId): ToolGroupConfig | undefined {
 }
 
 /**
+ * Tools that ship in the dock catalogue but are kept *visible-but-
+ * disabled* until they're product-ready. Click handlers no-op and
+ * the toolbox dropdown row renders in a greyed-out style with a
+ * "준비 중 / Coming soon" tooltip. Two reasons we don't simply
+ * remove these from {@link TOOL_GROUPS}:
+ *
+ *   1. Discoverability — users who saw the tool earlier shouldn't
+ *      have it disappear silently. The greyed slot tells them where
+ *      it'll come back.
+ *   2. Reordering avoidance — keeping the slot keeps every other
+ *      tool's index stable in localStorage layout state.
+ *
+ * The current AI tools (AutoBalancer / AIBehavior / AiPlaytest)
+ * are real client-side simulation/algorithm engines, not LLM
+ * integrations — but their UX flow + result presentation aren't
+ * polished enough to ship to first users yet.
+ */
+export const DISABLED_TOOLS: ReadonlySet<ToolId> = new Set<ToolId>([
+  'autoBalancer',
+  'aiBehavior',
+  'aiPlaytest',
+]);
+
+export function isToolDisabled(toolId: ToolId): boolean {
+  return DISABLED_TOOLS.has(toolId);
+}
+
+/**
  * 각 도구의 "언제 쓰는지" 한 줄 설명 i18n 키.
  * ToolDropdown · PanelShell subtitle · CommandPalette 에서 일관되게 사용.
  * 유사 기능 도구 여러 개 중 어느 것을 써야 할지 유저가 즉시 판단하게 돕는 목적.

@@ -13,7 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { X, ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { TOOL_GROUPS, TOOL_DESCRIPTIONS, TOOL_ICONS, type ToolGroupId, type ToolId } from '@/config/toolGroups';
+import { TOOL_GROUPS, TOOL_DESCRIPTIONS, TOOL_ICONS, isToolDisabled, type ToolGroupId, type ToolId } from '@/config/toolGroups';
 import { PanelShellContext } from '@/components/ui/PanelShell';
 
 const WIDTH_KEY = 'balruno:docked-toolbox-width';
@@ -542,32 +542,60 @@ function ToolOption({
   const label = t(TOOL_LABEL_KEYS[tid] as 'sidebar.calculator');
   const description = t(TOOL_DESCRIPTIONS[tid] as 'toolDesc.calculator');
   const Icon = TOOL_ICONS[tid];
+  const disabled = isToolDisabled(tid);
+  const comingSoonLabel = t('common.comingSoon' as 'common.comingSoon');
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       role="option"
       aria-selected={isActive}
+      aria-disabled={disabled || undefined}
+      title={disabled ? comingSoonLabel : undefined}
       className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
-        isActive ? '' : 'hover:bg-black/5 dark:hover:bg-white/5'
+        disabled
+          ? 'cursor-not-allowed opacity-50'
+          : isActive ? '' : 'hover:bg-black/5 dark:hover:bg-white/5'
       }`}
-      style={{ background: isActive ? `${color}15` : undefined }}
+      style={{ background: isActive && !disabled ? `${color}15` : undefined }}
     >
       {Icon && (
         <Icon
           size={16}
-          style={{ color: isActive ? color : 'var(--text-secondary)', flexShrink: 0, marginTop: 2 }}
+          style={{
+            color: disabled
+              ? 'var(--text-tertiary)'
+              : isActive ? color : 'var(--text-secondary)',
+            flexShrink: 0,
+            marginTop: 2,
+          }}
           aria-hidden
         />
       )}
       <div className="flex-1 min-w-0">
         <div
-          className="text-sm font-semibold truncate"
-          style={{ color: isActive ? color : 'var(--text-primary)' }}
+          className="text-sm font-semibold truncate flex items-center gap-1.5"
+          style={{
+            color: disabled
+              ? 'var(--text-secondary)'
+              : isActive ? color : 'var(--text-primary)',
+          }}
         >
           {label}
+          {disabled && (
+            <span
+              className="rounded px-1.5 py-0 text-[10px] font-medium"
+              style={{
+                background: 'var(--bg-tertiary)',
+                color: 'var(--text-tertiary)',
+              }}
+            >
+              {comingSoonLabel}
+            </span>
+          )}
         </div>
-        <div className="text-caption truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+        <div className="text-caption truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
           {description}
         </div>
       </div>
