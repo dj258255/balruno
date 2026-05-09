@@ -23,7 +23,7 @@ import { useRef, useState } from 'react';
 import { Loader2, Pencil, Trash2, Upload, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { resolveMediaUrl, updateProfile, uploadAvatar } from '@/lib/backend';
+import { humanizeUploadError, resolveMediaUrl, updateProfile, uploadAvatar } from '@/lib/backend';
 import { BackendError } from '@/lib/backend/client';
 import { useBackendAuthStore } from '@/stores/backendAuthStore';
 
@@ -90,7 +90,7 @@ export default function ProfileSettingsSection() {
       setUser(updated);
       toast.success('프로필 사진이 변경되었습니다');
     } catch (err) {
-      toast.error(humanError(err, '사진 업로드 실패'));
+      toast.error(humanizeUploadError(err, { kind: '사진', maxLabel: '2MB' }));
     } finally {
       setUploadingAvatar(false);
     }
@@ -271,8 +271,6 @@ function humanError(err: unknown, fallback: string): string {
     if (err.code === 'INVALID_PROFILE') {
       return err.body?.detail ?? '프로필 입력이 올바르지 않습니다';
     }
-    if (err.status === 413) return '이미지가 너무 큽니다 (2MB 초과)';
-    if (err.status === 415) return '지원하지 않는 이미지 형식입니다';
     return err.body?.detail ?? err.message ?? fallback;
   }
   return err instanceof Error ? err.message : fallback;

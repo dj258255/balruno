@@ -30,8 +30,7 @@ import { toast } from 'sonner';
 import DocHistoryPanel from './DocHistoryPanel';
 import { useDocCollab } from '@/hooks/useDocCollab';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
-import { listCommentsForDoc, resolveMediaUrl, uploadAttachment } from '@/lib/backend';
-import { BackendError } from '@/lib/backend/client';
+import { humanizeUploadError, listCommentsForDoc, resolveMediaUrl, uploadAttachment } from '@/lib/backend';
 import { MobileTiptapToolbar } from './MobileTiptapToolbar';
 
 interface ServerDocViewProps {
@@ -215,15 +214,7 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
         }).run();
         cursor = null; // subsequent images go at the live cursor
       } catch (e) {
-        if (e instanceof BackendError && e.code === 'attachmentBytes') {
-          toast.error('워크스페이스 저장 용량이 가득 찼습니다');
-        } else if (e instanceof BackendError && e.status === 413) {
-          toast.error('이미지가 50MB 를 초과했습니다');
-        } else if (e instanceof BackendError && e.status === 415) {
-          toast.error('지원하지 않는 이미지 형식입니다');
-        } else {
-          toast.error(e instanceof Error ? e.message : '업로드 실패');
-        }
+        toast.error(humanizeUploadError(e, { kind: '이미지', maxLabel: '50MB' }));
         return;
       }
     }

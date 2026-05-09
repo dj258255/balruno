@@ -12,8 +12,7 @@ import { useRef, useState } from 'react';
 import { Check, Star, Circle, User, Paperclip, X, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CellValue, Column, Sheet, SelectOption, FileAttachment } from '@/types';
-import { resolveMediaUrl, uploadAttachment } from '@/lib/backend';
-import { BackendError } from '@/lib/backend/client';
+import { humanizeUploadError, resolveMediaUrl, uploadAttachment } from '@/lib/backend';
 
 /**
  * person / assignee 컬럼 인라인 렌더. 값은 콤마 split — 한 명 또는 여러 명.
@@ -470,15 +469,7 @@ export function InlineFile({
       }
       onChange(JSON.stringify([...files, ...uploaded]));
     } catch (e) {
-      if (e instanceof BackendError && e.code === 'attachmentBytes') {
-        toast.error('워크스페이스 저장 용량이 가득 찼습니다');
-      } else if (e instanceof BackendError && e.status === 413) {
-        toast.error('파일이 50MB 를 초과했습니다');
-      } else if (e instanceof BackendError && e.status === 415) {
-        toast.error('지원하지 않는 파일 형식입니다');
-      } else {
-        toast.error(e instanceof Error ? e.message : '업로드 실패');
-      }
+      toast.error(humanizeUploadError(e, { kind: '파일', maxLabel: '50MB' }));
     } finally {
       setUploading(false);
     }

@@ -43,6 +43,10 @@ export interface AttachmentRef {
  * The optional ref records who's referencing the upload (Tier 2b
  * orphan tracking). Without it the upload still succeeds but only
  * the project-cascade catches eventual cleanup.
+ *
+ * On success this fires {@link ATTACHMENT_UPLOADED_EVENT} on
+ * {@code window} so the WorkspaceStorageBadge refreshes its quota
+ * read-out without the caller having to remember.
  */
 export async function uploadAttachment(
   projectId: string,
@@ -56,7 +60,56 @@ export async function uploadAttachment(
     fd.append('refId', ref.id);
   }
   fd.append('file', file);
-  return postMultipart('/api/v1/uploads/attachment', fd);
+  const result = await postMultipart('/api/v1/uploads/attachment', fd);
+  announceAttachmentUploaded();
+  return result;
+}
+
+/** Window event name dispatched after every successful attachment
+ *  upload. WorkspaceStorageBadge listens to refresh its read-out;
+ *  any future surface that wants live quota updates can subscribe. */
+export const ATTACHMENT_UPLOADED_EVENT = 'balruno:attachment-uploaded';
+
+function announceAttachmentUploaded(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(ATTACHMENT_UPLOADED_EVENT));
+}
+
+/**
+ * Shared error → toast-string mapping for upload failures.
+ *
+ * The 4 surfaces (avatar, doc inline image, comment inline image,
+ * cell file column) all hit the same backend pipeline and surface
+ * the same error codes. Centralising the mapping keeps the
+ * messaging consistent and ensures a new server-side code (e.g.
+ * a future MIME tightening) only needs to land here once.
+ *
+ * The {@code kind} param picks the noun shown in the messages:
+ * '이미지' for inline-image surfaces, '파일' for the cell column,
+ * '사진' for the avatar profile setting.
+ *
+ * The {@code maxLabel} param picks the size limit shown for 413 —
+ * avatars are capped at 2MB, attachments at 50MB, so the message
+ * matches the actual server cap.
+ */
+export function humanizeUploadError(
+  e: unknown,
+  opts: { kind: '이미지' | '파일' | '사진'; maxLabel: '2MB' | '50MB' },
+): string {
+  const { kind, maxLabel } = opts;
+  if (e instanceof BackendError) {
+    if (e.code === 'attachmentBytes') {
+      return '워크스페이스 저장 용량이 가득 찼습니다';
+    }
+    if (e.status === 413) {
+      return `${kind}이 ${maxLabel} 를 초과했습니다`;
+    }
+    if (e.status === 415) {
+      return `지원하지 않는 ${kind} 형식입니다`;
+    }
+    return e.body?.detail ?? e.message ?? `${kind} 업로드 실패`;
+  }
+  return e instanceof Error ? e.message : `${kind} 업로드 실패`;
 }
 
 async function postMultipart(path: string, fd: FormData): Promise<UploadResult> {

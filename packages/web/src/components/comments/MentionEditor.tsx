@@ -29,8 +29,7 @@ import type { SuggestionOptions, SuggestionProps } from '@tiptap/suggestion';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
 import { toast } from 'sonner';
 
-import { listWorkspaceMembers, resolveMediaUrl, uploadAttachment } from '@/lib/backend';
-import { BackendError } from '@/lib/backend/client';
+import { humanizeUploadError, listWorkspaceMembers, resolveMediaUrl, uploadAttachment } from '@/lib/backend';
 import type { WorkspaceMemberView } from '@/lib/backend/types';
 
 export interface MentionEditorHandle {
@@ -218,15 +217,7 @@ async function insertImagesIntoComment(
       view.dispatch(tr);
       cursor = null;
     } catch (e) {
-      if (e instanceof BackendError && e.code === 'attachmentBytes') {
-        toast.error('워크스페이스 저장 용량이 가득 찼습니다');
-      } else if (e instanceof BackendError && e.status === 413) {
-        toast.error('이미지가 50MB 를 초과했습니다');
-      } else if (e instanceof BackendError && e.status === 415) {
-        toast.error('지원하지 않는 이미지 형식입니다');
-      } else {
-        toast.error(e instanceof Error ? e.message : '업로드 실패');
-      }
+      toast.error(humanizeUploadError(e, { kind: '이미지', maxLabel: '50MB' }));
       return;
     }
   }

@@ -6,10 +6,9 @@
  * - Pulls UserQuota.workspaces from /me/quota and picks the row that
  *   matches sidebarPrefs.activeWorkspaceId (Linear pattern — one
  *   active workspace at a time).
- * - Refreshes on `balruno:attachment-uploaded` window event so the
- *   bar reflects new uploads immediately. (UploadController doesn't
- *   broadcast yet, but the hook is wired so post-Phase-D we can add
- *   the dispatch in 2 LOC.)
+ * - Refreshes on the {@code ATTACHMENT_UPLOADED_EVENT} window event
+ *   that uploadAttachment dispatches on success — the bar reflects
+ *   new uploads immediately without the caller having to remember.
  * - Hides when activeWorkspaceId is missing (legacy local mode) or
  *   when the quota fetch fails — silent rather than error UI.
  */
@@ -17,7 +16,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
-import { fetchUserQuota } from '@/lib/backend';
+import { ATTACHMENT_UPLOADED_EVENT, fetchUserQuota } from '@/lib/backend';
 import type { WorkspaceQuotaUsage } from '@/lib/backend/types';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 
@@ -49,11 +48,11 @@ export function WorkspaceStorageBadge() {
       });
 
     const onUpload = () => setReloadKey((k) => k + 1);
-    window.addEventListener('balruno:attachment-uploaded', onUpload);
+    window.addEventListener(ATTACHMENT_UPLOADED_EVENT, onUpload);
     const interval = window.setInterval(onUpload, REFRESH_MS);
     return () => {
       cancelled = true;
-      window.removeEventListener('balruno:attachment-uploaded', onUpload);
+      window.removeEventListener(ATTACHMENT_UPLOADED_EVENT, onUpload);
       window.clearInterval(interval);
     };
   }, [activeWorkspaceId, reloadKey]);
