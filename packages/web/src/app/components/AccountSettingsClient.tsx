@@ -14,9 +14,9 @@
 
 import { useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Trash2, AlertTriangle, Loader2, X } from 'lucide-react';
+import { Trash2, AlertTriangle, Loader2, X, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { deleteMyAccount } from '@/lib/backend';
+import { deleteMyAccount, downloadDataExport } from '@/lib/backend';
 
 interface AccountSettingsClientProps {
   /**
@@ -30,7 +30,21 @@ interface AccountSettingsClientProps {
 export default function AccountSettingsClient({ onClose }: AccountSettingsClientProps = {}) {
   const [deleting, setDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+  const [exporting, setExporting] = useState(false);
   const isModal = Boolean(onClose);
+
+  const handleExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await downloadDataExport();
+      toast.success('내 데이터 JSON 을 내려받았습니다.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '데이터 내려받기 실패');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (deleting || confirmText !== 'DELETE') return;
@@ -53,9 +67,8 @@ export default function AccountSettingsClient({ onClose }: AccountSettingsClient
           계정
         </h1>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          계정 삭제 — soft-delete 후 다른 멤버 있는 워크스페이스는 owner 이양 필요.
-          (데이터 export 는 백엔드 GET /api/v1/me/export-data 가 살아있어
-          self-host 운영자가 직접 호출 가능 — UI 에서는 제거)
+          계정 삭제는 soft-delete 입니다. 다른 멤버가 있는 워크스페이스는
+          먼저 소유자 이양이 필요합니다.
         </p>
       </header>
 
@@ -95,6 +108,22 @@ export default function AccountSettingsClient({ onClose }: AccountSettingsClient
           계정 삭제
         </button>
       </section>
+
+      {/* GDPR Article 20 — small inline link, not a prominent
+          card. The endpoint is required for compliance with EU
+          users; the UI just provides a self-service path. */}
+      <div className="flex items-center justify-end pt-2 text-xs">
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={exporting}
+          className="inline-flex items-center gap-1 hover:underline disabled:opacity-50"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+          내 데이터 내려받기 (GDPR)
+        </button>
+      </div>
     </div>,
     { isModal, onClose },
   );

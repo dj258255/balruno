@@ -29,10 +29,14 @@ const nextConfig: NextConfig = {
         destination: '/:slug/projects/:projectSlug',
         permanent: true,
       },
-      // /w/{slug}/settings → /{slug}/settings
+      // /w/{slug}/settings → /{slug}
+      // (Settings is a modal now — Phase G dropped the standalone
+      //  /:slug/settings route. Bookmarks land on the workspace
+      //  home, where the user opens the Settings modal from the
+      //  workspace switcher menu.)
       {
         source: '/w/:slug/settings',
-        destination: '/:slug/settings',
+        destination: '/:slug',
         permanent: true,
       },
       // /w/{slug} → /{slug}
