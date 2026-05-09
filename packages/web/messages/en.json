@@ -5684,6 +5684,7 @@
     "rowCells": "Cells per project (total)",
     "rowDocs": "Documents per project",
     "rowStorage": "Attachment storage per workspace",
+    "rowStorageDesc": "Image (PNG/JPEG/WebP/GIF) · PDF · ZIP · Office (DOCX/XLSX/PPTX) · CSV · text. 50MB per single file.",
     "rowHistory": "Version history retention",
     "rowAi": "AI requests / month (server proxy)",
     "rowSso": "SSO / SAML",

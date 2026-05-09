@@ -5684,6 +5684,7 @@
     "rowCells": "프로젝트당 셀 합계",
     "rowDocs": "프로젝트당 문서",
     "rowStorage": "워크스페이스당 첨부 storage",
+    "rowStorageDesc": "이미지 (PNG/JPEG/WebP/GIF) · PDF · ZIP · Office (DOCX/XLSX/PPTX) · CSV · 텍스트. 단일 파일 최대 50MB.",
     "rowHistory": "버전 히스토리 보존",
     "rowAi": "월 AI 요청 (서버 프록시)",
     "rowSso": "SSO / SAML",

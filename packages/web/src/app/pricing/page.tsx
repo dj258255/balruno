@@ -115,7 +115,13 @@ export default function PricingPage() {
             <Row label={t('rowRows')} free="2,000" pro="20,000" team="100,000" />
             <Row label={t('rowCells')} free="20,000" pro="200,000" team="1,000,000" />
             <Row label={t('rowDocs')} free="20" pro="200" team={t('valUnlimited')} />
-            <Row label={t('rowStorage')} free="50 MB" pro="5 GB" team="50 GB" />
+            <Row
+              label={t('rowStorage')}
+              description={t('rowStorageDesc')}
+              free="50 MB"
+              pro="5 GB"
+              team="50 GB"
+            />
             <Row
               label={t('rowHistory')}
               free={t('valHistoryFree')}
@@ -212,18 +218,27 @@ function TierCard({
 
 function Row({
   label,
+  description,
   free,
   pro,
   team,
 }: {
   label: string;
+  description?: string;
   free: string;
   pro: string;
   team: string;
 }) {
   return (
     <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-      <td className="px-4 py-3" style={{ color: 'var(--text-primary)' }}>{label}</td>
+      <td className="px-4 py-3" style={{ color: 'var(--text-primary)' }}>
+        <div>{label}</div>
+        {description && (
+          <div className="mt-0.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            {description}
+          </div>
+        )}
+      </td>
       <Cell value={free} />
       <Cell value={pro} />
       <Cell value={team} />
