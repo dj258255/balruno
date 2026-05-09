@@ -1,36 +1,41 @@
-# Build the Hocuspocus collab Docker image, push to GHCR, deploy to
-# prod_app via `docker compose pull && up -d`.
+# Build the Hocuspocus collab Docker image, push to GHCR, and run a
+# blue/green cutover on prod_app via the nginx snippet symlink swap
+# (ADR 0044). Mirrors backend-deploy.yml.
+#
 # Triggers:
 #   - push to main that touches packages/collab/**
-#   - workflow_dispatch (manual rollback / retry)
+#   - workflow_dispatch (mode = normal | rollback)
 #
-# Decision: ADR 0017 § Stage A (Hocuspocus infrastructure). Mirrors the
-# backend-deploy.yml shape — different image name, different install
-# dir, but the same waiting-on-ansible / native-arm64 / GHCR / SSH path.
+# Rollback window: ~30s after cutover. The old color is stopped after
+# this delay, so an instant `mode=rollback` only works inside that
+# window. Past it, redeploy the previous SHA.
 #
 # Secrets required:
-#   OCI_SSH_PRIVATE_KEY  — same key the Ansible workflow already uses
+#   OCI_SSH_PRIVATE_KEY  - same key the Ansible workflow already uses
 # GHCR auth uses the workflow's built-in GITHUB_TOKEN with packages: write.
 #
-# Workflow injection: github.actor / secrets.* are the only template
-# expansions used inside run: blocks, both are trusted; no escaping
-# concerns.
+# Workflow injection: the only event input is `mode`, a typed `choice`
+# limited to two enum values. It is fed through the `MODE` env var and
+# only ever read as a shell variable inside run blocks.
 
 name: collab-deploy
 
-# Manual-only until the Ansible roles/collab role lands and renders
-# /opt/balruno/collab/docker-compose.yml on prod_app. Once the role is
-# merged + a successful ansible-deploy run lands on main, switch back
-# to the standard push trigger:
-#   on:
-#     push:
-#       branches: [main]
-#       paths:
-#         - 'packages/collab/**'
-#         - '.github/workflows/collab-deploy.yml'
-#     workflow_dispatch:
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/collab/**'
+      - '.github/workflows/collab-deploy.yml'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'normal = build + cutover. rollback = flip active back (only within ~30s of cutover).'
+        required: false
+        default: normal
+        type: choice
+        options:
+          - normal
+          - rollback
 
 permissions:
   contents: read
@@ -45,6 +50,8 @@ env:
   PROD_HOST: 168.107.47.33
   PROD_USER: rocky
   INSTALL_DIR: /opt/balruno/collab
+  MODE: ${{ github.event.inputs.mode || 'normal' }}
+  COLLAB_PORT_INTERNAL: 1234
 
 jobs:
   build-and-deploy:
@@ -76,10 +83,15 @@ jobs:
           echo "ansible-deploy did not reach a terminal state in 20 minutes — abort"
           exit 1
 
+      # Build steps below are skipped on rollback — rollback just flips
+      # the nginx symlink and (re)starts the previously running color.
+
       - name: Set up Docker Buildx
+        if: ${{ env.MODE != 'rollback' }}
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
+        if: ${{ env.MODE != 'rollback' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -87,6 +99,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Build + push image (linux/arm64, tags = latest + commit SHA)"
+        if: ${{ env.MODE != 'rollback' }}
         uses: docker/build-push-action@v6
         with:
           context: packages/collab
@@ -107,7 +120,7 @@ jobs:
           printf '%s\n' "$OCI_SSH_PRIVATE_KEY" > ~/.ssh/oci_key
           chmod 600 ~/.ssh/oci_key
 
-      - name: Pull image + restart on prod_app
+      - name: Blue/green cutover on prod_app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTOR: ${{ github.actor }}
@@ -115,12 +128,78 @@ jobs:
           ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
               -i ~/.ssh/oci_key \
               "${PROD_USER}@${PROD_HOST}" \
-              "echo \"$GH_TOKEN\" | docker login ghcr.io -u \"$ACTOR\" --password-stdin \
-               && cd ${INSTALL_DIR} \
-               && docker compose pull \
-               && docker compose up -d --remove-orphans \
-               && sleep 5 \
-               && docker compose ps"
+              MODE="$MODE" GH_TOKEN="$GH_TOKEN" ACTOR="$ACTOR" \
+              INSTALL_DIR="$INSTALL_DIR" PORT_INTERNAL="$COLLAB_PORT_INTERNAL" \
+              bash -s <<'REMOTE'
+          set -euo pipefail
+
+          ACTIVE_LINK=/etc/nginx/conf.d/balruno-collab-active.conf
+          SNIPPET_DIR=/etc/nginx/snippets
+
+          # 1. Detect current active color from the nginx active symlink.
+          target=$(readlink -f "$ACTIVE_LINK")
+          case "$target" in
+            *collab-blue.conf)  ACTIVE=blue;  INACTIVE=green ;;
+            *collab-green.conf) ACTIVE=green; INACTIVE=blue ;;
+            *) echo "ERROR: cannot determine active color from $target"; exit 1 ;;
+          esac
+          echo "current active=$ACTIVE, target=$INACTIVE, mode=$MODE"
+
+          if [ "$MODE" = "rollback" ]; then
+            sudo ln -sfn "$SNIPPET_DIR/upstream-balruno-collab-${INACTIVE}.conf" "$ACTIVE_LINK"
+            sudo nginx -s reload
+            cd "$INSTALL_DIR"
+            COMPOSE_PROFILES="$INACTIVE" docker compose up -d "collab-${INACTIVE}"
+            echo "rollback complete: active=${INACTIVE}"
+            exit 0
+          fi
+
+          # 2. Pull the new image and bring up the inactive color.
+          # --remove-orphans cleans up the legacy `balruno-collab`
+          # single-service container on the first migration.
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+          cd "$INSTALL_DIR"
+          docker compose pull "collab-${INACTIVE}"
+          COMPOSE_PROFILES="$INACTIVE" docker compose up -d --remove-orphans "collab-${INACTIVE}"
+
+          # 3. Resolve the host port mapped to the inactive container,
+          # then probe TCP reachability (Hocuspocus has no /readiness
+          # endpoint; a successful TCP connect means the WS listener is
+          # accepting handshakes). Max 60s.
+          PORT=$(docker compose port "collab-${INACTIVE}" "$PORT_INTERNAL" | cut -d: -f2)
+          if [ -z "$PORT" ]; then
+            echo "ERROR: cannot resolve host port for collab-${INACTIVE}"
+            docker compose ps
+            exit 1
+          fi
+          echo "polling TCP readiness on 127.0.0.1:${PORT}"
+          for i in $(seq 1 20); do
+            if (echo > "/dev/tcp/127.0.0.1/${PORT}") 2>/dev/null; then
+              echo "ready after ${i} attempts (~$((i*3))s)"
+              break
+            fi
+            if [ "$i" = "20" ]; then
+              echo "ERROR: collab-${INACTIVE} did not become reachable in 60s"
+              docker compose logs --tail=200 "collab-${INACTIVE}" || true
+              docker compose stop "collab-${INACTIVE}" || true
+              exit 1
+            fi
+            sleep 3
+          done
+
+          # 4. Cutover: flip active symlink + graceful nginx reload.
+          sudo ln -sfn "$SNIPPET_DIR/upstream-balruno-collab-${INACTIVE}.conf" "$ACTIVE_LINK"
+          sudo nginx -s reload
+          echo "cutover: active=${INACTIVE}"
+
+          # 5. Wait 30s (rollback window — yjs clients reconnect via the
+          # new color in the meantime), then stop the old. WebSocket
+          # connections held by old nginx workers are capped by the
+          # main-context worker_shutdown_timeout 30s (ADR 0044).
+          sleep 30
+          COMPOSE_PROFILES="$ACTIVE" docker compose stop "collab-${ACTIVE}"
+          echo "stopped collab-${ACTIVE}"
+          REMOTE
 
       - name: Smoke-test via Cloudflare
         run: |

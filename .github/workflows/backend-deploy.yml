@@ -1,18 +1,23 @@
-# Build the backend Docker image, push to GHCR, deploy to prod_app via
-# `docker compose pull && up -d`.
+# Build the backend Docker image, push to GHCR, and run a blue/green
+# cutover on prod_app via the nginx snippet symlink swap (ADR 0044).
+#
 # Triggers:
 #   - push to main that touches packages/backend/**
-#   - workflow_dispatch (manual rollback / retry)
+#   - workflow_dispatch (mode = normal | rollback)
 #
-# Decision: ADR 0014 v1.x + this commit's switch from bare JAR + systemd to
-# Docker + GHCR. Aligns with self-hosted SaaS standard pattern.
+# Rollback window: ~30s after cutover. The old color is stopped after
+# this delay, so an instant `mode=rollback` only works inside that
+# window. Past it, redeploy the previous SHA via workflow_dispatch
+# with mode=normal.
 #
 # Secrets required:
-#   OCI_SSH_PRIVATE_KEY  — same key the Ansible workflow already uses
+#   OCI_SSH_PRIVATE_KEY  - same key the Ansible workflow already uses
 # GHCR auth uses the workflow's built-in GITHUB_TOKEN with packages: write.
 #
-# Workflow injection: this file does not consume any untrusted github.event.*
-# input in run: blocks, so no escaping concerns.
+# Workflow injection: the only event input is `mode`, a typed `choice`
+# limited to two enum values. It is fed through the `MODE` env var and
+# only ever read as a shell variable inside run blocks, so there is no
+# untrusted-text path into the shell.
 
 name: backend-deploy
 
@@ -23,6 +28,15 @@ on:
       - 'packages/backend/**'
       - '.github/workflows/backend-deploy.yml'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'normal = build + cutover. rollback = flip active back (only within ~30s of cutover; past that, redeploy the previous SHA).'
+        required: false
+        default: normal
+        type: choice
+        options:
+          - normal
+          - rollback
 
 permissions:
   contents: read
@@ -37,6 +51,7 @@ env:
   PROD_HOST: 168.107.47.33
   PROD_USER: rocky
   INSTALL_DIR: /opt/balruno/backend
+  MODE: ${{ github.event.inputs.mode || 'normal' }}
 
 jobs:
   build-and-deploy:
@@ -76,11 +91,15 @@ jobs:
           exit 1
 
       # No QEMU needed — runner is already arm64.
+      # Build steps below are skipped on rollback — rollback just flips
+      # the nginx symlink and (re)starts the previously running color.
 
       - name: Set up Docker Buildx
+        if: ${{ env.MODE != 'rollback' }}
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
+        if: ${{ env.MODE != 'rollback' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -88,6 +107,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Build + push image (linux/arm64, tags = latest + commit SHA)"
+        if: ${{ env.MODE != 'rollback' }}
         uses: docker/build-push-action@v6
         with:
           context: packages/backend
@@ -111,22 +131,93 @@ jobs:
           printf '%s\n' "$OCI_SSH_PRIVATE_KEY" > ~/.ssh/oci_key
           chmod 600 ~/.ssh/oci_key
 
-      - name: Pull image + restart on prod_app
+      - name: Blue/green cutover on prod_app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTOR: ${{ github.actor }}
         run: |
-          # Login to GHCR on prod_app and pull. rocky was added to the
-          # docker group by the backend role.
+          # Drive the remote cutover from a heredoc'd bash script. All
+          # GitHub-context values reach the remote shell only via the
+          # exported env vars below (MODE, GH_TOKEN, ACTOR, INSTALL_DIR);
+          # the heredoc body itself is single-quoted so no `${{ }}`
+          # interpolation happens inside.
           ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
               -i ~/.ssh/oci_key \
               "${PROD_USER}@${PROD_HOST}" \
-              "echo \"$GH_TOKEN\" | docker login ghcr.io -u \"$ACTOR\" --password-stdin \
-               && cd ${INSTALL_DIR} \
-               && docker compose pull \
-               && docker compose up -d --remove-orphans \
-               && sleep 5 \
-               && docker compose ps"
+              MODE="$MODE" GH_TOKEN="$GH_TOKEN" ACTOR="$ACTOR" \
+              INSTALL_DIR="$INSTALL_DIR" \
+              bash -s <<'REMOTE'
+          set -euo pipefail
+
+          ACTIVE_LINK=/etc/nginx/conf.d/balruno-backend-active.conf
+          SNIPPET_DIR=/etc/nginx/snippets
+
+          # 1. Detect current active color from the nginx active symlink.
+          target=$(readlink -f "$ACTIVE_LINK")
+          case "$target" in
+            *backend-blue.conf)  ACTIVE=blue;  INACTIVE=green ;;
+            *backend-green.conf) ACTIVE=green; INACTIVE=blue ;;
+            *) echo "ERROR: cannot determine active color from $target"; exit 1 ;;
+          esac
+          echo "current active=$ACTIVE, target=$INACTIVE, mode=$MODE"
+
+          if [ "$MODE" = "rollback" ]; then
+            # Flip the symlink back. Useful within ~30s of the original
+            # cutover (before the old color was stopped). If the old
+            # color is already gone, this leaves traffic pointing at an
+            # empty upstream — caller must redeploy the previous SHA.
+            sudo ln -sfn "$SNIPPET_DIR/upstream-balruno-backend-${INACTIVE}.conf" "$ACTIVE_LINK"
+            sudo nginx -s reload
+            cd "$INSTALL_DIR"
+            COMPOSE_PROFILES="$INACTIVE" docker compose up -d "backend-${INACTIVE}"
+            echo "rollback complete: active=${INACTIVE}"
+            exit 0
+          fi
+
+          # 2. Pull the new image and bring up the inactive color.
+          # --remove-orphans cleans up the legacy `balruno-backend`
+          # single-service container on the first migration.
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+          cd "$INSTALL_DIR"
+          docker compose pull "backend-${INACTIVE}"
+          COMPOSE_PROFILES="$INACTIVE" docker compose up -d --remove-orphans "backend-${INACTIVE}"
+
+          # 3. Resolve the host port mapped to the inactive container,
+          # then poll /actuator/health/readiness until 200 (max 90s).
+          PORT=$(docker compose port "backend-${INACTIVE}" 8080 | cut -d: -f2)
+          if [ -z "$PORT" ]; then
+            echo "ERROR: cannot resolve host port for backend-${INACTIVE}"
+            docker compose ps
+            exit 1
+          fi
+          echo "polling readiness at http://127.0.0.1:${PORT}/actuator/health/readiness"
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              "http://127.0.0.1:${PORT}/actuator/health/readiness" || true)
+            if [ "$code" = "200" ]; then
+              echo "ready after ${i} attempts (~$((i*3))s)"
+              break
+            fi
+            if [ "$i" = "30" ]; then
+              echo "ERROR: backend-${INACTIVE} did not become ready in 90s"
+              docker compose logs --tail=200 "backend-${INACTIVE}" || true
+              docker compose stop "backend-${INACTIVE}" || true
+              exit 1
+            fi
+            sleep 3
+          done
+
+          # 4. Cutover: flip active symlink + graceful nginx reload.
+          sudo ln -sfn "$SNIPPET_DIR/upstream-balruno-backend-${INACTIVE}.conf" "$ACTIVE_LINK"
+          sudo nginx -s reload
+          echo "cutover: active=${INACTIVE}"
+
+          # 5. Wait 30s (rollback window — leaves the old color running
+          # so `mode=rollback` can flip back instantly), then stop it.
+          sleep 30
+          COMPOSE_PROFILES="$ACTIVE" docker compose stop "backend-${ACTIVE}"
+          echo "stopped backend-${ACTIVE}"
+          REMOTE
 
       - name: Smoke-test via Cloudflare
         run: |
