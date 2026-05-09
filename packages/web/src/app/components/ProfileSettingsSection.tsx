@@ -23,7 +23,7 @@ import { useRef, useState } from 'react';
 import { Loader2, Pencil, Trash2, Upload, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { updateProfile, uploadAvatar } from '@/lib/backend';
+import { resolveMediaUrl, updateProfile, uploadAvatar } from '@/lib/backend';
 import { BackendError } from '@/lib/backend/client';
 import { useBackendAuthStore } from '@/stores/backendAuthStore';
 
@@ -134,7 +134,7 @@ export default function ProfileSettingsSection() {
           {user.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={user.avatarUrl}
+              src={resolveMediaUrl(user.avatarUrl) ?? ''}
               alt=""
               className="h-20 w-20 rounded-full object-cover"
               style={{ border: '1px solid var(--border-primary)' }}

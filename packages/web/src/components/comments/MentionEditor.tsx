@@ -27,7 +27,7 @@ import type { JSONContent } from '@tiptap/react';
 import type { SuggestionOptions, SuggestionProps } from '@tiptap/suggestion';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
 
-import { listWorkspaceMembers } from '@/lib/backend';
+import { listWorkspaceMembers, resolveMediaUrl } from '@/lib/backend';
 import type { WorkspaceMemberView } from '@/lib/backend/types';
 
 export interface MentionEditorHandle {
@@ -352,7 +352,7 @@ const MentionList = forwardRef<MentionListHandle, MentionListProps>(function Men
             {item.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={item.avatarUrl}
+                src={resolveMediaUrl(item.avatarUrl) ?? ''}
                 alt=""
                 className="h-5 w-5 rounded-full"
               />
