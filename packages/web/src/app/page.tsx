@@ -2,32 +2,28 @@
 
 /**
  * Root marketing landing — Baserow / Linear / Notion / Vercel pattern.
- * Hero with tagline + dual CTA + fake-sheet illustration, feature
- * blocks, 10-view grid, integrations, pricing teaser, OSS callout,
- * footer.
  *
- * Authenticated visitors skip the landing entirely:
- *   - last-visited workspace+project (localStorage hint written by the
- *     workspace and project pages) → direct jump
- *   - otherwise → /workspaces, which auto-routes from there
+ * Anonymous visitors see the full page (Header / Hero / Features / 10
+ * views / Integrations / Community / Pricing / OSS / Footer).
+ * Authenticated visitors are routed straight to their last-visited
+ * workspace+project (localStorage hint) or /workspaces.
  *
- * 'idle' and 'loading' states show a minimal loader so the page
- * doesn't flash 'sign up' to a logged-in visitor before the cookie
- * probe resolves.
- *
- * Previously this slot held an Excalidraw-style anonymous demo
- * (ADR 0035); reverted on 2026-05-08 in favour of landing-first
- * onboarding to avoid the spam / vandalism load on a shared
- * anonymous workspace.
+ * Locale toggle in the header writes the NEXT_LOCALE cookie that
+ * src/i18n/request.ts reads on every server render and reloads.
+ * No router-level locale prefix yet, so a hard reload is the
+ * simplest way to pick up the new catalogue.
  */
 
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   ArrowRight,
   Github,
+  Globe,
   LayoutGrid,
+  MessageCircle,
   MessageSquare,
   Plug,
   Sparkles,
@@ -35,6 +31,9 @@ import {
 } from 'lucide-react';
 
 import { useBackendAuthStore } from '@/stores/backendAuthStore';
+
+const DISCORD_URL = 'https://discord.gg/8cKDsfVYR';
+const GITHUB_URL = 'https://github.com/dj258255/balruno';
 
 export default function Home() {
   const router = useRouter();
@@ -63,7 +62,7 @@ export default function Home() {
         className="flex min-h-screen items-center justify-center"
         style={{ background: 'var(--bg-primary)', color: 'var(--text-tertiary)' }}
       >
-        <p className="text-sm">로딩 중…</p>
+        <p className="text-sm">…</p>
       </main>
     );
   }
@@ -78,6 +77,7 @@ export default function Home() {
       <Features />
       <Views />
       <Integrations />
+      <Community />
       <PricingTeaser />
       <OpenSource />
       <Footer />
@@ -85,29 +85,86 @@ export default function Home() {
   );
 }
 
-function Header() {
+function LocaleToggle() {
+  const locale = useLocale();
+  const next = locale === 'ko' ? 'en' : 'ko';
+  const switchTo = () => {
+    document.cookie = `NEXT_LOCALE=${next}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+    window.location.reload();
+  };
   return (
-    <header className="sticky top-0 z-30 border-b backdrop-blur" style={{ borderColor: 'var(--border-primary)', background: 'rgba(255,255,255,0.7)' }}>
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2 text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-          <span className="text-lg">★</span> Balruno
+    <button
+      type="button"
+      onClick={switchTo}
+      className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors hover:bg-[var(--bg-hover)]"
+      style={{ borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}
+      aria-label="Switch language"
+    >
+      <Globe className="h-3.5 w-3.5" />
+      <span className="font-medium">{locale === 'ko' ? '한국어' : 'EN'}</span>
+    </button>
+  );
+}
+
+function Header() {
+  const t = useTranslations('marketing.header');
+  return (
+    <header
+      className="sticky top-0 z-30 border-b backdrop-blur-md"
+      style={{
+        borderColor: 'var(--border-primary)',
+        background: 'color-mix(in srgb, var(--bg-primary) 80%, transparent)',
+      }}
+    >
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-base font-semibold tracking-tight"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          <span
+            className="grid h-7 w-7 place-items-center rounded-md text-base text-white"
+            style={{ background: 'var(--accent)' }}
+          >
+            ★
+          </span>
+          Balruno
         </Link>
-        <nav className="flex items-center gap-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
-          <Link href="/pricing" className="hover:underline">Pricing</Link>
+        <nav className="flex items-center gap-2 text-sm">
+          <Link
+            href="/pricing"
+            className="hidden sm:inline-block rounded-md px-3 py-1.5 transition-colors hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            {t('pricing')}
+          </Link>
           <a
-            href="https://github.com/dj258255/balruno"
+            href={DISCORD_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 hover:underline"
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--text-secondary)' }}
           >
-            <Github className="h-4 w-4" /> GitHub
+            <MessageCircle className="h-4 w-4" />
+            {t('joinDiscord')}
           </a>
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors hover:bg-[var(--bg-hover)]"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <Github className="h-4 w-4" />
+            {t('githubStar')}
+          </a>
+          <LocaleToggle />
           <Link
             href="/login"
-            className="rounded-md px-3 py-1.5 text-sm"
+            className="rounded-md px-3 py-1.5 text-sm font-medium shadow-sm transition-transform hover:-translate-y-px"
             style={{ background: 'var(--text-primary)', color: 'var(--bg-primary)' }}
           >
-            Sign in
+            {t('signIn')}
           </Link>
         </nav>
       </div>
@@ -116,134 +173,146 @@ function Header() {
 }
 
 function Hero() {
+  const t = useTranslations('marketing.hero');
   return (
-    <section className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-20 lg:grid-cols-2 lg:items-center">
+    <section className="relative overflow-hidden border-b" style={{ borderColor: 'var(--border-primary)' }}>
+      <div
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            'radial-gradient(60% 60% at 20% 0%, rgba(99,102,241,0.18) 0%, transparent 60%),'
+            + ' radial-gradient(50% 50% at 90% 10%, rgba(236,72,153,0.14) 0%, transparent 60%),'
+            + ' radial-gradient(60% 60% at 50% 100%, rgba(168,85,247,0.10) 0%, transparent 60%)',
+        }}
+      />
+      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-24 lg:grid-cols-2 lg:items-center">
         <div>
           <p
-            className="mb-4 inline-block rounded-full border px-3 py-1 text-xs"
+            className="mb-5 inline-block rounded-full border px-3 py-1 text-xs"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}
           >
-            Open source · MIT frontend · AGPL backend
+            {t('badge')}
           </p>
-          <h1 className="mb-4 text-4xl font-bold leading-tight md:text-5xl">
-            게임 스튜디오를 위한
+          <h1 className="mb-5 text-4xl font-bold leading-[1.15] tracking-tight md:text-5xl">
+            {t('titleLine1')}
             <br />
-            <span style={{ color: 'var(--accent)' }}>스프레드시트 + 협업 도구</span>
+            <span style={{ color: 'var(--accent)' }}>{t('titleAccent')}</span>
           </h1>
-          <p className="mb-8 text-lg" style={{ color: 'var(--text-secondary)' }}>
-            밸런스 데이터, 애자일 티켓, 에픽 로드맵을 한 곳에서. 실시간 동기화 + 코멘트 + GitHub/Discord 통합 + Curve / Heatmap / Probability 뷰까지 모두 무료로 self-host 가능.
+          <p className="mb-8 text-lg leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            {t('subtitle')}
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 rounded-md px-5 py-3 text-sm font-medium"
+              className="inline-flex items-center gap-2 rounded-md px-5 py-3 text-sm font-medium shadow-sm transition-transform hover:-translate-y-px"
               style={{ background: 'var(--text-primary)', color: 'var(--bg-primary)' }}
             >
-              무료로 시작 <ArrowRight className="h-4 w-4" />
+              {t('ctaStart')} <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-2 rounded-md border px-5 py-3 text-sm font-medium hover:bg-[var(--bg-hover)]"
+            <a
+              href={DISCORD_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-md border px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--bg-hover)]"
               style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
             >
-              요금제 보기
-            </Link>
+              <MessageCircle className="h-4 w-4" /> Discord
+            </a>
           </div>
           <p className="mt-4 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            카드 등록 없음 · 14일 freemium · 언제든 self-host 로 이전 가능
+            {t('freemiumNote')}
           </p>
         </div>
-        <div
-          className="relative aspect-video overflow-hidden rounded-lg border shadow-2xl"
-          style={{
-            borderColor: 'var(--border-primary)',
-            background:
-              'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(168,85,247,0.10) 50%, rgba(236,72,153,0.10) 100%)',
-          }}
-        >
-          {/* Hero illustration placeholder — fakes a sheet UI without
-              the cost of a real screenshot. Replace with PNG once the
-              UI stops shifting weekly. */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="grid w-full max-w-md grid-cols-4 gap-px p-6" style={{ background: 'var(--bg-primary)', opacity: 0.95 }}>
-              {['Class', 'HP', 'STR', 'AGI'].map((h) => (
-                <div key={h} className="border bg-[var(--bg-secondary)] p-2 text-center text-xs font-medium" style={{ borderColor: 'var(--border-primary)' }}>
-                  {h}
-                </div>
-              ))}
-              {[
-                ['Knight', '120', '15', '8'],
-                ['Mage', '60', '5', '10'],
-                ['Archer', '80', '10', '15'],
-                ['Cleric', '90', '8', '7'],
-              ].flatMap((row, i) =>
-                row.map((cell, j) => (
-                  <div
-                    key={`${i}-${j}`}
-                    className="border bg-[var(--bg-primary)] p-2 text-center text-xs"
-                    style={{ borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}
-                  >
-                    {cell}
-                  </div>
-                )),
-              )}
-            </div>
-          </div>
-        </div>
+        <HeroIllustration />
       </div>
     </section>
   );
 }
 
+function HeroIllustration() {
+  return (
+    <div
+      className="relative aspect-video overflow-hidden rounded-xl border shadow-2xl"
+      style={{
+        borderColor: 'var(--border-primary)',
+        background:
+          'linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(168,85,247,0.12) 50%, rgba(236,72,153,0.12) 100%)',
+      }}
+    >
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <div
+          className="grid w-full max-w-md grid-cols-4 gap-px overflow-hidden rounded-md p-px"
+          style={{ background: 'var(--border-primary)' }}
+        >
+          {['Class', 'HP', 'STR', 'AGI'].map((h) => (
+            <div
+              key={h}
+              className="px-2 py-2 text-center text-xs font-semibold"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+            >
+              {h}
+            </div>
+          ))}
+          {[
+            ['Knight', '120', '15', '8'],
+            ['Mage', '60', '5', '10'],
+            ['Archer', '80', '10', '15'],
+            ['Cleric', '90', '8', '7'],
+          ].flatMap((row, i) =>
+            row.map((cell, j) => (
+              <div
+                key={`${i}-${j}`}
+                className="px-2 py-2 text-center text-xs"
+                style={{
+                  background: 'var(--bg-primary)',
+                  color: j === 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  fontWeight: j === 0 ? 500 : 400,
+                }}
+              >
+                {cell}
+              </div>
+            )),
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Features() {
+  const t = useTranslations('marketing.features');
   const items = [
-    {
-      icon: LayoutGrid,
-      title: '10가지 뷰',
-      desc: 'Grid · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff. 마지막 4개는 게임 밸런싱 도메인 전용 — Notion / Airtable 에 없음.',
-    },
-    {
-      icon: MessageSquare,
-      title: '실시간 협업',
-      desc: '셀 + 문서 본문 코멘트, 범위 핀 하이라이트, 답글 스레드, @멘션 + 인박스, 이메일 + Web Push 알림.',
-    },
-    {
-      icon: Plug,
-      title: '외부 통합',
-      desc: 'GitHub PR / 이슈 inbound + 외부로 outbound 웹훅 (HMAC-SHA256), Discord 슬래시 명령, 공유 링크 (per-view).',
-    },
-    {
-      icon: Code2,
-      title: '게임 엔진 export',
-      desc: 'CSV (RFC 4180 + UTF-8 BOM), C# `[Serializable]` struct + readonly array. Unity / Godot Assets/ 에 그대로 드롭.',
-    },
-    {
-      icon: Sparkles,
-      title: '게임 밸런싱 수식',
-      desc: 'DPS · EHP · TTK · SCALE · DIMINISH · REF — mathjs + formulajs 위에 게임 도메인 헬퍼 빌트인.',
-    },
-  ];
+    { icon: LayoutGrid, key: 'views' },
+    { icon: MessageSquare, key: 'collab' },
+    { icon: Plug, key: 'integrations' },
+    { icon: Code2, key: 'engineExport' },
+    { icon: Sparkles, key: 'formulas' },
+  ] as const;
   return (
     <section className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-      <div className="mx-auto max-w-6xl px-6 py-20">
-        <h2 className="mb-3 text-3xl font-bold">왜 Balruno?</h2>
+      <div className="mx-auto max-w-6xl px-6 py-24">
+        <h2 className="mb-3 text-3xl font-bold tracking-tight">{t('title')}</h2>
         <p className="mb-12 text-base" style={{ color: 'var(--text-secondary)' }}>
-          게임 디자이너의 일상에 맞춰 만든 도구 — 10가지 뷰 + 실시간 협업 + 외부 통합 + 엔진 export.
+          {t('lead')}
         </p>
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {items.map((it) => {
             const Icon = it.icon;
             return (
               <div
-                key={it.title}
-                className="rounded-lg border p-6"
-                style={{ borderColor: 'var(--border-primary)' }}
+                key={it.key}
+                className="group rounded-xl border p-6 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
               >
-                <Icon className="mb-3 h-6 w-6" style={{ color: 'var(--accent)' }} />
-                <h3 className="mb-2 text-lg font-semibold">{it.title}</h3>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {it.desc}
+                <div
+                  className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg"
+                  style={{ background: 'color-mix(in srgb, var(--accent) 15%, transparent)' }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: 'var(--accent)' }} />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold">{t(`${it.key}.title`)}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  {t(`${it.key}.desc`)}
                 </p>
               </div>
             );
@@ -255,6 +324,7 @@ function Features() {
 }
 
 function Views() {
+  const t = useTranslations('marketing.viewsSection');
   const views = [
     'Grid', 'Form', 'Kanban', 'Calendar',
     'Gallery', 'Gantt', 'Heatmap', 'Curve',
@@ -262,16 +332,16 @@ function Views() {
   ];
   return (
     <section className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-      <div className="mx-auto max-w-6xl px-6 py-20">
-        <h2 className="mb-3 text-3xl font-bold">한 시트, 10가지 뷰</h2>
-        <p className="mb-8 text-base" style={{ color: 'var(--text-secondary)' }}>
-          같은 데이터를 sprint board (Kanban), playtest schedule (Calendar), epic roadmap (Gantt), level scaling 곡선 (Curve), 캐릭터 × 스탯 매트릭스 (Heatmap), 가챠 트리 (Probability) 으로 바로 전환.
+      <div className="mx-auto max-w-6xl px-6 py-24">
+        <h2 className="mb-3 text-3xl font-bold tracking-tight">{t('title')}</h2>
+        <p className="mb-10 text-base" style={{ color: 'var(--text-secondary)' }}>
+          {t('lead')}
         </p>
         <div className="grid grid-cols-3 gap-3 md:grid-cols-5">
           {views.map((v) => (
             <div
               key={v}
-              className="rounded-md border px-3 py-4 text-center text-sm font-medium"
+              className="rounded-lg border px-3 py-5 text-center text-sm font-medium transition-all hover:-translate-y-0.5 hover:shadow-sm"
               style={{ borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}
             >
               {v}
@@ -284,85 +354,183 @@ function Views() {
 }
 
 function Integrations() {
-  const items = [
-    'GitHub PR / 이슈 → 시트에 자동 row 추가',
-    'Discord /balruno bug "..." 슬래시 명령',
-    'Outbound 웹훅 (comment.added / mention.created / row.added)',
-    'Email (SMTP) + Web Push (VAPID, 영구 무료)',
-    '공유 링크 (per view, instant revoke)',
-    'CSV / C# struct 다운로드',
-  ];
+  const t = useTranslations('marketing.integrationsSection');
+  const itemKeys = ['github', 'discord', 'outbound', 'notify', 'share', 'export'] as const;
   return (
     <section className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-      <div className="mx-auto max-w-6xl px-6 py-20">
-        <h2 className="mb-3 text-3xl font-bold">기존 워크플로 와 연결</h2>
-        <p className="mb-8 text-base" style={{ color: 'var(--text-secondary)' }}>
-          GitHub / Discord / Slack / Notion 끊지 말고 Balruno 와 양방향. *데이터 lock-in 없음* — 언제든 CSV / JSON 으로 내보내기.
+      <div className="mx-auto max-w-6xl px-6 py-24">
+        <h2 className="mb-3 text-3xl font-bold tracking-tight">{t('title')}</h2>
+        <p className="mb-10 text-base" style={{ color: 'var(--text-secondary)' }}>
+          {t('lead')}
         </p>
-        <ul className="space-y-2">
-          {items.map((it) => (
-            <li key={it} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-              <span className="text-base" style={{ color: 'var(--accent)' }}>·</span>
-              {it}
-            </li>
+        <div className="grid gap-3 md:grid-cols-2">
+          {itemKeys.map((k) => (
+            <div
+              key={k}
+              className="flex items-center gap-3 rounded-lg border px-4 py-3 text-sm"
+              style={{ borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}
+            >
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ background: 'var(--accent)' }}
+              />
+              {t(`items.${k}`)}
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     </section>
   );
 }
 
-function PricingTeaser() {
-  const tiers = [
-    {
-      name: 'Free',
-      price: '$0',
-      desc: '1인 / 사이드 프로젝트 충분',
-      bullets: ['rows/sheet 2k', 'history 14일', '120분 server-backed undo', 'BYOK AI'],
-    },
-    {
-      name: 'Pro',
-      price: '$10/mo',
-      desc: '소규모 팀',
-      bullets: ['unlimited rows', 'history 90일', 'cloud AI pool (선택)'],
-    },
-    {
-      name: 'Team',
-      price: '$18/mo',
-      desc: '여러 워크스페이스 + 감사 로그',
-      bullets: ['SSO', '30일 audit log retention', 'audit log export'],
-    },
-  ];
+function Community() {
+  const t = useTranslations('marketing.community');
   return (
     <section className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-      <div className="mx-auto max-w-6xl px-6 py-20">
-        <h2 className="mb-3 text-3xl font-bold">간단한 요금제</h2>
-        <p className="mb-8 text-base" style={{ color: 'var(--text-secondary)' }}>
-          self-host 하면 영원히 무료. cloud 호스팅도 freemium. *카드 등록 없음, 언제든 데이터 export*.
+      <div className="mx-auto max-w-6xl px-6 py-24">
+        <h2 className="mb-3 text-3xl font-bold tracking-tight">{t('title')}</h2>
+        <p className="mb-10 text-base" style={{ color: 'var(--text-secondary)' }}>
+          {t('lead')}
+        </p>
+        <div className="grid gap-6 md:grid-cols-2">
+          <CommunityCard
+            href={DISCORD_URL}
+            icon={MessageCircle}
+            title={t('discordTitle')}
+            desc={t('discordDesc')}
+            cta={t('discordCta')}
+            tint="#5865F2"
+          />
+          <CommunityCard
+            href={GITHUB_URL}
+            icon={Github}
+            title={t('githubTitle')}
+            desc={t('githubDesc')}
+            cta={t('githubCta')}
+            tint="var(--text-primary)"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CommunityCard({
+  href,
+  icon: Icon,
+  title,
+  desc,
+  cta,
+  tint,
+}: {
+  href: string;
+  icon: typeof MessageCircle;
+  title: string;
+  desc: string;
+  cta: string;
+  tint: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="group flex flex-col gap-4 rounded-xl border p-6 transition-all hover:-translate-y-0.5 hover:shadow-md"
+      style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+    >
+      <div
+        className="inline-flex h-10 w-10 items-center justify-center rounded-lg"
+        style={{ background: `color-mix(in srgb, ${tint} 18%, transparent)` }}
+      >
+        <Icon className="h-5 w-5" style={{ color: tint }} />
+      </div>
+      <div>
+        <h3 className="mb-1.5 text-lg font-semibold">{title}</h3>
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          {desc}
+        </p>
+      </div>
+      <span
+        className="mt-auto inline-flex items-center gap-1 text-sm font-medium"
+        style={{ color: tint }}
+      >
+        {cta} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+      </span>
+    </a>
+  );
+}
+
+function PricingTeaser() {
+  const t = useTranslations('marketing.pricing');
+  const tiers = [
+    {
+      key: 'free',
+      bullets: ['freeB1', 'freeB2', 'freeB3', 'freeB4'],
+      featured: false,
+    },
+    {
+      key: 'pro',
+      bullets: ['proB1', 'proB2', 'proB3'],
+      featured: true,
+    },
+    {
+      key: 'team',
+      bullets: ['teamB1', 'teamB2', 'teamB3'],
+      featured: false,
+    },
+  ] as const;
+
+  return (
+    <section className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
+      <div className="mx-auto max-w-6xl px-6 py-24">
+        <h2 className="mb-3 text-3xl font-bold tracking-tight">{t('title')}</h2>
+        <p className="mb-10 text-base" style={{ color: 'var(--text-secondary)' }}>
+          {t('lead')}
         </p>
         <div className="grid gap-6 md:grid-cols-3">
-          {tiers.map((t) => (
+          {tiers.map((tier) => (
             <div
-              key={t.name}
-              className="rounded-lg border p-6"
-              style={{ borderColor: 'var(--border-primary)' }}
+              key={tier.key}
+              className="relative rounded-xl border p-6 transition-all hover:-translate-y-0.5 hover:shadow-md"
+              style={{
+                borderColor: tier.featured ? 'var(--accent)' : 'var(--border-primary)',
+                background: 'var(--bg-primary)',
+                boxShadow: tier.featured
+                  ? '0 0 0 1px var(--accent) inset'
+                  : undefined,
+              }}
             >
-              <h3 className="mb-1 text-lg font-semibold">{t.name}</h3>
-              <p className="mb-3 text-2xl font-bold">{t.price}</p>
+              {tier.featured && (
+                <span
+                  className="absolute -top-2.5 left-6 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-white"
+                  style={{ background: 'var(--accent)' }}
+                >
+                  {t('proBadge')}
+                </span>
+              )}
+              <h3 className="mb-1 text-lg font-semibold">{t(`${tier.key}Name`)}</h3>
+              <p className="mb-2 text-3xl font-bold tracking-tight">{t(`${tier.key}Price`)}</p>
               <p className="mb-4 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                {t.desc}
+                {t(`${tier.key}Desc`)}
               </p>
               <ul className="space-y-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {t.bullets.map((b) => (
-                  <li key={b}>· {b}</li>
+                {tier.bullets.map((b) => (
+                  <li key={b} className="flex gap-2">
+                    <span style={{ color: 'var(--accent)' }}>·</span>
+                    {t(b)}
+                  </li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
-        <div className="mt-6 text-sm">
-          <Link href="/pricing" className="inline-flex items-center gap-1 hover:underline" style={{ color: 'var(--accent)' }}>
-            전체 가격 비교 <ArrowRight className="h-4 w-4" />
+        <div className="mt-8 text-sm">
+          <Link
+            href="/pricing"
+            className="inline-flex items-center gap-1 hover:underline"
+            style={{ color: 'var(--accent)' }}
+          >
+            {t('compareAll')} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </div>
@@ -371,23 +539,35 @@ function PricingTeaser() {
 }
 
 function OpenSource() {
+  const t = useTranslations('marketing.oss');
   return (
     <section className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-      <div className="mx-auto max-w-6xl px-6 py-20 text-center">
-        <h2 className="mb-3 text-3xl font-bold">Open source 입니다</h2>
-        <p className="mb-6 text-base" style={{ color: 'var(--text-secondary)' }}>
-          Frontend (MIT) + Backend (AGPL v3) + Hosted SaaS — AFFiNE / Outline 패턴. <br />
-          self-host 하면 카드 등록 / 사용자 수 제한 / 데이터 export 제한 없음.
+      <div className="mx-auto max-w-6xl px-6 py-24 text-center">
+        <h2 className="mb-3 text-3xl font-bold tracking-tight">{t('title')}</h2>
+        <p
+          className="mx-auto mb-8 max-w-2xl text-base leading-relaxed"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          {t('desc')}
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <a
-            href="https://github.com/dj258255/balruno"
+            href={GITHUB_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-md border px-5 py-3 text-sm font-medium hover:bg-[var(--bg-hover)]"
+            className="inline-flex items-center gap-2 rounded-md border px-5 py-3 text-sm font-medium transition-colors hover:bg-[var(--bg-hover)]"
             style={{ borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
           >
-            <Github className="h-4 w-4" /> GitHub 에서 보기
+            <Github className="h-4 w-4" /> {t('cta')}
+          </a>
+          <a
+            href={DISCORD_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-md px-5 py-3 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-px"
+            style={{ background: '#5865F2' }}
+          >
+            <MessageCircle className="h-4 w-4" /> Discord
           </a>
         </div>
       </div>
@@ -396,15 +576,24 @@ function OpenSource() {
 }
 
 function Footer() {
+  const t = useTranslations('marketing.footer');
   return (
     <footer className="py-10">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-        <div>© 2026 Balruno · 1인 OSS 프로젝트</div>
+      <div
+        className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 text-xs"
+        style={{ color: 'var(--text-tertiary)' }}
+      >
+        <div>{t('tagline')}</div>
         <nav className="flex flex-wrap gap-4">
-          <Link href="/privacy" className="hover:underline">Privacy</Link>
-          <Link href="/terms" className="hover:underline">Terms</Link>
-          <a href="https://github.com/dj258255/balruno" target="_blank" rel="noreferrer" className="hover:underline">GitHub</a>
-          <Link href="/pricing" className="hover:underline">Pricing</Link>
+          <Link href="/privacy" className="hover:underline">{t('privacy')}</Link>
+          <Link href="/terms" className="hover:underline">{t('terms')}</Link>
+          <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:underline">
+            {t('github')}
+          </a>
+          <a href={DISCORD_URL} target="_blank" rel="noreferrer" className="hover:underline">
+            {t('discord')}
+          </a>
+          <Link href="/pricing" className="hover:underline">{t('pricing')}</Link>
         </nav>
       </div>
     </footer>

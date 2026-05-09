@@ -5827,5 +5827,110 @@
     "delete": "삭제",
     "confirmRestore": "이 스냅샷으로 복원하시겠습니까? 현재 변경사항은 별도 스냅샷으로 먼저 저장하세요.",
     "confirmDelete": "이 스냅샷을 삭제하시겠습니까?"
+  },
+  "marketing": {
+    "header": {
+      "pricing": "요금제",
+      "signIn": "로그인",
+      "joinDiscord": "Discord 참여",
+      "githubStar": "GitHub"
+    },
+    "hero": {
+      "badge": "오픈소스 · MIT 프론트엔드 · AGPL 백엔드",
+      "titleLine1": "게임 스튜디오를 위한",
+      "titleAccent": "스프레드시트 + 협업 도구",
+      "subtitle": "밸런스 데이터, 애자일 티켓, 에픽 로드맵을 한 곳에서. 실시간 동기화 · 코멘트 · GitHub/Discord 통합 · Curve / Heatmap / Probability 뷰까지 모두 무료로 self-host 가능.",
+      "ctaStart": "무료로 시작하기",
+      "ctaPricing": "요금제 보기",
+      "freemiumNote": "카드 등록 없음 · 14일 freemium · 언제든 self-host 로 이전 가능"
+    },
+    "features": {
+      "title": "왜 Balruno?",
+      "lead": "게임 디자이너의 일상에 맞춘 도구 — 10가지 뷰 + 실시간 협업 + 외부 통합 + 엔진 export.",
+      "views": {
+        "title": "10가지 뷰",
+        "desc": "Grid · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff. 마지막 4개는 게임 밸런싱 도메인 전용 — Notion / Airtable 에 없습니다."
+      },
+      "collab": {
+        "title": "실시간 협업",
+        "desc": "셀 + 문서 본문 코멘트, 범위 핀 하이라이트, 답글 스레드, @멘션 + 인박스, 이메일 + Web Push 알림."
+      },
+      "integrations": {
+        "title": "외부 통합",
+        "desc": "GitHub PR / 이슈 inbound + outbound 웹훅 (HMAC-SHA256), Discord 슬래시 명령, 공유 링크 (per-view)."
+      },
+      "engineExport": {
+        "title": "게임 엔진 export",
+        "desc": "CSV (RFC 4180 + UTF-8 BOM), C# [Serializable] struct + readonly array. Unity / Godot Assets/ 에 그대로 드롭."
+      },
+      "formulas": {
+        "title": "게임 밸런싱 수식",
+        "desc": "DPS · EHP · TTK · SCALE · DIMINISH · REF — mathjs + formulajs 위에 게임 도메인 헬퍼 빌트인."
+      }
+    },
+    "viewsSection": {
+      "title": "한 시트, 10가지 뷰",
+      "lead": "같은 데이터를 sprint board (Kanban), playtest schedule (Calendar), epic roadmap (Gantt), level scaling 곡선 (Curve), 캐릭터 × 스탯 매트릭스 (Heatmap), 가챠 트리 (Probability) 으로 바로 전환."
+    },
+    "integrationsSection": {
+      "title": "기존 워크플로 와 연결",
+      "lead": "GitHub / Discord / Slack / Notion 끊지 말고 Balruno 와 양방향. 데이터 lock-in 없음 — 언제든 CSV / JSON 으로 내보내기.",
+      "items": {
+        "github": "GitHub PR / 이슈 → 시트에 자동 row 추가",
+        "discord": "Discord /balruno bug \"...\" 슬래시 명령",
+        "outbound": "Outbound 웹훅 (comment.added / mention.created / row.added)",
+        "notify": "Email (SMTP) + Web Push (VAPID, 영구 무료)",
+        "share": "공유 링크 (per view, instant revoke)",
+        "export": "CSV / C# struct 다운로드"
+      }
+    },
+    "community": {
+      "title": "커뮤니티에서 만나요",
+      "lead": "버그 제보, 기능 제안, 게임 밸런싱 질문 — 모두 환영입니다.",
+      "discordTitle": "Discord",
+      "discordDesc": "실시간 토론, 데모 셀 공유, 빌드 버그 리포트.",
+      "discordCta": "Discord 참여하기",
+      "githubTitle": "GitHub",
+      "githubDesc": "Star · Issue · PR. AGPL 백엔드 + MIT 프론트엔드, 누구나 fork 가능.",
+      "githubCta": "GitHub 보러 가기"
+    },
+    "pricing": {
+      "title": "간단한 요금제",
+      "lead": "self-host 하면 영원히 무료. 클라우드 호스팅도 freemium. 카드 등록 없음, 언제든 데이터 export.",
+      "freeName": "Free",
+      "freePrice": "$0",
+      "freeDesc": "1인 / 사이드 프로젝트 충분",
+      "freeB1": "rows/sheet 2k",
+      "freeB2": "history 14일",
+      "freeB3": "120분 server-backed undo",
+      "freeB4": "BYOK AI",
+      "proName": "Pro",
+      "proPrice": "$10/mo",
+      "proDesc": "소규모 팀",
+      "proB1": "unlimited rows",
+      "proB2": "history 90일",
+      "proB3": "cloud AI pool (선택)",
+      "proBadge": "추천",
+      "teamName": "Team",
+      "teamPrice": "$18/mo",
+      "teamDesc": "여러 워크스페이스 + 감사 로그",
+      "teamB1": "SSO",
+      "teamB2": "30일 audit log retention",
+      "teamB3": "audit log export",
+      "compareAll": "전체 가격 비교"
+    },
+    "oss": {
+      "title": "오픈소스입니다",
+      "desc": "Frontend (MIT) + Backend (AGPL v3) + Hosted SaaS — AFFiNE / Outline 패턴. self-host 하면 카드 등록 / 사용자 수 제한 / 데이터 export 제한 없음.",
+      "cta": "GitHub 에서 보기"
+    },
+    "footer": {
+      "tagline": "© 2026 Balruno · OSS 프로젝트",
+      "privacy": "개인정보 처리방침",
+      "terms": "이용약관",
+      "github": "GitHub",
+      "discord": "Discord",
+      "pricing": "요금제"
+    }
   }
 }

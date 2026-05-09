@@ -5827,5 +5827,110 @@
     "delete": "Delete",
     "confirmRestore": "Restore this snapshot? Save your current changes as a separate snapshot first if needed.",
     "confirmDelete": "Delete this snapshot?"
+  },
+  "marketing": {
+    "header": {
+      "pricing": "Pricing",
+      "signIn": "Sign in",
+      "joinDiscord": "Join Discord",
+      "githubStar": "GitHub"
+    },
+    "hero": {
+      "badge": "Open source · MIT frontend · AGPL backend",
+      "titleLine1": "A spreadsheet + collaboration",
+      "titleAccent": "tool for game studios",
+      "subtitle": "Balance data, agile tickets, epic roadmaps in one place. Real-time sync · comments · GitHub/Discord integrations · Curve / Heatmap / Probability views — all free to self-host.",
+      "ctaStart": "Start free",
+      "ctaPricing": "See pricing",
+      "freemiumNote": "No card · 14-day freemium · self-host anytime"
+    },
+    "features": {
+      "title": "Why Balruno?",
+      "lead": "Built for game designers — 10 views + real-time collab + integrations + engine export.",
+      "views": {
+        "title": "10 views",
+        "desc": "Grid · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff. The last four are game-balancing native — Notion / Airtable don't have them."
+      },
+      "collab": {
+        "title": "Real-time collaboration",
+        "desc": "Cell + document body comments, range pin highlights, reply threads, @mentions + inbox, email + Web Push notifications."
+      },
+      "integrations": {
+        "title": "Integrations",
+        "desc": "GitHub PR / issue inbound + outbound webhooks (HMAC-SHA256), Discord slash commands, share links (per view)."
+      },
+      "engineExport": {
+        "title": "Game engine export",
+        "desc": "CSV (RFC 4180 + UTF-8 BOM), C# [Serializable] struct + readonly array. Drop straight into Unity / Godot Assets/."
+      },
+      "formulas": {
+        "title": "Game balancing formulas",
+        "desc": "DPS · EHP · TTK · SCALE · DIMINISH · REF — game-domain helpers built on top of mathjs + formulajs."
+      }
+    },
+    "viewsSection": {
+      "title": "One sheet, 10 views",
+      "lead": "Flip the same data into sprint board (Kanban), playtest schedule (Calendar), epic roadmap (Gantt), level scaling curve (Curve), character × stat matrix (Heatmap), gacha tree (Probability)."
+    },
+    "integrationsSection": {
+      "title": "Plugs into your workflow",
+      "lead": "Stay on GitHub / Discord / Slack / Notion — Balruno talks both ways. No data lock-in: export to CSV / JSON anytime.",
+      "items": {
+        "github": "GitHub PR / issue → row added automatically",
+        "discord": "Discord /balruno bug \"...\" slash command",
+        "outbound": "Outbound webhooks (comment.added / mention.created / row.added)",
+        "notify": "Email (SMTP) + Web Push (VAPID, free forever)",
+        "share": "Share links (per view, instant revoke)",
+        "export": "CSV / C# struct download"
+      }
+    },
+    "community": {
+      "title": "Meet us in the community",
+      "lead": "Bug reports, feature requests, game-balancing questions — all welcome.",
+      "discordTitle": "Discord",
+      "discordDesc": "Live chat, demo cells, build bug reports.",
+      "discordCta": "Join Discord",
+      "githubTitle": "GitHub",
+      "githubDesc": "Star · Issue · PR. AGPL backend + MIT frontend — anyone can fork.",
+      "githubCta": "View on GitHub"
+    },
+    "pricing": {
+      "title": "Simple pricing",
+      "lead": "Free forever if you self-host. Cloud hosting is freemium too. No card required, export your data anytime.",
+      "freeName": "Free",
+      "freePrice": "$0",
+      "freeDesc": "Solo / side projects",
+      "freeB1": "2k rows/sheet",
+      "freeB2": "14-day history",
+      "freeB3": "120-min server-backed undo",
+      "freeB4": "BYOK AI",
+      "proName": "Pro",
+      "proPrice": "$10/mo",
+      "proDesc": "Small teams",
+      "proB1": "Unlimited rows",
+      "proB2": "90-day history",
+      "proB3": "Cloud AI pool (optional)",
+      "proBadge": "Popular",
+      "teamName": "Team",
+      "teamPrice": "$18/mo",
+      "teamDesc": "Multi-workspace + audit log",
+      "teamB1": "SSO",
+      "teamB2": "30-day audit log retention",
+      "teamB3": "Audit log export",
+      "compareAll": "Compare full pricing"
+    },
+    "oss": {
+      "title": "We're open source",
+      "desc": "Frontend (MIT) + Backend (AGPL v3) + Hosted SaaS — AFFiNE / Outline pattern. Self-host means no card, no seat caps, no export limits.",
+      "cta": "View on GitHub"
+    },
+    "footer": {
+      "tagline": "© 2026 Balruno · open-source project",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "github": "GitHub",
+      "discord": "Discord",
+      "pricing": "Pricing"
+    }
   }
 }
