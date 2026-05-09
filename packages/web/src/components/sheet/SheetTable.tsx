@@ -63,6 +63,7 @@ import ColumnModal from './ColumnModal';
 import CellContextMenu from './CellContextMenu';
 import ColumnContextMenu from './ColumnContextMenu';
 import RowContextMenu from './RowContextMenu';
+import RowHistoryPanel from './RowHistoryPanel';
 import SheetToolbar from './SheetToolbar';
 import { ConfirmDialog } from '@/components/ui';
 
@@ -441,6 +442,12 @@ export default function SheetTable({ projectId, sheet }: SheetTableProps) {
     left: number;
     width: number;
     height: number;
+  } | null>(null);
+  // 행 변경 이력 패널 — RowContextMenu 의 onShowHistory 가 켜고
+  // RowHistoryPanel 의 onClose 가 끔. (ADR 0038 Stage A)
+  const [rowHistory, setRowHistory] = useState<{
+    rowId: string;
+    rowIndex: number;
   } | null>(null);
 
   // ========== 계산된 값 ==========
@@ -1961,6 +1968,23 @@ export default function SheetTable({ projectId, sheet }: SheetTableProps) {
             insertRow(projectId, sheet.id, rowContextMenu.rowIndex + 1);
             setRowContextMenu(null);
           }}
+          onShowHistory={() => {
+            setRowHistory({
+              rowId: rowContextMenu.row.id,
+              rowIndex: rowContextMenu.rowIndex,
+            });
+            setRowContextMenu(null);
+          }}
+        />
+      )}
+
+      {rowHistory && (
+        <RowHistoryPanel
+          projectId={projectId}
+          sheetId={sheet.id}
+          rowId={rowHistory.rowId}
+          rowLabel={`Row ${rowHistory.rowIndex + 1}`}
+          onClose={() => setRowHistory(null)}
         />
       )}
 

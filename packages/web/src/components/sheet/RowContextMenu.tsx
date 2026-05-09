@@ -11,6 +11,7 @@ import {
   Check,
   Maximize2,
   Swords,
+  History,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useSheetUIStore } from '@/stores/sheetUIStore';
@@ -31,6 +32,8 @@ interface RowContextMenuProps {
   /** 시뮬 진입점 — 시트 컬럼이 unit-mappable 일 때만 제공. 라벨은 "이 행으로 시뮬" / "선택한 N행으로 팀 시뮬".
    *  disabled=true 면 hint 로만 표시 (왜 진입 안 되는지 알리는 용). */
   runSimulation?: { label: string; onClick: () => void; disabled?: boolean } | null;
+  /** 변경 이력 패널 열기 — server-canonical mode 에서만 (행 단위 timeline). */
+  onShowHistory?: () => void;
 }
 
 interface MenuItem {
@@ -59,6 +62,7 @@ export default function RowContextMenu({
   onInsertBelow,
   onOpenDetail,
   runSimulation,
+  onShowHistory,
 }: RowContextMenuProps) {
   const t = useTranslations();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -160,6 +164,16 @@ export default function RowContextMenu({
       onClick: onDelete,
       danger: true,
     },
+    ...(onShowHistory
+      ? [
+          {
+            label: t('contextMenu.showRowHistory'),
+            icon: <History className="w-4 h-4" />,
+            onClick: onShowHistory,
+            divider: true,
+          } as MenuItem,
+        ]
+      : []),
   ];
 
   return (

@@ -516,6 +516,7 @@
   },
   "contextMenu": {
     "openRecordDetail": "레코드 상세 보기",
+    "showRowHistory": "변경 이력 보기",
     "cut": "잘라내기",
     "copy": "복사",
     "paste": "붙여넣기",
@@ -5939,5 +5940,25 @@
     "exportFailed": "데이터 내려받기 실패",
     "deleteSuccess": "계정이 삭제되었습니다.",
     "deleteFailed": "계정 삭제 실패"
+  },
+  "rowHistory": {
+    "heading": "{row} 의 변경 이력",
+    "close": "닫기",
+    "loadFailed": "이력을 불러오지 못했습니다",
+    "empty": "이 행의 최근 변경 내역이 없습니다",
+    "actorSelf": "나",
+    "actorSystem": "시스템",
+    "actionFallback": "{action} 작업",
+    "actions": {
+      "cell_update": "셀 값을 변경했습니다",
+      "cell_style_update": "셀 서식을 변경했습니다",
+      "sheet_metadata_update": "시트 설정을 변경했습니다",
+      "row_add": "행을 추가했습니다",
+      "row_delete": "행을 삭제했습니다",
+      "row_move": "행 위치를 옮겼습니다",
+      "column_add": "열을 추가했습니다",
+      "column_update": "열을 변경했습니다",
+      "column_delete": "열을 삭제했습니다"
+    }
   }
 }

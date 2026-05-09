@@ -516,6 +516,7 @@
   },
   "contextMenu": {
     "openRecordDetail": "Open record detail",
+    "showRowHistory": "Show change history",
     "cut": "Cut",
     "copy": "Copy",
     "paste": "Paste",
@@ -5939,5 +5940,25 @@
     "exportFailed": "Data download failed",
     "deleteSuccess": "Account deleted.",
     "deleteFailed": "Account deletion failed"
+  },
+  "rowHistory": {
+    "heading": "Change history — {row}",
+    "close": "Close",
+    "loadFailed": "Failed to load history",
+    "empty": "No recent changes on this row",
+    "actorSelf": "You",
+    "actorSystem": "System",
+    "actionFallback": "{action}",
+    "actions": {
+      "cell_update": "Updated a cell value",
+      "cell_style_update": "Changed cell style",
+      "sheet_metadata_update": "Updated sheet settings",
+      "row_add": "Added a row",
+      "row_delete": "Deleted a row",
+      "row_move": "Moved a row",
+      "column_add": "Added a column",
+      "column_update": "Updated a column",
+      "column_delete": "Deleted a column"
+    }
   }
 }
