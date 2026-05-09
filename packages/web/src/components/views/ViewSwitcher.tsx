@@ -255,6 +255,7 @@ export default function ViewSwitcher({ projectId, sheet }: ViewSwitcherProps) {
             </button>
           </div>
         )}
+      </div>{/* /+ 저장 wrapper */}
 
         {/* 필터 토글 — 활성 시 accent 색 + 조건 수 배지 */}
         <button
