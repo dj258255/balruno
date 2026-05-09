@@ -26,7 +26,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, Menu, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Loader2, Menu } from 'lucide-react';
 
 import {
   BackendError,
@@ -613,68 +613,22 @@ export default function ProjectDetailPage() {
       className="h-screen flex flex-col overflow-hidden"
       style={{ background: 'var(--bg-secondary)' }}
     >
-      {/* Topbar — full-width, fixed-height. Mirrors the v0.5
-          home-page topbar (workspace breadcrumb + project name on
-          the left, comments toggle + inbox + sync status on the
-          right). The whole row stays above the sidebar/main split
-          so neither column scrolls it off-screen. */}
-      <div
-        className="flex-shrink-0 flex items-center justify-between gap-4 border-b px-4 py-2"
-        style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+      {/* Mobile-only hamburger — desktop has the sidebar inline so
+          the workspace breadcrumb / sync chrome lives inside the
+          SidebarFooter instead of a separate topbar (v0.5 parity). */}
+      <button
+        type="button"
+        onClick={() => setMobileSidebarOpen(true)}
+        className="md:hidden fixed top-3 left-3 z-50 inline-flex h-9 w-9 items-center justify-center rounded shadow"
+        style={{
+          color: 'var(--text-secondary)',
+          background: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
+        }}
+        aria-label="시트 사이드바 열기"
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={() => setMobileSidebarOpen(true)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded hover:bg-[var(--bg-hover)] md:hidden"
-            style={{ color: 'var(--text-secondary)' }}
-            aria-label="시트 사이드바 열기"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <button
-            onClick={() => router.push(`/w/${workspace.slug}`)}
-            className="inline-flex items-center gap-1 text-sm hover:underline"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> {workspace.name}
-          </button>
-          <span style={{ color: 'var(--text-tertiary)' }}>/</span>
-          <h1
-            className="text-base font-semibold truncate"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {project.name}
-          </h1>
-          <span
-            className="font-mono text-xs"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
-            /{project.slug}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-xs flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => setCommentPanelOpen(!commentPanelOpen)}
-            className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-[var(--bg-hover)]"
-            style={{
-              color: commentPanelOpen ? 'var(--text-primary)' : 'var(--text-secondary)',
-              background: commentPanelOpen ? 'var(--bg-hover)' : undefined,
-            }}
-            title="코멘트 패널 토글"
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            코멘트
-          </button>
-          <InboxBell />
-          <span style={{ color: 'var(--text-secondary)' }}>동기화:</span>
-          <ConnectionStatus />
-          <code className="font-mono" style={{ color: 'var(--text-tertiary)' }}>
-            {syncStatus}
-          </code>
-        </div>
-      </div>
+        <Menu className="h-5 w-5" />
+      </button>
 
       {error && error !== 'not-found' && (
         <p className="flex-shrink-0 m-2 rounded-md bg-red-50 dark:bg-red-950/30 px-3 py-2 text-sm text-red-700 dark:text-red-300">
@@ -708,13 +662,20 @@ export default function ProjectDetailPage() {
               we wrap it for the drawer behaviour. */}
           <div
             className={
-              'transition-transform '
+              'relative transition-transform '
               + 'md:static md:translate-x-0 md:w-[260px] md:flex-shrink-0 md:h-full md:overflow-y-auto '
               + 'fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto '
               + (mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0')
             }
             style={{ background: 'var(--bg-primary)' }}
           >
+            {/* InboxBell — moved into the sidebar at the user's
+                request. Absolute-positioned at the top-right of
+                the sidebar so it doesn't reflow the v0.5
+                workspace-switcher row. */}
+            <div className="absolute top-2 right-2 z-10">
+              <InboxBell />
+            </div>
             <Sidebar {...sidebarCallbacks} activeTools={activeTools} />
           </div>
           <SidebarResizer />
@@ -821,6 +782,15 @@ export default function ProjectDetailPage() {
               코멘트를 달 셀이나 문서를 먼저 선택하세요.
             </aside>
           )}
+
+          {/* DockedToolbox — right-side panel drawer that opens the
+              clicked tool from the BottomDock. Must be a flex
+              sibling of the main section so it lays out as the
+              right column on desktop (v0.5 parity); when mounted
+              outside the body flex it floats over the bottom of
+              the screen instead, which is the regression the user
+              flagged. */}
+          <DockedToolbox panels={toolPanels} />
         </div>
       ) : (
         <section
@@ -839,13 +809,9 @@ export default function ProjectDetailPage() {
         onPick={handlePickTemplate}
       />
 
-      {/* v0.5 floating dock — right-side panel drawer + bottom toolbar.
-          DockedToolbox owns the DraggablePanel mounts; BottomDock owns
-          the toggle buttons. Both subscribe to the same panel state so
-          a click on the bottom button surfaces the corresponding panel
-          on the right (or as a free-floating draggable, depending on
-          per-panel layout in toolLayoutStore). */}
-      <DockedToolbox panels={toolPanels} />
+      {/* BottomDock — fixed-position toggle bar floating at the
+          screen bottom. Stays at the <main> level so it doesn't
+          fight the body flex. */}
       <BottomDock panels={toolPanels} isModalOpen={templateModalOpen} />
     </main>
   );
