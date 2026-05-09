@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { useProjectStore } from '@/stores/projectStore';
 import { useToolLayoutStore, AllToolId } from '@/stores/toolLayoutStore';
@@ -79,6 +80,7 @@ export function useSidebarState() {
   const projectStore = useProjectStore();
   const toolLayoutStore = useToolLayoutStore();
   const router = useRouter();
+  const locale = useLocale();
 
   // 클라이언트 마운트 상태
   const [mounted, setMounted] = useState(false);
@@ -221,14 +223,14 @@ export function useSidebarState() {
     }
     const slug = 'p-' + randomId().replace(/-/g, '').slice(0, 8);
     try {
-      const created = await createProjectRest(ws.id, { slug, name });
+      const created = await createProjectRest(ws.id, { slug, name, locale });
       setNewProjectName('');
       setShowNewProject(false);
       router.replace(`/${ws.slug}/projects/${created.slug}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : '프로젝트 생성 실패');
     }
-  }, [newProjectName, router]);
+  }, [newProjectName, router, locale]);
 
   // 프로젝트 편집 시작
   const handleStartEdit = useCallback((projectId: string, name: string) => {

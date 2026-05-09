@@ -551,6 +551,28 @@ export default function WorkspaceShell({
   const sheetTreeOps = makeTreeHandlers('SHEET');
   const docTreeOps = makeTreeHandlers('DOC');
 
+  // Bridge for legacy store mutations re-wired in treeMutationSlice.
+  // Sidebar drag-drop on sheets / folders dispatches a CustomEvent
+  // ('balruno:tree-move') with { kind, nodeId, newParentId, newPosition };
+  // we forward it to the matching sheetTreeOps/docTreeOps.move so a
+  // single tree.move op is emitted + broadcast through the sync bridge.
+  useEffect(() => {
+    const handler = (raw: Event) => {
+      const e = raw as CustomEvent<{
+        kind: 'SHEET' | 'DOC';
+        nodeId: string;
+        newParentId: string | null;
+        newPosition: number;
+      }>;
+      const d = e.detail;
+      if (!d) return;
+      const ops = d.kind === 'DOC' ? docTreeOps : sheetTreeOps;
+      ops.move(d.nodeId, d.newParentId, d.newPosition);
+    };
+    window.addEventListener('balruno:tree-move', handler);
+    return () => window.removeEventListener('balruno:tree-move', handler);
+  }, [sheetTreeOps, docTreeOps]);
+
   // Stage F — "Add from template" modal state. Backend mutates +
   // broadcasts sync.full so we don't predict / mutate the local
   // store here; just hand off to importTemplate and the bridge

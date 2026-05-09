@@ -371,10 +371,19 @@ export function ProjectList({
                 style={{
                   background: dragOverProjectId === project.id
                     ? undefined
-                    : currentProjectId === project.id ? 'var(--accent-light)' : 'transparent',
-                  color: currentProjectId === project.id ? 'var(--text-primary)' : 'var(--text-primary)',
+                    : currentProjectId === project.id
+                      ? 'color-mix(in srgb, var(--accent) 14%, var(--bg-primary))'
+                      : 'transparent',
+                  // Active row gets a 3px accent bar on the left + a subtle
+                  // outer shadow so the selection state reads at a glance
+                  // instead of relying on the very-light background tint
+                  // alone (Linear / Notion pattern).
+                  boxShadow: currentProjectId === project.id
+                    ? 'inset 3px 0 0 var(--accent), 0 1px 2px rgba(0,0,0,0.06)'
+                    : undefined,
+                  color: 'var(--text-primary)',
                   fontSize: '13px',
-                  fontWeight: 550,
+                  fontWeight: currentProjectId === project.id ? 600 : 550,
                   opacity: draggedProjectIndex === projectIndex ? 0.5 : 1,
                 }}
                 onContextMenu={(e) => {

@@ -22,7 +22,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { FilePlus2, Loader2, Sparkles, X } from 'lucide-react';
 
@@ -38,6 +38,7 @@ interface Props {
 export default function TemplateGalleryModal({ workspaceId, workspaceSlug }: Props) {
   const router = useRouter();
   const tStarter = useTranslations('starterPack');
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState<'empty' | 'starter' | null>(null);
 
@@ -79,6 +80,7 @@ export default function TemplateGalleryModal({ workspaceId, workspaceSlug }: Pro
         slug,
         name,
         withStarterPack: kind === 'starter',
+        locale,
       });
       setOpen(false);
       router.replace(`/${workspaceSlug}/projects/${created.slug}`);

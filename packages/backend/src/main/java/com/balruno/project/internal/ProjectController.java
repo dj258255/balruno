@@ -47,6 +47,7 @@ class ProjectController {
                    @PathVariable UUID wsId,
                    @RequestParam(name = "withStarterPack", defaultValue = "false")
                        boolean withStarterPack,
+                   @RequestParam(name = "locale", required = false) String localeOverride,
                    @RequestBody @Valid CreateRequest body) {
         var caller = callerId(jwt);
         if (withStarterPack) {
@@ -59,10 +60,16 @@ class ProjectController {
             // behaviour for accounts that pre-date the auto-create
             // logic or that deleted their default project.
             //
-            // Locale comes from the JWT 'locale' claim issued in
-            // JwtIssuer; pre-locale tokens default to 'ko' so legacy
-            // sessions still get a sensible starter catalogue.
-            var locale = jwt.getClaimAsString("locale");
+            // Locale resolution order:
+            //   1. ?locale= query param — caller-active UI locale (the
+            //      frontend's NEXT_LOCALE cookie); honoured first so
+            //      the starter catalogue matches what the user is
+            //      currently reading.
+            //   2. JWT 'locale' claim — the user record's stored
+            //      preference, set at signup.
+            //   3. 'ko' fallback — pre-locale tokens.
+            var locale = localeOverride;
+            if (locale == null || locale.isBlank()) locale = jwt.getClaimAsString("locale");
             if (locale == null || locale.isBlank()) locale = "ko";
             return projects.createWithStarterPack(
                     wsId, caller, body.slug(), body.name(), body.description(), locale);

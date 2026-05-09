@@ -18,12 +18,25 @@ export interface CreateProjectInput {
    * lands on a populated project on first visit.
    */
   withStarterPack?: boolean;
+  /**
+   * Optional locale override for the starter pack catalogue. When
+   * present, the backend picks `catalog-{locale}.json` instead of
+   * the user record's stored preference (JWT claim). Lets the
+   * frontend pass the currently-active i18n locale at click time —
+   * the user toggling KO ↔ EN should immediately produce sheets in
+   * that language.
+   */
+  locale?: string;
 }
 
 export function createProject(workspaceId: string, input: CreateProjectInput): Promise<Project> {
-  const { withStarterPack, ...body } = input;
-  const path = withStarterPack
-    ? `/api/v1/workspaces/${workspaceId}/projects?withStarterPack=true`
+  const { withStarterPack, locale, ...body } = input;
+  const params = new URLSearchParams();
+  if (withStarterPack) params.set('withStarterPack', 'true');
+  if (locale) params.set('locale', locale);
+  const qs = params.toString();
+  const path = qs
+    ? `/api/v1/workspaces/${workspaceId}/projects?${qs}`
     : `/api/v1/workspaces/${workspaceId}/projects`;
   return request<Project>(path, {
     method: 'POST',

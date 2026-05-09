@@ -14,6 +14,7 @@ import { createCellActions } from './slices/cellSlice';
 import { createSelectionActions } from './slices/selectionSlice';
 import { createDocActions, bindDocSliceGetters } from './slices/docSlice';
 import { createLegacyStubActions } from './slices/legacyStubSlice';
+import { createTreeMutationActions } from './slices/treeMutationSlice';
 
 // ==== 보조 타입 ====
 
@@ -250,6 +251,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   ...createSelectionActions(set, get),
   ...createDocActions(set),
   ...createLegacyStubActions(),
+  // Override stub mutations with server-canonical re-wires. Spread
+  // last so the live implementations win over the alert stubs.
+  ...createTreeMutationActions(set, get),
 }));
 
 // Wire docSlice getters now that the store is created (avoids circular import).
