@@ -44,6 +44,7 @@ import { usePanelStates } from '@/hooks/usePanelStates';
 import BottomDock from '@/components/BottomDock';
 import DockedToolbox from '@/components/DockedToolbox';
 import WorkspaceSettingsClient from '@/app/components/WorkspaceSettingsClient';
+import AccountSettingsClient from '@/app/components/AccountSettingsClient';
 import Sidebar from '@/components/layout/Sidebar';
 import SheetTabs from '@/components/layout/SheetTabs';
 import SidebarResizer from '@/app/components/SidebarResizer';
@@ -593,10 +594,11 @@ export default function WorkspaceShell({
   // bottom dock both control the same panels.
   const toggleTool = (id: keyof typeof toolPanels) => () =>
     toolPanels[id].setShow(!toolPanels[id].show);
-  // Workspace settings modal — Notion/Linear-style centered overlay
-  // triggered from the workspace switcher menu. Replaces the
-  // standalone `/{wsSlug}/settings` page nav for in-workspace use.
+  // Settings modals — Notion/Linear-style centered overlays
+  // triggered from the workspace switcher menu. Replace the
+  // standalone /{wsSlug}/settings + /settings/account routes.
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const sidebarCallbacks = {
     onShowChart: toggleTool('chart'),
     onShowHelp: () => { /* OnboardingGuide not yet rewired */ },
@@ -604,6 +606,7 @@ export default function WorkspaceShell({
     onShowComparison: toggleTool('comparison'),
     onShowReferences: () => { /* ReferencesModal not yet rewired */ },
     onShowSettings: () => setSettingsOpen(true),
+    onShowAccountSettings: () => setAccountOpen(true),
     onShowPresetComparison: toggleTool('preset'),
     onShowImbalanceDetector: toggleTool('imbalance'),
     onShowGoalSolver: toggleTool('goal'),
@@ -866,15 +869,17 @@ export default function WorkspaceShell({
           fight the body flex. */}
       <BottomDock panels={toolPanels} isModalOpen={templateModalOpen} />
 
-      {/* Workspace settings modal (Notion/Linear pattern). Mounted
-          here at <main> level so it portals to document.body
-          regardless of how the user opened it (sidebar dropdown,
-          command palette, etc.). */}
+      {/* Settings modals (Notion/Linear pattern). Mounted at <main>
+          level so they portal to document.body regardless of where
+          the user triggered them from. */}
       {settingsOpen && workspace && (
         <WorkspaceSettingsClient
           workspaceSlug={workspace.slug}
           onClose={() => setSettingsOpen(false)}
         />
+      )}
+      {accountOpen && (
+        <AccountSettingsClient onClose={() => setAccountOpen(false)} />
       )}
     </main>
   );

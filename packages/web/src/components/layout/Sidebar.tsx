@@ -43,6 +43,7 @@ interface SidebarProps {
   onShowDpsVariance?: () => void;
   onShowCurveFitting?: () => void;
   onShowSettings?: () => void;
+  onShowAccountSettings?: () => void;
   onShowExportModal?: () => void;
   onShowImportModal?: () => void;
   onToggleFormulaHelper?: () => void;
@@ -83,6 +84,7 @@ export default function Sidebar({
   onShowDpsVariance,
   onShowCurveFitting,
   onShowSettings,
+  onShowAccountSettings,
   onShowExportModal,
   onShowImportModal,
   onToggleFormulaHelper,
@@ -247,7 +249,10 @@ export default function Sidebar({
       >
         {/* Notion / Linear 공통 패턴 — 별도 앱 로고 없음. WorkspaceSwitcher 가 최상단 앵커
             역할 + 테마 토글 인라인. (앱 브랜드는 브라우저 탭·파비콘·랜딩에서만) */}
-        <WorkspaceSwitcher onOpenSettings={onShowSettings} />
+        <WorkspaceSwitcher
+          onOpenSettings={onShowSettings}
+          onOpenAccountSettings={onShowAccountSettings}
+        />
 
         <SidebarQuickAccess />
 

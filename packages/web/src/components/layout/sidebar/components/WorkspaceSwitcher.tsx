@@ -27,9 +27,13 @@ import { MemberManagementModal } from '@/components/workspace/MemberManagementMo
 
 interface WorkspaceSwitcherProps {
   onOpenSettings?: () => void;
+  onOpenAccountSettings?: () => void;
 }
 
-export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
+export function WorkspaceSwitcher({
+  onOpenSettings,
+  onOpenAccountSettings,
+}: WorkspaceSwitcherProps) {
   const tMembers = useTranslations('members');
   const [showMembers, setShowMembers] = useState(false);
   const t = useTranslations();
@@ -228,6 +232,23 @@ export function WorkspaceSwitcher({ onOpenSettings }: WorkspaceSwitcherProps) {
               >
                 <Settings className="w-4 h-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
                 <span>{t('sidebar.workspaceSwitcher.settings')}</span>
+              </button>
+            )}
+
+            {/* 계정 설정 (account / GDPR) — Notion / Linear 패턴.
+                워크스페이스 단위와 별개로 사용자 본인 계정 관련. */}
+            {onOpenAccountSettings && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onOpenAccountSettings();
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                <Settings className="w-4 h-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
+                <span>계정 설정</span>
               </button>
             )}
           </div>
