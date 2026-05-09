@@ -54,6 +54,12 @@ r2_endpoint: "https://{{ r2_account_id }}.r2.cloudflarestorage.com"
 # Region hint is decided by Cloudflare on bucket creation (we picked APAC).
 # Cross-cloud DR check is the value here, not region steering.
 
+# Cloudflare R2 — media bucket (Phase B: avatars, doc attachments, etc).
+# Distinct from balruno-backup so backup snapshots and user-uploaded
+# media can have separate retention / deletion policies. Endpoint is
+# shared (same account) so no second r2_*_endpoint needed.
+r2_media_bucket: "balruno-media"
+
 # ─── JVM / PG fail-safe defaults (Stage 0, ADR 0007 v1.1 §3.8) ───────────
 spring_boot_mem_limit: "2g"
 spring_jvm_options: "-XX:MaxRAMPercentage=75 -XX:+UseContainerSupport"

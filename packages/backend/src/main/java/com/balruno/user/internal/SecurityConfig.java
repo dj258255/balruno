@@ -85,7 +85,13 @@ class SecurityConfig {
                                 // Stripe webhook (ADR 0004) — Stripe-Signature
                                 // header IS the auth, verified inside the
                                 // controller.
-                                "/api/v1/billing/stripe-webhook"
+                                "/api/v1/billing/stripe-webhook",
+                                // Public media (avatars, future doc
+                                // attachments). Paths are content-addressed
+                                // (UUIDv7 + SHA-256 prefix) so URLs aren't
+                                // enumerable; the upload path itself stays
+                                // authenticated.
+                                "/media/**"
                         ).permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())

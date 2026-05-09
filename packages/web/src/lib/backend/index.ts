@@ -75,6 +75,8 @@ export type { CatalogGroupSummary } from './catalog';
 export { fetchAuditLog } from './audit';
 export type { AuditEntry, FetchAuditLogOptions } from './audit';
 
+export { uploadAvatar } from './uploads';
+
 export {
   fetchRowHistory,
   fetchSheetHistory,

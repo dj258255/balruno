@@ -125,6 +125,25 @@ balruno.security.cors:
     - http://localhost:*
     - http://127.0.0.1:*
 
+# ─── Storage (Phase B — StorageService + /media/*) ──────────────────────
+# Baserow pattern: same /media/* URL whether the bytes live on disk
+# (self-host default) or in R2 (cloud SaaS). Operator picks one via
+# BALRUNO_STORAGE; r2 mode also requires the BALRUNO_R2_* quartet.
+balruno.storage:
+  backend: ${BALRUNO_STORAGE:local}
+  local-dir: ${BALRUNO_DATA_DIR:/var/lib/balruno/media}
+  r2:
+    endpoint: ${BALRUNO_R2_ENDPOINT:}
+    bucket: ${BALRUNO_R2_BUCKET:}
+    access-key: ${BALRUNO_R2_ACCESS_KEY:}
+    secret-key: ${BALRUNO_R2_SECRET_KEY:}
+
+# Multipart upload caps — UploadController validates again at the
+# request layer so a hostile client can't sneak past these.
+spring.servlet.multipart:
+  max-file-size: 2MB
+  max-request-size: 4MB
+
 # ─── springdoc / OpenAPI ─────────────────────────────────────────────────
 springdoc:
   api-docs.path: /v3/api-docs

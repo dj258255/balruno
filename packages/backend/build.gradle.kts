@@ -103,6 +103,14 @@ dependencies {
     implementation("nl.martijndwars:web-push:5.1.1")
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
 
+    // Object storage — AWS SDK v2 S3 client. Used against Cloudflare R2
+    // (S3-compatible API) in cloud mode and unused but linked in
+    // self-host (LocalFsStorageAdapter doesn't import it). Kept narrow
+    // to s3 + apache HTTP client to avoid bundling the rest of AWS SDK.
+    implementation(platform("software.amazon.awssdk:bom:2.30.0"))
+    implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:apache-client")
+
     // Spring Modulith — modular monolith with compile-time module boundaries (ADR 0014)
     implementation("org.springframework.modulith:spring-modulith-starter-core")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
