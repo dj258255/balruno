@@ -115,7 +115,9 @@ class DiscordController {
         try {
             JsonNode interaction = json.readTree(rawBody);
             var applicationId = interaction.path("application_id").asText("");
-            var link = repo.findByApplicationId(applicationId);
+            var link = repo.findFirstByDiscordApplicationIdAndActiveTrue(applicationId)
+                    .map(DiscordLinkEntity::toDto)
+                    .orElse(null);
             if (link == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }

@@ -33,28 +33,36 @@ class DiscordServiceImpl implements DiscordService {
     @Override
     @Transactional
     public DiscordLink create(UUID callerUserId, UUID workspaceId, CreateInput input) {
-        return repo.insert(workspaceId, input.discordGuildId(), input.discordApplicationId(),
+        repo.upsert(workspaceId, input.discordGuildId(), input.discordApplicationId(),
                 input.discordPublicKey(), input.discordBotToken(), input.defaultSheetId(),
                 callerUserId);
+        // The native UPSERT doesn't return the row, so we re-fetch by
+        // the conflict key to hand back the hydrated DTO. One extra
+        // SELECT, but the create path is rare enough that the trade
+        // is worth keeping the @Query trivial.
+        return repo.findByWorkspaceIdAndDiscordGuildId(workspaceId, input.discordGuildId())
+                .orElseThrow(() -> new IllegalStateException("upsert succeeded but row missing"))
+                .toDto();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<DiscordLink> listForWorkspace(UUID callerUserId, UUID workspaceId) {
-        return repo.findByWorkspaceId(workspaceId).stream()
+        return repo.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId).stream()
+                .map(DiscordLinkEntity::toDto)
                 .map(DiscordLink::withTokenStripped)
                 .toList();
     }
 
     @Override
     public DiscordLink findById(UUID linkId) {
-        return repo.findById(linkId);
+        return repo.findById(linkId).map(DiscordLinkEntity::toDto).orElse(null);
     }
 
     @Override
     @Transactional
     public void delete(UUID callerUserId, UUID linkId) {
-        repo.delete(linkId);
+        repo.deleteById(linkId);
     }
 
     @Override
@@ -73,7 +81,9 @@ class DiscordServiceImpl implements DiscordService {
         }
 
         var applicationId = interaction.path("application_id").asText("");
-        var link = repo.findByApplicationId(applicationId);
+        var link = repo.findFirstByDiscordApplicationIdAndActiveTrue(applicationId)
+                .map(DiscordLinkEntity::toDto)
+                .orElse(null);
         if (link == null) {
             return ack("This Discord app is not linked to a Balruno workspace.");
         }
