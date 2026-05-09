@@ -12,10 +12,14 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -79,6 +83,49 @@ class R2StorageAdapter implements StorageService {
         } catch (Exception e) {
             throw new IOException("R2 putObject failed: " + path, e);
         }
+    }
+
+    @Override
+    public long deleteByPrefix(String prefix) throws IOException {
+        if (prefix == null || prefix.isBlank()) {
+            throw new IllegalArgumentException("prefix must be non-empty (whole-bucket wipe blocked)");
+        }
+        long totalBytes = 0L;
+        String continuation = null;
+        try {
+            // Page through the listing — R2 / S3 list API caps at
+            // 1000 keys per response. Continuation token drives the
+            // next page. Each page's keys are batch-deleted (S3
+            // DeleteObjects supports up to 1000 per call).
+            do {
+                var listReq = ListObjectsV2Request.builder()
+                        .bucket(bucket)
+                        .prefix(prefix)
+                        .continuationToken(continuation)
+                        .build();
+                var listResp = s3.listObjectsV2(listReq);
+                var items = listResp.contents();
+                if (items.isEmpty()) break;
+
+                var keys = new java.util.ArrayList<ObjectIdentifier>();
+                for (var item : items) {
+                    keys.add(ObjectIdentifier.builder().key(item.key()).build());
+                    if (item.size() != null) totalBytes += item.size();
+                }
+
+                s3.deleteObjects(DeleteObjectsRequest.builder()
+                        .bucket(bucket)
+                        .delete(Delete.builder().objects(keys).quiet(true).build())
+                        .build());
+
+                continuation = Boolean.TRUE.equals(listResp.isTruncated())
+                        ? listResp.nextContinuationToken()
+                        : null;
+            } while (continuation != null);
+        } catch (Exception e) {
+            throw new IOException("R2 deleteByPrefix failed: " + prefix, e);
+        }
+        return totalBytes;
     }
 
     @Override

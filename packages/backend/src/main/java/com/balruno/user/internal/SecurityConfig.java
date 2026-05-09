@@ -86,13 +86,19 @@ class SecurityConfig {
                                 // header IS the auth, verified inside the
                                 // controller.
                                 "/api/v1/billing/stripe-webhook",
-                                // Public media (avatars, future doc
-                                // attachments). Paths are content-addressed
-                                // (UUIDv7 + SHA-256 prefix) so URLs aren't
-                                // enumerable; the upload path itself stays
-                                // authenticated.
-                                "/media/**"
+                                // Public avatars — same shape as GitHub /
+                                // Slack avatars. Path encodes userId +
+                                // SHA-256 so URLs aren't enumerable; the
+                                // upload path itself stays authenticated.
+                                "/media/avatars/**"
                         ).permitAll()
+                        // Project attachments require workspace membership.
+                        // MediaController parses the projectId out of the
+                        // path and calls ProjectService.findById, which
+                        // throws PROJECT_NOT_FOUND for non-members. The
+                        // resource server filter chain populates the JWT
+                        // principal that MediaController consumes.
+                        .requestMatchers("/media/attachments/**").authenticated()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .oauth2Login(o -> o

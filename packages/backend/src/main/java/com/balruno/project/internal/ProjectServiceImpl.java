@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.project.internal;
 
+import com.balruno.events.ProjectSoftDeletedEvent;
 import com.balruno.project.Project;
 import com.balruno.project.ProjectException;
 import com.balruno.project.ProjectService;
@@ -8,9 +9,12 @@ import com.balruno.workspace.LimitGuard;
 import com.balruno.workspace.WorkspaceLimits;
 import com.balruno.workspace.WorkspaceRole;
 import com.balruno.workspace.WorkspaceService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,15 +27,18 @@ class ProjectServiceImpl implements ProjectService {
     private final WorkspaceService workspaces;
     private final LimitGuard limitGuard;
     private final StarterPackSeeder starterPack;
+    private final ApplicationEventPublisher events;
 
     ProjectServiceImpl(ProjectRepository projects,
                        WorkspaceService workspaces,
                        LimitGuard limitGuard,
-                       StarterPackSeeder starterPack) {
+                       StarterPackSeeder starterPack,
+                       ApplicationEventPublisher events) {
         this.projects = projects;
         this.workspaces = workspaces;
         this.limitGuard = limitGuard;
         this.starterPack = starterPack;
+        this.events = events;
     }
 
     @Override
@@ -160,6 +167,19 @@ class ProjectServiceImpl implements ProjectService {
         workspaces.requireRole(entity.getWorkspaceId(), callerUserId, WorkspaceRole.BUILDER);
         entity.softDelete();
         projects.save(entity);
+
+        // Cascade attachments via afterCommit event — storage module
+        // listens and clears `attachments/{projectId}/*` from R2 +
+        // decrements workspace_storage. Doing it post-commit means a
+        // rolled-back soft-delete can't cascade the blob delete.
+        var workspaceId = entity.getWorkspaceId();
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        events.publishEvent(new ProjectSoftDeletedEvent(projectId, workspaceId));
+                    }
+                });
     }
 
     @Override

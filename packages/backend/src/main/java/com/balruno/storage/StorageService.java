@@ -50,6 +50,18 @@ public interface StorageService {
      */
     void delete(String path) throws IOException;
 
+    /**
+     * Cascade delete every blob under {@code prefix}. Returns the
+     * total bytes removed so callers can decrement workspace storage
+     * counters atomically. Used by project / workspace soft-delete
+     * cascades and the GDPR account-delete path.
+     *
+     * Empty prefix is rejected to prevent accidental whole-bucket
+     * wipe; callers always pass scoped prefixes like
+     * {@code attachments/{projectId}/}.
+     */
+    long deleteByPrefix(String prefix) throws IOException;
+
     /** Returned by {@link #read} — bytes + content-type for HTTP response. */
     record StoredObject(InputStream content, String contentType, long contentLength) {}
 }

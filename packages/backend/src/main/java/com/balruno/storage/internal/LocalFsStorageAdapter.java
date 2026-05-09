@@ -58,6 +58,33 @@ class LocalFsStorageAdapter implements StorageService {
     }
 
     @Override
+    public long deleteByPrefix(String prefix) throws IOException {
+        if (prefix == null || prefix.isBlank()) {
+            throw new IllegalArgumentException("prefix must be non-empty (whole-root wipe blocked)");
+        }
+        var dir = resolveSafe(prefix);
+        if (!Files.exists(dir)) return 0L;
+        var totalBytes = new long[]{0};
+        if (Files.isDirectory(dir)) {
+            // Walk + delete bottom-up so directories are empty when
+            // their delete fires.
+            try (var stream = Files.walk(dir)) {
+                var paths = stream.sorted((a, b) -> b.getNameCount() - a.getNameCount()).toList();
+                for (var p : paths) {
+                    if (Files.isRegularFile(p) && !p.getFileName().toString().endsWith(".ct")) {
+                        totalBytes[0] += Files.size(p);
+                    }
+                    Files.deleteIfExists(p);
+                }
+            }
+        } else if (Files.isRegularFile(dir)) {
+            totalBytes[0] += Files.size(dir);
+            Files.deleteIfExists(dir);
+        }
+        return totalBytes[0];
+    }
+
+    @Override
     public void delete(String path) throws IOException {
         var target = resolveSafe(path);
         Files.deleteIfExists(target);

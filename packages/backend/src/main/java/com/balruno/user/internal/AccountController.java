@@ -44,9 +44,15 @@ class AccountController {
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper json = new ObjectMapper();
+    private final com.balruno.storage.StorageService storage;
+    private final org.springframework.context.ApplicationEventPublisher events;
 
-    AccountController(JdbcTemplate jdbc) {
+    AccountController(JdbcTemplate jdbc,
+                      com.balruno.storage.StorageService storage,
+                      org.springframework.context.ApplicationEventPublisher events) {
         this.jdbc = jdbc;
+        this.storage = storage;
+        this.events = events;
     }
 
     @GetMapping(path = "/me/export-data", version = "1")
@@ -181,6 +187,16 @@ class AccountController {
                       WHERE user_id = ? AND role = 'OWNER')
                 """,
                 userId);
+        // Snapshot the projects we're about to soft-delete so we can
+        // emit storage cascade events for each (R2 attachments cleanup
+        // happens in AttachmentCascadeListener).
+        var projectsToCascade = jdbc.queryForList(
+                """
+                SELECT id, workspace_id FROM projects
+                WHERE deleted_at IS NULL
+                  AND workspace_id IN (
+                      SELECT id FROM workspaces WHERE deleted_at IS NOT NULL)
+                """);
         jdbc.update(
                 """
                 UPDATE projects SET deleted_at = now()
@@ -188,6 +204,30 @@ class AccountController {
                   AND workspace_id IN (
                       SELECT id FROM workspaces WHERE deleted_at IS NOT NULL)
                 """);
+
+        // GDPR cascade — afterCommit so a rolled-back DELETE doesn't
+        // wipe the R2 blobs. Avatar prefix is user-scoped; project
+        // attachments are cascaded via the same event the project
+        // module emits (sharing the AttachmentCascadeListener).
+        var capturedUserId = userId;
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            storage.deleteByPrefix("avatars/" + capturedUserId + "/");
+                        } catch (Exception e) {
+                            // Best-effort; orphan avatar blobs are benign
+                            // and a future R2 lifecycle rule sweeps them.
+                        }
+                        for (var row : projectsToCascade) {
+                            var pid = (java.util.UUID) row.get("id");
+                            var wid = (java.util.UUID) row.get("workspace_id");
+                            events.publishEvent(
+                                    new com.balruno.events.ProjectSoftDeletedEvent(pid, wid));
+                        }
+                    }
+                });
 
         return ResponseEntity.noContent().build();
     }
