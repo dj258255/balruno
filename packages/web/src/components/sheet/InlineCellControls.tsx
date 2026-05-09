@@ -454,6 +454,7 @@ export function InlineFile({
   rowId: string;
   onChange: (next: string) => void;
 }) {
+  const t = useTranslations();
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const files = parseFileValue(value);
@@ -469,7 +470,7 @@ export function InlineFile({
       }
       onChange(JSON.stringify([...files, ...uploaded]));
     } catch (e) {
-      toast.error(humanizeUploadError(e, { kind: '파일', maxLabel: '50MB' }));
+      toast.error(humanizeUploadError(e, t, { kind: 'file', maxLabel: '50MB' }));
     } finally {
       setUploading(false);
     }

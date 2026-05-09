@@ -26,10 +26,12 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Image from '@tiptap/extension-image';
 import type { JSONContent } from '@tiptap/react';
 import type { SuggestionOptions, SuggestionProps } from '@tiptap/suggestion';
+import { useTranslations } from 'next-intl';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
 import { toast } from 'sonner';
 
 import { humanizeUploadError, listWorkspaceMembers, resolveMediaUrl, uploadAttachment } from '@/lib/backend';
+import type { UploadErrorTranslator } from '@/lib/backend';
 import type { WorkspaceMemberView } from '@/lib/backend/types';
 
 export interface MentionEditorHandle {
@@ -70,6 +72,7 @@ const MentionEditor = forwardRef<MentionEditorHandle, MentionEditorProps>(
     { workspaceId, projectId, initialJson, onSubmit, onChange, placeholder, disabled, className },
     ref,
   ) {
+    const t = useTranslations();
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
@@ -131,7 +134,7 @@ const MentionEditor = forwardRef<MentionEditorHandle, MentionEditorProps>(
           event.preventDefault();
           const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
           const insertAt = coords?.pos ?? view.state.selection.from;
-          void insertImagesIntoComment(view, projectId, images, insertAt);
+          void insertImagesIntoComment(view, projectId, images, insertAt, t);
           return true;
         },
         handlePaste(view, event) {
@@ -141,7 +144,7 @@ const MentionEditor = forwardRef<MentionEditorHandle, MentionEditorProps>(
           const images = Array.from(files).filter((f) => f.type.startsWith('image/'));
           if (images.length === 0) return false;
           event.preventDefault();
-          void insertImagesIntoComment(view, projectId, images, null);
+          void insertImagesIntoComment(view, projectId, images, null, t);
           return true;
         },
       },
@@ -201,6 +204,7 @@ async function insertImagesIntoComment(
   projectId: string,
   files: File[],
   pos: number | null,
+  t: UploadErrorTranslator,
 ): Promise<void> {
   let cursor = pos;
   for (const file of files) {
@@ -217,7 +221,7 @@ async function insertImagesIntoComment(
       view.dispatch(tr);
       cursor = null;
     } catch (e) {
-      toast.error(humanizeUploadError(e, { kind: '이미지', maxLabel: '50MB' }));
+      toast.error(humanizeUploadError(e, t, { kind: 'image', maxLabel: '50MB' }));
       return;
     }
   }

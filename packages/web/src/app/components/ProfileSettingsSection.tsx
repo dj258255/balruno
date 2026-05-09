@@ -21,6 +21,7 @@
 
 import { useRef, useState } from 'react';
 import { Loader2, Pencil, Trash2, Upload, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { humanizeUploadError, resolveMediaUrl, updateProfile, uploadAvatar } from '@/lib/backend';
@@ -31,6 +32,7 @@ const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_MIMES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
 
 export default function ProfileSettingsSection() {
+  const t = useTranslations();
   const user = useBackendAuthStore((s) => s.user);
   const setUser = useBackendAuthStore((s) => s.setUser);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -90,7 +92,7 @@ export default function ProfileSettingsSection() {
       setUser(updated);
       toast.success('프로필 사진이 변경되었습니다');
     } catch (err) {
-      toast.error(humanizeUploadError(err, { kind: '사진', maxLabel: '2MB' }));
+      toast.error(humanizeUploadError(err, t, { kind: 'photo', maxLabel: '2MB' }));
     } finally {
       setUploadingAvatar(false);
     }

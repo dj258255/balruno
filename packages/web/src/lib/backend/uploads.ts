@@ -76,6 +76,17 @@ function announceAttachmentUploaded(): void {
 }
 
 /**
+ * Translator surface — a subset of next-intl's useTranslations()
+ * return shape. Typed loosely so this module doesn't pull in
+ * next-intl as a hard dep (the helper is unit-testable with any
+ * (key, params) → string function).
+ */
+export type UploadErrorTranslator = (
+  key: string,
+  params?: Record<string, string | number>,
+) => string;
+
+/**
  * Shared error → toast-string mapping for upload failures.
  *
  * The 4 surfaces (avatar, doc inline image, comment inline image,
@@ -84,32 +95,31 @@ function announceAttachmentUploaded(): void {
  * messaging consistent and ensures a new server-side code (e.g.
  * a future MIME tightening) only needs to land here once.
  *
- * The {@code kind} param picks the noun shown in the messages:
- * '이미지' for inline-image surfaces, '파일' for the cell column,
- * '사진' for the avatar profile setting.
- *
- * The {@code maxLabel} param picks the size limit shown for 413 —
- * avatars are capped at 2MB, attachments at 50MB, so the message
- * matches the actual server cap.
+ * Localisation goes through the {@code uploadErrors.*} namespace —
+ * the caller passes its {@code useTranslations()} result in so we
+ * stay free of React + next-intl static deps inside this lib
+ * module. The {@code kind} param picks the noun string to interpolate
+ * (image / file / photo), and {@code maxLabel} the size shown on 413.
  */
 export function humanizeUploadError(
   e: unknown,
-  opts: { kind: '이미지' | '파일' | '사진'; maxLabel: '2MB' | '50MB' },
+  t: UploadErrorTranslator,
+  opts: { kind: 'image' | 'file' | 'photo'; maxLabel: '2MB' | '50MB' },
 ): string {
-  const { kind, maxLabel } = opts;
+  const kindNoun = t(`uploadErrors.kinds.${opts.kind}`);
   if (e instanceof BackendError) {
     if (e.code === 'attachmentBytes') {
-      return '워크스페이스 저장 용량이 가득 찼습니다';
+      return t('uploadErrors.quotaFull');
     }
     if (e.status === 413) {
-      return `${kind}이 ${maxLabel} 를 초과했습니다`;
+      return t('uploadErrors.tooLarge', { kind: kindNoun, maxLabel: opts.maxLabel });
     }
     if (e.status === 415) {
-      return `지원하지 않는 ${kind} 형식입니다`;
+      return t('uploadErrors.unsupported', { kind: kindNoun });
     }
-    return e.body?.detail ?? e.message ?? `${kind} 업로드 실패`;
+    return e.body?.detail ?? e.message ?? t('uploadErrors.failed', { kind: kindNoun });
   }
-  return e instanceof Error ? e.message : `${kind} 업로드 실패`;
+  return e instanceof Error ? e.message : t('uploadErrors.failed', { kind: kindNoun });
 }
 
 async function postMultipart(path: string, fd: FormData): Promise<UploadResult> {

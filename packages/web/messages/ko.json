@@ -401,6 +401,17 @@
     "deleteConfirm": "\"{name}\" 폴더를 삭제하시겠습니까? 폴더 내 시트는 루트로 이동됩니다.",
     "emptyFolder": "빈 폴더"
   },
+  "uploadErrors": {
+    "quotaFull": "워크스페이스 저장 용량이 가득 찼습니다",
+    "tooLarge": "{kind}이 {maxLabel} 를 초과했습니다",
+    "unsupported": "지원하지 않는 {kind} 형식입니다",
+    "failed": "{kind} 업로드 실패",
+    "kinds": {
+      "image": "이미지",
+      "file": "파일",
+      "photo": "사진"
+    }
+  },
   "common": {
     "save": "저장",
     "cancel": "취소",

@@ -25,6 +25,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Image from '@tiptap/extension-image';
 import { History, Loader2, MessageSquarePlus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import DocHistoryPanel from './DocHistoryPanel';
@@ -47,6 +48,7 @@ interface ServerDocViewProps {
 }
 
 export function ServerDocView({ documentId, projectId, title, onTitleChange }: ServerDocViewProps) {
+  const t = useTranslations();
   const { extensions: collabExtensions, doc, status } = useDocCollab(documentId);
 
   // Tracks the user's current text selection inside the editor —
@@ -214,7 +216,7 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
         }).run();
         cursor = null; // subsequent images go at the live cursor
       } catch (e) {
-        toast.error(humanizeUploadError(e, { kind: '이미지', maxLabel: '50MB' }));
+        toast.error(humanizeUploadError(e, t, { kind: 'image', maxLabel: '50MB' }));
         return;
       }
     }

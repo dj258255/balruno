@@ -77,7 +77,7 @@ export { fetchAuditLog } from './audit';
 export type { AuditEntry, FetchAuditLogOptions } from './audit';
 
 export { uploadAvatar, uploadAttachment, humanizeUploadError, ATTACHMENT_UPLOADED_EVENT } from './uploads';
-export type { AttachmentRef } from './uploads';
+export type { AttachmentRef, UploadErrorTranslator } from './uploads';
 export { resolveMediaUrl } from './media';
 
 export {

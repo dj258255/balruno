@@ -401,6 +401,17 @@
     "deleteConfirm": "Delete folder \"{name}\"? Sheets inside will be moved to root.",
     "emptyFolder": "Empty folder"
   },
+  "uploadErrors": {
+    "quotaFull": "Workspace storage is full",
+    "tooLarge": "{kind} exceeds {maxLabel}",
+    "unsupported": "Unsupported {kind} format",
+    "failed": "{kind} upload failed",
+    "kinds": {
+      "image": "image",
+      "file": "file",
+      "photo": "photo"
+    }
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
