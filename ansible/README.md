@@ -63,8 +63,29 @@ GH Secrets (Settings → Secrets and variables → Actions):
 |---|---|
 | `ANSIBLE_VAULT_PASSWORD` | `/Users/beomsu/Desktop/wikiEngine/ansible/.vault_pass` 파일 내용 (텍스트 그대로) |
 | `OCI_SSH_PRIVATE_KEY` | `~/.ssh/oci_key` 파일 내용 (PEM 헤더 포함 통째로) |
+| `ACTUATOR_INTERNAL_TOKEN` | (선택) ADR 0045 의 actuator gate token. vault.yml 의 `vault_actuator_internal_token` 과 같은 값. backend-deploy 의 smoke test 가 `X-Internal-Token` header 로 사용. 미설정 시 gate 비활성. |
 
 `production` Environment 도 만들어서 main 으로 merge 시 수동 approve 게이트 걸 수 있음 (선택, Stage 1+ 권장).
+
+### 무중단 배포 (ADR 0044)
+
+backend / collab 컨테이너는 blue/green 슬롯 + nginx upstream `backup` directive + snippet symlink swap 으로 무중단 배포. backend-deploy / collab-deploy 워크플로가 자동 처리.
+
+- 평소: 한 색깔 (blue 또는 green) 만 running. nginx active symlink (`/etc/nginx/conf.d/balruno-{backend,collab}-active.conf`) 가 그 색깔의 snippet 가리킴.
+- 배포: 반대 색깔 컨테이너 시작 → `/actuator/health/readiness` 200 대기 → symlink swap + `nginx -s reload` (graceful) → 30s rollback window → 옛 색깔 stop.
+- 첫 마이그레이션 cutover 만 ~21s 다운타임 (옛 단일 컨테이너 → 새 dual slot). 이후 모든 cutover 는 zero-downtime.
+- 수동 rollback: `gh workflow run backend-deploy.yml -f mode=rollback` (~30s 윈도 안에서만 instant flip, 이후엔 이전 SHA 재배포).
+
+### Actuator gate (ADR 0045 / Phase B-7)
+
+`/actuator/*` 엔드포인트는 nginx 단계 internal-token gate 로 보호. graceful gating 패턴이라 vault token 미정의 시 gate 비활성.
+
+활성화:
+1. `ansible-vault edit group_vars/all/vault.yml` 에서 `vault_actuator_internal_token: <openssl rand -hex 32>` 추가.
+2. 같은 값을 `gh secret set ACTUATOR_INTERNAL_TOKEN` 으로 등록.
+3. push 또는 manual ansible-deploy 트리거.
+
+세 곳 (nginx api vhost / monitor blackbox_exporter / backend-deploy smoke test) 이 같은 token 으로 동기화.
 
 ---
 

@@ -185,6 +185,43 @@ Both GitHub and Google accept multiple callback URLs. Add:
 (local → another OCI host → Cloudflare R2 object storage). See
 `ansible/roles/postgres-backup/` for the reference cron.
 
+### Zero-downtime deploys (optional)
+
+The reference `ansible/` setup ships a blue/green deploy pattern for
+the Spring backend and the Hocuspocus collab server. Each role
+declares two compose services (`backend-blue` / `backend-green`,
+`collab-blue` / `collab-green`) gated behind Compose profiles, and an
+nginx upstream `backup` directive routes traffic to whichever color is
+"active" via a snippet symlink. The deploy workflows
+(`backend-deploy.yml`, `collab-deploy.yml`) bring up the inactive
+color, poll `/actuator/health/readiness` (Spring) or a TCP probe
+(Hocuspocus), then flip the symlink + `nginx -s reload` for a
+graceful cutover. First migration ~21s downtime (legacy single
+container → dual slot); subsequent cutovers measured at 0s on the
+reference deployment. See ADR 0044.
+
+If you'd rather keep the simpler single-container pattern (Baserow /
+Plane / NocoDB style), drop the blue/green services from
+`docker-compose.yml.j2` and switch the workflow back to
+`docker compose pull && up -d`. The 30-60s in-place restart downtime
+is the OSS self-hosted norm.
+
+### Actuator endpoint gate (optional)
+
+`/actuator/*` is accessible to anyone who can reach the public domain.
+Spring's default exposure is limited to `health` + `info`, but if you
+want defense in depth you can enable the optional internal-token
+gate from ADR 0045:
+
+1. Generate a token: `openssl rand -hex 32`.
+2. Add it to `vault.yml` as `vault_actuator_internal_token: "<token>"`.
+3. Register the same value as the `ACTUATOR_INTERNAL_TOKEN` repo
+   secret so the deploy smoke test continues to pass.
+4. Re-apply ansible.
+
+Until the vault key is set, the gate stays inactive (graceful
+default), so this is safe to set up after the fact.
+
 ### Observability
 
 - **Sentry** — sign up free at sentry.io, set

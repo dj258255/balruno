@@ -71,3 +71,15 @@ vault_discord_webhook_url: "REPLACE_WITH_DISCORD_WEBHOOK_URL"
 
 # Anthropic API (FR-AI v1 — used by the in-app AI proxy)
 vault_anthropic_api_key: ""
+
+# Actuator internal-token gate (ADR 0045 / Phase B-7).
+# Optional. When defined and non-empty, /actuator/* on api.balruno.com
+# requires an `X-Internal-Token` header matching this value. nginx
+# (api.conf.j2), the monitor blackbox_exporter (blackbox-config.yml.j2),
+# and the GitHub Actions backend-deploy smoke test all read this same
+# value (the workflow uses it via the ACTUATOR_INTERNAL_TOKEN repo
+# secret — keep both in sync).
+#
+# Generate via: openssl rand -hex 32
+# Leave commented out to keep the gate inactive (graceful default).
+# vault_actuator_internal_token: "REPLACE_WITH_OPENSSL_RAND_HEX_32"
