@@ -199,7 +199,13 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
     let cursor = pos;
     for (const file of files) {
       try {
-        const { url } = await uploadAttachment(projectId, file);
+        // Pass the doc ref so the orphan-cleanup hook (project cascade
+        // for now; doc-body diff later) can free the blob when this doc
+        // is deleted.
+        const { url } = await uploadAttachment(projectId, file, {
+          kind: 'doc',
+          id: documentId,
+        });
         const resolved = resolveMediaUrl(url) ?? url;
         const chain = editor.chain().focus();
         const at = cursor ?? editor.state.selection.from;

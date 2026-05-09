@@ -46,9 +46,11 @@ class UploadController {
     @PostMapping(path = "/uploads/attachment", version = "1", consumes = "multipart/form-data")
     UploadResult uploadAttachment(@AuthenticationPrincipal Jwt jwt,
                                   @RequestParam("projectId") UUID projectId,
+                                  @RequestParam(value = "refKind", required = false) String refKind,
+                                  @RequestParam(value = "refId", required = false) UUID refId,
                                   @RequestParam("file") MultipartFile file) throws IOException {
         var callerId = UUID.fromString(jwt.getSubject());
-        return new UploadResult(uploads.uploadAttachment(callerId, projectId, file));
+        return new UploadResult(uploads.uploadAttachment(callerId, projectId, refKind, refId, file));
     }
 
     /** Public response — the URL the client stores on user.avatarUrl, doc body, etc. */

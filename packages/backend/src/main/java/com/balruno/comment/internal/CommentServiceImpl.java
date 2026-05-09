@@ -35,6 +35,10 @@ class CommentServiceImpl implements CommentService {
     private final ProjectService projects;
     private final ProjectSyncApi sync;
     private final org.springframework.context.ApplicationEventPublisher events;
+    private final com.balruno.storage.AttachmentReferenceService attachmentRefs;
+    private final com.balruno.storage.StorageService storage;
+    private final com.balruno.storage.WorkspaceStorageService workspaceStorage;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     /** databind autowired (tools.jackson) — kept private fasterxml
      *  mapper for tree work in the webhook payload (project_sb4). */
@@ -42,11 +46,19 @@ class CommentServiceImpl implements CommentService {
             new com.fasterxml.jackson.databind.ObjectMapper();
 
     CommentServiceImpl(CommentRepository repo, ProjectService projects, ProjectSyncApi sync,
-                       org.springframework.context.ApplicationEventPublisher events) {
+                       org.springframework.context.ApplicationEventPublisher events,
+                       com.balruno.storage.AttachmentReferenceService attachmentRefs,
+                       com.balruno.storage.StorageService storage,
+                       com.balruno.storage.WorkspaceStorageService workspaceStorage,
+                       org.springframework.jdbc.core.JdbcTemplate jdbc) {
         this.repo = repo;
         this.projects = projects;
         this.sync = sync;
         this.events = events;
+        this.attachmentRefs = attachmentRefs;
+        this.storage = storage;
+        this.workspaceStorage = workspaceStorage;
+        this.jdbc = jdbc;
     }
 
     /**
@@ -207,6 +219,70 @@ class CommentServiceImpl implements CommentService {
         projects.findById(existing.projectId(), callerUserId);
         repo.softDelete(commentId);
         broadcastDeleteAfterCommit(existing.projectId(), commentId);
+
+        // Tier 2b orphan cleanup — release every attachment ref this
+        // comment held; orphaned paths get their R2 blobs deleted +
+        // workspace counter decremented. Runs afterCommit so a
+        // rolled-back delete can't free still-referenced bytes.
+        attachmentCleanupAfterCommit(commentId);
+    }
+
+    private void attachmentCleanupAfterCommit(UUID commentId) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            var orphans = attachmentRefs.removeContentRefs(
+                                    com.balruno.storage.AttachmentReferenceService.RefKind.comment,
+                                    commentId);
+                            for (var orphan : orphans) {
+                                try {
+                                    storage.delete(orphan.path());
+                                } catch (Exception ignored) {
+                                    // best-effort — R2 lifecycle / cron will sweep
+                                }
+                            }
+                            // Aggregate the now-orphaned bytes and decrement the
+                            // workspace counter once so a chatty comment with
+                            // many attachments doesn't issue N small UPDATEs.
+                            long total = 0L;
+                            for (var orphan : orphans) total += orphan.sizeBytes();
+                            if (total > 0) {
+                                // Comment may have spanned multiple workspaces in
+                                // theory, but project membership pins the comment
+                                // to one project + one workspace. Pull the workspace
+                                // off the comment we just removed.
+                                // (existing snapshot above already has projectId)
+                                workspaceStorage.decrement(
+                                        commentWorkspaceId(commentId), total);
+                            }
+                        } catch (Exception ignored) {
+                            // Cleanup is best-effort; failures don't roll back the
+                            // user-facing comment delete.
+                        }
+                    }
+                });
+    }
+
+    /**
+     * Walk back from a soft-deleted comment id to its workspace.
+     * The comment row is gone from the {@code findByIdOrThrow} read
+     * model (deleted_at IS NULL filter), so we go through the
+     * project the comment scoped to. Done lazily to avoid leaking
+     * extra reads on the happy path of comments without attachments.
+     */
+    private UUID commentWorkspaceId(UUID commentId) {
+        // Single SELECT joining comments → projects → workspaces.
+        // Bypasses the soft-delete filter so we still see the row.
+        return jdbc.queryForObject(
+                """
+                SELECT p.workspace_id
+                FROM comments c
+                JOIN projects p ON p.id = c.project_id
+                WHERE c.id = ?
+                """,
+                java.util.UUID.class, commentId);
     }
 
     @Override

@@ -2,6 +2,7 @@
 package com.balruno.storage.internal;
 
 import com.balruno.project.ProjectService;
+import com.balruno.storage.AttachmentReferenceService;
 import com.balruno.storage.StorageService;
 import com.balruno.storage.WorkspaceStorageService;
 import org.springframework.http.HttpStatus;
@@ -64,13 +65,16 @@ class UploadService {
     private final StorageService storage;
     private final WorkspaceStorageService workspaceStorage;
     private final ProjectService projects;
+    private final AttachmentReferenceService attachmentRefs;
 
     UploadService(StorageService storage,
                   WorkspaceStorageService workspaceStorage,
-                  ProjectService projects) {
+                  ProjectService projects,
+                  AttachmentReferenceService attachmentRefs) {
         this.storage = storage;
         this.workspaceStorage = workspaceStorage;
         this.projects = projects;
+        this.attachmentRefs = attachmentRefs;
     }
 
     /**
@@ -98,8 +102,18 @@ class UploadService {
      * scoped path. The Office / ZIP family is reconciled so the
      * stored mime is the declared (specific) one even when the
      * sniff returns generic application/zip.
+     *
+     * refKind / refId is optional — when provided the upload is
+     * recorded against that content (comment / doc / cell). The
+     * orphan-cleanup hooks key on this. Without a ref the upload
+     * still succeeds but only the project-cascade catches the
+     * eventual cleanup.
      */
-    String uploadAttachment(UUID callerId, UUID projectId, MultipartFile file) throws IOException {
+    String uploadAttachment(UUID callerId,
+                            UUID projectId,
+                            String refKind,
+                            UUID refId,
+                            MultipartFile file) throws IOException {
         var bytes = readAndCap(file, MAX_ATTACHMENT_BYTES, "attachment may not exceed 50 MB");
         var declared = normaliseContentType(file.getContentType());
         requireMime(declared, ALLOWED_ATTACHMENT_MIMES, "attachment mime not in allowlist");
@@ -127,7 +141,25 @@ class UploadService {
         var ext = ATTACHMENT_EXT_BY_MIME.get(stored);
         var path = "attachments/%s/%s.%s".formatted(projectId, hashPrefix(bytes), ext);
         storage.store(path, bytes, stored);
+
+        // Record the reference so the orphan-cleanup hooks can find
+        // and free this blob when the source content is removed.
+        // Unrecognised refKind values are ignored (silent fallback)
+        // so the upload still succeeds and project-cascade catches it.
+        var parsedKind = parseRefKind(refKind);
+        if (parsedKind != null && refId != null) {
+            attachmentRefs.register(project.workspaceId(), path, parsedKind, refId, file.getSize());
+        }
         return "/media/" + path;
+    }
+
+    private static AttachmentReferenceService.RefKind parseRefKind(String raw) {
+        if (raw == null) return null;
+        try {
+            return AttachmentReferenceService.RefKind.valueOf(raw);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     // ── shared helpers ────────────────────────────────────────────────

@@ -26,14 +26,35 @@ export async function uploadAvatar(file: File): Promise<UploadResult> {
   return postMultipart('/api/v1/uploads/avatar', fd);
 }
 
+export interface AttachmentRef {
+  /** Which content kind the attachment is being inserted into. */
+  kind: 'comment' | 'doc' | 'cell';
+  /** UUID of the owning comment / doc / cell. Tier 2b orphan
+   *  cleanup keys on this — when the content is removed, the
+   *  attachment ref drops and the blob frees if no other refs remain. */
+  id: string;
+}
+
 /**
  * POST /api/v1/uploads/attachment — authenticated project-scoped
  * upload. Server enforces 50MB cap + mime allowlist + magic-byte
  * sniff + workspace storage quota in the same request.
+ *
+ * The optional ref records who's referencing the upload (Tier 2b
+ * orphan tracking). Without it the upload still succeeds but only
+ * the project-cascade catches eventual cleanup.
  */
-export async function uploadAttachment(projectId: string, file: File): Promise<UploadResult> {
+export async function uploadAttachment(
+  projectId: string,
+  file: File,
+  ref?: AttachmentRef,
+): Promise<UploadResult> {
   const fd = new FormData();
   fd.append('projectId', projectId);
+  if (ref) {
+    fd.append('refKind', ref.kind);
+    fd.append('refId', ref.id);
+  }
   fd.append('file', file);
   return postMultipart('/api/v1/uploads/attachment', fd);
 }
