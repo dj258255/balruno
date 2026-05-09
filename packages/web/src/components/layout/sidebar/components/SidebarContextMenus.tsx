@@ -1,7 +1,15 @@
 /**
- * SidebarContextMenus - 컨텍스트 메뉴 컴포넌트들
+ * SidebarContextMenus - 컨텍스트 메뉴 컴포넌트들.
+ *
+ * 모든 fixed-position 메뉴/모달은 createPortal 로 document.body 에 그린다.
+ * 이유: 사이드바 wrapper 가 모바일 드로어용 `transform: translateX(...)` 를
+ * 쓰기 때문에 그 자식의 `position: fixed` 좌표는 viewport 가 아니라 wrapper
+ * 기준이 된다 (CSS spec: transform 가 새 containing block 을 만든다). 메뉴가
+ * 사이드바 안에 갇혀 보이는 함정. MemberManagementModal 에서 처음 마주쳐 같은
+ * 패턴으로 정리.
  */
-import { useState, useRef } from 'react';
+import { useState, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Edit2, Trash2, Copy, Plus, Code, FolderPlus, Folder, Tag, Tags, Check, ChevronRight, Pin, PinOff, Users, Lock, AlertTriangle, X as XIcon } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui';
 import { useTranslations } from 'next-intl';
@@ -18,6 +26,17 @@ import type {
   ProjectDeleteConfirmState,
   FolderDeleteConfirmState,
 } from '../hooks/useSidebarState';
+
+/**
+ * Render a node into document.body so transform-created containing
+ * blocks on ancestors (e.g. the sidebar's `translateX` wrapper) don't
+ * trap fixed-position layers. SSR-safe: returns null when document is
+ * undefined.
+ */
+function portalToBody(node: ReactNode): ReactNode {
+  if (typeof document === 'undefined') return null;
+  return createPortal(node, document.body);
+}
 
 // === Sheet Context Menu ===
 interface SheetContextMenuProps {
@@ -68,7 +87,7 @@ export function SheetContextMenu({
 
   if (!menu) return null;
 
-  return (
+  return portalToBody(
     <div
       ref={menuRef}
       className="fixed z-50 min-w-[140px] py-1 rounded-lg shadow-lg border"
@@ -268,7 +287,7 @@ export function ProjectContextMenu({
   const effectiveVisibility: ProjectVisibility = currentVisibility ?? 'teamspace';
   const targetVisibility: ProjectVisibility = effectiveVisibility === 'teamspace' ? 'private' : 'teamspace';
 
-  return (
+  return portalToBody(
     <div
       ref={menuRef}
       className="fixed z-50 min-w-[140px] py-1 rounded-lg shadow-lg border"
@@ -396,7 +415,7 @@ export function FolderContextMenu({
 
   if (!menu) return null;
 
-  return (
+  return portalToBody(
     <div
       ref={menuRef}
       className="fixed z-50 min-w-[140px] py-1 rounded-lg shadow-lg border"
@@ -485,7 +504,7 @@ export function ClassNameEditModal({
 
   if (!sheetId) return null;
 
-  return (
+  return portalToBody(
     <div className="fixed inset-0 modal-overlay flex items-center justify-center z-[1100]">
       <div
         className="w-80 p-4 rounded-xl shadow-2xl"
@@ -661,7 +680,7 @@ export function KindChangeBlockedDialog({ state, onClose }: KindChangeBlockedDia
 
   const targetMeta = KIND_META[state.toKind];
 
-  return (
+  return portalToBody(
     <div
       className="fixed inset-0 z-[1100] flex items-center justify-center modal-overlay"
       onClick={(e) => {
