@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -34,4 +36,25 @@ class MeController {
         var userId = UUID.fromString(jwt.getSubject());
         return userAuthService.findById(userId);
     }
+
+    /**
+     * Profile edit — display name and / or avatar URL. Either field
+     * may be omitted (or {@code null} in JSON) to leave that side
+     * untouched. Empty-string {@code avatarUrl} clears the avatar
+     * back to the OAuth default; empty-string {@code name} is
+     * rejected (a name is always required for rendering).
+     *
+     * The avatar URL must be one returned by {@code POST
+     * /api/v1/uploads/avatar} so users can't point us at arbitrary
+     * external hosts.
+     */
+    @PatchMapping(path = "/me", version = "1")
+    AuthenticatedUser updateMe(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody UpdateProfileRequest body) {
+        var userId = UUID.fromString(jwt.getSubject());
+        return userAuthService.updateProfile(userId, body.name(), body.avatarUrl());
+    }
+
+    record UpdateProfileRequest(String name, String avatarUrl) {}
 }

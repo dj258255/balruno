@@ -130,6 +130,47 @@ class UserAuthServiceImpl implements UserAuthService {
         return toDto(loadUser(userId));
     }
 
+    @Override
+    public AuthenticatedUser updateProfile(UUID userId, String name, String avatarUrl) {
+        var user = loadUser(userId);
+        if (name != null) {
+            var trimmed = name.trim();
+            if (trimmed.isEmpty()) {
+                throw new com.balruno.user.UserAuthException(
+                        com.balruno.user.UserAuthException.Reason.INVALID_PROFILE,
+                        "name must not be blank");
+            }
+            if (trimmed.length() > 120) {
+                // users.name VARCHAR(120) — same cap.
+                throw new com.balruno.user.UserAuthException(
+                        com.balruno.user.UserAuthException.Reason.INVALID_PROFILE,
+                        "name must be 120 characters or fewer");
+            }
+            user.updateProfile(trimmed, user.getAvatarUrl());
+        }
+        if (avatarUrl != null) {
+            // null is "unchanged"; empty string is "clear back to OAuth default"
+            // — both honoured here.
+            var url = avatarUrl.isBlank() ? null : avatarUrl;
+            // Avatar URLs that the user can set must come from our own
+            // /media/avatars/ surface (returned by the upload endpoint).
+            // OAuth-supplied URLs (avatars.githubusercontent.com etc.)
+            // are written by the OAuth login flow, not via this method.
+            if (url != null && !url.startsWith("/media/avatars/")) {
+                throw new com.balruno.user.UserAuthException(
+                        com.balruno.user.UserAuthException.Reason.INVALID_PROFILE,
+                        "avatarUrl must be a /media/avatars/ path");
+            }
+            if (url != null && url.length() > 2048) {
+                throw new com.balruno.user.UserAuthException(
+                        com.balruno.user.UserAuthException.Reason.INVALID_PROFILE,
+                        "avatarUrl exceeds 2048 characters");
+            }
+            user.updateProfile(user.getName(), url);
+        }
+        return toDto(user);
+    }
+
     /** Pulls the local-part out of an email, or returns null when absent. */
     private static String localPartOf(String email) {
         if (email == null) return null;

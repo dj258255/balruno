@@ -41,8 +41,15 @@ class ApiExceptionHandler {
     @ExceptionHandler(UserAuthException.class)
     ProblemDetail handleUserAuth(UserAuthException e) {
         log.warn("user_auth_refused reason={} msg={}", e.reason(), e.getMessage());
-        return ProblemDetails.of(HttpStatus.UNAUTHORIZED,
-                "Authentication refused",
+        var status = switch (e.reason()) {
+            // INVALID_PROFILE is a validation failure on user-supplied
+            // input, not an auth refusal — 400 keeps the client error
+            // pipeline (BackendError code === "INVALID_PROFILE") clean.
+            case INVALID_PROFILE -> HttpStatus.BAD_REQUEST;
+            case UNVERIFIED_EMAIL_CONFLICT -> HttpStatus.UNAUTHORIZED;
+        };
+        return ProblemDetails.of(status,
+                status == HttpStatus.BAD_REQUEST ? "Profile update rejected" : "Authentication refused",
                 e.reason().name(),
                 e.getMessage());
     }

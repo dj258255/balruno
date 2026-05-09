@@ -14,3 +14,24 @@ export async function fetchCurrentUser(): Promise<AuthenticatedUser | null> {
     throw e;
   }
 }
+
+export interface UpdateProfileInput {
+  /** Pass null / undefined to leave unchanged. Empty string is rejected. */
+  name?: string;
+  /** Pass null / undefined to leave unchanged. Empty string clears
+   *  the avatar (back to OAuth default on next login). Otherwise must
+   *  be a {@code /media/avatars/...} URL returned by uploadAvatar. */
+  avatarUrl?: string;
+}
+
+/**
+ * PATCH /api/v1/me — display name + avatar edit. Throws BackendError
+ * with code === 'INVALID_PROFILE' on validation failure (empty name,
+ * oversized field, avatarUrl outside the upload namespace).
+ */
+export function updateProfile(input: UpdateProfileInput): Promise<AuthenticatedUser> {
+  return request<AuthenticatedUser>('/api/v1/me', {
+    method: 'PATCH',
+    body: input,
+  });
+}

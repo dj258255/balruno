@@ -18,6 +18,7 @@ import { Trash2, AlertTriangle, Loader2, X, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { deleteMyAccount, downloadDataExport } from '@/lib/backend';
+import ProfileSettingsSection from './ProfileSettingsSection';
 
 interface AccountSettingsClientProps {
   /**
@@ -72,6 +73,11 @@ export default function AccountSettingsClient({ onClose }: AccountSettingsClient
           {t('subtitle')}
         </p>
       </header>
+
+      {/* Profile (display name + avatar) — Phase C. Self-contained
+          state + uses backendAuthStore as the source of truth so the
+          sidebar avatar refreshes the instant we save. */}
+      <ProfileSettingsSection />
 
       <section
         className="rounded-lg border p-4"

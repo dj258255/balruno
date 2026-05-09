@@ -15,7 +15,8 @@ export {
 } from './client';
 export type { ProblemDetail, RequestOptions } from './client';
 
-export { fetchCurrentUser } from './me';
+export { fetchCurrentUser, updateProfile } from './me';
+export type { UpdateProfileInput } from './me';
 export { oauthLoginUrl, startOAuthLogin } from './oauth';
 export type { OAuthProvider } from './oauth';
 

@@ -13,7 +13,10 @@ package com.balruno.user;
 public class UserAuthException extends RuntimeException {
 
     public enum Reason {
-        UNVERIFIED_EMAIL_CONFLICT
+        UNVERIFIED_EMAIL_CONFLICT,
+        /** Profile edit rejected — empty name, oversized field, or
+         *  avatar URL outside the /media/avatars/ namespace. */
+        INVALID_PROFILE
     }
 
     private final Reason reason;
