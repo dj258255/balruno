@@ -54,6 +54,21 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
     docName: string;
   } | null>(null);
   const docCtxMenuRef = useRef<HTMLDivElement>(null);
+
+  // 인라인 이름 편집 — Notion / Linear / VS Code Explorer 패턴.
+  // 옛 prompt() 모달 대신 사이드바 트리에서 같은 자리에 input 으로
+  // 전환. Enter / blur 로 commit, Escape 로 취소.
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
+  const startRename = (docId: string) => setEditingDocId(docId);
+  const commitRename = (docId: string, raw: string) => {
+    setEditingDocId(null);
+    const next = raw.trim();
+    if (!next || !currentProjectId) return;
+    const before = project?.docs?.find((d) => d.id === docId)?.name;
+    if (next === before) return;
+    updateDoc(currentProjectId, docId, { name: next });
+  };
+  const cancelRename = () => setEditingDocId(null);
   useEffect(() => {
     if (!docCtxMenu) return;
     const onDown = (e: MouseEvent) => {
@@ -241,6 +256,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
               docs={docs}
               projectId={project.id}
               currentDocId={currentDocId}
+              editingDocId={editingDocId}
               onOpen={handleOpen}
               onContextMenu={(e, d) => {
                 e.preventDefault();
@@ -256,14 +272,18 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
               onDeleteShort={(d) => handleDelete(d.id, d.name)}
               onIconChange={(docId, emoji) => updateDoc(project.id, docId, { icon: emoji })}
               onMove={(docId, parentId, position) => moveDoc(project.id, docId, parentId, position)}
+              onCommitRename={commitRename}
+              onCancelRename={cancelRename}
               t={t}
             />
           )}
         </div>
       )}
 
-      {/* 문서 우클릭 컨텍스트 메뉴 — 이름 변경 / 복제 / 삭제 */}
-      {docCtxMenu && (
+      {/* 문서 우클릭 컨텍스트 메뉴 — 이름 변경 / 복제 / 삭제.
+          Portal 처리는 sheet ctx menu 와 같은 이유: 사이드바 wrapper
+          의 transform-translateX 가 fixed 좌표를 가두는 함정 회피. */}
+      {docCtxMenu && typeof document !== 'undefined' && createPortal(
         <div
           ref={docCtxMenuRef}
           className="fixed z-50 min-w-[160px] py-1 rounded-lg shadow-lg border"
@@ -297,10 +317,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
           <button
             type="button"
             onClick={() => {
-              const next = window.prompt(t('renamePromptLabel'), docCtxMenu.docName);
-              if (next && next.trim() && currentProjectId) {
-                updateDoc(currentProjectId, docCtxMenu.docId, { name: next.trim() });
-              }
+              startRename(docCtxMenu.docId);
               setDocCtxMenu(null);
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
@@ -344,7 +361,8 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
             <Trash2 className="w-4 h-4" />
             {t('ctxDelete')}
           </button>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -358,6 +376,10 @@ interface DocTreeProps {
   docs: Doc[];
   projectId: string;
   currentDocId: string | null;
+  /** When set, the matching doc row renders an inline rename input
+   *  in place of its name. SidebarDocsSection drives this from the
+   *  rename context-menu action — Notion / Linear / VS Code pattern. */
+  editingDocId: string | null;
   onOpen: (docId: string) => void;
   onContextMenu: (e: React.MouseEvent, doc: Doc) => void;
   onAddChild: (parentId: string) => void;
@@ -365,6 +387,8 @@ interface DocTreeProps {
   onDeleteShort: (doc: Doc) => void;
   onIconChange: (docId: string, emoji: string | undefined) => void;
   onMove: (docId: string, parentId: string | undefined, position?: number) => void;
+  onCommitRename: (docId: string, name: string) => void;
+  onCancelRename: () => void;
   t: ReturnType<typeof useTranslations<'docs'>>;
 }
 
@@ -412,6 +436,7 @@ function DocTreeNode({
   depth,
   childrenByParent,
   currentDocId,
+  editingDocId,
   onOpen,
   onContextMenu,
   onAddChild,
@@ -419,14 +444,24 @@ function DocTreeNode({
   onDeleteShort,
   onIconChange,
   onMove,
+  onCommitRename,
+  onCancelRename,
   projectId,
   t,
   docs,
 }: DocTreeNodeProps) {
   const isActive = d.id === currentDocId;
+  const isEditing = d.id === editingDocId;
   const children = childrenByParent.get(d.id) ?? [];
   const expanded = d.isExpanded ?? true;
   const hasChildren = children.length > 0;
+  const [draftName, setDraftName] = useState(d.name);
+  // Reset the draft whenever the rename starts on this row so the
+  // input always lands on the current name (not a stale value from a
+  // previous rename of the same row).
+  useEffect(() => {
+    if (isEditing) setDraftName(d.name);
+  }, [isEditing, d.name]);
 
   const onDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('application/x-balruno-doc', d.id);
@@ -503,7 +538,31 @@ function DocTreeNode({
           className="flex-shrink-0"
         />
 
-        <span className="flex-1 truncate">{d.name || t('noTitlePlaceholder')}</span>
+        {isEditing ? (
+          <input
+            autoFocus
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                onCommitRename(d.id, draftName);
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                onCancelRename();
+              }
+            }}
+            onBlur={() => onCommitRename(d.id, draftName)}
+            className="flex-1 min-w-0 px-1 py-0 text-xs rounded border bg-transparent focus:outline-none"
+            style={{
+              borderColor: 'var(--accent)',
+              color: 'var(--text-primary)',
+            }}
+          />
+        ) : (
+          <span className="flex-1 truncate">{d.name || t('noTitlePlaceholder')}</span>
+        )}
 
         <button
           type="button"
@@ -541,6 +600,7 @@ function DocTreeNode({
               docs={docs}
               projectId={projectId}
               currentDocId={currentDocId}
+              editingDocId={editingDocId}
               onOpen={onOpen}
               onContextMenu={onContextMenu}
               onAddChild={onAddChild}
@@ -548,6 +608,8 @@ function DocTreeNode({
               onDeleteShort={onDeleteShort}
               onIconChange={onIconChange}
               onMove={onMove}
+              onCommitRename={onCommitRename}
+              onCancelRename={onCancelRename}
               t={t}
             />
           ))}
