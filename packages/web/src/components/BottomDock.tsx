@@ -116,7 +116,15 @@ export default function BottomDock({ panels, isModalOpen }: BottomDockProps) {
   const currentHintGroupId = showHint ? DOCK_HINT_STEPS[hintStep].groupId : null;
 
   const isMobile = useIsMobile();
-  const leftOffset = isMobile ? 0 : mounted ? sidebarWidth : 280;
+  // The dock is fixed at viewport bottom-center regardless of how the
+  // sidebar is sized — dragging the SidebarResizer should grow the
+  // sidebar's inner area, not slide the dock sideways with it. The
+  // pre-Phase-E behaviour offset by sidebarWidth so the dock centred
+  // within the *main column*, but the user explicitly called that out
+  // as wrong: the resizer's job is to claim space FROM the main, not
+  // to drag the dock.
+  void sidebarWidth;
+  const leftOffset = 0;
 
   const handleGroupClick = (groupId: ToolGroupId) => {
     if (isModalOpen) return;
