@@ -41,6 +41,39 @@ scrape_configs:
         labels:
           db: balruno
 
+  # cAdvisor — per-container CPU/memory/IO on each host that runs containers.
+  # prod_app: Spring backend + Hocuspocus + benchmark containers (temp).
+  # monitor: Grafana stack + Postgres + InfluxDB.
+  - job_name: cadvisor
+    static_configs:
+      - targets:
+          - "{{ prod_app_private_ip }}:9101"
+            # label injected via target group below
+      - targets:
+          - "{{ monitor_private_ip }}:9101"
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: "{{ prod_app_private_ip }}:.*"
+        target_label: host
+        replacement: prod_app
+      - source_labels: [__address__]
+        regex: "{{ monitor_private_ip }}:.*"
+        target_label: host
+        replacement: monitor
+
+  # Spring Boot Actuator — /actuator/prometheus on the *active* backend slot.
+  # Blue/green deploy means port 8080 (blue) or 8081 (green) is the live one;
+  # we scrape both — the inactive slot returns 0 metrics rather than failing,
+  # so cardinality stays clean.
+  - job_name: spring-actuator
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - "{{ prod_app_private_ip }}:8080"
+          - "{{ prod_app_private_ip }}:8081"
+        labels:
+          app: balruno-backend
+
   # blackbox_exporter — replaces Uptime Kuma's role.
   # Prometheus instructs blackbox_exporter to probe each target via the
   # `module` query param. The 'up' metric goes 0/1 per target, plus
