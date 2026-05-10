@@ -101,16 +101,15 @@
 
 - name: Copy vendored dashboard JSONs
   ansible.builtin.copy:
-    src: "dashboards/{{ item }}"
-    dest: "{{ monitoring_root }}/grafana/provisioning/dashboards/json/{{ item }}"
+    src: "{{ item }}"
+    dest: "{{ monitoring_root }}/grafana/provisioning/dashboards/json/{{ item | basename }}"
     owner: root
     group: root
     mode: '0644'
-  loop:
-    - node-exporter-full.json
-    - postgresql-database.json
-    - loki-logs.json
-    - blackbox-exporter.json
+  # Glob over files/dashboards/*.json so adding a new dashboard means dropping
+  # the JSON in that directory — no edit to this task required.
+  with_fileglob:
+    - "../files/dashboards/*.json"
 
 - name: Render Grafana alerting — contact points
   ansible.builtin.template:
