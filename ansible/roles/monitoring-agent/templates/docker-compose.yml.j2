@@ -1,0 +1,69 @@
+# {{ ansible_managed }}
+# Per-host monitoring agent — node_exporter + cadvisor (+ alloy where enabled).
+# Each host runs its own copy; the central Prometheus on monitor scrapes
+# all four hosts' agents.
+
+name: balruno-monitoring-agent
+
+networks:
+  agent:
+    driver: bridge
+
+services:
+  node-exporter:
+    image: {{ monitoring_agent_image_node_exporter }}
+    container_name: node-exporter
+    restart: unless-stopped
+    # host network so /proc, /sys readings reflect the actual host
+    network_mode: host
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+      - --web.listen-address={{ private_ip }}:{{ monitoring_agent_port_node_exporter }}
+    volumes:
+      - /:/host:ro,rslave
+    mem_limit: {{ monitoring_agent_mem_node_exporter }}
+
+  cadvisor:
+    image: {{ monitoring_agent_image_cadvisor }}
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "{{ private_ip }}:{{ monitoring_agent_port_cadvisor }}:8080"
+    mem_limit: {{ monitoring_agent_mem_cadvisor }}
+
+{% if monitoring_agent_deploy_alloy %}
+  alloy:
+    image: {{ monitoring_agent_image_alloy }}
+    container_name: alloy
+    restart: unless-stopped
+    networks: [agent]
+    ports:
+      - "{{ private_ip }}:{{ monitoring_agent_port_alloy }}:12345"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - {{ monitoring_agent_root }}/alloy-config.alloy:/etc/alloy/config.alloy:ro
+      - /var/log/journal:/var/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
+{% if monitoring_agent_collect_docker_logs %}
+      # Docker container log socket — gives alloy access to all running
+      # containers' stdout/stderr on this host.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+{% endif %}
+    mem_limit: {{ monitoring_agent_mem_alloy }}
+{% endif %}

@@ -33,7 +33,11 @@ scrape_configs:
 
   - job_name: alloy
     static_configs:
-      - targets: ["alloy:12345"]
+      # Alloy now runs as part of monitoring-agent on each host that has
+      # Docker (prod_app + monitor). backup/status skip alloy to save RAM.
+      - targets:
+          - "{{ prod_app_private_ip }}:12345"
+          - "{{ monitor_private_ip }}:12345"
 
   - job_name: postgres
     static_configs:

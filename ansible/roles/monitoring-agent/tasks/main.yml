@@ -1,0 +1,65 @@
+---
+# monitoring-agent — per-host sidecars (node_exporter + cadvisor + alloy)
+# deployed via a single Docker compose on every host.
+
+- name: Ensure agent root directory
+  ansible.builtin.file:
+    path: "{{ monitoring_agent_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+# Persistent systemd journal — the journal mount alloy reads (/var/log/journal)
+# is empty by default because Rocky 9 stores journal logs in /run (ramdisk).
+# Creating /var/log/journal switches journald to persistent storage on next
+# restart, so alloy actually has entries to forward.
+- name: Enable persistent systemd journal
+  ansible.builtin.file:
+    path: /var/log/journal
+    state: directory
+    owner: root
+    group: systemd-journal
+    mode: '2755'
+  notify: restart journald
+
+- name: Render agent docker-compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_agent_compose_file }}"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart monitoring agent
+
+# Alloy config is only rendered when this host runs alloy (backup + status
+# skip alloy to keep their 1GB memory budget safe).
+- name: Render alloy config
+  ansible.builtin.template:
+    src: alloy-config.alloy.j2
+    dest: "{{ monitoring_agent_root }}/alloy-config.alloy"
+    owner: root
+    group: root
+    mode: '0644'
+  when: monitoring_agent_deploy_alloy
+  notify: restart monitoring agent
+
+- name: Allow agent ports from VCN private range (host firewall)
+  ansible.posix.firewalld:
+    rich_rule: 'rule family="ipv4" source address="10.0.0.0/24" port port="{{ item }}" protocol="tcp" accept'
+    permanent: true
+    immediate: true
+    state: enabled
+  loop:
+    - "{{ monitoring_agent_port_node_exporter }}"
+    - "{{ monitoring_agent_port_cadvisor }}"
+    - "{{ monitoring_agent_port_alloy }}"
+
+- name: Pull agent images
+  community.docker.docker_compose_v2_pull:
+    project_src: "{{ monitoring_agent_root }}"
+
+- name: Start agent stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_agent_root }}"
+    state: present

@@ -1,0 +1,46 @@
+// {{ ansible_managed }}
+// Per-host Alloy config. Forwards to the central Loki on monitor.
+
+loki.write "default" {
+  endpoint {
+    url = "{{ monitoring_agent_loki_url }}"
+  }
+}
+
+// systemd journal on every host — host-level logs (sshd, kernel, etc).
+loki.source.journal "host" {
+  forward_to = [loki.write.default.receiver]
+  labels = {
+    job  = "systemd-journal",
+    host = "{{ inventory_hostname }}",
+  }
+  max_age = "12h"
+}
+
+{% if monitoring_agent_collect_docker_logs %}
+// Docker daemon — discover all running containers and ship their logs.
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  forward_to = [loki.write.default.receiver]
+  labels = {
+    job  = "docker",
+    host = "{{ inventory_hostname }}",
+  }
+}
+{% endif %}
+
+prometheus.exporter.self "alloy" { }

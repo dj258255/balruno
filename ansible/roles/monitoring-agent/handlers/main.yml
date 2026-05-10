@@ -1,0 +1,10 @@
+---
+- name: restart monitoring agent
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_agent_root }}"
+    state: restarted
+
+- name: restart journald
+  ansible.builtin.systemd:
+    name: systemd-journald
+    state: restarted

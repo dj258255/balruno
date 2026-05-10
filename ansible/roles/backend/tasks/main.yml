@@ -46,3 +46,16 @@
     name: rocky
     groups: docker
     append: true
+
+- name: Allow backend blue/green ports from VCN private range
+  # The Spring backend now also binds to the private VCN IP (alongside
+  # 127.0.0.1) so the monitor host's Prometheus can scrape
+  # /actuator/prometheus. firewalld must allow VCN inbound on both colors.
+  ansible.posix.firewalld:
+    rich_rule: 'rule family="ipv4" source address="10.0.0.0/24" port port="{{ item }}" protocol="tcp" accept'
+    permanent: true
+    immediate: true
+    state: enabled
+  loop:
+    - "{{ backend_blue_host_port }}"
+    - "{{ backend_green_host_port }}"

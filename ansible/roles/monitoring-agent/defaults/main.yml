@@ -1,0 +1,46 @@
+# monitoring-agent role defaults.
+#
+# Runs on EVERY host (prod_app, monitor, backup, status) as a uniform
+# Docker compose stack of three sidecars:
+#   - node_exporter — host CPU/mem/disk/network metrics (host network)
+#   - cadvisor      — per-container CPU/memory/IO metrics
+#   - alloy         — log shipper to Loki (journal on every host, plus
+#                     docker container logs on hosts where containers run)
+#
+# Why a per-host agent stack (instead of stuffing them into the monitor's
+# main monitoring docker-compose): each host runs its own sidecars natively
+# in its own Docker daemon. The Prometheus on monitor reaches out to each
+# host's VCN private IP to scrape.
+
+monitoring_agent_root: /opt/balruno/monitoring-agent
+monitoring_agent_compose_file: "{{ monitoring_agent_root }}/docker-compose.yml"
+
+# Container images — keep in sync with the central monitoring role.
+monitoring_agent_image_node_exporter: "prom/node-exporter:v1.9.0"
+monitoring_agent_image_cadvisor: "gcr.io/cadvisor/cadvisor:v0.49.1"
+monitoring_agent_image_alloy: "grafana/alloy:v1.5.0"
+
+# Ports each component listens on. Bound to the VCN private IP so the
+# Prometheus instance on monitor can scrape, but the public internet
+# cannot.
+monitoring_agent_port_node_exporter: 9100
+monitoring_agent_port_cadvisor: 9101
+monitoring_agent_port_alloy: 12345
+
+# Per-component memory limits. Backup + status are x86 1GB hosts so the
+# defaults are conservative; ARM 12GB hosts have plenty of headroom.
+monitoring_agent_mem_node_exporter: "64m"
+monitoring_agent_mem_cadvisor: "256m"
+monitoring_agent_mem_alloy: "256m"
+
+# Whether to deploy alloy on this host. backup/status (x86 1GB) skip
+# alloy to save memory — they have nothing interesting to ship anyway.
+monitoring_agent_deploy_alloy: true
+
+# Where the central Loki lives (always monitor host private IP).
+monitoring_agent_loki_url: "http://{{ monitor_private_ip }}:3100/loki/api/v1/push"
+
+# Whether this host has a Docker daemon whose container logs alloy should
+# scrape (prod_app + monitor yes; backup/status no — they only run a
+# small systemd daemon set).
+monitoring_agent_collect_docker_logs: "{{ inventory_hostname in ['prod_app', 'monitor'] }}"

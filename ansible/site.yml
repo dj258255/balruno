@@ -6,10 +6,6 @@
 #   single host:         ansible-playbook site.yml --limit prod_app
 #   replay one role:     ansible-playbook site.yml --tags nginx
 #   reachability check:  ansible -i inventory.yml all -m ping
-#
-# Roles are enabled progressively: each play below is uncommented in the
-# same PR that adds the role's tasks. Until then, leaving them commented
-# out keeps `--check` and apply runs green.
 
 # ───────────────────────────────────────────────────────────────────
 # 1. Common baseline applied to every host (swap / fail2ban / Docker / SSH).
@@ -21,17 +17,32 @@
   roles:
     - role: common
       vars:
-        # Docker on monitor (Grafana stack) and prod_app (Spring Boot
-        # backend container). Backup + status host stay systemd-only.
-        common_install_docker: "{{ inventory_hostname in ['monitor', 'prod_app'] }}"
+        # Docker is now required on every host because monitoring-agent
+        # (node_exporter + cadvisor + alloy) runs as a Docker compose stack.
+        # Memory budget on backup/status (1GB) is tight but the agent
+        # itself fits within ~350MB.
+        common_install_docker: true
 
 # ───────────────────────────────────────────────────────────────────
-# 2. prod-app — backend (Spring) + hocuspocus (collab) Docker compose +
-#    Nginx (TLS terminator + reverse proxy). The Node collab sidecar
-#    landed with ADR 0017 Stage A.3 — vault_jwt_collab_secret must be
-#    populated in group_vars/all/vault.yml before the first apply.
+# 2. Per-host monitoring agent — node_exporter + cadvisor + alloy.
+#    Runs on every host so the central Prometheus on monitor can scrape.
 # ───────────────────────────────────────────────────────────────────
-- name: Deploy prod-app (backend + collab Docker compose + nginx + cadvisor)
+- name: Deploy monitoring agent (all hosts)
+  hosts: all
+  become: true
+  tags: [monitoring-agent]
+  roles:
+    - role: monitoring-agent
+      vars:
+        # backup/status are x86 1GB and don't run Docker containers besides
+        # the agent itself, so they skip alloy to save memory.
+        monitoring_agent_deploy_alloy: "{{ inventory_hostname in ['prod_app', 'monitor'] }}"
+
+# ───────────────────────────────────────────────────────────────────
+# 3. prod-app — backend (Spring) + hocuspocus (collab) Docker compose +
+#    Nginx (TLS terminator + reverse proxy).
+# ───────────────────────────────────────────────────────────────────
+- name: Deploy prod-app (backend + collab Docker compose + nginx)
   hosts: prod_app
   become: true
   tags: [prod-app]
@@ -42,13 +53,11 @@
       tags: [hocuspocus, collab]
     - role: nginx
       tags: [nginx]
-    - role: cadvisor
-      tags: [cadvisor]
 
 # ───────────────────────────────────────────────────────────────────
-# 3. monitor — PostgreSQL + Grafana stack + InfluxDB  (Phase B-6 follow-up).
+# 4. monitor — PostgreSQL + Grafana stack + InfluxDB (Phase B-6 follow-up).
 # ───────────────────────────────────────────────────────────────────
-- name: Deploy monitor (monitoring stack + Postgres + backup source + cadvisor)
+- name: Deploy monitor (monitoring stack + Postgres + backup source)
   hosts: monitor
   become: true
   tags: [monitor]
@@ -59,11 +68,9 @@
       tags: [postgres]
     - role: backup
       tags: [backup]
-    - role: cadvisor
-      tags: [cadvisor]
 
 # ───────────────────────────────────────────────────────────────────
-# 4. backup — pg_dump rsync receiver (+ cloudflared next commit).
+# 5. backup — pg_dump rsync receiver + cloudflared.
 # ───────────────────────────────────────────────────────────────────
 - name: Deploy backup (rsync receiver + retention + cloudflared)
   hosts: backup
@@ -76,13 +83,7 @@
       tags: [cloudflared]
 
 # ───────────────────────────────────────────────────────────────────
-# 5. status — Object Storage upload daemon (3-2-1 offsite).
-#
-# Earlier draft also ran Uptime Kuma here. We dropped that — the Grafana
-# stack on monitor (with blackbox_exporter) already covers HTTP/SSL/ping
-# probing, Alertmanager handles Discord/Slack, and Grafana 12 Public
-# Dashboards covers public status pages. Cloudflare Workers cron handles
-# the truly external vantage point. See ADR 0007 v1.2.
+# 6. status — Object Storage upload daemon (3-2-1 offsite).
 # ───────────────────────────────────────────────────────────────────
 - name: Deploy status (R2 upload daemon)
   hosts: status

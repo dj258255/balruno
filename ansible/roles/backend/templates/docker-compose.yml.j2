@@ -20,7 +20,12 @@ services:
     container_name: balruno-backend-blue
     restart: unless-stopped
     ports:
+      # Loopback bind — used by nginx for the public TLS path.
       - "127.0.0.1:{{ backend_blue_host_port }}:{{ backend_container_port }}"
+      # VCN private IP bind — used by the monitor host's Prometheus to
+      # scrape /actuator/prometheus. The VCN security list + host
+      # firewalld restrict this surface to 10.0.0.0/24 (other OCI hosts).
+      - "{{ private_ip }}:{{ backend_blue_host_port }}:{{ backend_container_port }}"
     env_file:
       - {{ backend_env_file }}
     environment:
@@ -47,6 +52,7 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:{{ backend_green_host_port }}:{{ backend_container_port }}"
+      - "{{ private_ip }}:{{ backend_green_host_port }}:{{ backend_container_port }}"
     env_file:
       - {{ backend_env_file }}
     environment:
