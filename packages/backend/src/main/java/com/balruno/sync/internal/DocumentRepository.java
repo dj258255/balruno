@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,6 +20,9 @@ import java.util.UUID;
  *   - cascade soft-delete on doc tree.delete (paired with the deleted
  *     subtree id set) — native @Modifying because IN (:ids) over a
  *     dynamic set is the cleanest shape.
+ *   - active fetch for the duplicate path — pulls the source doc's
+ *     ydoc_state inside a single transaction so the new row's bytes
+ *     match the last-stored snapshot.
  */
 interface DocumentRepository extends JpaRepository<DocumentEntity, UUID> {
 
@@ -29,4 +33,13 @@ interface DocumentRepository extends JpaRepository<DocumentEntity, UUID> {
                  + "   AND deleted_at IS NULL",
            nativeQuery = true)
     int cascadeSoftDelete(@Param("ids") Set<UUID> ids);
+
+    /**
+     * Active row by id — used by DocDuplicateService to read the
+     * source doc's title + ydoc_state for cloning. JpaRepository's
+     * stock findById ignores the soft-delete column.
+     */
+    @Query("SELECT d FROM DocumentEntity d "
+         + " WHERE d.id = :id AND d.deletedAt IS NULL")
+    Optional<DocumentEntity> findActiveById(@Param("id") UUID id);
 }

@@ -69,15 +69,15 @@ class SearchController {
         // downstream pruning. For multi-MB projects we can switch
         // to streaming the rows but the median project is well
         // under 1 MB — load + walk in JVM is faster than two queries.
-        var rows = repo.loadJsonBlobs(projectId);
-        if (rows.isEmpty()) return Map.of("hits", List.of());
+        var blobs = repo.loadJsonBlobs(projectId).orElse(null);
+        if (blobs == null) return Map.of("hits", List.of());
 
         var hits = new ArrayList<Map<String, Object>>();
 
         try {
-            walkSheets(json.readTree((String) rows.get(0).get("data_text")), lower, hits);
-            walkTree(json.readTree((String) rows.get(0).get("st_text")), "sheet-tree", lower, hits);
-            walkTree(json.readTree((String) rows.get(0).get("dt_text")), "doc-tree", lower, hits);
+            walkSheets(json.readTree(blobs.getDataText()), lower, hits);
+            walkTree(json.readTree(blobs.getStText()), "sheet-tree", lower, hits);
+            walkTree(json.readTree(blobs.getDtText()), "doc-tree", lower, hits);
         } catch (Exception ignored) {
             // Malformed JSON — return whatever hits we already accumulated.
         }
@@ -86,15 +86,15 @@ class SearchController {
         // index. Limited to 50 to keep the panel responsive.
         var commentRows = repo.searchComments(projectId, "%" + trimmed + "%");
         for (var c : commentRows) {
-            var snippet = extractText((String) c.get("body_text"), 200);
+            var snippet = extractText(c.getBodyText(), 200);
             var hit = new HashMap<String, Object>();
             hit.put("kind", "comment");
-            hit.put("commentId", c.get("id").toString());
+            hit.put("commentId", c.getId().toString());
             hit.put("snippet", snippet);
-            hit.put("scopeKind", c.get("scope_kind"));
-            hit.put("sheetId", c.get("sheet_id") != null ? c.get("sheet_id").toString() : null);
-            hit.put("rowId", c.get("row_id") != null ? c.get("row_id").toString() : null);
-            hit.put("documentId", c.get("document_id") != null ? c.get("document_id").toString() : null);
+            hit.put("scopeKind", c.getScopeKind());
+            hit.put("sheetId", c.getSheetId() != null ? c.getSheetId().toString() : null);
+            hit.put("rowId", c.getRowId() != null ? c.getRowId().toString() : null);
+            hit.put("documentId", c.getDocumentId() != null ? c.getDocumentId().toString() : null);
             hits.add(hit);
         }
 

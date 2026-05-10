@@ -75,4 +75,13 @@ class DocumentEntity {
         this.title = title;
         this.ydocState = ydocState;
     }
+
+    UUID getId() { return id; }
+    UUID getProjectId() { return projectId; }
+    String getTitle() { return title; }
+    /** Package-private read of the LAZY ydoc_state — used by the
+     *  duplicate path inside the sync module, where the bytes have
+     *  to leave the entity to seed a clone. Other callers should
+     *  not pull this column on the live edit path. */
+    byte[] getYdocState() { return ydocState; }
 }

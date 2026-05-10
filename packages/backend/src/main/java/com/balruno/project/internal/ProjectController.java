@@ -39,10 +39,14 @@ class ProjectController {
 
     private final ProjectService projects;
     private final SheetDuplicateService sheetDuplicate;
+    private final com.balruno.sync.DocDuplicateApi docDuplicate;
 
-    ProjectController(ProjectService projects, SheetDuplicateService sheetDuplicate) {
+    ProjectController(ProjectService projects,
+                      SheetDuplicateService sheetDuplicate,
+                      com.balruno.sync.DocDuplicateApi docDuplicate) {
         this.projects = projects;
         this.sheetDuplicate = sheetDuplicate;
+        this.docDuplicate = docDuplicate;
     }
 
     @PostMapping(path = "/workspaces/{wsId}/projects", version = "1")
@@ -132,6 +136,20 @@ class ProjectController {
         return new DuplicateSheetResponse(newId);
     }
 
+    /**
+     * Sidebar / 상단 탭 컨텍스트 메뉴의 "문서 복제". Server-side
+     * deep-clone — documents row + doc_tree leaf 둘 다 새 id 로 복제.
+     * 시트 복제와 동일한 sync.full broadcast 패턴.
+     */
+    @PostMapping(path = "/projects/{projectId}/docs/{docId}/duplicate", version = "1")
+    @ResponseStatus(HttpStatus.CREATED)
+    DuplicateDocResponse duplicateDoc(@AuthenticationPrincipal Jwt jwt,
+                                      @PathVariable UUID projectId,
+                                      @PathVariable UUID docId) {
+        var newId = docDuplicate.duplicate(projectId, callerId(jwt), docId);
+        return new DuplicateDocResponse(newId);
+    }
+
     private static UUID callerId(Jwt jwt) {
         return Principals.userId(jwt);
     }
@@ -150,4 +168,5 @@ class ProjectController {
             @NotBlank @Size(min = 1, max = 64) String sortKey) {}
 
     record DuplicateSheetResponse(UUID newSheetId) {}
+    record DuplicateDocResponse(UUID newDocId) {}
 }

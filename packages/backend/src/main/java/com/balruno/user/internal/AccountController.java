@@ -52,8 +52,7 @@ class AccountController {
         root.put("exportedAt", java.time.OffsetDateTime.now().toString());
         root.put("userId", userId.toString());
 
-        var userRows = repo.userRow(userId);
-        root.set("user", json.valueToTree(userRows.isEmpty() ? null : userRows.get(0)));
+        root.set("user", json.valueToTree(repo.userRow(userId).orElse(null)));
 
         ArrayNode memberships = root.putArray("memberships");
         for (var m : repo.memberships(userId)) memberships.add(json.valueToTree(m));
@@ -67,8 +66,8 @@ class AccountController {
         ArrayNode comments = root.putArray("comments");
         for (var c : repo.commentsByAuthor(userId)) comments.add(json.valueToTree(c));
 
-        var prefs = repo.notificationPreferences(userId);
-        root.set("notificationPreferences", json.valueToTree(prefs.isEmpty() ? null : prefs.get(0)));
+        root.set("notificationPreferences",
+                json.valueToTree(repo.notificationPreferences(userId).orElse(null)));
 
         ArrayNode pushSubs = root.putArray("webPushSubscriptions");
         for (var s : repo.webPushSubscriptions(userId)) pushSubs.add(json.valueToTree(s));
@@ -109,7 +108,9 @@ class AccountController {
         // emit storage cascade events for each (R2 attachments cleanup
         // happens in AttachmentCascadeListener).
         var projectsToCascade = repo.projectsToCascade();
-        repo.softDeleteUserAndOwnedWorkspaces(userId);
+        repo.softDeleteUser(userId);
+        repo.softDeleteOwnedWorkspaces(userId);
+        repo.softDeleteProjectsOfDeletedWorkspaces();
 
         // GDPR cascade — afterCommit so a rolled-back DELETE doesn't
         // wipe the R2 blobs. Avatar prefix and project attachments are
@@ -119,9 +120,8 @@ class AccountController {
         afterCommit.publish(new com.balruno.events.AvatarReplacedEvent(
                 "avatars/" + userId + "/"));
         for (var row : projectsToCascade) {
-            var pid = (java.util.UUID) row.get("id");
-            var wid = (java.util.UUID) row.get("workspace_id");
-            afterCommit.publish(new com.balruno.events.ProjectSoftDeletedEvent(pid, wid));
+            afterCommit.publish(new com.balruno.events.ProjectSoftDeletedEvent(
+                    row.getId(), row.getWorkspaceId()));
         }
 
         return ResponseEntity.noContent().build();
