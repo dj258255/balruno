@@ -1,0 +1,11 @@
+{
+  "name": "bench-mysql-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node server.mjs" },
+  "dependencies": {
+    "express": "^4.21.1",
+    "mysql2": "^3.11.5"
+  }
+}

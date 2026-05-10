@@ -1,0 +1,155 @@
+# balruno-bench — temporary DB benchmark for Balruno blog post measurements.
+# Lives in /tmp/balruno-bench on prod_app, removed by cleanup.sh after the run.
+#
+# Three DBs side by side, each on a non-conflicting host port:
+#   MySQL 8  — host 3307 → container 3306
+#   PG 18    — host 5433 → container 5432  (prod PG runs on monitor:5432, no conflict but using 5433 for cleanliness)
+#   Mongo 7  — host 27018 → container 27017
+#
+# Three Node.js Express wrappers, each pinned to its DB:
+#   mysql-api :8181  (host)
+#   pg-api    :8182
+#   mongo-api :8183
+#
+# All on a single docker compose network so wrappers reach their DBs by service name.
+
+name: balruno-bench
+
+networks:
+  bench:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  pg-data:
+  mongo-data:
+
+services:
+  # ────────── Databases ──────────
+  mysql:
+    image: mysql:8.4
+    container_name: bench-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: bench
+      MYSQL_DATABASE: bench
+      MYSQL_USER: bench
+      MYSQL_PASSWORD: bench
+    command:
+      - --default-authentication-plugin=caching_sha2_password
+      - --innodb-buffer-pool-size=1G
+    ports:
+      - "127.0.0.1:3307:3306"
+    networks: [bench]
+    volumes:
+      - mysql-data:/var/lib/mysql
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "bench", "-pbench"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  pg:
+    image: postgres:18
+    container_name: bench-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bench
+      POSTGRES_USER: bench
+      POSTGRES_PASSWORD: bench
+    command:
+      - postgres
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - work_mem=16MB
+    ports:
+      - "127.0.0.1:5433:5432"
+    networks: [bench]
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bench -d bench"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  mongo:
+    image: mongo:7
+    container_name: bench-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: bench
+      MONGO_INITDB_ROOT_PASSWORD: bench
+      MONGO_INITDB_DATABASE: bench
+    command:
+      - --wiredTigerCacheSizeGB
+      - "1"
+    ports:
+      - "127.0.0.1:27018:27017"
+    networks: [bench]
+    volumes:
+      - mongo-data:/data/db
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # ────────── API wrappers ──────────
+  # All three share the same Express skeleton (api/common/) — only the DB
+  # driver differs. Same framework overhead, so the measured gap reflects
+  # DB+query plan differences, not framework noise.
+  mysql-api:
+    build: ./api/mysql-api
+    container_name: bench-mysql-api
+    restart: unless-stopped
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: bench
+      MYSQL_PASSWORD: bench
+      MYSQL_DB: bench
+      PORT: "8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks: [bench]
+    ports:
+      - "127.0.0.1:8181:8081"
+    mem_limit: 512m
+
+  pg-api:
+    build: ./api/pg-api
+    container_name: bench-pg-api
+    restart: unless-stopped
+    environment:
+      PGHOST: pg
+      PGUSER: bench
+      PGPASSWORD: bench
+      PGDATABASE: bench
+      PORT: "8082"
+    depends_on:
+      pg:
+        condition: service_healthy
+    networks: [bench]
+    ports:
+      - "127.0.0.1:8182:8082"
+    mem_limit: 512m
+
+  mongo-api:
+    build: ./api/mongo-api
+    container_name: bench-mongo-api
+    restart: unless-stopped
+    environment:
+      MONGO_URI: mongodb://bench:bench@mongo:27017/bench?authSource=admin
+      PORT: "8083"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks: [bench]
+    ports:
+      - "127.0.0.1:8183:8083"
+    mem_limit: 512m

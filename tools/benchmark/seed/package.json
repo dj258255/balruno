@@ -1,0 +1,17 @@
+{
+  "name": "balruno-bench-seed",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node generate-sheets.mjs",
+    "seed:mysql": "node seed-mysql.mjs",
+    "seed:pg":    "node seed-pg.mjs",
+    "seed:mongo": "node seed-mongo.mjs"
+  },
+  "dependencies": {
+    "mysql2": "^3.11.5",
+    "pg": "^8.13.1",
+    "mongodb": "^6.11.0"
+  }
+}
