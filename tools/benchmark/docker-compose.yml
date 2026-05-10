@@ -35,8 +35,10 @@ services:
       MYSQL_DATABASE: bench
       MYSQL_USER: bench
       MYSQL_PASSWORD: bench
+    # MySQL 8.4 removed `default-authentication-plugin` (the policy moved to
+    # `authentication-policy`, and caching_sha2_password is the default
+    # anyway). Leaving the old flag in causes "unknown variable" abort.
     command:
-      - --default-authentication-plugin=caching_sha2_password
       - --innodb-buffer-pool-size=1G
     ports:
       - "127.0.0.1:3307:3306"
@@ -67,8 +69,12 @@ services:
     ports:
       - "127.0.0.1:5433:5432"
     networks: [bench]
+    # PG 18 expects a single mount at /var/lib/postgresql with the data dir
+    # nested below as `data/` (lets pg_upgrade --link work without mount
+    # boundary issues). Mounting directly to /var/lib/postgresql/data
+    # makes the container refuse to start.
     volumes:
-      - pg-data:/var/lib/postgresql/data
+      - pg-data:/var/lib/postgresql
     mem_limit: 2g
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U bench -d bench"]
