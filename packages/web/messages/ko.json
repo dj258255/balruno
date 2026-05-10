@@ -220,6 +220,7 @@
     "newSheet": "새 시트",
     "newSheetKindHint": "시트 용도 — 자동 감지 또는 직접 선택",
     "noSheets": "시트가 없습니다",
+    "clickToRename": "클릭하여 이름 변경",
     "createSheet": "새 시트 만들기",
     "createSheetDesc": "새 시트를 만들어 데이터를 관리해보세요",
     "noTabsOpenTitle": "열린 탭이 없습니다",
@@ -531,6 +532,7 @@
   "contextMenu": {
     "openRecordDetail": "레코드 상세 보기",
     "showRowHistory": "변경 이력 보기",
+    "addComment": "코멘트 추가",
     "cut": "잘라내기",
     "copy": "복사",
     "paste": "붙여넣기",

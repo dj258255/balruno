@@ -1844,6 +1844,13 @@ export default function SheetTable({ projectId, sheet }: SheetTableProps) {
           onInsertColumnRight={insertColumnRight}
           onDeleteRow={deleteSelectedRows}
           onDeleteColumn={deleteSelectedColumn}
+          onAddComment={() => {
+            // selectedCell already drives commentSelectionStore; just
+            // flip the panel open. Cell comment lives at this exact
+            // (sheet, row, column) tuple — the right-click target is
+            // already the active cell by the time this menu shows.
+            useCommentSelectionStore.getState().setPanelOpen(true);
+          }}
           canPaste={true}
           isMultiSelect={selectedCells.length > 1}
           isRowNumberCell={contextMenu.isRowNumberCell}

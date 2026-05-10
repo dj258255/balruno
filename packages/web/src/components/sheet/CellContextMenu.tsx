@@ -10,6 +10,7 @@ import {
   Type,
   Columns,
   Rows,
+  MessageSquare,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -27,6 +28,11 @@ interface CellContextMenuProps {
   onInsertColumnRight: () => void;
   onDeleteRow: () => void;
   onDeleteColumn: () => void;
+  /** Open the cell comment panel for the currently-selected cell.
+   *  Hidden when the right-click target is a header / row-number cell
+   *  or when multi-cell selection is active (comments anchor to a
+   *  single cell). */
+  onAddComment?: () => void;
   canPaste: boolean;
   isMultiSelect: boolean;
   isRowNumberCell?: boolean;
@@ -57,6 +63,7 @@ export default function CellContextMenu({
   onInsertColumnRight,
   onDeleteRow,
   onDeleteColumn,
+  onAddComment,
   canPaste,
   isMultiSelect,
   isRowNumberCell,
@@ -131,6 +138,17 @@ export default function CellContextMenu({
       divider: true,
     },
   ];
+
+  // Comment item only on a real data cell + single selection. Skip for
+  // header (column metadata), row-number column, or multi-select drag.
+  if (onAddComment && !isRowNumberCell && !isHeaderCell && !isMultiSelect) {
+    menuItems.push({
+      label: t('contextMenu.addComment'),
+      icon: <MessageSquare className="w-4 h-4" />,
+      onClick: onAddComment,
+      divider: true,
+    });
+  }
 
   menuItems.push(
     {

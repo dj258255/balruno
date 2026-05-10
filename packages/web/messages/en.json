@@ -220,6 +220,7 @@
     "newSheet": "New Sheet",
     "newSheetKindHint": "Sheet kind — auto-detect or pick explicitly",
     "noSheets": "No sheets",
+    "clickToRename": "Click to rename",
     "createSheet": "Create New Sheet",
     "createSheetDesc": "Create a new sheet to manage your data",
     "noTabsOpenTitle": "No open tabs",
@@ -531,6 +532,7 @@
   "contextMenu": {
     "openRecordDetail": "Open record detail",
     "showRowHistory": "Show change history",
+    "addComment": "Add comment",
     "cut": "Cut",
     "copy": "Copy",
     "paste": "Paste",
