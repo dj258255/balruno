@@ -115,8 +115,12 @@ log_ok "EXPLAIN captures saved"
 run_k6() {
   local name=$1 base=$2 script=$3 ids_or_names_var=$4 ids_or_names_path=$5
   log "k6: $name → $base ($script)"
+  # grafana/k6 image runs as a non-root user, so bind-mounted /work/results
+  # (owned by host rocky:rocky) isn't writable. Pin --user to the host's
+  # uid/gid so the container writes as the same owner the host expects.
   docker run --rm \
     --network balruno-bench_bench \
+    --user "$(id -u):$(id -g)" \
     -v "$WORK/k6:/work/k6" \
     -v "$RESULTS:/work/results" \
     -v "$RESULTS:/results-input" \
