@@ -51,7 +51,9 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # prometheus added so the monitor host can scrape JVM / HTTP / Hibernate
+        # metrics from /actuator/prometheus (Spring Actuator + Micrometer).
+        include: health,info,prometheus
   endpoint:
     health:
       show-details: never
@@ -60,6 +62,16 @@ management:
   info:
     env:
       enabled: true
+  metrics:
+    tags:
+      app: balruno-backend
+    distribution:
+      # Enable percentile histograms so http_server_requests_seconds reports
+      # p50/p95/p99 directly — needed for virtual thread A/B comparisons.
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5,0.95,0.99
 
 info:
   app:

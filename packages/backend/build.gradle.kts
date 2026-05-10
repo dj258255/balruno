@@ -42,8 +42,12 @@ dependencies {
     // shared.api's JSON entry point and access-denied handler need.
     implementation("org.springframework.boot:spring-boot-starter-json")
 
-    // Actuator — /actuator/health for nginx-side liveness probe + Prometheus scrape (B-3)
+    // Actuator — /actuator/health for nginx-side liveness probe + Prometheus scrape.
+    // micrometer-registry-prometheus exposes /actuator/prometheus so the monitor
+    // host's Prometheus can scrape JVM/HTTP/Hibernate metrics (virtual thread
+    // count, heap, GC pause, http_server_requests_seconds, etc.).
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 
     // Persistence — JPA over Hibernate 7 + Hikari pool. Schema is owned by
     // Flyway; JPA is set to ddl-auto=validate so mappings can never silently
