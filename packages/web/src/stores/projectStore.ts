@@ -213,6 +213,7 @@ export interface ProjectState {
   createSheet: (...args: unknown[]) => string;
   updateSheet: (projectId: string, sheetId: string, updates: Partial<Sheet>) => void;
   duplicateSheet: (projectId: string, sheetId: string) => string;
+  duplicateDoc: (projectId: string, docId: string) => string;
   deleteSheet: (projectId: string, sheetId: string) => void;
   reorderSheets: (...args: unknown[]) => void;
   moveSheetToFolder: (projectId: string, sheetId: string, folderId: string | null) => void;

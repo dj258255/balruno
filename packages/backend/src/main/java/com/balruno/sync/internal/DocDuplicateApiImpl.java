@@ -2,8 +2,6 @@
 package com.balruno.sync.internal;
 
 import com.balruno.events.AfterCommitPublisher;
-import com.balruno.project.ProjectException;
-import com.balruno.project.ProjectService;
 import com.balruno.sync.DocDuplicateApi;
 import com.balruno.sync.ProjectSyncService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -13,6 +11,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 /**
@@ -34,19 +33,16 @@ import java.util.UUID;
 @Service
 class DocDuplicateApiImpl implements DocDuplicateApi {
 
-    private final ProjectService projects;
     private final ProjectSyncRepository projectSync;
     private final DocumentRepository documents;
     private final ProjectSyncService sync;
     private final AfterCommitPublisher afterCommit;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    DocDuplicateApiImpl(ProjectService projects,
-                        ProjectSyncRepository projectSync,
+    DocDuplicateApiImpl(ProjectSyncRepository projectSync,
                         DocumentRepository documents,
                         ProjectSyncService sync,
                         AfterCommitPublisher afterCommit) {
-        this.projects = projects;
         this.projectSync = projectSync;
         this.documents = documents;
         this.sync = sync;
@@ -55,35 +51,33 @@ class DocDuplicateApiImpl implements DocDuplicateApi {
 
     @Override
     @Transactional
-    public UUID duplicate(UUID projectId, UUID callerUserId, UUID sourceDocId) {
-        // 1. authz — same gate ProjectService.findById applies for
-        //    sheet duplicate / template import.
-        projects.findById(projectId, callerUserId);
+    public UUID duplicate(UUID projectId, UUID sourceDocId) {
+        // Authz happens upstream in ProjectController via
+        // ProjectService.findById — sync module can't import the
+        // project domain without closing a Modulith cycle, so the
+        // caller is the orchestration point.
 
-        // 2. fetch source doc (active rows only). ydoc_state is LAZY
+        // 1. fetch source doc (active rows only). ydoc_state is LAZY
         //    on the entity but the @Query JPQL above pulls the column
         //    into the persistence context so the getter doesn't
         //    re-issue a fetch.
         var source = documents.findActiveById(sourceDocId)
-                .orElseThrow(() -> new ProjectException(
-                        ProjectException.Reason.PROJECT_NOT_FOUND,
+                .orElseThrow(() -> new NoSuchElementException(
                         "doc not found: " + sourceDocId));
 
-        // Cross-project guard — defence-in-depth. ProjectService.findById
-        // already checked the caller belongs to projectId; this catches
-        // a stale doc id that points at a different project.
+        // Cross-project guard — defence-in-depth. The Controller's
+        // findById already checked the caller belongs to projectId;
+        // this catches a stale doc id that points elsewhere.
         if (!projectId.equals(source.getProjectId())) {
-            throw new ProjectException(
-                    ProjectException.Reason.PROJECT_NOT_FOUND,
+            throw new NoSuchElementException(
                     "doc not in project: " + sourceDocId);
         }
 
-        // 3. lock + read doc_tree. Sheet duplicate locks data + sheet_tree
+        // 2. lock + read doc_tree. Sheet duplicate locks data + sheet_tree
         //    together because cells live in projects.data; doc body is
         //    in the documents table so we only need doc_tree here.
         var state = projectSync.lockDocTreeForUpdate(projectId)
-                .orElseThrow(() -> new ProjectException(
-                        ProjectException.Reason.PROJECT_NOT_FOUND,
+                .orElseThrow(() -> new NoSuchElementException(
                         "project state missing: " + projectId));
 
         ArrayNode tree;

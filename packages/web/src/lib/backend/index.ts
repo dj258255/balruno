@@ -63,6 +63,7 @@ export {
   createProject,
   deleteProject,
   duplicateSheet,
+  duplicateDoc,
   getProject,
   listProjects,
   setProjectPosition,

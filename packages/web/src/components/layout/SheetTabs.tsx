@@ -35,6 +35,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     closeDocTab,
     updateDoc,
     deleteDoc,
+    duplicateDoc,
   } = useProjectStore();
 
   // Inline rename state — unified across sheet + doc tabs. Same
@@ -666,21 +667,23 @@ export default function SheetTabs({ project }: SheetTabsProps) {
             {t('sheet.rename')}
           </button>
 
-          {contextMenu.kind === 'sheet' && (
-            <button
-              onClick={() => {
+          <button
+            onClick={() => {
+              if (contextMenu.kind === 'sheet') {
                 duplicateSheet(project.id, contextMenu.id);
-                setContextMenu(null);
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
-              style={{ color: 'var(--text-primary)' }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <Copy className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-              {t('sheet.duplicate')}
-            </button>
-          )}
+              } else {
+                duplicateDoc(project.id, contextMenu.id);
+              }
+              setContextMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
+            style={{ color: 'var(--text-primary)' }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <Copy className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            {t('sheet.duplicate')}
+          </button>
 
           {/* 구분선 */}
           <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />

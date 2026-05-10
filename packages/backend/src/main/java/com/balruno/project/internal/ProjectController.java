@@ -146,7 +146,11 @@ class ProjectController {
     DuplicateDocResponse duplicateDoc(@AuthenticationPrincipal Jwt jwt,
                                       @PathVariable UUID projectId,
                                       @PathVariable UUID docId) {
-        var newId = docDuplicate.duplicate(projectId, callerId(jwt), docId);
+        // Authz here so DocDuplicateApi (sync module) doesn't need to
+        // import ProjectService — keeps the Modulith dependency
+        // direction one-way (project → sync, never the reverse).
+        projects.findById(projectId, callerId(jwt));
+        var newId = docDuplicate.duplicate(projectId, docId);
         return new DuplicateDocResponse(newId);
     }
 
