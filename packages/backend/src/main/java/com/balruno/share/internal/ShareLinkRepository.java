@@ -52,4 +52,38 @@ interface ShareLinkRepository extends JpaRepository<ShareLinkEntity, UUID> {
     @Query(value = "UPDATE share_links SET last_used_at = :now WHERE id = :id",
            nativeQuery = true)
     int touchLastUsed(@Param("id") UUID id, @Param("now") OffsetDateTime now);
+
+    /**
+     * Public-read snapshot of a project for the share-link viewer.
+     * Returns the same fields the WebSocket sync.full envelope carries
+     * so the public viewer reuses the live sheet renderers unchanged.
+     * Native query because we read the projects table (not share_links)
+     * with raw JSONB columns, and the projection is shaped to drop the
+     * service from going through ProjectSyncRepository (cross-module).
+     */
+    @Query(value = """
+                   SELECT id::text                AS id,
+                          name                    AS name,
+                          data::text              AS data_json,
+                          sheet_tree::text        AS sheet_tree_json,
+                          doc_tree::text          AS doc_tree_json,
+                          data_version            AS data_version,
+                          sheet_tree_version      AS sheet_tree_version,
+                          doc_tree_version        AS doc_tree_version
+                     FROM projects
+                    WHERE id = :projectId AND deleted_at IS NULL
+                   """,
+           nativeQuery = true)
+    Optional<ProjectSnapshotRow> findProjectSnapshot(@Param("projectId") UUID projectId);
+
+    interface ProjectSnapshotRow {
+        String getId();
+        String getName();
+        String getDataJson();
+        String getSheetTreeJson();
+        String getDocTreeJson();
+        long getDataVersion();
+        long getSheetTreeVersion();
+        long getDocTreeVersion();
+    }
 }

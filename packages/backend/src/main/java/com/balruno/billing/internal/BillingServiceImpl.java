@@ -9,7 +9,6 @@ import com.stripe.param.CustomerCreateParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +32,7 @@ class BillingServiceImpl implements BillingService {
 
     private static final Logger log = LoggerFactory.getLogger(BillingServiceImpl.class);
 
-    private final JdbcTemplate jdbc;
+    private final BillingWorkspaceRepository workspaces;
 
     @Value("${balruno.billing.stripe.secret-key:}")
     private String stripeSecretKey;
@@ -44,8 +43,8 @@ class BillingServiceImpl implements BillingService {
     @Value("${balruno.billing.stripe.price.team:}")
     private String priceIdTeam;
 
-    BillingServiceImpl(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    BillingServiceImpl(BillingWorkspaceRepository workspaces) {
+        this.workspaces = workspaces;
     }
 
     @PostConstruct
@@ -118,26 +117,19 @@ class BillingServiceImpl implements BillingService {
 
     /** Lazy create + cache the Stripe Customer for a workspace. */
     private String ensureCustomer(UUID workspaceId) {
-        var existing = jdbc.queryForList(
-                "SELECT stripe_customer_id, name, slug FROM workspaces WHERE id = ?",
-                workspaceId);
-        if (existing.isEmpty()) {
-            throw new IllegalStateException("workspace not found: " + workspaceId);
-        }
-        var row = existing.get(0);
-        var customerId = (String) row.get("stripe_customer_id");
+        var row = workspaces.findCustomerLookup(workspaceId)
+                .orElseThrow(() -> new IllegalStateException("workspace not found: " + workspaceId));
+        var customerId = row.getStripeCustomerId();
         if (customerId != null) return customerId;
 
         try {
             var customer = Customer.create(CustomerCreateParams.builder()
-                    .setName((String) row.get("name"))
+                    .setName(row.getName())
                     .putMetadata("workspaceId", workspaceId.toString())
-                    .putMetadata("slug", (String) row.get("slug"))
+                    .putMetadata("slug", row.getSlug())
                     .build());
             customerId = customer.getId();
-            jdbc.update(
-                    "UPDATE workspaces SET stripe_customer_id = ? WHERE id = ?",
-                    customerId, workspaceId);
+            workspaces.saveStripeCustomerId(workspaceId, customerId);
             return customerId;
         } catch (StripeException e) {
             throw new IllegalStateException("Stripe customer creation failed: " + e.getMessage(), e);
@@ -152,15 +144,6 @@ class BillingServiceImpl implements BillingService {
         var ts = currentPeriodEnd == null
                 ? null
                 : new java.sql.Timestamp(currentPeriodEnd * 1000L);
-        jdbc.update(
-                """
-                UPDATE workspaces
-                   SET stripe_subscription_id = ?,
-                       stripe_subscription_status = ?,
-                       stripe_current_period_end = ?,
-                       plan = COALESCE(?::workspace_plan, plan)
-                 WHERE stripe_customer_id = ?
-                """,
-                subscriptionId, status, ts, plan, customerId);
+        workspaces.updateSubscriptionState(customerId, subscriptionId, status, ts, plan);
     }
 }

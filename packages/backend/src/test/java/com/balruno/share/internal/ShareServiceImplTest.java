@@ -13,7 +13,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -23,12 +22,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -43,7 +39,6 @@ class ShareServiceImplTest {
 
     @Mock ShareLinkRepository repo;
     @Mock ProjectService projects;
-    @Mock JdbcTemplate jdbc;
     @InjectMocks ShareServiceImpl service;
 
     @Nested
@@ -190,7 +185,7 @@ class ShareServiceImplTest {
             assertThatThrownBy(() -> service.read(token, OffsetDateTime.now()))
                     .isInstanceOf(ShareLinkNotFoundException.class)
                     .hasMessageContaining("not found");
-            verifyNoInteractions(jdbc);
+            verify(repo, never()).findProjectSnapshot(any());
         }
 
         @Test
@@ -205,20 +200,17 @@ class ShareServiceImplTest {
             assertThatThrownBy(() -> service.read(token, OffsetDateTime.now()))
                     .isInstanceOf(ShareLinkNotFoundException.class)
                     .hasMessageContaining("expired");
-            verifyNoInteractions(jdbc);
         }
 
         @Test
         void null_expiry_means_never_expires() {
-            // No expiry → snapshot fetch attempted (will go to JdbcTemplate
-            // mock which returns null → "project deleted" path).
+            // No expiry → snapshot fetch attempted (the repo stub
+            // returns Optional.empty() → "project deleted" path).
             var token = UUID.randomUUID();
             var entity = stubSavedEntityWithExpiry(
                     UUID.randomUUID(), token, null);
             when(repo.findByTokenAndRevokedAtIsNull(eq(token))).thenReturn(Optional.of(entity));
-            when(jdbc.queryForObject(anyString(), any(org.springframework.jdbc.core.RowMapper.class),
-                    any(Object[].class)))
-                    .thenThrow(new org.springframework.dao.EmptyResultDataAccessException(1));
+            when(repo.findProjectSnapshot(any())).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.read(token, OffsetDateTime.now()))
                     .isInstanceOf(ShareLinkNotFoundException.class)

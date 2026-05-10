@@ -7,8 +7,6 @@ import com.balruno.share.ShareLink;
 import com.balruno.share.ShareService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +32,6 @@ class ShareServiceImpl implements ShareService {
 
     private final ShareLinkRepository repo;
     private final ProjectService projects;
-    private final JdbcTemplate jdbc;
 
     /** dual-mapper pattern (memory: project_sb4_abstractions). databind
      *  is autowired in SB 4 as tools.jackson; JsonNode lives in fasterxml,
@@ -43,10 +40,9 @@ class ShareServiceImpl implements ShareService {
     private final com.fasterxml.jackson.databind.ObjectMapper nodeMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
-    ShareServiceImpl(ShareLinkRepository repo, ProjectService projects, JdbcTemplate jdbc) {
+    ShareServiceImpl(ShareLinkRepository repo, ProjectService projects) {
         this.repo = repo;
         this.projects = projects;
-        this.jdbc = jdbc;
     }
 
     @Override
@@ -120,35 +116,27 @@ class ShareServiceImpl implements ShareService {
      * sheet renderers unchanged.
      */
     private JsonNode readProjectSnapshot(UUID projectId) {
+        return repo.findProjectSnapshot(projectId)
+                .map(this::renderSnapshot)
+                .orElse(null);
+    }
+
+    private JsonNode renderSnapshot(ShareLinkRepository.ProjectSnapshotRow row) {
+        ObjectNode out = nodeMapper.createObjectNode();
+        out.put("id", row.getId());
+        out.put("name", row.getName());
         try {
-            return jdbc.queryForObject(
-                    """
-                    SELECT id, name, data, sheet_tree, doc_tree,
-                           data_version, sheet_tree_version, doc_tree_version
-                    FROM projects
-                    WHERE id = ? AND deleted_at IS NULL
-                    """,
-                    (rs, i) -> {
-                        ObjectNode out = nodeMapper.createObjectNode();
-                        out.put("id", rs.getObject("id", UUID.class).toString());
-                        out.put("name", rs.getString("name"));
-                        try {
-                            out.set("data", nodeMapper.readTree(rs.getString("data")));
-                            out.set("sheetTree", nodeMapper.readTree(rs.getString("sheet_tree")));
-                            out.set("docTree", nodeMapper.readTree(rs.getString("doc_tree")));
-                        } catch (Exception e) {
-                            throw new IllegalStateException("malformed project JSON", e);
-                        }
-                        ObjectNode versions = nodeMapper.createObjectNode();
-                        versions.put("data", rs.getLong("data_version"));
-                        versions.put("sheetTree", rs.getLong("sheet_tree_version"));
-                        versions.put("docTree", rs.getLong("doc_tree_version"));
-                        out.set("versions", versions);
-                        return (JsonNode) out;
-                    },
-                    projectId);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
+            out.set("data", nodeMapper.readTree(row.getDataJson()));
+            out.set("sheetTree", nodeMapper.readTree(row.getSheetTreeJson()));
+            out.set("docTree", nodeMapper.readTree(row.getDocTreeJson()));
+        } catch (Exception e) {
+            throw new IllegalStateException("malformed project JSON", e);
         }
+        ObjectNode versions = nodeMapper.createObjectNode();
+        versions.put("data", row.getDataVersion());
+        versions.put("sheetTree", row.getSheetTreeVersion());
+        versions.put("docTree", row.getDocTreeVersion());
+        out.set("versions", versions);
+        return out;
     }
 }

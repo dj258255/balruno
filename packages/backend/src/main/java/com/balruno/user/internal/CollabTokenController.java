@@ -46,9 +46,9 @@ import java.util.UUID;
 class CollabTokenController {
 
     private final CollabTokenService service;
-    private final CollabAccessQueries access;
+    private final CollabAccessRepository access;
 
-    CollabTokenController(CollabTokenService service, CollabAccessQueries access) {
+    CollabTokenController(CollabTokenService service, CollabAccessRepository access) {
         this.service = service;
         this.access = access;
     }

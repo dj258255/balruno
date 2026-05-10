@@ -101,7 +101,7 @@ class TreeOpService {
         var sheetLeaf = detectSheetLeafCreation(op, treeKind);
         // Mirror for the doc tree — tree.add(DOC, type=doc) needs a
         // matching documents row INSERT in the same transaction so the
-        // collab token issuer (CollabAccessQueries) can find the doc
+        // collab token issuer (CollabAccessRepository) can find the doc
         // and Hocuspocus has a row to load yjs state from. Only the
         // documents table is touched here, not projects.data.
         var docLeaf = detectDocLeafCreation(op, treeKind);

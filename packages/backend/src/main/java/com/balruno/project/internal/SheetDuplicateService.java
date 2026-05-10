@@ -8,8 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,15 +27,15 @@ import java.util.UUID;
 @Service
 class SheetDuplicateService {
 
-    private final JdbcTemplate jdbc;
+    private final ProjectRepository projectRepo;
     private final ProjectService projects;
     private final ProjectSyncService sync;
     private final com.balruno.events.AfterCommitPublisher afterCommit;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    SheetDuplicateService(JdbcTemplate jdbc, ProjectService projects, ProjectSyncService sync,
+    SheetDuplicateService(ProjectRepository projectRepo, ProjectService projects, ProjectSyncService sync,
                           com.balruno.events.AfterCommitPublisher afterCommit) {
-        this.jdbc = jdbc;
+        this.projectRepo = projectRepo;
         this.projects = projects;
         this.sync = sync;
         this.afterCommit = afterCommit;
@@ -49,30 +47,17 @@ class SheetDuplicateService {
         // authz — same gate TemplateImportService uses.
         projects.findById(projectId, callerUserId);
 
-        ProjectState state;
-        try {
-            state = jdbc.queryForObject(
-                    "SELECT data::text AS data_json, data_version, "
-                  + "sheet_tree::text AS sheet_tree_json, sheet_tree_version "
-                  + "FROM projects WHERE id = ? AND deleted_at IS NULL FOR UPDATE",
-                    (rs, i) -> new ProjectState(
-                            rs.getString("data_json"),
-                            rs.getLong("data_version"),
-                            rs.getString("sheet_tree_json"),
-                            rs.getLong("sheet_tree_version")),
-                    projectId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new ProjectException(
-                    ProjectException.Reason.PROJECT_NOT_FOUND,
-                    "project state missing: " + projectId);
-        }
+        var state = projectRepo.lockDataAndSheetTreeForUpdate(projectId)
+                .orElseThrow(() -> new ProjectException(
+                        ProjectException.Reason.PROJECT_NOT_FOUND,
+                        "project state missing: " + projectId));
 
         ArrayNode sheets;
         ArrayNode tree;
         UUID newSheetId;
         try {
-            sheets = parseArray(state.dataJson);
-            tree = parseArray(state.sheetTreeJson);
+            sheets = parseArray(state.getDataJson());
+            tree = parseArray(state.getSheetTreeJson());
 
             var sourceIdStr = sourceSheetId.toString();
             ObjectNode source = null;
@@ -132,15 +117,11 @@ class SheetDuplicateService {
             throw new IllegalStateException("failed to duplicate sheet", e);
         }
 
-        var newDataVersion = state.dataVersion + 1L;
-        var newTreeVersion = state.sheetTreeVersion + 1L;
-        jdbc.update(
-                "UPDATE projects SET data = ?::jsonb, data_version = ?, "
-              + "sheet_tree = ?::jsonb, sheet_tree_version = ?, updated_at = now() "
-              + "WHERE id = ?",
+        var newDataVersion = state.getDataVersion() + 1L;
+        var newTreeVersion = state.getSheetTreeVersion() + 1L;
+        projectRepo.updateDataAndSheetTree(projectId,
                 sheets.toString(), newDataVersion,
-                tree.toString(), newTreeVersion,
-                projectId);
+                tree.toString(), newTreeVersion);
 
         afterCommit.runAfterCommit(() -> sync.broadcastFullStateSnapshot(projectId));
 
@@ -176,8 +157,4 @@ class SheetDuplicateService {
         return parsed.isArray() ? (ArrayNode) parsed : mapper.createArrayNode();
     }
 
-    private record ProjectState(
-            String dataJson, long dataVersion,
-            String sheetTreeJson, long sheetTreeVersion
-    ) {}
 }

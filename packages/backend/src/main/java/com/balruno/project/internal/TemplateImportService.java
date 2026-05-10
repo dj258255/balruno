@@ -7,8 +7,6 @@ import com.balruno.sync.ProjectSyncService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,19 +36,19 @@ import java.util.UUID;
 @Service
 class TemplateImportService {
 
-    private final JdbcTemplate jdbc;
+    private final ProjectRepository projectRepo;
     private final StarterPackSeeder seeder;
     private final ProjectService projects;
     private final ProjectSyncService sync;
     private final com.balruno.events.AfterCommitPublisher afterCommit;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    TemplateImportService(JdbcTemplate jdbc,
+    TemplateImportService(ProjectRepository projectRepo,
                           StarterPackSeeder seeder,
                           ProjectService projects,
                           ProjectSyncService sync,
                           com.balruno.events.AfterCommitPublisher afterCommit) {
-        this.jdbc = jdbc;
+        this.projectRepo = projectRepo;
         this.seeder = seeder;
         this.projects = projects;
         this.sync = sync;
@@ -83,25 +81,10 @@ class TemplateImportService {
         // 3. lock + read project state we're about to mutate. Same
         //    pattern as TreeOpService / SheetCellOpService — the
         //    projects row is the serialisation point.
-        ProjectState state;
-        try {
-            state = jdbc.queryForObject(
-                    "SELECT data::text AS data_json, data_version, "
-                  + "sheet_tree::text AS sheet_tree_json, sheet_tree_version "
-                  + "FROM projects WHERE id = ? AND deleted_at IS NULL FOR UPDATE",
-                    (rs, i) -> new ProjectState(
-                            rs.getString("data_json"),
-                            rs.getLong("data_version"),
-                            rs.getString("sheet_tree_json"),
-                            rs.getLong("sheet_tree_version")),
-                    projectId);
-        } catch (EmptyResultDataAccessException e) {
-            // Project disappeared between auth check and lock — same
-            // user-visible mapping as the auth case (404 not found).
-            throw new ProjectException(
-                    ProjectException.Reason.PROJECT_NOT_FOUND,
-                    "project state missing: " + projectId);
-        }
+        var state = projectRepo.lockDataAndSheetTreeForUpdate(projectId)
+                .orElseThrow(() -> new ProjectException(
+                        ProjectException.Reason.PROJECT_NOT_FOUND,
+                        "project state missing: " + projectId));
 
         // 4. mutate JSON in Java: append group's sheets to data, append
         //    a fresh folder + leaves to sheet_tree. Folder UUID is
@@ -109,8 +92,8 @@ class TemplateImportService {
         //    don't collide on tree id.
         ArrayNode sheets, tree;
         try {
-            sheets = parseArray(state.dataJson);
-            tree = parseArray(state.sheetTreeJson);
+            sheets = parseArray(state.getDataJson());
+            tree = parseArray(state.getSheetTreeJson());
             for (var sheet : group.sheets()) {
                 sheets.add(sheet.deepCopy());
             }
@@ -130,15 +113,11 @@ class TemplateImportService {
 
         // 5. single UPDATE bumps both versions atomically so any peer
         //    re-hydrate sees a coherent (data, sheet_tree) snapshot.
-        var newDataVersion = state.dataVersion + 1L;
-        var newTreeVersion = state.sheetTreeVersion + 1L;
-        jdbc.update(
-                "UPDATE projects SET data = ?::jsonb, data_version = ?, "
-              + "sheet_tree = ?::jsonb, sheet_tree_version = ?, updated_at = now() "
-              + "WHERE id = ?",
+        var newDataVersion = state.getDataVersion() + 1L;
+        var newTreeVersion = state.getSheetTreeVersion() + 1L;
+        projectRepo.updateDataAndSheetTree(projectId,
                 sheets.toString(), newDataVersion,
-                tree.toString(), newTreeVersion,
-                projectId);
+                tree.toString(), newTreeVersion);
 
         // 6. afterCommit broadcast — peers re-hydrate via sync.full so
         //    the new sheets appear without a manual reload. Inside the
@@ -152,9 +131,4 @@ class TemplateImportService {
         JsonNode parsed = mapper.readTree(json);
         return parsed.isArray() ? (ArrayNode) parsed : mapper.createArrayNode();
     }
-
-    private record ProjectState(
-            String dataJson, long dataVersion,
-            String sheetTreeJson, long sheetTreeVersion
-    ) {}
 }
