@@ -221,7 +221,6 @@
     "newSheetKindHint": "시트 용도 — 자동 감지 또는 직접 선택",
     "noSheets": "시트가 없습니다",
     "clickToRename": "클릭하여 이름 변경",
-    "renameDoc": "문서 이름을 입력하세요",
     "deleteDoc": "문서 삭제",
     "deleteDocConfirm": "\"{name}\" 문서를 삭제할까요? 30일간 복구 가능합니다.",
     "createSheet": "새 시트 만들기",

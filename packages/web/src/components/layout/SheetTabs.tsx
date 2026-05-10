@@ -37,7 +37,13 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     deleteDoc,
   } = useProjectStore();
 
-  const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
+  // Inline rename state — unified across sheet + doc tabs. Same
+  // pattern as SidebarDocsSection / SheetHeader: click-to-edit,
+  // Enter / blur commits, Escape cancels. `editingTab` carries kind
+  // so the commit dispatches to updateSheet vs updateDoc.
+  const [editingTab, setEditingTab] = useState<
+    { kind: 'sheet' | 'doc'; id: string } | null
+  >(null);
   const [editName, setEditName] = useState('');
   const [showNewSheet, setShowNewSheet] = useState(false);
   const [newSheetName, setNewSheetName] = useState('');
@@ -131,16 +137,26 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     };
   }, [resizingTabId, resizeStartX, resizeStartWidth, saveTabWidths]);
 
-  const handleStartEdit = (sheetId: string, name: string) => {
-    setEditingSheetId(sheetId);
+  const handleStartEdit = (kind: 'sheet' | 'doc', id: string, name: string) => {
+    setEditingTab({ kind, id });
     setEditName(name);
   };
 
   const handleFinishEdit = () => {
-    if (editingSheetId && editName.trim()) {
-      updateSheet(project.id, editingSheetId, { name: editName.trim() });
+    if (editingTab && editName.trim()) {
+      const next = editName.trim();
+      if (editingTab.kind === 'sheet') {
+        updateSheet(project.id, editingTab.id, { name: next });
+      } else {
+        updateDoc(project.id, editingTab.id, { name: next });
+      }
     }
-    setEditingSheetId(null);
+    setEditingTab(null);
+    setEditName('');
+  };
+
+  const cancelEdit = () => {
+    setEditingTab(null);
     setEditName('');
   };
 
@@ -325,7 +341,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
           return (
             <div
               key={dragKey}
-              draggable={!(isSheet && editingSheetId === entry.id)}
+              draggable={!(editingTab?.kind === entry.kind && editingTab?.id === entry.id)}
               onDragStart={(e) => handleTabDragStart(e, entry.kind, entry.id)}
               onDragOver={(e) => handleTabDragOver(e, entry.kind, entry.id)}
               onDragLeave={handleTabDragLeave}
@@ -378,7 +394,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                 )}
               </span>
 
-              {isSheet && editingSheetId === entry.id ? (
+              {editingTab?.kind === entry.kind && editingTab?.id === entry.id ? (
                 <div className="flex items-center gap-1 flex-1 min-w-0">
                   <input
                     type="text"
@@ -387,10 +403,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                     onBlur={handleFinishEdit}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleFinishEdit();
-                      if (e.key === 'Escape') {
-                        setEditingSheetId(null);
-                        setEditName('');
-                      }
+                      if (e.key === 'Escape') cancelEdit();
                     }}
                     onClick={(e) => e.stopPropagation()}
                     className="flex-1 min-w-0 px-1 py-0.5 text-sm border rounded"
@@ -611,18 +624,10 @@ export default function SheetTabs({ project }: SheetTabsProps) {
         >
           <button
             onClick={() => {
-              if (contextMenu.kind === 'sheet') {
-                handleStartEdit(contextMenu.id, contextMenu.name);
-              } else {
-                // Doc rename — prompt() for now. Inline edit for doc
-                // tabs is a follow-up; the prompt path matches the
-                // browser's native rename UX without adding a new
-                // editingDocId state branch.
-                const next = window.prompt(t('sheet.renameDoc'), contextMenu.name);
-                if (next && next.trim() && next.trim() !== contextMenu.name) {
-                  updateDoc(project.id, contextMenu.id, { name: next.trim() });
-                }
-              }
+              // Unified inline rename — same pattern for sheet + doc.
+              // editingTab carries kind so handleFinishEdit dispatches
+              // to the right update action.
+              handleStartEdit(contextMenu.kind, contextMenu.id, contextMenu.name);
               setContextMenu(null);
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"

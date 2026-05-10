@@ -221,7 +221,6 @@
     "newSheetKindHint": "Sheet kind — auto-detect or pick explicitly",
     "noSheets": "No sheets",
     "clickToRename": "Click to rename",
-    "renameDoc": "Enter document name",
     "deleteDoc": "Delete document",
     "deleteDocConfirm": "Delete document \"{name}\"? Recoverable within 30 days.",
     "createSheet": "Create New Sheet",

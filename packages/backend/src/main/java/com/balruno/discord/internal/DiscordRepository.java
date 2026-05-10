@@ -72,4 +72,22 @@ interface DiscordRepository extends JpaRepository<DiscordLinkEntity, UUID> {
     int recordInteraction(@Param("id") UUID id,
                           @Param("now") OffsetDateTime now,
                           @Param("status") String status);
+
+    /**
+     * Cross-aggregate lookup: scan {@code projects.data} JSONB for the
+     * project that owns a given sheet id. Discord slash commands (e.g.
+     * {@code /balruno bug}) carry a sheet id and need to resolve the
+     * project for the inbound row event. Cross-module dependency would
+     * pull project module into discord — keeping it as a one-line
+     * native query inside the discord repository keeps the modulith
+     * boundary while honouring R2 (raw SQL only inside Repository).
+     */
+    @Query(value = """
+                   SELECT id FROM projects
+                    WHERE deleted_at IS NULL
+                      AND data @> jsonb_build_array(jsonb_build_object('id', :sheetId::text))
+                    LIMIT 1
+                   """,
+           nativeQuery = true)
+    java.util.Optional<UUID> findProjectIdForSheet(@Param("sheetId") String sheetId);
 }
