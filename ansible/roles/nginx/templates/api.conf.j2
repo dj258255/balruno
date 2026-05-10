@@ -33,6 +33,24 @@ server {
   client_max_body_size {{ nginx_client_max_body_size }};
   keepalive_timeout    {{ nginx_keepalive_timeout }};
 
+  # Security response headers. The `always` flag applies them to 4xx /
+  # 5xx too — security headers must reach every response shape.
+  #
+  # api.balruno.com only serves JSON / OAuth redirects / actuator
+  # probes, so the policy is the strictest practical:
+  #   - HSTS w/ preload — Cloudflare zone has it too, but origin must
+  #     emit on its own so a Cloudflare-bypass probe still gets it.
+  #   - nosniff + Referrer-Policy + Permissions-Policy — defense in
+  #     depth even if Spring's defaults already cover most.
+  #   - CSP default-src 'none' + frame-ancestors 'none' — backend
+  #     never renders HTML for the browser to evaluate, so 'none'
+  #     is safe and blocks any reflected-resource path.
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+  add_header X-Content-Type-Options    "nosniff" always;
+  add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
+  add_header Permissions-Policy        "camera=(), microphone=(), geolocation=(), browsing-topics=()" always;
+  add_header Content-Security-Policy   "default-src 'none'; frame-ancestors 'none'" always;
+
   # Optional: only accept traffic that came through Cloudflare. Reject
   # anything else with 403. Belt + suspenders alongside OCI Security List.
   if ($http_cf_connecting_ip = "") {

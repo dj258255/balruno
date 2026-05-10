@@ -47,6 +47,58 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  // Security response headers applied to every frontend response.
+  // The CSP ships in *Report-Only* mode first so violations land in
+  // the browser console (and any wired-up reporting endpoint)
+  // without breaking the page — once the violation set settles,
+  // flip the header name to `Content-Security-Policy` to enforce.
+  //
+  // 'unsafe-inline' + 'unsafe-eval' on script-src reflect what
+  // Next.js currently needs for hydration data + Stripe's loader
+  // shim; tightening to a nonce-based policy is a separate piece
+  // of work coupled with Next's CSP middleware support.
+  async headers() {
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.ingest.sentry.io",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://api.balruno.com wss://collab.balruno.com https://*.ingest.sentry.io https://api.stripe.com",
+      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+      "worker-src 'self' blob:",
+      "manifest-src 'self'",
+      "frame-ancestors 'none'",
+      "form-action 'self' https://accounts.google.com https://github.com https://api.balruno.com",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "upgrade-insecure-requests",
+    ].join('; ');
+
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
+          },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // X-Frame-Options DENY pairs with frame-ancestors 'none' in
+          // the CSP — modern browsers honour the latter, legacy ones
+          // fall back to the former. Both blanket-deny iframing.
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), browsing-topics=()',
+          },
+          { key: 'Content-Security-Policy-Report-Only', value: csp },
+        ],
+      },
+    ];
+  },
 };
 
 // Sentry build-time integration. Wraps the build to inject runtime
