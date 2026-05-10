@@ -41,7 +41,7 @@ interface CommentRepository extends JpaRepository<CommentEntity, UUID> {
     List<CommentEntity> findByProjectIdAndDeletedAtIsNullOrderByCreatedAtDesc(
             UUID projectId, Limit limit);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
            UPDATE CommentEntity c
               SET c.bodyJson = :body
@@ -49,7 +49,7 @@ interface CommentRepository extends JpaRepository<CommentEntity, UUID> {
            """)
     int updateBody(@Param("id") UUID id, @Param("body") JsonNode body);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
                    UPDATE comments
                       SET resolved    = true,
@@ -61,7 +61,7 @@ interface CommentRepository extends JpaRepository<CommentEntity, UUID> {
            nativeQuery = true)
     int setResolved(@Param("id") UUID id, @Param("resolver") UUID resolver);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
                    UPDATE comments
                       SET resolved    = false,
@@ -73,7 +73,7 @@ interface CommentRepository extends JpaRepository<CommentEntity, UUID> {
            nativeQuery = true)
     int setUnresolved(@Param("id") UUID id);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "UPDATE comments SET deleted_at = now() "
                  + " WHERE id = :id AND deleted_at IS NULL",
            nativeQuery = true)

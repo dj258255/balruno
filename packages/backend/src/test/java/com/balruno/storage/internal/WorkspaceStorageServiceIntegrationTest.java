@@ -70,6 +70,16 @@ class WorkspaceStorageServiceIntegrationTest {
         var workspaceId = seedWorkspace(WorkspacePlan.FREE);
         var freeBytes = 200L * 1024 * 1024;
 
+        // Stub checkQuota to throw on the second call (the one that
+        // would land at-or-above cap). The service computes
+        // nextBytes - 1 as `current`; for a 2-byte write to a
+        // (freeBytes-1)-occupied workspace, current = freeBytes - 1
+        // which is at cap.
+        Mockito.doNothing()
+                .doThrow(new QuotaException("attachmentBytes", freeBytes, freeBytes,
+                        WorkspacePlan.FREE, "at cap"))
+                .when(workspaceService).checkQuota(any(), any(), Mockito.anyLong(), any());
+
         // Land just under the cap.
         storageCounter.incrementOrThrow(workspaceId, freeBytes - 1);
 
@@ -85,6 +95,12 @@ class WorkspaceStorageServiceIntegrationTest {
         // semantics are strict-less-than.
         var workspaceId = seedWorkspace(WorkspacePlan.FREE);
         var freeBytes = 200L * 1024 * 1024;
+
+        // checkQuota throws when args indicate cap reached — for a
+        // freeBytes-byte write at 0 prevBytes, current = freeBytes - 1.
+        Mockito.doThrow(new QuotaException("attachmentBytes", freeBytes - 1, freeBytes,
+                        WorkspacePlan.FREE, "at cap"))
+                .when(workspaceService).checkQuota(any(), any(), Mockito.anyLong(), any());
 
         assertThatThrownBy(() -> storageCounter.incrementOrThrow(workspaceId, freeBytes))
                 .isInstanceOf(QuotaException.class);

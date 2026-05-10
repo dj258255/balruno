@@ -41,8 +41,18 @@ interface WorkspaceStorageRepository extends JpaRepository<WorkspaceStorageEntit
      * Atomic increment — serves both the upload (addBytes &gt; 0) and
      * accounting reconciliation paths. Returns the affected row count
      * so callers can detect missing workspace rows (pre-V28 fixtures).
+     *
+     * {@code clearAutomatically} evicts the cached entity after the
+     * UPDATE so a follow-up {@code findById} in the same persistence
+     * context reads fresh DB state, not stale L1 cache. Without this
+     * a long-running tx (integration test increment-then-read) saw
+     * the pre-increment value (the integration test that uncovered
+     * this discrepancy is the load-bearing reason).
+     * {@code flushAutomatically} forces any pending dirty state to
+     * disk before the UPDATE so a prior {@code findForUpdate}'s lock
+     * is honoured by the UPDATE's row scan.
      */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "UPDATE workspace_storage "
                  + "   SET total_bytes = total_bytes + :delta, updated_at = now() "
                  + " WHERE workspace_id = :id",
@@ -53,7 +63,7 @@ interface WorkspaceStorageRepository extends JpaRepository<WorkspaceStorageEntit
      * Atomic decrement, clamped to zero. {@link Math#max} doesn't
      * exist as SQL; GREATEST is the Postgres-native equivalent.
      */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "UPDATE workspace_storage "
                  + "   SET total_bytes = GREATEST(0, total_bytes - :delta), updated_at = now() "
                  + " WHERE workspace_id = :id",
