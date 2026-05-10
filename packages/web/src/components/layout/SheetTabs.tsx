@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, X, Edit2, Copy, Check, LayoutTemplate, GripVertical, ChevronLeft, ChevronRight, XCircle, FileText, FileSpreadsheet } from 'lucide-react';
+import { Plus, X, Edit2, Copy, Check, LayoutTemplate, GripVertical, ChevronLeft, ChevronRight, XCircle, FileText, FileSpreadsheet, Trash2 } from 'lucide-react';
 import DocIconPicker from '@/components/docs/DocIconPicker';
 import { SheetTagChips } from '@/components/sheet/SheetTagChips';
 import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
@@ -34,6 +34,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     setCurrentDoc,
     closeDocTab,
     updateDoc,
+    deleteDoc,
   } = useProjectStore();
 
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
@@ -56,8 +57,13 @@ export default function SheetTabs({ project }: SheetTabsProps) {
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
 
-  // 컨텍스트 메뉴 상태
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; sheetId: string; sheetName: string } | null>(null);
+  // 컨텍스트 메뉴 상태 — sheet 와 doc 둘 다 지원. 두 탭 종류가 다른
+  // 메뉴 항목을 보여주기 위해 kind 분기.
+  const [contextMenu, setContextMenu] = useState<
+    | { x: number; y: number; kind: 'sheet'; id: string; name: string }
+    | { x: number; y: number; kind: 'doc'; id: string; name: string }
+    | null
+  >(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
   // 스크롤 상태
@@ -210,11 +216,16 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     setDragOverTabId(null);
   };
 
-  // 컨텍스트 메뉴 핸들러
-  const handleContextMenu = (e: React.MouseEvent, sheetId: string, sheetName: string) => {
+  // 컨텍스트 메뉴 핸들러 — sheet / doc 공통 entrypoint.
+  const handleContextMenu = (
+    e: React.MouseEvent,
+    kind: 'sheet' | 'doc',
+    id: string,
+    name: string,
+  ) => {
     e.preventDefault();
     e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY, sheetId, sheetName });
+    setContextMenu({ x: e.clientX, y: e.clientY, kind, id, name });
   };
 
   // 컨텍스트 메뉴 외부 클릭 시 닫기
@@ -334,7 +345,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                 opacity: draggedTabId === dragKey ? 0.5 : 1,
               }}
               onClick={() => (isSheet ? setCurrentSheet(entry.id) : setCurrentDoc(entry.id))}
-              onContextMenu={isSheet ? (e) => handleContextMenu(e, entry.id, entry.sheet.name) : undefined}
+              onContextMenu={(e) => handleContextMenu(e, entry.kind, entry.id, name)}
               onMouseEnter={(e) => {
                 if (!isActive && !draggedTabId) e.currentTarget.style.background = 'var(--bg-hover)';
               }}
@@ -584,7 +595,9 @@ export default function SheetTabs({ project }: SheetTabsProps) {
         )}
       </div>
 
-      {/* 탭 컨텍스트 메뉴 */}
+      {/* 탭 컨텍스트 메뉴 — sheet / doc 둘 다 지원. 메뉴 항목은 kind 별로
+          분기: 시트는 inline rename + duplicate, 문서는 prompt rename +
+          삭제. close / close-others / close-all 은 공통. */}
       {contextMenu && (
         <div
           ref={contextMenuRef}
@@ -598,7 +611,18 @@ export default function SheetTabs({ project }: SheetTabsProps) {
         >
           <button
             onClick={() => {
-              handleStartEdit(contextMenu.sheetId, contextMenu.sheetName);
+              if (contextMenu.kind === 'sheet') {
+                handleStartEdit(contextMenu.id, contextMenu.name);
+              } else {
+                // Doc rename — prompt() for now. Inline edit for doc
+                // tabs is a follow-up; the prompt path matches the
+                // browser's native rename UX without adding a new
+                // editingDocId state branch.
+                const next = window.prompt(t('sheet.renameDoc'), contextMenu.name);
+                if (next && next.trim() && next.trim() !== contextMenu.name) {
+                  updateDoc(project.id, contextMenu.id, { name: next.trim() });
+                }
+              }
               setContextMenu(null);
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
@@ -609,19 +633,22 @@ export default function SheetTabs({ project }: SheetTabsProps) {
             <Edit2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
             {t('sheet.rename')}
           </button>
-          <button
-            onClick={() => {
-              duplicateSheet(project.id, contextMenu.sheetId);
-              setContextMenu(null);
-            }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
-            style={{ color: 'var(--text-primary)' }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            <Copy className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-            {t('sheet.duplicate')}
-          </button>
+
+          {contextMenu.kind === 'sheet' && (
+            <button
+              onClick={() => {
+                duplicateSheet(project.id, contextMenu.id);
+                setContextMenu(null);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
+              style={{ color: 'var(--text-primary)' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <Copy className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+              {t('sheet.duplicate')}
+            </button>
+          )}
 
           {/* 구분선 */}
           <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />
@@ -629,7 +656,8 @@ export default function SheetTabs({ project }: SheetTabsProps) {
           {/* 이 탭 닫기 */}
           <button
             onClick={() => {
-              closeSheetTab(contextMenu.sheetId);
+              if (contextMenu.kind === 'sheet') closeSheetTab(contextMenu.id);
+              else closeDocTab(contextMenu.id);
               setContextMenu(null);
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
@@ -644,9 +672,13 @@ export default function SheetTabs({ project }: SheetTabsProps) {
           {/* 다른 탭 모두 닫기 — 시트/문서 모두 */}
           <button
             onClick={() => {
-              openTabs.forEach((t) => {
-                if (t.kind === 'sheet' && t.id !== contextMenu.sheetId) closeSheetTab(t.id);
-                else if (t.kind === 'doc') closeDocTab(t.id);
+              const targetKind = contextMenu.kind;
+              const targetId = contextMenu.id;
+              openTabs.forEach((tab) => {
+                const same = tab.kind === targetKind && tab.id === targetId;
+                if (same) return;
+                if (tab.kind === 'sheet') closeSheetTab(tab.id);
+                else closeDocTab(tab.id);
               });
               setContextMenu(null);
             }}
@@ -663,9 +695,9 @@ export default function SheetTabs({ project }: SheetTabsProps) {
           {/* 모든 탭 닫기 — 시트/문서 모두 */}
           <button
             onClick={() => {
-              [...openTabs].forEach((t) => {
-                if (t.kind === 'sheet') closeSheetTab(t.id);
-                else closeDocTab(t.id);
+              [...openTabs].forEach((tab) => {
+                if (tab.kind === 'sheet') closeSheetTab(tab.id);
+                else closeDocTab(tab.id);
               });
               setContextMenu(null);
             }}
@@ -677,6 +709,33 @@ export default function SheetTabs({ project }: SheetTabsProps) {
             <XCircle className="w-4 h-4" />
             {t('sheet.closeAll')}
           </button>
+
+          {/* 문서 삭제 — doc 탭에만. 별도 구분선으로 destructive
+              action 시각 분리. confirm 으로 실수 방지 + deleteDoc 의
+              30 일 grace period (ADR 0015) 안내. */}
+          {contextMenu.kind === 'doc' && (
+            <>
+              <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />
+              <button
+                onClick={() => {
+                  const ok = window.confirm(
+                    t('sheet.deleteDocConfirm', { name: contextMenu.name }),
+                  );
+                  if (ok) {
+                    deleteDoc(project.id, contextMenu.id);
+                  }
+                  setContextMenu(null);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
+                style={{ color: 'var(--status-error)' }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <Trash2 className="w-4 h-4" />
+                {t('sheet.deleteDoc')}
+              </button>
+            </>
+          )}
         </div>
       )}
     </>
