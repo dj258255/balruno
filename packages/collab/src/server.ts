@@ -284,9 +284,28 @@ const internalServer = http.createServer(async (req, res) => {
     res.writeHead(500).end();
   }
 });
-internalServer.listen(internalPort, '127.0.0.1', () => {
+// listen() may fail with EADDRINUSE during a blue/green cutover when
+// both colors are briefly up sharing the host port. Retry every 3s so
+// the new color picks up the port as soon as the old color releases
+// it (typically <10s into the cutover). Other errors propagate.
+const startInternalListener = () => {
+  internalServer.listen(internalPort, '127.0.0.1');
+};
+internalServer.on('listening', () => {
   console.log(`[collab] internal HTTP listening on 127.0.0.1:${internalPort}`);
 });
+internalServer.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.warn(
+      `[collab] internal HTTP port ${internalPort} busy (likely a sibling color`
+      + ' is still up during cutover) — retry in 3s',
+    );
+    setTimeout(startInternalListener, 3_000);
+    return;
+  }
+  console.error('[collab] internal HTTP listen failed', err);
+});
+startInternalListener();
 
 // Graceful shutdown — SIGTERM from docker stop / k8s rolling deploy.
 const shutdown = (signal: string) => {

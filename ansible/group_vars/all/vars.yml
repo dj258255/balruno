@@ -71,6 +71,12 @@ postgres_max_connections: 100
 hocuspocus_mem_limit: "512m"
 nginx_mem_limit: "256m"
 
+# Hocuspocus side-car's internal HTTP host port. Promoted to a group_var
+# (rather than role default) because the backend role also references
+# this — backend's .env templates COLLAB_INTERNAL_URL using this port.
+# Single source of truth so a port change ripples to both compose files.
+hocuspocus_internal_host_port: 1245
+
 # ─── Monitoring stack (Stage 0, ADR 0007 §3.1) ───────────────────────────
 prometheus_retention_days: 7
 prometheus_scrape_interval: "15s"

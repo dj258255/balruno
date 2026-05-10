@@ -37,6 +37,16 @@ hocuspocus_green_host_port: 1235
 # COLLAB_PORT inside the container — see .env.j2 PORT setting).
 hocuspocus_collab_port: "{{ hocuspocus_container_port }}"
 
+# Internal HTTP port — Spring → side-car force-snapshot channel.
+# Same container port across blue/green; the host-side mapping is
+# also shared (1245). ADR 0044 cutover is short enough that the
+# brief host-port collision (both colors briefly up) only degrades
+# force-snapshot to best-effort during the swap — clone falls back
+# to the last persisted ydoc_state, which is the same outcome
+# unconfigured deployments already use.
+hocuspocus_internal_container_port: 1235
+hocuspocus_internal_host_port: 1245
+
 # Memory ceiling defaults to the value declared in group_vars/all/vars.yml
 # (hocuspocus_mem_limit: "512m"); kept here so the role stays
 # overridable per-host without editing the group var.

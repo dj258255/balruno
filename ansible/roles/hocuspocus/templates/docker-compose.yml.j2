@@ -21,6 +21,12 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:{{ hocuspocus_blue_host_port }}:{{ hocuspocus_container_port }}"
+      # Internal HTTP — backend → side-car force-snapshot. Same host
+      # port across blue/green; ADR 0044 keeps only one color up at a
+      # time, so the brief overlap during cutover only degrades the
+      # endpoint to 'best-effort' (clone falls back to last persisted
+      # ydoc_state).
+      - "127.0.0.1:{{ hocuspocus_internal_host_port }}:{{ hocuspocus_internal_container_port }}"
     env_file:
       - {{ hocuspocus_env_file }}
     mem_limit: {{ hocuspocus_container_mem_limit }}
@@ -38,6 +44,7 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:{{ hocuspocus_green_host_port }}:{{ hocuspocus_container_port }}"
+      - "127.0.0.1:{{ hocuspocus_internal_host_port }}:{{ hocuspocus_internal_container_port }}"
     env_file:
       - {{ hocuspocus_env_file }}
     mem_limit: {{ hocuspocus_container_mem_limit }}

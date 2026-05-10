@@ -25,6 +25,13 @@ services:
       - {{ backend_env_file }}
     environment:
       SPRING_PROFILES_ACTIVE: "{{ backend_active_profile }}"
+    # host.docker.internal resolves to the host gateway so the backend
+    # can reach the Hocuspocus side-car's loopback-bound internal HTTP
+    # port (127.0.0.1:{{ hocuspocus_internal_host_port }} on prod_app).
+    # The side-car binds the internal endpoint to 127.0.0.1 only, so
+    # this hop stays inside the host — no public surface.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     mem_limit: {{ backend_mem_limit }}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:{{ backend_container_port }}/actuator/health"]
@@ -44,6 +51,13 @@ services:
       - {{ backend_env_file }}
     environment:
       SPRING_PROFILES_ACTIVE: "{{ backend_active_profile }}"
+    # host.docker.internal resolves to the host gateway so the backend
+    # can reach the Hocuspocus side-car's loopback-bound internal HTTP
+    # port (127.0.0.1:{{ hocuspocus_internal_host_port }} on prod_app).
+    # The side-car binds the internal endpoint to 127.0.0.1 only, so
+    # this hop stays inside the host — no public surface.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     mem_limit: {{ backend_mem_limit }}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:{{ backend_container_port }}/actuator/health"]
