@@ -9,7 +9,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.sql.Timestamp;
@@ -17,8 +16,8 @@ import java.sql.Timestamp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -41,7 +40,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class BillingServiceImplTest {
 
-    @Mock JdbcTemplate jdbc;
+    @Mock BillingWorkspaceRepository workspaces;
     @InjectMocks BillingServiceImpl service;
 
     @Nested
@@ -118,20 +117,15 @@ class BillingServiceImplTest {
         @Test
         void typical_subscription_update_writes_all_columns() {
             // Webhook delivers customer + subscription ids + status +
-            // current_period_end (epoch s) + plan. The UPDATE writes
-            // all four into the workspace's billing columns; the COALESCE
-            // on plan keeps the existing plan when null is passed.
+            // current_period_end (epoch s) + plan. The repo call writes
+            // all four onto the matching workspace row.
             service.onSubscriptionChanged(
                     "cus_test", "sub_test", "active",
                     1700000000L, "PRO");
 
-            var sqlCap = ArgumentCaptor.forClass(String.class);
-            verify(jdbc).update(sqlCap.capture(),
-                    eq("sub_test"), eq("active"),
-                    any(Timestamp.class), eq("PRO"), eq("cus_test"));
-            assertThat(sqlCap.getValue()).contains("UPDATE workspaces");
-            assertThat(sqlCap.getValue()).contains("stripe_subscription_id");
-            assertThat(sqlCap.getValue()).contains("stripe_subscription_status");
+            verify(workspaces).updateSubscriptionState(
+                    eq("cus_test"), eq("sub_test"), eq("active"),
+                    any(Timestamp.class), eq("PRO"));
         }
 
         @Test
@@ -143,25 +137,24 @@ class BillingServiceImplTest {
                     "cus_test", "sub_test", "canceled",
                     null, null);
 
-            verify(jdbc).update(anyString(),
-                    eq("sub_test"), eq("canceled"),
-                    eq(null), eq(null), eq("cus_test"));
+            verify(workspaces).updateSubscriptionState(
+                    eq("cus_test"), eq("sub_test"), eq("canceled"),
+                    isNull(), isNull());
         }
 
         @Test
         void null_plan_uses_COALESCE_to_preserve_existing() {
             // Plan-less webhook events (status-only updates) must not
-            // overwrite the plan to null — the SQL has COALESCE(?, plan)
-            // exactly for this. The test verifies null reaches the SQL
-            // (the COALESCE behaviour itself is DB-side).
+            // overwrite the plan to null — the repo's @Modifying SQL
+            // uses COALESCE(?, plan). The test verifies null reaches
+            // the repo call (DB-side behaviour is integration-tested).
             service.onSubscriptionChanged(
                     "cus_test", "sub_test", "past_due",
                     1700000000L, null);
 
-            verify(jdbc).update(anyString(),
-                    eq("sub_test"), eq("past_due"),
-                    any(Timestamp.class),
-                    eq(null), eq("cus_test"));
+            verify(workspaces).updateSubscriptionState(
+                    eq("cus_test"), eq("sub_test"), eq("past_due"),
+                    any(Timestamp.class), isNull());
         }
 
         @Test
@@ -175,9 +168,9 @@ class BillingServiceImplTest {
                     epochSeconds, "TEAM");
 
             var tsCap = ArgumentCaptor.forClass(Timestamp.class);
-            verify(jdbc).update(anyString(),
-                    eq("sub_test"), eq("active"),
-                    tsCap.capture(), eq("TEAM"), eq("cus_test"));
+            verify(workspaces).updateSubscriptionState(
+                    eq("cus_test"), eq("sub_test"), eq("active"),
+                    tsCap.capture(), eq("TEAM"));
 
             assertThat(tsCap.getValue().getTime())
                     .isEqualTo(epochSeconds * 1000L);

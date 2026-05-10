@@ -37,16 +37,19 @@ class DocDuplicateApiImpl implements DocDuplicateApi {
     private final DocumentRepository documents;
     private final ProjectSyncService sync;
     private final AfterCommitPublisher afterCommit;
+    private final CollabSidecarClient sidecar;
     private final ObjectMapper mapper = new ObjectMapper();
 
     DocDuplicateApiImpl(ProjectSyncRepository projectSync,
                         DocumentRepository documents,
                         ProjectSyncService sync,
-                        AfterCommitPublisher afterCommit) {
+                        AfterCommitPublisher afterCommit,
+                        CollabSidecarClient sidecar) {
         this.projectSync = projectSync;
         this.documents = documents;
         this.sync = sync;
         this.afterCommit = afterCommit;
+        this.sidecar = sidecar;
     }
 
     @Override
@@ -56,6 +59,13 @@ class DocDuplicateApiImpl implements DocDuplicateApi {
         // ProjectService.findById — sync module can't import the
         // project domain without closing a Modulith cycle, so the
         // caller is the orchestration point.
+
+        // 0. Force-snapshot the side-car's in-memory yjs state to disk
+        //    so the clone reads the latest bytes, not the last
+        //    throttled onStoreDocument flush (50 stores OR 5 idle min).
+        //    Best-effort — when the side-car is unreachable / not
+        //    configured we proceed with the last persisted state.
+        sidecar.forceSnapshot(sourceDocId);
 
         // 1. fetch source doc (active rows only). ydoc_state is LAZY
         //    on the entity but the @Query JPQL above pulls the column

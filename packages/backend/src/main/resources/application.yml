@@ -113,6 +113,15 @@ balruno.collab.token:
   ttl: PT15M
   audience: balruno-collab
 
+# Internal HTTP channel from Spring → Hocuspocus side-car. Used by
+# DocDuplicateApiImpl to force-flush the live yjs state before reading
+# documents.ydoc_state for a clone (otherwise the clone may lag the
+# last onStoreDocument throttle window). Loopback only; don't expose.
+balruno.collab.sidecar:
+  url: ${COLLAB_INTERNAL_URL:http://127.0.0.1:1235}
+  secret: ${COLLAB_INTERNAL_SECRET:}
+  timeout: PT2S
+
 # ─── CORS allowed origins ────────────────────────────────────────────────
 # allowCredentials=true (we send the session cookie) rules out wildcard,
 # so origins are enumerated. Self-host operators override via env:
