@@ -2,6 +2,29 @@
 # monitoring-agent — per-host sidecars (node_exporter + cadvisor + alloy)
 # deployed via a single Docker compose on every host.
 
+# Migration cleanup — the predecessor `cadvisor` role and the central
+# monitoring stack used to create stand-alone containers named `cadvisor`
+# and `node-exporter`. Those would block `docker compose up` on the new
+# compose stack because they share the container name. We drop them only
+# if they exist *outside* a compose project (i.e. no compose label) — once
+# the agent stack is live this script is a no-op.
+- name: Migration cleanup — remove pre-compose cadvisor / node-exporter / alloy
+  ansible.builtin.shell: |
+    set -e
+    for name in cadvisor node-exporter alloy; do
+      if docker inspect "$name" >/dev/null 2>&1; then
+        project=$(docker inspect "$name" --format '{{ "{{" }} index .Config.Labels "com.docker.compose.project" {{ "}}" }}' 2>/dev/null || echo "")
+        if [ -z "$project" ] || [ "$project" = "balruno-monitoring" ]; then
+          docker rm -f "$name" >/dev/null
+          echo "removed:$name"
+        fi
+      fi
+    done
+  args:
+    executable: /bin/bash
+  register: migration_cleanup
+  changed_when: "'removed:' in migration_cleanup.stdout"
+
 - name: Ensure agent root directory
   ansible.builtin.file:
     path: "{{ monitoring_agent_root }}"
