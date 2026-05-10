@@ -59,3 +59,21 @@
   loop:
     - "{{ backend_blue_host_port }}"
     - "{{ backend_green_host_port }}"
+
+# After a Docker daemon restart (e.g. when the common role flips the
+# containerd-snapshotter feature) the backend container is left in the
+# `exited` state. Detect the currently active color from nginx and bring
+# that slot back up so prod traffic resumes without a manual cutover.
+- name: Detect active backend slot from nginx symlink
+  ansible.builtin.command: readlink /etc/nginx/conf.d/balruno-backend-active.conf
+  register: backend_active_link
+  changed_when: false
+  failed_when: false
+
+- name: Compose up the active backend slot (idempotent — keeps prod traffic on)
+  community.docker.docker_compose_v2:
+    project_src: "{{ backend_install_dir }}"
+    profiles:
+      - "{{ 'blue' if 'blue' in (backend_active_link.stdout | default('')) else 'green' }}"
+    state: present
+  when: backend_active_link.stdout is defined and backend_active_link.stdout | length > 0

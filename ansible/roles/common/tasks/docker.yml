@@ -17,11 +17,51 @@
       - docker-compose-plugin
     state: present
 
+- name: Ensure /etc/docker exists
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+# Disable Docker's containerd snapshotter image store. Docker 29.x on Rocky 9
+# enables it by default, which moves image layer metadata into
+# /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/ — a path cAdvisor
+# does not know how to follow (cadvisor issue #3643 / #3860).
+#
+# Switching back to the classic overlay2 graphdriver restores the
+# /var/lib/docker/image/overlay2/layerdb/mounts/<id>/mount-id layout that
+# cAdvisor reads. Cost: any already-pulled images live in the snapshotter
+# store and are not visible after the flip, so the next compose `up` will
+# re-pull. That re-pull happens automatically because every Docker compose
+# task in this playbook runs `up -d --pull always`-equivalent flows.
+- name: Drop in /etc/docker/daemon.json (containerd-snapshotters disabled)
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      {
+        "features": {
+          "containerd-snapshotter": false
+        }
+      }
+  notify: restart docker
+
 - name: Enable + start docker
   ansible.builtin.systemd:
     name: docker
     enabled: true
     state: started
+
+# Force handlers (docker daemon restart) to fire here, before any role that
+# expects Docker to already be on the new graphdriver tries to `compose up`.
+# Without this, the restart happens at the very end of the play and the
+# intermediate compose tasks operate on the snapshotter-mode daemon.
+- name: Apply pending docker daemon restart before any compose runs
+  ansible.builtin.meta: flush_handlers
 
 - name: Add rocky user to docker group
   ansible.builtin.user:

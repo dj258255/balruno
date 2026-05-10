@@ -40,3 +40,20 @@
     owner: root
     group: docker
     mode: '0664'
+
+# Bring the active Hocuspocus slot back up after a Docker daemon restart
+# (analogous to the backend role's recovery task). nginx routes
+# collab.balruno.com to the same blue/green active link convention.
+- name: Detect active hocuspocus slot from nginx symlink
+  ansible.builtin.command: readlink /etc/nginx/conf.d/balruno-collab-active.conf
+  register: hocuspocus_active_link
+  changed_when: false
+  failed_when: false
+
+- name: Compose up the active hocuspocus slot
+  community.docker.docker_compose_v2:
+    project_src: "{{ hocuspocus_install_dir }}"
+    profiles:
+      - "{{ 'blue' if 'blue' in (hocuspocus_active_link.stdout | default('')) else 'green' }}"
+    state: present
+  when: hocuspocus_active_link.stdout is defined and hocuspocus_active_link.stdout | length > 0
