@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
@@ -47,7 +45,7 @@ import java.util.UUID;
 @Service
 class SheetCellOpService {
 
-    private final JdbcTemplate jdbc;
+    private final ProjectSyncRepository projectsRepo;
     private final OpIdempotencyRepository idempotency;
     private final ObjectMapper json;
     /**
@@ -62,12 +60,12 @@ class SheetCellOpService {
     private final com.balruno.events.AfterCommitPublisher afterCommit;
     private final com.balruno.workspace.LimitGuard limitGuard;
 
-    SheetCellOpService(JdbcTemplate jdbc,
+    SheetCellOpService(ProjectSyncRepository projectsRepo,
                        OpIdempotencyRepository idempotency,
                        ObjectMapper json,
                        com.balruno.events.AfterCommitPublisher afterCommit,
                        com.balruno.workspace.LimitGuard limitGuard) {
-        this.jdbc = jdbc;
+        this.projectsRepo = projectsRepo;
         this.idempotency = idempotency;
         this.json = json;
         this.afterCommit = afterCommit;
@@ -84,12 +82,8 @@ class SheetCellOpService {
     @Transactional
     public void applyAppendRow(UUID projectId, UUID actorUserId, UUID sheetId,
                                 UUID rowId, com.fasterxml.jackson.databind.JsonNode rowJson) {
-        var current = jdbc.queryForObject(
-                "SELECT data_version FROM projects WHERE id = ? AND deleted_at IS NULL",
-                Long.class, projectId);
-        if (current == null) {
-            throw new IllegalStateException("project not found: " + projectId);
-        }
+        var current = projectsRepo.readDataVersion(projectId)
+                .orElseThrow(() -> new IllegalStateException("project not found: " + projectId));
         var op = new SyncMessage.RowAdd(sheetId, rowJson, current, java.util.UUID.randomUUID());
         var result = apply(projectId, actorUserId, op);
         if (result instanceof SyncResult.Conflict) {
@@ -97,9 +91,7 @@ class SheetCellOpService {
             // still conflicting we give up — the inbound caller is
             // a fire-and-forget HTTP, retrying further would risk
             // duplicate rows on slow webhooks.
-            var nv = jdbc.queryForObject(
-                    "SELECT data_version FROM projects WHERE id = ?",
-                    Long.class, projectId);
+            var nv = projectsRepo.readDataVersion(projectId).orElse(null);
             if (nv == null) return;
             var retry = new SyncMessage.RowAdd(sheetId, rowJson, nv, java.util.UUID.randomUUID());
             apply(projectId, actorUserId, retry);
@@ -120,20 +112,14 @@ class SheetCellOpService {
         }
 
         // 2. lock + read current state.
-        ProjectRow row;
-        try {
-            row = jdbc.queryForObject(
-                    "SELECT data::text AS data_json, data_version "
-                  + "FROM projects WHERE id = ? AND deleted_at IS NULL FOR UPDATE",
-                    (rs, i) -> new ProjectRow(rs.getString("data_json"), rs.getLong("data_version")),
-                    projectId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new IllegalStateException("project not found: " + projectId, e);
-        }
+        var row = projectsRepo.lockDataForUpdate(projectId)
+                .orElseThrow(() -> new IllegalStateException("project not found: " + projectId));
+        var dataJson = row.getDataJson();
+        var dataVersion = row.getDataVersion();
 
         // 3. baseVersion check.
-        if (baseVersion != row.dataVersion) {
-            return new SyncResult.Conflict(row.dataVersion);
+        if (baseVersion != dataVersion) {
+            return new SyncResult.Conflict(dataVersion);
         }
 
         // 4. apply to the JSON tree. The DB-side schema is Sheet[] (a
@@ -147,7 +133,7 @@ class SheetCellOpService {
         ObjectNode data;
         ArrayNode sheets;
         try {
-            JsonNode parsed = nodeMapper.readTree(row.dataJson);
+            JsonNode parsed = nodeMapper.readTree(dataJson);
             sheets = parsed.isArray()
                     ? (ArrayNode) parsed
                     : nodeMapper.createArrayNode();
@@ -167,11 +153,8 @@ class SheetCellOpService {
             throw new IllegalStateException("failed to apply op to projects.data", e);
         }
 
-        var newVersion = row.dataVersion + 1L;
-        jdbc.update(
-                "UPDATE projects SET data = ?::jsonb, data_version = ?, updated_at = now() "
-              + "WHERE id = ?",
-                sheets.toString(), newVersion, projectId);
+        var newVersion = dataVersion + 1L;
+        projectsRepo.updateData(projectId, sheets.toString(), newVersion);
 
         // 5. broadcast payload + idempotency cache.
         var broadcast = buildBroadcastPayload(op, newVersion, userId);
@@ -366,16 +349,9 @@ class SheetCellOpService {
      * than shared to keep the sync module's static dep graph thin.
      */
     private com.balruno.workspace.WorkspacePlan workspacePlanFor(UUID projectId) {
-        try {
-            var name = jdbc.queryForObject(
-                    "SELECT w.plan::text "
-                  + "FROM workspaces w JOIN projects p ON p.workspace_id = w.id "
-                  + "WHERE p.id = ? AND p.deleted_at IS NULL",
-                    String.class, projectId);
-            return name == null ? null : com.balruno.workspace.WorkspacePlan.valueOf(name);
-        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
-            return null;
-        }
+        return projectsRepo.findActiveWorkspacePlanName(projectId)
+                .map(com.balruno.workspace.WorkspacePlan::valueOf)
+                .orElse(null);
     }
 
     // ── op-tree mutation ──────────────────────────────────────────────
@@ -782,5 +758,4 @@ class SheetCellOpService {
         }
     }
 
-    private record ProjectRow(String dataJson, long dataVersion) {}
 }
