@@ -38,9 +38,12 @@ done
 log_ok "DBs healthy"
 
 # ─── 2. Generate sheets ───────────────────────────────────────────────
-log "2/7 generate sheets.ndjson (10,000 × 16 cols × ~50KB)"
+log "2/7 generate sheets.ndjson (5,000 × 16 cols × ~140KB ≈ 700MB total)"
+# Reduced from 10K to 5K to keep the prod_app's 46GB root volume safe — the
+# blog spec was 10K × ~50KB ≈ 500MB but realistic Balruno sheet shapes land
+# at ~140KB each, pushing 10K past 1.4GB seed + ~6GB DB volumes.
 docker run --rm -v "$WORK/seed:/work" -w /work node:22-alpine sh -c \
-  "npm install --omit=dev --silent && node generate-sheets.mjs 10000"
+  "npm install --omit=dev --silent && node generate-sheets.mjs 5000"
 
 # ─── 3. Seed in parallel ──────────────────────────────────────────────
 log "3/7 seed MySQL / PG / Mongo (parallel)"
@@ -118,6 +121,11 @@ run_k6() {
   # grafana/k6 image runs as a non-root user, so bind-mounted /work/results
   # (owned by host rocky:rocky) isn't writable. Pin --user to the host's
   # uid/gid so the container writes as the same owner the host expects.
+  #
+  # NOTE: --out json removed. The raw per-sample JSON balloons to hundreds of
+  # MB per scenario and pushed the prod_app disk to 100% on a previous run.
+  # k6 still writes the *summary* JSON via handleSummary in the test scripts,
+  # which is the actual truth source (p50/p95/p99 + counts + error rate).
   docker run --rm \
     --network balruno-bench_bench \
     --user "$(id -u):$(id -g)" \
@@ -128,7 +136,6 @@ run_k6() {
     -e "$ids_or_names_var=/results-input/$(basename "$ids_or_names_path")" \
     -e SUMMARY_OUT="/work/results/$name.summary.json" \
     grafana/k6:latest run \
-      --out json=/work/results/$name.json \
       /work/k6/$(basename "$script") \
     | tee "$RESULTS/$name.log"
 }
