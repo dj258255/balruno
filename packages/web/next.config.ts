@@ -59,18 +59,26 @@ const nextConfig: NextConfig = {
   // shim; tightening to a nonce-based policy is a separate piece
   // of work coupled with Next's CSP middleware support.
   async headers() {
+    // CSP origin allow-list reads from the same NEXT_PUBLIC_* env that
+    // the rest of the frontend uses to reach the API + collab side-car.
+    // Lets a self-host fork or staging deploy point at its own domains
+    // without editing this file — fall back to prod URLs when unset
+    // so a vanilla `pnpm build` still produces a sensible policy.
+    const apiUrl = process.env.NEXT_PUBLIC_BALRUNO_API_URL || 'https://api.balruno.com';
+    const collabUrl = process.env.NEXT_PUBLIC_BALRUNO_COLLAB_URL || 'wss://collab.balruno.com';
+
     const csp = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.ingest.sentry.io",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      "connect-src 'self' https://api.balruno.com wss://collab.balruno.com https://*.ingest.sentry.io https://api.stripe.com",
+      `connect-src 'self' ${apiUrl} ${collabUrl} https://*.ingest.sentry.io https://api.stripe.com`,
       "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
       "worker-src 'self' blob:",
       "manifest-src 'self'",
       "frame-ancestors 'none'",
-      "form-action 'self' https://accounts.google.com https://github.com https://api.balruno.com",
+      `form-action 'self' https://accounts.google.com https://github.com ${apiUrl}`,
       "base-uri 'self'",
       "object-src 'none'",
       "upgrade-insecure-requests",
