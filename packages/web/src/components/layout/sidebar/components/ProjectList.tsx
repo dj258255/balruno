@@ -3,6 +3,7 @@
  */
 import { useState } from 'react';
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { FileSpreadsheet, ChevronRight, ChevronDown, FolderPlus, LayoutTemplate, Tags as TagsIcon, X as XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
@@ -724,13 +725,18 @@ function renderEmptyContextMenu(
   t: (key: string) => string,
 ) {
   if (!menu) return null;
+  if (typeof document === 'undefined') return null;
 
   const trigger = (eventName: string) => {
     close(null);
     window.dispatchEvent(new Event(eventName));
   };
 
-  return (
+  // Portal to <body> so the sidebar's overflow / transform / contain
+  // chain can't clip the menu — same pattern as NewProjectForm and
+  // SidebarContextMenus. position:fixed alone isn't enough when an
+  // ancestor establishes a containing block or paints with overflow.
+  return createPortal(
     <div
       className="fixed z-50 min-w-[180px] py-1 rounded-lg shadow-xl border"
       style={{
@@ -759,6 +765,7 @@ function renderEmptyContextMenu(
         <LayoutTemplate className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
         {t('sidebar.fromTemplateGallery')}
       </button>
-    </div>
+    </div>,
+    document.body,
   );
 }
