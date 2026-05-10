@@ -99,6 +99,12 @@ class TreeOpService {
         // appends an empty Sheet shell to projects.data. We need this
         // upfront so the FOR UPDATE locks both columns in one shot.
         var sheetLeaf = detectSheetLeafCreation(op, treeKind);
+        // Mirror for the doc tree — tree.add(DOC, type=doc) needs a
+        // matching documents row INSERT in the same transaction so the
+        // collab token issuer (CollabAccessQueries) can find the doc
+        // and Hocuspocus has a row to load yjs state from. Only the
+        // documents table is touched here, not projects.data.
+        var docLeaf = detectDocLeafCreation(op, treeKind);
 
         // 1. idempotency replay shortcut.
         var cached = idempotency.findById(clientMsgId).orElse(null);
@@ -210,6 +216,16 @@ class TreeOpService {
         // and the doc_tree node disappear atomically.
         if (treeKind == SyncMessage.TreeKind.DOC && !deletedNodeIds.isEmpty()) {
             cascadeDocumentSoftDelete(deletedNodeIds);
+        }
+
+        // 4.7 paired documents row INSERT — DOC tree.add(type=doc) only.
+        // Same transaction so peers + the collab token issuer can never
+        // observe a doc_tree leaf without a matching documents row. Empty
+        // ydoc_state is the 2-byte yjs no-op (Y.encodeStateAsUpdate of a
+        // fresh Y.Doc); Hocuspocus loads it on first connect and the
+        // first real edit overwrites via onStoreDocument.
+        if (docLeaf != null) {
+            insertDocumentShell(projectId, docLeaf);
         }
 
         // 5. broadcast payload + idempotency cache.
@@ -368,6 +384,60 @@ class TreeOpService {
     }
 
     private record SheetLeafSpec(UUID id, String name) {}
+
+    /**
+     * Mirror of {@link #detectSheetLeafCreation} for the doc tree —
+     * detects {@code tree.add(DOC, type=doc)}, which has the cross-
+     * region side-effect of inserting a row into the {@code documents}
+     * table (id-equal to the leaf id, see V7 schema). Returns the leaf
+     * spec when matched, {@code null} otherwise.
+     */
+    private DocLeafSpec detectDocLeafCreation(SyncMessage op, SyncMessage.TreeKind kind) {
+        if (kind != SyncMessage.TreeKind.DOC) return null;
+        if (!(op instanceof SyncMessage.TreeAdd add)) return null;
+        var node = nodeMapper.valueToTree(add.node());
+        if (!(node instanceof ObjectNode obj)) return null;
+        var typeField = obj.get("type");
+        if (typeField == null || !"doc".equals(typeField.asText())) return null;
+        var idField = obj.get("id");
+        if (idField == null || idField.isNull()) return null;
+        UUID docId;
+        try {
+            docId = UUID.fromString(idField.asText());
+        } catch (IllegalArgumentException e) {
+            return null; // validateTreeAddNodeBudget will reject before we get here
+        }
+        var nameField = obj.get("name");
+        var name = nameField == null || nameField.isNull()
+                ? "Document"
+                : nameField.asText();
+        return new DocLeafSpec(docId, name);
+    }
+
+    private record DocLeafSpec(UUID id, String name) {}
+
+    /**
+     * INSERT a fresh {@code documents} row in the same transaction as
+     * the doc_tree leaf addition. id = leaf id (frontend keys collab
+     * sessions and tree nodes off the same UUID, see ADR 0017). slug =
+     * id-as-string — slug is internal-only (the documents table has
+     * UNIQUE(project_id, slug) but no surface in the API uses it for
+     * routing), and reusing the id keeps the constraint trivially
+     * satisfied without a kebab-case generator on the hot path.
+     *
+     * ydoc_state is the empty yjs update — {@code [0x00, 0x00]} matches
+     * {@code Y.encodeStateAsUpdate(new Y.Doc())} on the JS side.
+     * Hocuspocus's database-extension reads it on first connect and
+     * applies it as a no-op, then the {@code onStoreDocument} hook
+     * overwrites with the real state on the first real edit.
+     */
+    private void insertDocumentShell(UUID projectId, DocLeafSpec spec) {
+        byte[] emptyYState = new byte[]{0x00, 0x00};
+        jdbc.update(
+                "INSERT INTO documents (id, project_id, slug, title, ydoc_state) "
+              + "VALUES (?, ?, ?, ?, ?)",
+                spec.id(), projectId, spec.id().toString(), spec.name(), emptyYState);
+    }
 
     // ── op-tree mutation ──────────────────────────────────────────────
 
