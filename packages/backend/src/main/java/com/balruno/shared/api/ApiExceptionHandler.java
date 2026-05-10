@@ -12,9 +12,11 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -160,6 +162,34 @@ class ApiExceptionHandler {
                 "Not found",
                 "NOT_FOUND",
                 e.getMessage() == null ? "Resource not found." : e.getMessage());
+    }
+
+    /**
+     * Pass through the controller-thrown {@link ResponseStatusException}
+     * status verbatim. Without this handler the catch-all below would
+     * map every intentional 4xx (404 from CollabTokenController, 413 /
+     * 415 from UploadService, 404 from DiscordController, 403 from
+     * ShareService etc.) to 500 INTERNAL_ERROR — clients can't tell
+     * 'not found' from 'real failure', and the alerting pipeline fires
+     * on synthetic 5xx noise.
+     *
+     * Reason text the controller supplied (when present) lands in the
+     * detail field; absent reason falls back to the canonical phrase
+     * for the status (e.g. 'Not Found'). The code field reuses the
+     * status name so frontend BackendError dispatch (e.g. switch on
+     * code 'NOT_FOUND' / 'PAYLOAD_TOO_LARGE') stays meaningful.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    ProblemDetail handleResponseStatus(ResponseStatusException e) {
+        HttpStatusCode status = e.getStatusCode();
+        log.warn("response_status_thrown status={} reason={}",
+                status.value(), e.getReason());
+        HttpStatus resolved = status instanceof HttpStatus h ? h
+                : HttpStatus.resolve(status.value());
+        String code = resolved != null ? resolved.name() : "STATUS_" + status.value();
+        String title = resolved != null ? resolved.getReasonPhrase() : "Error";
+        String detail = e.getReason() != null ? e.getReason() : title;
+        return ProblemDetails.of(status, title, code, detail);
     }
 
     // ── Fallback ───────────────────────────────────────────────────────
