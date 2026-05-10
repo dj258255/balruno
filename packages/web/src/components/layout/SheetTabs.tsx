@@ -428,8 +428,18 @@ export default function SheetTabs({ project }: SheetTabsProps) {
               ) : (
                 <>
                   <span
-                    className="text-sm flex-1 whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+                    className="text-sm flex-1 whitespace-nowrap overflow-hidden text-ellipsis min-w-0 cursor-text"
                     style={{ color: 'var(--text-primary)' }}
+                    onDoubleClick={(e) => {
+                      // Linear / Chrome pattern — double-click the name
+                      // enters inline rename. Single click on the parent
+                      // tab still activates (browser fires click before
+                      // dblclick), and stopPropagation here keeps the
+                      // dblclick from re-triggering the parent's onClick.
+                      e.stopPropagation();
+                      handleStartEdit(entry.kind, entry.id, name);
+                    }}
+                    title={t('sheet.doubleClickToRename')}
                   >
                     {name}
                   </span>
