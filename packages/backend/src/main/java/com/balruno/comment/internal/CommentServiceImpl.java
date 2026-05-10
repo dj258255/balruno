@@ -9,8 +9,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,31 +66,19 @@ class CommentServiceImpl implements CommentService {
     /**
      * Schedules a wss broadcast after the current transaction
      * commits — a rolled-back tx can't push a misleading event to
-     * peers. Failure inside the broadcast is swallowed
-     * (ProjectSyncService logs internally) so the surrounding HTTP
+     * peers. Failure inside the broadcast is logged
+     * (AfterCommitPublisher policy) so the surrounding HTTP
      * response stays successful.
      */
     private void broadcastAfterCommit(UUID projectId, String type, Comment payload) {
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        sync.broadcastEvent(projectId, type, payload);
-                    }
-                });
+        afterCommit.runAfterCommit(() -> sync.broadcastEvent(projectId, type, payload));
     }
 
     private void broadcastDeleteAfterCommit(UUID projectId, UUID commentId) {
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        sync.broadcastEvent(
-                                projectId,
-                                "comment.deleted",
-                                java.util.Map.of("commentId", commentId.toString()));
-                    }
-                });
+        afterCommit.runAfterCommit(() -> sync.broadcastEvent(
+                projectId,
+                "comment.deleted",
+                java.util.Map.of("commentId", commentId.toString())));
     }
 
     @Override
@@ -221,40 +207,31 @@ class CommentServiceImpl implements CommentService {
     }
 
     private void attachmentCleanupAfterCommit(UUID commentId) {
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        try {
-                            var orphans = attachmentRefs.removeContentRefs(
-                                    com.balruno.storage.AttachmentReferenceService.RefKind.comment,
-                                    commentId);
-                            for (var orphan : orphans) {
-                                try {
-                                    storage.delete(orphan.path());
-                                } catch (Exception ignored) {
-                                    // best-effort — R2 lifecycle / cron will sweep
-                                }
-                            }
-                            // Aggregate the now-orphaned bytes and decrement the
-                            // workspace counter once so a chatty comment with
-                            // many attachments doesn't issue N small UPDATEs.
-                            long total = 0L;
-                            for (var orphan : orphans) total += orphan.sizeBytes();
-                            if (total > 0) {
-                                // Comment may have spanned multiple workspaces in
-                                // theory, but project membership pins the comment
-                                // to one project + one workspace. Pull the workspace
-                                // off the comment we just removed.
-                                workspaceStorage.decrement(
-                                        commentWorkspaceId(commentId), total);
-                            }
-                        } catch (Exception ignored) {
-                            // Cleanup is best-effort; failures don't roll back the
-                            // user-facing comment delete.
-                        }
-                    }
-                });
+        afterCommit.runAfterCommit(() -> {
+            var orphans = attachmentRefs.removeContentRefs(
+                    com.balruno.storage.AttachmentReferenceService.RefKind.comment,
+                    commentId);
+            for (var orphan : orphans) {
+                try {
+                    storage.delete(orphan.path());
+                } catch (Exception ignored) {
+                    // best-effort — R2 lifecycle / cron will sweep
+                }
+            }
+            // Aggregate the now-orphaned bytes and decrement the
+            // workspace counter once so a chatty comment with
+            // many attachments doesn't issue N small UPDATEs.
+            long total = 0L;
+            for (var orphan : orphans) total += orphan.sizeBytes();
+            if (total > 0) {
+                // Comment may have spanned multiple workspaces in
+                // theory, but project membership pins the comment
+                // to one project + one workspace. Pull the workspace
+                // off the comment we just removed.
+                workspaceStorage.decrement(
+                        commentWorkspaceId(commentId), total);
+            }
+        });
     }
 
     /**

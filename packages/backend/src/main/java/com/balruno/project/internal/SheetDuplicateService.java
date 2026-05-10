@@ -12,8 +12,6 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.UUID;
 
@@ -34,12 +32,15 @@ class SheetDuplicateService {
     private final JdbcTemplate jdbc;
     private final ProjectService projects;
     private final ProjectSyncService sync;
+    private final com.balruno.events.AfterCommitPublisher afterCommit;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    SheetDuplicateService(JdbcTemplate jdbc, ProjectService projects, ProjectSyncService sync) {
+    SheetDuplicateService(JdbcTemplate jdbc, ProjectService projects, ProjectSyncService sync,
+                          com.balruno.events.AfterCommitPublisher afterCommit) {
         this.jdbc = jdbc;
         this.projects = projects;
         this.sync = sync;
+        this.afterCommit = afterCommit;
     }
 
     /** Returns the id of the newly inserted duplicate sheet. */
@@ -141,13 +142,7 @@ class SheetDuplicateService {
                 tree.toString(), newTreeVersion,
                 projectId);
 
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        sync.broadcastFullStateSnapshot(projectId);
-                    }
-                });
+        afterCommit.runAfterCommit(() -> sync.broadcastFullStateSnapshot(projectId));
 
         return newSheetId;
     }

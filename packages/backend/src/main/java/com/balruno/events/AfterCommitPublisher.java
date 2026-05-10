@@ -47,8 +47,31 @@ public class AfterCommitPublisher {
      * publishes immediately (synchronous fallback).
      */
     public void publish(Object event) {
+        runAfterCommit(() -> events.publishEvent(event),
+                "publish " + event.getClass().getSimpleName());
+    }
+
+    /**
+     * Run an arbitrary task after the active transaction commits.
+     * Used by services whose post-commit work isn't an event publish
+     * — broadcast notifications (sync.broadcastEvent), orphan cleanup
+     * (storage.delete + counter decrement), etc.
+     *
+     * Same fallback as {@link #publish}: when no transaction is
+     * active the task runs synchronously, so consumers don't need
+     * to special-case test / one-shot init paths.
+     */
+    public void runAfterCommit(Runnable task) {
+        runAfterCommit(task, "afterCommit task");
+    }
+
+    private void runAfterCommit(Runnable task, String description) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            events.publishEvent(event);
+            try {
+                task.run();
+            } catch (Exception e) {
+                log.error("{} failed (no-tx fallback)", description, e);
+            }
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(
@@ -56,14 +79,14 @@ public class AfterCommitPublisher {
                     @Override
                     public void afterCommit() {
                         try {
-                            events.publishEvent(event);
+                            task.run();
                         } catch (Exception e) {
-                            // Listener failures must not bubble back into
-                            // the original commit path (the tx is already
-                            // committed). Log + continue — operators see
-                            // the failure in stack trace, no silent swallow.
-                            log.error("afterCommit publish failed for {}",
-                                    event.getClass().getSimpleName(), e);
+                            // Listener / cleanup failures must not bubble
+                            // back into the original commit path (the tx
+                            // is already committed). Log + continue —
+                            // operators see the failure in stack trace,
+                            // no silent swallow.
+                            log.error("{} failed", description, e);
                         }
                     }
                 });

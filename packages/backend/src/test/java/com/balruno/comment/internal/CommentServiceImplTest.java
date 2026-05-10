@@ -8,18 +8,13 @@ import com.balruno.project.ProjectService;
 import com.balruno.sync.ProjectSyncService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.MockedStatic;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -60,27 +55,6 @@ class CommentServiceImplTest {
     @Mock com.balruno.storage.StorageService storage;
     @Mock com.balruno.storage.WorkspaceStorageService workspaceStorage;
     @InjectMocks CommentServiceImpl service;
-
-    /**
-     * broadcastAfterCommit / broadcastDeleteAfterCommit /
-     * attachmentCleanupAfterCommit still call
-     * {@link TransactionSynchronizationManager#registerSynchronization}
-     * directly (different abstraction than AfterCommitPublisher —
-     * the broadcast target is a method on ProjectSyncService, not an
-     * ApplicationEvent). Stub the static so unit tests don't need
-     * a real transaction.
-     */
-    private MockedStatic<TransactionSynchronizationManager> txManagerStub;
-
-    @BeforeEach
-    void stubTxManager() {
-        txManagerStub = Mockito.mockStatic(TransactionSynchronizationManager.class);
-    }
-
-    @AfterEach
-    void releaseTxManager() {
-        if (txManagerStub != null) txManagerStub.close();
-    }
 
     // ── MentionExtractor ─────────────────────────────────────────────
 

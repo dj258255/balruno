@@ -11,8 +11,6 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.UUID;
@@ -44,16 +42,19 @@ class TemplateImportService {
     private final StarterPackSeeder seeder;
     private final ProjectService projects;
     private final ProjectSyncService sync;
+    private final com.balruno.events.AfterCommitPublisher afterCommit;
     private final ObjectMapper mapper = new ObjectMapper();
 
     TemplateImportService(JdbcTemplate jdbc,
                           StarterPackSeeder seeder,
                           ProjectService projects,
-                          ProjectSyncService sync) {
+                          ProjectSyncService sync,
+                          com.balruno.events.AfterCommitPublisher afterCommit) {
         this.jdbc = jdbc;
         this.seeder = seeder;
         this.projects = projects;
         this.sync = sync;
+        this.afterCommit = afterCommit;
     }
 
     /**
@@ -143,13 +144,7 @@ class TemplateImportService {
         //    the new sheets appear without a manual reload. Inside the
         //    tx the broadcast would race against an uncommitted state
         //    (peers could read the OLD state via their own SELECTs).
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        sync.broadcastFullStateSnapshot(projectId);
-                    }
-                });
+        afterCommit.runAfterCommit(() -> sync.broadcastFullStateSnapshot(projectId));
     }
 
     private ArrayNode parseArray(String json) throws Exception {
