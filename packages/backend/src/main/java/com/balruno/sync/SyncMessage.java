@@ -34,6 +34,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = SyncMessage.CellStyleUpdate.class, name = "cell.style.update"),
         @JsonSubTypes.Type(value = SyncMessage.SheetMetadataUpdate.class, name = "sheet.metadata.update"),
         @JsonSubTypes.Type(value = SyncMessage.RowAdd.class,        name = "row.add"),
+        @JsonSubTypes.Type(value = SyncMessage.RowUpdate.class,     name = "row.update"),
         @JsonSubTypes.Type(value = SyncMessage.RowDelete.class,     name = "row.delete"),
         @JsonSubTypes.Type(value = SyncMessage.RowMove.class,       name = "row.move"),
         @JsonSubTypes.Type(value = SyncMessage.ColumnAdd.class,     name = "column.add"),
@@ -135,6 +136,19 @@ public sealed interface SyncMessage {
                   UndoMeta undo) implements SyncMessage {
         public RowAdd(UUID sheetId, Object row, long baseVersion, UUID clientMsgId) {
             this(sheetId, row, baseVersion, clientMsgId, null);
+        }
+    }
+
+    /**
+     * Row-level metadata patch (row height, future per-row settings).
+     * Cell values stay on cell.update; this op is for fields that live
+     * directly on the row object (height, etc.) and need to round-trip
+     * to peers + survive reload + participate in undo.
+     */
+    record RowUpdate(UUID sheetId, UUID rowId, Object patch, long baseVersion, UUID clientMsgId,
+                     UndoMeta undo) implements SyncMessage {
+        public RowUpdate(UUID sheetId, UUID rowId, Object patch, long baseVersion, UUID clientMsgId) {
+            this(sheetId, rowId, patch, baseVersion, clientMsgId, null);
         }
     }
 

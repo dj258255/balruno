@@ -70,6 +70,7 @@ export type StoreActionIntent =
   | { kind: 'cell.style.update'; sheetId: string; rowId: string; columnId: string; style: CellStyle }
   | { kind: 'sheet.metadata.update'; sheetId: string; patch: SheetMetadataPatch }
   | { kind: 'row.add'; sheetId: string; row: Row }
+  | { kind: 'row.update'; sheetId: string; rowId: string; patch: Partial<Row> }
   | { kind: 'row.delete'; sheetId: string; rowId: string }
   | { kind: 'row.move'; sheetId: string; rowId: string; toIndex: number }
   | { kind: 'column.add'; sheetId: string; column: Column }
@@ -130,6 +131,15 @@ export function mapStoreActionToOp(
         type: 'row.add',
         sheetId: intent.sheetId,
         row: intent.row,
+        baseVersion,
+        clientMsgId,
+      });
+    case 'row.update':
+      return withUndo({
+        type: 'row.update',
+        sheetId: intent.sheetId,
+        rowId: intent.rowId,
+        patch: intent.patch,
         baseVersion,
         clientMsgId,
       });

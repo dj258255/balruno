@@ -143,7 +143,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
                           projectId: string): void {
   // Region version bump — same routing table as writeQueue.regionOf.
   if (msg.type === 'cell.update' ||
-      msg.type === 'row.add' || msg.type === 'row.delete' || msg.type === 'row.move' ||
+      msg.type === 'row.add' || msg.type === 'row.update' || msg.type === 'row.delete' || msg.type === 'row.move' ||
       msg.type === 'column.add' || msg.type === 'column.update' || msg.type === 'column.delete') {
     bumpVersion('data', msg.version);
   } else if (msg.type === 'tree.add' || msg.type === 'tree.move' ||
@@ -234,6 +234,29 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
             ? sheet
             : { ...sheet, rows: [...sheet.rows, newRow] },
         );
+      }
+      break;
+    }
+    case 'row.update': {
+      const op = msg.op as {
+        sheetId?: string;
+        rowId?: string;
+        patch?: Record<string, unknown>;
+      } | null;
+      if (op?.sheetId && op.rowId && op.patch) {
+        const patch = op.patch;
+        applyToSheet(projectId, op.sheetId, (sheet) => ({
+          ...sheet,
+          rows: sheet.rows.map((r) => {
+            if (r.id !== op.rowId) return r;
+            const next: Row & Record<string, unknown> = { ...r };
+            for (const [key, value] of Object.entries(patch)) {
+              if (key === 'id' || key === 'cells' || key === 'cellStyles') continue;
+              next[key] = value;
+            }
+            return next;
+          }),
+        }));
       }
       break;
     }

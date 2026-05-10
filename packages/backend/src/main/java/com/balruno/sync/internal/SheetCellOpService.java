@@ -244,6 +244,10 @@ class SheetCellOpService {
                     u.sheetId(), rowIdOf(u.row()), null,
                     "row.add",
                     payloadObject(node -> node.set("row", nodeMapper.valueToTree(u.row()))));
+            case SyncMessage.RowUpdate u -> new HistoryMeta(
+                    u.sheetId(), u.rowId(), null,
+                    "row.update",
+                    payloadObject(node -> node.set("patch", nodeMapper.valueToTree(u.patch()))));
             case SyncMessage.RowDelete u -> new HistoryMeta(
                     u.sheetId(), u.rowId(), null,
                     "row.delete", null);
@@ -365,6 +369,7 @@ class SheetCellOpService {
             case SyncMessage.CellStyleUpdate u -> applyCellStyleUpdate(data, u);
             case SyncMessage.SheetMetadataUpdate u -> applySheetMetadataUpdate(data, u);
             case SyncMessage.RowAdd u          -> applyRowAdd(data, u);
+            case SyncMessage.RowUpdate u       -> applyRowUpdate(data, u);
             case SyncMessage.RowDelete u       -> applyRowDelete(data, u);
             case SyncMessage.RowMove u         -> applyRowMove(data, u);
             case SyncMessage.ColumnAdd u       -> applyColumnAdd(data, u);
@@ -476,6 +481,37 @@ class SheetCellOpService {
         removeById(rows, u.rowId());
     }
 
+    /**
+     * Patches row-level fields (height, future per-row toggles).
+     * Cell values stay on cell.update; this op only touches the row
+     * object's own properties. Same defensive guards as
+     * {@link #applySheetMetadataUpdate}: cells / id / rows are
+     * blocked so a misuse of the wire op can't corrupt the array
+     * structure or hijack identity.
+     */
+    void applyRowUpdate(ObjectNode data, SyncMessage.RowUpdate u) {
+        var sheet = sheetOrThrow(data, u.sheetId());
+        var rows = ensureArray(sheet, "rows");
+        var rowNode = findById(rows, u.rowId());
+        if (rowNode == null) {
+            throw new IllegalArgumentException("row not found: " + u.rowId());
+        }
+        if (!(rowNode instanceof ObjectNode rowObj)) {
+            throw new IllegalArgumentException("row not a valid object: " + u.rowId());
+        }
+        var patchNode = nodeMapper.valueToTree(u.patch());
+        if (!(patchNode instanceof ObjectNode patchObj)) {
+            throw new IllegalArgumentException("row.update patch must be an object");
+        }
+        patchObj.fields().forEachRemaining(entry -> {
+            String key = entry.getKey();
+            if ("id".equals(key) || "cells".equals(key) || "cellStyles".equals(key)) {
+                return; // identity / cell payload mutated only by their dedicated ops
+            }
+            rowObj.set(key, entry.getValue());
+        });
+    }
+
     void applyRowMove(ObjectNode data, SyncMessage.RowMove u) {
         var sheet = sheetOrThrow(data, u.sheetId());
         var rows = ensureArray(sheet, "rows");
@@ -584,6 +620,7 @@ class SheetCellOpService {
             case SyncMessage.CellStyleUpdate ignored -> "cell.style.update";
             case SyncMessage.SheetMetadataUpdate ignored -> "sheet.metadata.update";
             case SyncMessage.RowAdd ignored          -> "row.add";
+            case SyncMessage.RowUpdate ignored       -> "row.update";
             case SyncMessage.RowDelete ignored       -> "row.delete";
             case SyncMessage.RowMove ignored         -> "row.move";
             case SyncMessage.ColumnAdd ignored       -> "column.add";
@@ -614,6 +651,10 @@ class SheetCellOpService {
             case SyncMessage.RowAdd u -> mapOf(
                     "sheetId", u.sheetId().toString(),
                     "row",     u.row());
+            case SyncMessage.RowUpdate u -> mapOf(
+                    "sheetId", u.sheetId().toString(),
+                    "rowId",   u.rowId().toString(),
+                    "patch",   u.patch());
             case SyncMessage.RowDelete u -> mapOf(
                     "sheetId", u.sheetId().toString(),
                     "rowId",   u.rowId().toString());
@@ -655,6 +696,7 @@ class SheetCellOpService {
             case SyncMessage.CellStyleUpdate u -> u.clientMsgId();
             case SyncMessage.SheetMetadataUpdate u -> u.clientMsgId();
             case SyncMessage.RowAdd u          -> u.clientMsgId();
+            case SyncMessage.RowUpdate u       -> u.clientMsgId();
             case SyncMessage.RowDelete u       -> u.clientMsgId();
             case SyncMessage.RowMove u         -> u.clientMsgId();
             case SyncMessage.ColumnAdd u       -> u.clientMsgId();
@@ -670,6 +712,7 @@ class SheetCellOpService {
             case SyncMessage.CellStyleUpdate u -> u.baseVersion();
             case SyncMessage.SheetMetadataUpdate u -> u.baseVersion();
             case SyncMessage.RowAdd u          -> u.baseVersion();
+            case SyncMessage.RowUpdate u       -> u.baseVersion();
             case SyncMessage.RowDelete u       -> u.baseVersion();
             case SyncMessage.RowMove u         -> u.baseVersion();
             case SyncMessage.ColumnAdd u       -> u.baseVersion();
@@ -688,6 +731,7 @@ class SheetCellOpService {
             case SyncMessage.CellStyleUpdate u -> u.undo();
             case SyncMessage.SheetMetadataUpdate u -> u.undo();
             case SyncMessage.RowAdd u          -> u.undo();
+            case SyncMessage.RowUpdate u     -> u.undo();
             case SyncMessage.RowDelete u     -> u.undo();
             case SyncMessage.RowMove u       -> u.undo();
             case SyncMessage.ColumnAdd u     -> u.undo();

@@ -111,7 +111,13 @@ export interface ProjectState {
     cells?: Record<string, CellValue>,
     options?: { origin?: 'local' | 'remote'; rowId?: string }
   ) => string;
-  updateRow: (projectId: string, sheetId: string, rowId: string, updates: Partial<Row>) => void;
+  updateRow: (
+    projectId: string,
+    sheetId: string,
+    rowId: string,
+    updates: Partial<Row>,
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
+  ) => void;
   updateCell: (
     projectId: string,
     sheetId: string,

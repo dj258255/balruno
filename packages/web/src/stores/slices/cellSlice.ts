@@ -308,6 +308,46 @@ function pushDeleteColumnUndo(
 }
 
 /**
+ * Push an undo entry for a row.update — inverse carries the
+ * *original* values of the same fields the user changed (height
+ * being the canonical case). Only the touched fields are stored so
+ * the inverse stays minimal.
+ */
+function pushUpdateRowUndo(
+  projectId: string,
+  sheetId: string,
+  rowId: string,
+  prevPatch: Record<string, unknown>,
+  newPatch: Record<string, unknown>,
+): UndoMeta | null {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return null;
+  const forward: UndoableOp[] = [{
+    type: 'row.update',
+    sheetId,
+    rowId,
+    patch: newPatch,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
+  const inverse: UndoableOp[] = [{
+    type: 'row.update',
+    sheetId,
+    rowId,
+    patch: prevPatch,
+    baseVersion: 0,
+    clientMsgId: '',
+  }];
+  pushUndo(userId, projectId, {
+    label: 'Row update',
+    forward,
+    inverse,
+    timestamp: Date.now(),
+  });
+  return metaOf({ forward, inverse });
+}
+
+/**
  * Push an undo entry for a column.update — inverse carries the
  * *original* values of the same fields the user changed. Only the
  * touched fields are stored so the inverse stays minimal.
@@ -1001,8 +1041,29 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
     projectId: string,
     sheetId: string,
     rowId: string,
-    updates: Partial<Row>
+    updates: Partial<Row>,
+    options?: { origin?: 'local' | 'remote'; skipUndoPush?: boolean }
   ) => {
+    const isRemote = options?.origin === 'remote';
+    const skipUndoPush = options?.skipUndoPush ?? false;
+
+    // Snapshot the touched fields' previous values for the undo
+    // inverse. Skipped on remote echoes (peers don't push undo) and
+    // on undo replays (the replay already brings its own inverse).
+    let prevPatch: Record<string, unknown> | null = null;
+    if (!isRemote && !skipUndoPush) {
+      const sheet = get().getSheet(projectId, sheetId);
+      const existing = sheet?.rows.find((r) => r.id === rowId);
+      if (existing) {
+        prevPatch = {};
+        for (const key of Object.keys(updates)) {
+          if (key === 'id' || key === 'cells' || key === 'cellStyles') continue;
+          (prevPatch as Record<string, unknown>)[key] =
+            (existing as unknown as Record<string, unknown>)[key];
+        }
+      }
+    }
+
     writeSheet(
       set,
       projectId,
@@ -1012,6 +1073,18 @@ export const createCellActions = (set: SetFn, get: GetFn) => ({
         rows: s.rows.map((r) => (r.id !== rowId ? r : { ...r, ...updates })),
       }),
     );
+    const updateRowMeta = prevPatch
+      ? pushUpdateRowUndo(
+          projectId,
+          sheetId,
+          rowId,
+          prevPatch,
+          updates as Record<string, unknown>,
+        )
+      : null;
+    if (!isRemote) {
+      emitOp({ kind: 'row.update', sheetId, rowId, patch: updates }, updateRowMeta);
+    }
   },
 
   updateCell: (

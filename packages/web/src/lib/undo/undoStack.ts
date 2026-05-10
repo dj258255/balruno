@@ -45,6 +45,7 @@ export type UndoableOp = Extract<
     type:
       | 'cell.update'
       | 'row.add'
+      | 'row.update'
       | 'row.delete'
       | 'row.move'
       | 'column.add'

@@ -48,6 +48,22 @@ function applyOne(project: Project, op: UndoableOp): Project {
       );
     }
 
+    case 'row.update': {
+      const patch = op.patch as Record<string, unknown>;
+      return mapSheet(project, op.sheetId, (s) => ({
+        ...s,
+        rows: s.rows.map((r) => {
+          if (r.id !== op.rowId) return r;
+          const next: Row & Record<string, unknown> = { ...r };
+          for (const [key, value] of Object.entries(patch)) {
+            if (key === 'id' || key === 'cells' || key === 'cellStyles') continue;
+            next[key] = value;
+          }
+          return next;
+        }),
+      }));
+    }
+
     case 'row.delete':
       return mapSheet(project, op.sheetId, (s) => ({
         ...s,

@@ -119,6 +119,7 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
             case SyncMessage.CellStyleUpdate msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.SheetMetadataUpdate msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.RowAdd          msg -> sheetCellOps.apply(projectId, userId, msg);
+            case SyncMessage.RowUpdate       msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.RowDelete     msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.RowMove       msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.ColumnAdd     msg -> sheetCellOps.apply(projectId, userId, msg);
@@ -158,6 +159,7 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
             case SyncMessage.CellStyleUpdate u -> u.clientMsgId();
             case SyncMessage.SheetMetadataUpdate u -> u.clientMsgId();
             case SyncMessage.RowAdd u          -> u.clientMsgId();
+            case SyncMessage.RowUpdate u       -> u.clientMsgId();
             case SyncMessage.RowDelete u       -> u.clientMsgId();
             case SyncMessage.RowMove u         -> u.clientMsgId();
             case SyncMessage.ColumnAdd u       -> u.clientMsgId();

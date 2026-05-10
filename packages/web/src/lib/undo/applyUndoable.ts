@@ -91,6 +91,15 @@ function applySingle(op: UndoableOp): void {
       store.deleteColumn(projectId, op.sheetId, op.columnId, { skipUndoPush: true });
       break;
     }
+    case 'row.update': {
+      // op.patch carries either (a) the user's new partial — when
+      // forward is replayed for redo, or (b) the inverse partial
+      // capturing the original field values, when undo replays.
+      store.updateRow(projectId, op.sheetId, op.rowId, op.patch as Record<string, unknown>, {
+        skipUndoPush: true,
+      });
+      break;
+    }
     case 'row.move': {
       // Reorder the row to op.toIndex. Both forward + inverse reuse
       // the same op type — the inverse just carries the original

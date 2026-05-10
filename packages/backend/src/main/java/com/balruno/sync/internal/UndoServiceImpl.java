@@ -170,6 +170,7 @@ class UndoServiceImpl implements UndoService {
             case SyncMessage.CellStyleUpdate msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.SheetMetadataUpdate msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.RowAdd          msg -> sheetCellOps.apply(projectId, userId, msg);
+            case SyncMessage.RowUpdate       msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.RowDelete     msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.RowMove       msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.ColumnAdd     msg -> sheetCellOps.apply(projectId, userId, msg);
@@ -195,7 +196,7 @@ class UndoServiceImpl implements UndoService {
         var type = op.path("type").asText();
         var read = switch (type) {
             case "cell.update", "cell.style.update", "sheet.metadata.update",
-                 "row.add", "row.delete", "row.move",
+                 "row.add", "row.update", "row.delete", "row.move",
                  "column.add", "column.update", "column.delete"
                     -> projects.readDataVersion(projectId);
             case "tree.add", "tree.move", "tree.delete", "tree.rename" -> {

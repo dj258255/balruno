@@ -98,20 +98,40 @@ export function getVersion(region: Region): number {
  * for ops the user shouldn't be able to undo (none today, but the
  * shape is forward-compatible).
  */
+/**
+ * Throttled user-facing warning for silent op drops. Without this the
+ * user just sees the local mutation flash on screen and disappear on
+ * reload, with no signal that anything went wrong. Throttled to 5s so
+ * a flurry of dropped ops (e.g. dragging a row while disconnected)
+ * shows one toast, not twenty.
+ *
+ * Lazy import on sonner so writeQueue.test.ts doesn't pull the toast
+ * stack into module init — the unit tests register a fake sender
+ * directly and shouldn't trigger any UI.
+ */
+let lastSilentDropToastAt = 0;
+function notifySilentDrop(reason: string): void {
+  const now = Date.now();
+  if (now - lastSilentDropToastAt < 5000) return;
+  lastSilentDropToastAt = now;
+  void import('sonner').then(({ toast }) => {
+    toast.error(reason, { duration: 6000 });
+  }).catch(() => {
+    // Toast lib unavailable — the console.warn above is the floor.
+  });
+}
+
 export function emitOp(intent: StoreActionIntent, undo?: UndoMeta | null): boolean {
   if (!currentSender) {
     // Silent drop is the prod-bug class the user surfaced as "새 문서
     // 만들었는데 저장 안 됨" — store mutates locally, the op never
-    // reaches the backend, reload wipes the unsaved write. Loud
-    // warning + a sender-state hint helps the user / developer
-    // understand the failure mode (WS disconnected vs not yet
-    // bridged). The actual UX recovery (toast / retry queue) is a
-    // bigger follow-up; logging is the first floor.
+    // reaches the backend, reload wipes the unsaved write.
     console.warn(
       '[writeQueue] dropping op — no sync sender registered (WS disconnected or page not yet bridged):',
       intent.kind,
       intent,
     );
+    notifySilentDrop('연결이 끊긴 상태라 변경사항이 저장되지 않았습니다. 새로고침 후 다시 시도해주세요.');
     return false;
   }
   const region = regionOf(intent);
@@ -123,6 +143,7 @@ export function emitOp(intent: StoreActionIntent, undo?: UndoMeta | null): boole
       intent.kind,
       op.type,
     );
+    notifySilentDrop('백엔드 연결 중입니다. 잠시 후 다시 시도해주세요.');
   }
   return sent;
 }
@@ -162,6 +183,7 @@ function regionOf(intent: StoreActionIntent): Region {
     case 'cell.style.update':
     case 'sheet.metadata.update':
     case 'row.add':
+    case 'row.update':
     case 'row.delete':
     case 'row.move':
     case 'column.add':
