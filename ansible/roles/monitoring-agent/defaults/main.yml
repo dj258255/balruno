@@ -17,7 +17,7 @@ monitoring_agent_compose_file: "{{ monitoring_agent_root }}/docker-compose.yml"
 
 # Container images — keep in sync with the central monitoring role.
 monitoring_agent_image_node_exporter: "prom/node-exporter:v1.9.0"
-monitoring_agent_image_cadvisor: "gcr.io/cadvisor/cadvisor:v0.49.1"
+monitoring_agent_image_cadvisor: "gcr.io/cadvisor/cadvisor:v0.52.1"
 monitoring_agent_image_alloy: "grafana/alloy:v1.5.0"
 
 # Ports each component listens on. Bound to the VCN private IP so the
