@@ -85,7 +85,7 @@ const MentionEditor = forwardRef<MentionEditorHandle, MentionEditorProps>(
           codeBlock: false,
           horizontalRule: false,
         }),
-        Placeholder.configure({ placeholder: placeholder ?? '코멘트를 입력하세요...' }),
+        Placeholder.configure({ placeholder: placeholder ?? t('comments.editorPlaceholder') }),
         // Inline image — uploaded via the project-scoped attachment
         // endpoint. allowBase64=false forces real upload so server-side
         // size cap + magic-byte sniff + workspace quota all engage.
@@ -111,7 +111,7 @@ const MentionEditor = forwardRef<MentionEditorHandle, MentionEditorProps>(
           // role + aria-label keep the textarea's a11y story while
           // the visual surface is a contenteditable.
           role: 'textbox',
-          'aria-label': placeholder ?? '코멘트',
+          'aria-label': placeholder ?? t('comments.editorAriaLabel'),
           class: 'balruno-mention-editor focus:outline-none',
         },
         handleKeyDown(_, event) {
@@ -327,6 +327,7 @@ const MentionList = forwardRef<MentionListHandle, MentionListProps>(function Men
   { items, command },
   ref,
 ) {
+  const t = useTranslations();
   const [selected, setSelected] = useState(0);
 
   // Reset highlight whenever the candidate list shifts (new query).
@@ -390,7 +391,7 @@ const MentionList = forwardRef<MentionListHandle, MentionListProps>(function Men
           color: 'var(--text-tertiary)',
         }}
       >
-        멤버 없음
+        {t('comments.noMembers')}
       </div>
     );
   }
@@ -399,7 +400,7 @@ const MentionList = forwardRef<MentionListHandle, MentionListProps>(function Men
     <ul
       className="max-h-64 min-w-[220px] overflow-y-auto rounded-md border py-1 shadow-lg"
       role="listbox"
-      aria-label="멤버 멘션"
+      aria-label={t('comments.memberMentionAriaLabel')}
       aria-live="polite"
       aria-activedescendant={`mention-opt-${items[selected]?.id ?? ''}`}
       style={{

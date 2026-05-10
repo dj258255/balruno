@@ -142,7 +142,7 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
       extensions: [
         StarterKit,
         Placeholder.configure({
-          placeholder: '내용을 입력하세요.',
+          placeholder: t('docBody.placeholder'),
         }),
         // Inline image — uploaded via uploadAttachment (Phase D).
         // inline=true keeps img inside paragraph nodes so cursor /
@@ -252,7 +252,7 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
     return (
       <div className="flex items-center gap-2 p-6 text-sm" style={{ color: 'var(--text-tertiary)' }}>
         <Loader2 className="h-4 w-4 animate-spin" />
-        문서 로딩 중...
+        {t('docBody.loading')}
       </div>
     );
   }
@@ -272,20 +272,20 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
               disabled={!selRange}
               className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:hover:bg-transparent"
               style={{ color: 'var(--text-secondary)' }}
-              title={selRange ? '선택한 부분에 코멘트 달기' : '먼저 텍스트를 선택하세요'}
+              title={selRange ? t('docBody.addCommentToSelection') : t('docBody.selectTextFirst')}
             >
               <MessageSquarePlus className="h-3.5 w-3.5" />
-              선택한 부분에 코멘트
+              {t('docBody.addComment')}
             </button>
             <button
               type="button"
               onClick={() => setHistoryOpen(true)}
               className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs hover:bg-[var(--bg-hover)]"
               style={{ color: 'var(--text-secondary)' }}
-              title="페이지 변경 이력"
+              title={t('docBody.historyTooltip')}
             >
               <History className="h-3.5 w-3.5" />
-              변경 이력
+              {t('docBody.history')}
             </button>
           </div>
         </div>
@@ -354,6 +354,7 @@ interface DocTitleEditorProps {
 }
 
 function DocTitleEditor({ title, onTitleChange }: DocTitleEditorProps) {
+  const t = useTranslations();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
 
@@ -411,7 +412,7 @@ function DocTitleEditor({ title, onTitleChange }: DocTitleEditorProps) {
       onClick={() => setEditing(true)}
       className="w-full rounded-md px-2 py-0.5 text-left text-xl font-semibold hover:bg-[var(--bg-hover)]"
       style={{ color: 'var(--text-primary)' }}
-      title="클릭해서 제목 편집"
+      title={t('docBody.titleEditTooltip')}
     >
       {title}
     </button>

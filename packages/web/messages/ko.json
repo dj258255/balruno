@@ -5804,7 +5804,21 @@
     "targetCell": "셀",
     "targetRow": "행",
     "targetSheet": "시트",
-    "targetDoc": "문서"
+    "targetDoc": "문서",
+    "editorPlaceholder": "코멘트를 입력하세요...",
+    "editorAriaLabel": "코멘트",
+    "noMembers": "멤버 없음",
+    "memberMentionAriaLabel": "멤버 멘션"
+  },
+  "docBody": {
+    "placeholder": "내용을 입력하세요.",
+    "loading": "문서 로딩 중...",
+    "addCommentToSelection": "선택한 부분에 코멘트 달기",
+    "selectTextFirst": "먼저 텍스트를 선택하세요",
+    "addComment": "선택한 부분에 코멘트",
+    "history": "변경 이력",
+    "historyTooltip": "페이지 변경 이력",
+    "titleEditTooltip": "클릭해서 제목 편집"
   },
   "branches": {
     "mainBranch": "main",

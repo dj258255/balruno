@@ -5804,7 +5804,21 @@
     "targetCell": "Cell",
     "targetRow": "Row",
     "targetSheet": "Sheet",
-    "targetDoc": "Doc"
+    "targetDoc": "Doc",
+    "editorPlaceholder": "Write a comment...",
+    "editorAriaLabel": "Comment",
+    "noMembers": "No members",
+    "memberMentionAriaLabel": "Mention member"
+  },
+  "docBody": {
+    "placeholder": "Write something.",
+    "loading": "Loading document...",
+    "addCommentToSelection": "Add a comment on the selection",
+    "selectTextFirst": "Select text first",
+    "addComment": "Comment on selection",
+    "history": "History",
+    "historyTooltip": "Page change history",
+    "titleEditTooltip": "Click to edit the title"
   },
   "branches": {
     "mainBranch": "main",

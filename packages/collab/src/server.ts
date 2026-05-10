@@ -13,6 +13,8 @@
  * never spawn a phantom document outside the project tree.
  */
 
+import http from 'node:http';
+
 import { Server } from '@hocuspocus/server';
 import * as Y from 'yjs';
 import pg from 'pg';
@@ -205,9 +207,91 @@ server
     process.exit(1);
   });
 
+// ─── Internal HTTP server for backend-to-sidecar signals ──────────────
+// Port + secret come from env. Bound to 127.0.0.1 only (process-local
+// internal channel — never exposed). Spring's DocDuplicateApiImpl hits
+// /internal/snapshot/:docId right before reading documents.ydoc_state
+// for a clone, so the bytes reflect the live in-memory state instead
+// of the last throttled onStoreDocument flush (which can lag by up to
+// 50 stores OR 5 idle minutes).
+const internalSecret = process.env.COLLAB_INTERNAL_SECRET ?? '';
+const internalPort = Number(process.env.COLLAB_INTERNAL_PORT ?? 1235);
+
+if (!internalSecret) {
+  console.warn(
+    '[collab] COLLAB_INTERNAL_SECRET unset — internal endpoints will return 401',
+  );
+}
+
+const internalServer = http.createServer(async (req, res) => {
+  if (req.method !== 'POST') {
+    res.writeHead(405).end();
+    return;
+  }
+  // Header-based shared-secret auth — internal-only, no JWT churn.
+  // Empty secret never matches (handled by the falsy check + the
+  // strict equality on a non-empty header).
+  const headerSecret = req.headers['x-collab-internal-secret'];
+  if (
+    !internalSecret
+    || typeof headerSecret !== 'string'
+    || headerSecret !== internalSecret
+  ) {
+    res.writeHead(401).end();
+    return;
+  }
+
+  const m = req.url?.match(/^\/internal\/snapshot\/([0-9a-f-]{36})\/?$/i);
+  if (!m) {
+    res.writeHead(404).end();
+    return;
+  }
+  const docId = m[1] ?? '';
+
+  try {
+    const doc = server.hocuspocus.documents.get(docId);
+    if (!doc) {
+      // No live editor session for this doc — the most recent
+      // onStoreDocument write is already on disk. Caller (Spring's
+      // duplicate path) can proceed to read documents.ydoc_state
+      // without further delay.
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+         .end(JSON.stringify({ snapshot: 'idle' }));
+      return;
+    }
+    // Live session — pull the current in-memory state and write it
+    // to the documents row directly. This bypasses the
+    // onStoreDocument throttle so the duplicate sees the absolute
+    // latest bytes. Uses the same UPDATE shape onStoreDocument uses.
+    // Hocuspocus's Document class extends yjs's Y.Doc, so the
+    // doc instance itself is what Y.encodeStateAsUpdate expects —
+    // no .document accessor (the .document property only exists on
+    // hook payloads like onStoreDocument's `data.document`).
+    const update = Y.encodeStateAsUpdate(doc);
+    const r = await pool.query(
+      `UPDATE documents
+         SET ydoc_state = $1, updated_at = now()
+       WHERE id = $2 AND deleted_at IS NULL`,
+      [Buffer.from(update), docId],
+    );
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+       .end(JSON.stringify({
+         snapshot: r.rowCount && r.rowCount > 0 ? 'flushed' : 'no-row',
+         bytes: update.byteLength,
+       }));
+  } catch (e) {
+    console.error('[collab] /internal/snapshot failed', e);
+    res.writeHead(500).end();
+  }
+});
+internalServer.listen(internalPort, '127.0.0.1', () => {
+  console.log(`[collab] internal HTTP listening on 127.0.0.1:${internalPort}`);
+});
+
 // Graceful shutdown — SIGTERM from docker stop / k8s rolling deploy.
 const shutdown = (signal: string) => {
   console.log(`[collab] received ${signal}, shutting down`);
+  internalServer.close();
   server.destroy()
     .catch((err: unknown) => console.error('[collab] shutdown error', err))
     .finally(() => {
