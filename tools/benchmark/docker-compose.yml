@@ -38,8 +38,11 @@ services:
     # MySQL 8.4 removed `default-authentication-plugin` (the policy moved to
     # `authentication-policy`, and caching_sha2_password is the default
     # anyway). Leaving the old flag in causes "unknown variable" abort.
+    # --skip-log-bin: replication 안 씀. default binlog 가 5분 부하에 800MB+
+    # 까지 자라 prod_app 의 46GB 디스크를 채워버려서 명시적 disable.
     command:
       - --innodb-buffer-pool-size=1G
+      - --skip-log-bin
     ports:
       - "127.0.0.1:3307:3306"
     networks: [bench]
@@ -60,12 +63,24 @@ services:
       POSTGRES_DB: bench
       POSTGRES_USER: bench
       POSTGRES_PASSWORD: bench
+    # max_wal_size 작게 + checkpoint_timeout 짧게 = WAL 누적 최소화
+    # (replication 안 쓰는 벤치마크용 일회성 설정).
     command:
       - postgres
       - -c
       - shared_buffers=1GB
       - -c
       - work_mem=16MB
+      - -c
+      - max_wal_size=512MB
+      - -c
+      - min_wal_size=80MB
+      - -c
+      - wal_level=minimal
+      - -c
+      - max_wal_senders=0
+      - -c
+      - archive_mode=off
     ports:
       - "127.0.0.1:5433:5432"
     networks: [bench]
