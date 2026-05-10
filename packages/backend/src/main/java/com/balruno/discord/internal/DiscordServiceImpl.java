@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,13 +20,11 @@ class DiscordServiceImpl implements DiscordService {
 
     private final DiscordRepository repo;
     private final ApplicationEventPublisher events;
-    private final JdbcTemplate jdbc;
     private final ObjectMapper json = new ObjectMapper();
 
-    DiscordServiceImpl(DiscordRepository repo, ApplicationEventPublisher events, JdbcTemplate jdbc) {
+    DiscordServiceImpl(DiscordRepository repo, ApplicationEventPublisher events) {
         this.repo = repo;
         this.events = events;
-        this.jdbc = jdbc;
     }
 
     @Override
@@ -142,25 +139,14 @@ class DiscordServiceImpl implements DiscordService {
     }
 
     /**
-     * Find the project that owns a given sheet by scanning
-     * {@code projects.data} JSONB for an entry with the matching id.
-     * Slow if called in a hot loop, but Discord interactions are
-     * low-frequency (under 1 / sec for solo + small teams) and the
-     * data column is small.
+     * Cross-aggregate lookup delegated to the repository — see
+     * {@link DiscordRepository#findProjectIdForSheet}. Slow if called
+     * in a hot loop, but Discord interactions are low-frequency
+     * (under 1 / sec for solo + small teams) and the data column is
+     * small.
      */
     private UUID projectIdForSheet(UUID sheetId) {
-        try {
-            return jdbc.queryForObject(
-                    """
-                    SELECT id FROM projects
-                    WHERE deleted_at IS NULL
-                      AND data @> jsonb_build_array(jsonb_build_object('id', ?::text))
-                    LIMIT 1
-                    """,
-                    UUID.class, sheetId.toString());
-        } catch (Exception e) {
-            return null;
-        }
+        return repo.findProjectIdForSheet(sheetId.toString()).orElse(null);
     }
 
     private JsonNode handleQuery(DiscordLink link, String text) {
