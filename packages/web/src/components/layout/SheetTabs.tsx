@@ -310,6 +310,23 @@ export default function SheetTabs({ project }: SheetTabsProps) {
         className="flex items-center border-b min-h-[38px]"
         style={{ background: 'var(--bg-tertiary)', borderColor: 'var(--border-primary)' }}
       >
+        {/* 프로젝트 이름 라벨 — 어느 프로젝트의 시트/문서인지 한눈에.
+            VS Code / Notion 의 좌상단 컨텍스트 라벨 패턴. 클릭 안 되는
+            정보성 표시라 cursor / hover 효과 없이 가벼운 톤. */}
+        <div
+          className="flex-shrink-0 flex items-center gap-1.5 px-3 border-r"
+          style={{ borderColor: 'var(--border-primary)' }}
+          title={project.name}
+        >
+          <FileSpreadsheet className="w-3.5 h-3.5" style={{ color: 'var(--text-tertiary)' }} />
+          <span
+            className="text-xs font-medium truncate max-w-[160px]"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            {project.name}
+          </span>
+        </div>
+
         {/* 왼쪽 스크롤 버튼 - 맨 왼쪽 고정 */}
         <button
           onClick={() => scrollTabs('left')}
@@ -428,7 +445,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
               ) : (
                 <>
                   <span
-                    className="text-sm flex-1 whitespace-nowrap overflow-hidden text-ellipsis min-w-0 cursor-text"
+                    className="text-sm flex-1 whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
                     style={{ color: 'var(--text-primary)' }}
                     onDoubleClick={(e) => {
                       // Linear / Chrome pattern — double-click the name

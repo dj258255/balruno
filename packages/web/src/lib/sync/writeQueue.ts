@@ -99,10 +99,32 @@ export function getVersion(region: Region): number {
  * shape is forward-compatible).
  */
 export function emitOp(intent: StoreActionIntent, undo?: UndoMeta | null): boolean {
-  if (!currentSender) return false;
+  if (!currentSender) {
+    // Silent drop is the prod-bug class the user surfaced as "새 문서
+    // 만들었는데 저장 안 됨" — store mutates locally, the op never
+    // reaches the backend, reload wipes the unsaved write. Loud
+    // warning + a sender-state hint helps the user / developer
+    // understand the failure mode (WS disconnected vs not yet
+    // bridged). The actual UX recovery (toast / retry queue) is a
+    // bigger follow-up; logging is the first floor.
+    console.warn(
+      '[writeQueue] dropping op — no sync sender registered (WS disconnected or page not yet bridged):',
+      intent.kind,
+      intent,
+    );
+    return false;
+  }
   const region = regionOf(intent);
   const op = mapStoreActionToOp(intent, versions[region], undo ?? undefined);
-  return currentSender(op);
+  const sent = currentSender(op);
+  if (!sent) {
+    console.warn(
+      '[writeQueue] sender refused op (likely WS not OPEN yet):',
+      intent.kind,
+      op.type,
+    );
+  }
+  return sent;
 }
 
 /**
