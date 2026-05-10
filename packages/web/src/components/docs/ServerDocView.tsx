@@ -24,7 +24,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Image from '@tiptap/extension-image';
-import { History, Loader2, MessageSquarePlus } from 'lucide-react';
+import { History, Loader2, MessageSquare, MessageSquarePlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -57,6 +57,11 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
   // creating a comment falls back to doc-level (anchorPosition = null).
   const [selRange, setSelRange] = useState<{ from: number; to: number } | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Doc body right-click menu — overrides the browser default with our
+  // own (Comment / History) per Notion / Linear convention.
+  const [bodyContextMenu, setBodyContextMenu] = useState<
+    { x: number; y: number } | null
+  >(null);
   const setCommentSelection = useCommentSelectionStore((s) => s.setSelection);
   const setCommentPanelOpen = useCommentSelectionStore((s) => s.setPanelOpen);
 
@@ -288,12 +293,40 @@ export function ServerDocView({ documentId, projectId, title, onTitleChange }: S
           collab status: {status}
         </p>
       </header>
-      <div className="flex-1 overflow-y-auto p-6 pb-16 md:pb-6">
+      <div
+        className="flex-1 overflow-y-auto p-6 pb-16 md:pb-6"
+        onContextMenu={(e) => {
+          // Override browser default menu (spell-check, dictionary,
+          // etc.) with our doc-aware menu — comment + history. Same
+          // pattern Notion / Linear use for their doc bodies. Loses
+          // OS-level surfaces (translate, look up) but matches the
+          // app's own ergonomics.
+          e.preventDefault();
+          setBodyContextMenu({ x: e.clientX, y: e.clientY });
+        }}
+      >
         <EditorContent
           editor={editor}
           className="prose prose-sm dark:prose-invert max-w-none focus:outline-none"
         />
       </div>
+
+      {bodyContextMenu && (
+        <DocBodyContextMenu
+          x={bodyContextMenu.x}
+          y={bodyContextMenu.y}
+          hasSelection={Boolean(selRange)}
+          onAddComment={() => {
+            handleCommentSelection();
+            setBodyContextMenu(null);
+          }}
+          onShowHistory={() => {
+            setHistoryOpen(true);
+            setBodyContextMenu(null);
+          }}
+          onClose={() => setBodyContextMenu(null)}
+        />
+      )}
       {/* Mobile-only sticky toolbar (ADR 0022 v1.2 stage C). md:hidden
           inside the component itself; pb-16 above leaves room so the
           editor content doesn't end behind the toolbar. */}
@@ -482,4 +515,128 @@ function buildDecorationSet(
     );
   }
   return DecorationSet.create(doc, decos);
+}
+
+/**
+ * Right-click menu for the doc body. Mirrors the structure of the
+ * sheet's CellContextMenu (fixed position, viewport-clamped, click-
+ * outside / Escape close) so both surfaces feel the same.
+ */
+function DocBodyContextMenu({
+  x,
+  y,
+  hasSelection,
+  onAddComment,
+  onShowHistory,
+  onClose,
+}: {
+  x: number;
+  y: number;
+  hasSelection: boolean;
+  onAddComment: () => void;
+  onShowHistory: () => void;
+  onClose: () => void;
+}) {
+  const t = useTranslations();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
+
+  // Clamp to viewport — same logic as CellContextMenu's effect.
+  useEffect(() => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+      ref.current.style.left = `${x - rect.width}px`;
+    }
+    if (rect.bottom > window.innerHeight) {
+      ref.current.style.top = `${y - rect.height}px`;
+    }
+  }, [x, y]);
+
+  const items: Array<{
+    label: string;
+    icon: React.ReactNode;
+    onClick: () => void;
+    disabled?: boolean;
+    hint?: string;
+    divider?: boolean;
+  }> = [
+    {
+      label: t('contextMenu.addComment'),
+      icon: <MessageSquare className="w-4 h-4" />,
+      onClick: onAddComment,
+      disabled: !hasSelection,
+      hint: hasSelection ? undefined : t('docContext.selectFirst'),
+      divider: true,
+    },
+    {
+      label: t('docContext.showHistory'),
+      icon: <History className="w-4 h-4" />,
+      onClick: onShowHistory,
+    },
+  ];
+
+  return (
+    <div
+      ref={ref}
+      className="fixed z-[60] min-w-[200px] py-1 rounded-lg shadow-lg"
+      style={{
+        left: x,
+        top: y,
+        background: 'var(--bg-primary)',
+        border: '1px solid var(--border-primary)',
+        boxShadow: 'var(--shadow-lg)',
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+    >
+      {items.map((it, i) => (
+        <div key={i}>
+          <button
+            onClick={() => {
+              if (!it.disabled) it.onClick();
+            }}
+            disabled={it.disabled}
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors"
+            style={{
+              color: it.disabled ? 'var(--text-tertiary)' : 'var(--text-primary)',
+              cursor: it.disabled ? 'not-allowed' : 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              if (!it.disabled) e.currentTarget.style.background = 'var(--bg-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+            title={it.hint}
+          >
+            <span style={{ opacity: it.disabled ? 0.5 : 1 }}>{it.icon}</span>
+            <span className="flex-1 text-left">{it.label}</span>
+          </button>
+          {it.divider && (
+            <div
+              className="my-1 mx-2"
+              style={{ height: 1, background: 'var(--border-primary)' }}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }

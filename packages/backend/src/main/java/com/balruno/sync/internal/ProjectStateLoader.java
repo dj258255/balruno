@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.sync.internal;
 
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
@@ -29,42 +27,29 @@ import java.util.UUID;
 @Service
 class ProjectStateLoader {
 
-    private final JdbcTemplate jdbc;
+    private final ProjectSyncRepository projects;
     private final ObjectMapper json;
 
-    ProjectStateLoader(JdbcTemplate jdbc, ObjectMapper json) {
-        this.jdbc = jdbc;
+    ProjectStateLoader(ProjectSyncRepository projects, ObjectMapper json) {
+        this.projects = projects;
         this.json = json;
     }
 
     /** Returns the serialised {@code sync.full} envelope, ready to send. */
     @Transactional(readOnly = true)
     String loadFull(UUID projectId) {
-        State row;
-        try {
-            row = jdbc.queryForObject(
-                    "SELECT data::text AS d, data_version AS dv, "
-                  + "       sheet_tree::text AS st, sheet_tree_version AS stv, "
-                  + "       doc_tree::text   AS dt, doc_tree_version   AS dtv "
-                  + "FROM projects WHERE id = ? AND deleted_at IS NULL",
-                    (rs, i) -> new State(
-                            rs.getString("d"),  rs.getLong("dv"),
-                            rs.getString("st"), rs.getLong("stv"),
-                            rs.getString("dt"), rs.getLong("dtv")),
-                    projectId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new IllegalStateException("project not found: " + projectId, e);
-        }
+        var row = projects.loadFullState(projectId)
+                .orElseThrow(() -> new IllegalStateException("project not found: " + projectId));
 
         var envelope = new LinkedHashMap<String, Object>();
         envelope.put("type", "sync.full");
-        envelope.put("data",      parse(row.dataJson));
-        envelope.put("sheetTree", parse(row.sheetTreeJson));
-        envelope.put("docTree",   parse(row.docTreeJson));
+        envelope.put("data",      parse(row.getDataJson()));
+        envelope.put("sheetTree", parse(row.getSheetTreeJson()));
+        envelope.put("docTree",   parse(row.getDocTreeJson()));
         envelope.put("versions", Map.of(
-                "data",      row.dataVersion,
-                "sheetTree", row.sheetTreeVersion,
-                "docTree",   row.docTreeVersion));
+                "data",      row.getDataVersion(),
+                "sheetTree", row.getSheetTreeVersion(),
+                "docTree",   row.getDocTreeVersion()));
         try {
             return json.writeValueAsString(envelope);
         } catch (Exception e) {
@@ -95,10 +80,4 @@ class ProjectStateLoader {
             return Map.of();
         }
     }
-
-    private record State(
-            String dataJson, long dataVersion,
-            String sheetTreeJson, long sheetTreeVersion,
-            String docTreeJson, long docTreeVersion
-    ) {}
 }

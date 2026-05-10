@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
@@ -66,7 +64,7 @@ class TreeOpService {
      */
     static final int MAX_NAME_LENGTH = 200;
 
-    private final JdbcTemplate jdbc;
+    private final ProjectSyncRepository projectsRepo;
     private final OpIdempotencyRepository idempotency;
     private final DocumentRepository documents;
     private final ObjectMapper json;
@@ -76,13 +74,13 @@ class TreeOpService {
     private final com.balruno.events.AfterCommitPublisher afterCommit;
     private final com.balruno.workspace.LimitGuard limitGuard;
 
-    TreeOpService(JdbcTemplate jdbc,
+    TreeOpService(ProjectSyncRepository projectsRepo,
                   OpIdempotencyRepository idempotency,
                   DocumentRepository documents,
                   ObjectMapper json,
                   com.balruno.events.AfterCommitPublisher afterCommit,
                   com.balruno.workspace.LimitGuard limitGuard) {
-        this.jdbc = jdbc;
+        this.projectsRepo = projectsRepo;
         this.idempotency = idempotency;
         this.documents = documents;
         this.json = json;
@@ -114,38 +112,29 @@ class TreeOpService {
             return new SyncResult.Cached(cached.getResultVersion(), cached.getResultPayload());
         }
 
-        // 2. lock + read. Column names come from a closed enum so the
-        //    string interpolation is not an injection vector. The data
-        //    columns are pulled only when the op also touches them —
-        //    keeps the row size for the 99% folder-add / move / delete
-        //    / rename path the same as before.
+        // 2. lock + read. Each region (sheet_tree / doc_tree) has its
+        //    own repository method so column names are static SQL. The
+        //    data column is pulled only on sheet-leaf creation — keeps
+        //    the row size for the 99% folder-add / move / delete /
+        //    rename path the same as before.
         ProjectRow row;
-        try {
-            if (sheetLeaf != null) {
-                row = jdbc.queryForObject(
-                        "SELECT " + columns.treeColumn + "::text AS tree_json, "
-                      + columns.versionColumn + " AS tree_version, "
-                      + "data::text AS data_json, data_version "
-                      + "FROM projects WHERE id = ? AND deleted_at IS NULL FOR UPDATE",
-                        (rs, i) -> new ProjectRow(
-                                rs.getString("tree_json"),
-                                rs.getLong("tree_version"),
-                                rs.getString("data_json"),
-                                rs.getLong("data_version")),
-                        projectId);
-            } else {
-                row = jdbc.queryForObject(
-                        "SELECT " + columns.treeColumn + "::text AS tree_json, "
-                      + columns.versionColumn + " AS tree_version "
-                      + "FROM projects WHERE id = ? AND deleted_at IS NULL FOR UPDATE",
-                        (rs, i) -> new ProjectRow(
-                                rs.getString("tree_json"),
-                                rs.getLong("tree_version"),
-                                null, 0L),
-                        projectId);
-            }
-        } catch (EmptyResultDataAccessException e) {
-            throw new IllegalStateException("project not found: " + projectId, e);
+        if (sheetLeaf != null) {
+            // SHEET region only — sheet leaf creation is the only op
+            // that needs the data column locked alongside the tree.
+            row = projectsRepo.lockSheetTreeAndDataForUpdate(projectId)
+                    .map(r -> new ProjectRow(
+                            r.getTreeJson(), r.getTreeVersion(),
+                            r.getDataJson(), r.getDataVersion()))
+                    .orElseThrow(() -> new IllegalStateException(
+                            "project not found: " + projectId));
+        } else {
+            var read = treeKind == SyncMessage.TreeKind.SHEET
+                    ? projectsRepo.lockSheetTreeForUpdate(projectId)
+                    : projectsRepo.lockDocTreeForUpdate(projectId);
+            row = read.map(r -> new ProjectRow(
+                            r.getTreeJson(), r.getTreeVersion(), null, 0L))
+                    .orElseThrow(() -> new IllegalStateException(
+                            "project not found: " + projectId));
         }
 
         // 3. baseVersion check.
@@ -197,20 +186,14 @@ class TreeOpService {
             createdSheetShell = buildEmptySheetShell(sheetLeaf);
             sheets.add(createdSheetShell);
             newDataVersion = row.dataVersion + 1L;
-            jdbc.update(
-                    "UPDATE projects SET " + columns.treeColumn + " = ?::jsonb, "
-                  + columns.versionColumn + " = ?, "
-                  + "data = ?::jsonb, data_version = ?, updated_at = now() "
-                  + "WHERE id = ?",
-                    roots.toString(), newVersion,
-                    sheets.toString(), newDataVersion,
-                    projectId);
+            // Sheet leaf creation is SHEET-only by detectSheetLeafCreation.
+            projectsRepo.updateSheetTreeWithData(
+                    projectId, roots.toString(), newVersion,
+                    sheets.toString(), newDataVersion);
+        } else if (treeKind == SyncMessage.TreeKind.SHEET) {
+            projectsRepo.updateSheetTree(projectId, roots.toString(), newVersion);
         } else {
-            jdbc.update(
-                    "UPDATE projects SET " + columns.treeColumn + " = ?::jsonb, "
-                  + columns.versionColumn + " = ?, updated_at = now() "
-                  + "WHERE id = ?",
-                    roots.toString(), newVersion, projectId);
+            projectsRepo.updateDocTree(projectId, roots.toString(), newVersion);
         }
 
         // 4.6 cascade soft-delete on documents — DOC tree.delete only.
@@ -278,9 +261,7 @@ class TreeOpService {
         // Resolve workspaceId off the project — separate read so we
         // don't reach across modules. Cheap (PK lookup) and only
         // runs on doc tree ops.
-        var workspaceId = jdbc.queryForObject(
-                "SELECT workspace_id FROM projects WHERE id = ?",
-                UUID.class, projectId);
+        var workspaceId = projectsRepo.findWorkspaceId(projectId).orElse(null);
         if (workspaceId == null) return;
 
         String action;
@@ -499,16 +480,9 @@ class TreeOpService {
      * tree.add will fail on the next read anyway).
      */
     private com.balruno.workspace.WorkspacePlan workspacePlanFor(UUID projectId) {
-        try {
-            var name = jdbc.queryForObject(
-                    "SELECT w.plan::text "
-                  + "FROM workspaces w JOIN projects p ON p.workspace_id = w.id "
-                  + "WHERE p.id = ? AND p.deleted_at IS NULL",
-                    String.class, projectId);
-            return name == null ? null : com.balruno.workspace.WorkspacePlan.valueOf(name);
-        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
-            return null;
-        }
+        return projectsRepo.findActiveWorkspacePlanName(projectId)
+                .map(com.balruno.workspace.WorkspacePlan::valueOf)
+                .orElse(null);
     }
 
     private Set<UUID> applyToTree(ArrayNode roots, SyncMessage op) {

@@ -532,6 +532,10 @@
     "confirmDelete": "정말 삭제하시겠습니까?",
     "remove": "제거"
   },
+  "docContext": {
+    "showHistory": "변경 이력 보기",
+    "selectFirst": "먼저 텍스트를 선택하세요"
+  },
   "contextMenu": {
     "openRecordDetail": "레코드 상세 보기",
     "showRowHistory": "변경 이력 보기",

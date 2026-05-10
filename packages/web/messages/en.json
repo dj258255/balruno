@@ -532,6 +532,10 @@
     "confirmDelete": "Are you sure you want to delete?",
     "remove": "Remove"
   },
+  "docContext": {
+    "showHistory": "Show change history",
+    "selectFirst": "Select text first"
+  },
   "contextMenu": {
     "openRecordDetail": "Open record detail",
     "showRowHistory": "Show change history",

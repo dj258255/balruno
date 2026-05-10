@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
@@ -49,7 +48,7 @@ class UndoServiceImpl implements UndoService {
     private final TreeOpService treeOps;
     private final SyncBroadcaster broadcaster;
     private final ObjectMapper json;
-    private final JdbcTemplate jdbc;
+    private final ProjectSyncRepository projects;
 
     /**
      * Tree-mutation helper. Spring Boot 4 autowires {@code
@@ -68,13 +67,13 @@ class UndoServiceImpl implements UndoService {
                     TreeOpService treeOps,
                     SyncBroadcaster broadcaster,
                     ObjectMapper json,
-                    JdbcTemplate jdbc) {
+                    ProjectSyncRepository projects) {
         this.repo = repo;
         this.sheetCellOps = sheetCellOps;
         this.treeOps = treeOps;
         this.broadcaster = broadcaster;
         this.json = json;
-        this.jdbc = jdbc;
+        this.projects = projects;
     }
 
     @Override
@@ -194,23 +193,21 @@ class UndoServiceImpl implements UndoService {
      */
     private long currentVersionForOp(ObjectNode op, UUID projectId) {
         var type = op.path("type").asText();
-        var column = switch (type) {
+        var read = switch (type) {
             case "cell.update", "cell.style.update", "sheet.metadata.update",
                  "row.add", "row.delete", "row.move",
-                 "column.add", "column.update", "column.delete" -> "data_version";
+                 "column.add", "column.update", "column.delete"
+                    -> projects.readDataVersion(projectId);
             case "tree.add", "tree.move", "tree.delete", "tree.rename" -> {
                 var treeKind = op.path("treeKind").asText();
-                yield "SHEET".equals(treeKind) ? "sheet_tree_version" : "doc_tree_version";
+                yield "SHEET".equals(treeKind)
+                        ? projects.readSheetTreeVersion(projectId)
+                        : projects.readDocTreeVersion(projectId);
             }
             default -> throw new IllegalStateException("not an undoable op type: " + type);
         };
-        var version = jdbc.queryForObject(
-                "SELECT " + column + " FROM projects WHERE id = ?",
-                Long.class, projectId);
-        if (version == null) {
-            throw new IllegalStateException("project not found: " + projectId);
-        }
-        return version;
+        return read.orElseThrow(
+                () -> new IllegalStateException("project not found: " + projectId));
     }
 
     @Override
