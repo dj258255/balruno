@@ -45,13 +45,13 @@ docker run --rm -v "$WORK/seed:/work" -w /work node:22-alpine sh -c \
 # ─── 3. Seed in parallel ──────────────────────────────────────────────
 log "3/7 seed MySQL / PG / Mongo (parallel)"
 docker run --rm --network balruno-bench_bench \
-  -e MYSQL_HOST=mysql -e MYSQL_USER=bench -e MYSQL_PASSWORD=bench -e MYSQL_DB=bench \
+  -e MYSQL_HOST=mysql -e MYSQL_PORT=3306 -e MYSQL_USER=bench -e MYSQL_PASSWORD=bench -e MYSQL_DB=bench \
   -v "$WORK/seed:/work" -w /work node:22-alpine sh -c \
   "npm install --omit=dev --silent && node seed-mysql.mjs" > "$RESULTS/seed-mysql.log" 2>&1 &
 PID_MY=$!
 
 docker run --rm --network balruno-bench_bench \
-  -e PGHOST=pg -e PGUSER=bench -e PGPASSWORD=bench -e PGDATABASE=bench \
+  -e PGHOST=pg -e PGPORT=5432 -e PGUSER=bench -e PGPASSWORD=bench -e PGDATABASE=bench \
   -v "$WORK/seed:/work" -w /work node:22-alpine sh -c \
   "npm install --omit=dev --silent && node seed-pg.mjs" > "$RESULTS/seed-pg.log" 2>&1 &
 PID_PG=$!
