@@ -26,7 +26,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, Menu } from 'lucide-react';
+import { ArrowLeft, FileSpreadsheet, Loader2, Menu } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import EmptyState from '@/components/ui/EmptyState';
 
 import {
   BackendError,
@@ -154,6 +156,7 @@ export default function WorkspaceShell({
   const slug = workspaceSlug;
   const projectSlug = initialProjectSlug;
   const router = useRouter();
+  const t = useTranslations();
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [project, setProject] = useState<Project | null>(null);
@@ -348,14 +351,35 @@ export default function WorkspaceShell({
   // moved out of view, etc.) we fall through to the first sheet.
   type Selection = { kind: 'sheet' | 'doc'; id: string } | null;
   const [explicitSelection, setExplicitSelection] = useState<Selection>(null);
+  // Selection must respect *openTabs* — closing the active tab clears
+  // the body even though the underlying sheet still exists in the
+  // project. Without this guard the closed sheet kept rendering as if
+  // the tab strip were a no-op.
+  const openTabs = useProjectStore((s) => s.openTabs);
+  const isInOpenTabs = (sel: Selection) =>
+    sel !== null && openTabs.some((t) => t.kind === sel.kind && t.id === sel.id);
   const explicitStillValid =
     explicitSelection &&
+    isInOpenTabs(explicitSelection) &&
     (explicitSelection.kind === 'sheet'
       ? sheets.some((s) => s.id === explicitSelection.id)
       : findNodeName(docTree, explicitSelection.id) !== null);
+  // Fallback selection — first *open* tab, not first sheet. With no
+  // tabs open we leave selection null so the main panel shows an
+  // empty-state prompt rather than a stale sheet.
+  const fallbackFromTabs = (() => {
+    for (const t of openTabs) {
+      if (t.kind === 'sheet' && sheets.some((s) => s.id === t.id)) {
+        return { kind: 'sheet' as const, id: t.id };
+      }
+      if (t.kind === 'doc' && findNodeName(docTree, t.id) !== null) {
+        return { kind: 'doc' as const, id: t.id };
+      }
+    }
+    return null;
+  })();
   const selection: Selection =
-    (explicitStillValid ? explicitSelection : null) ??
-    (sheets[0] ? { kind: 'sheet', id: sheets[0].id } : null);
+    (explicitStillValid ? explicitSelection : null) ?? fallbackFromTabs;
   const setSelection = setExplicitSelection;
 
   const selectedSheet =
@@ -968,9 +992,13 @@ export default function WorkspaceShell({
                 onTitleChange={(next) => docTreeOps.rename(selectedDocId, next)}
               />
             ) : (
-              <p className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                시트나 문서를 선택하세요.
-              </p>
+              <div className="flex-1 flex items-center justify-center p-8">
+                <EmptyState
+                  icon={FileSpreadsheet}
+                  title={t('sheet.noTabsOpenTitle')}
+                  description={t('sheet.noTabsOpenHint')}
+                />
+              </div>
             )}
           </section>
 
