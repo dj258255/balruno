@@ -175,5 +175,111 @@ log "writing results/SUMMARY.md"
   echo "Raw k6 JSON, EXPLAIN captures, seed logs all in this directory."
 } > "$RESULTS/SUMMARY.md"
 
-log_ok "ALL DONE — see results/SUMMARY.md"
+log_ok "wrote results/SUMMARY.md"
+
+# ─── 9. combined.json — single-file truth source ─────────────────────
+# All result tables, all six k6 summaries, all six EXPLAIN captures, plus
+# host/data/commit metadata. This is the file to commit to git and quote
+# from the blog/resume.
+log "writing results/combined.json"
+
+# Helpers — read each summary's metric values, fall back to null on miss.
+metric() {
+  local file="$RESULTS/$1.summary.json" key="$2"
+  [[ -f $file ]] || { echo null; return; }
+  jq -r ".metrics.\"${key}\".values | (.\"p(50)\" // null), (.\"p(95)\" // null), (.\"p(99)\" // null), (.count // null), (.rate // null), (.fails // null)" "$file" 2>/dev/null \
+    | paste -sd, - || echo null
+}
+
+extract() {
+  # $1 = scenario name (e.g. mysql-sheet-get), $2 = k6 metric prefix
+  local file="$RESULTS/$1.summary.json" prefix="$2"
+  [[ -f $file ]] || { echo "{}"; return; }
+  jq --arg lat "${prefix}_latency_ms" --arg err "${prefix}_errors" '
+    {
+      p50:        (.metrics[$lat].values["p(50)"]      // null),
+      p95:        (.metrics[$lat].values["p(95)"]      // null),
+      p99:        (.metrics[$lat].values["p(99)"]      // null),
+      latency_avg: (.metrics[$lat].values.avg          // null),
+      latency_max: (.metrics[$lat].values.max          // null),
+      req_total:  (.metrics.http_reqs.values.count     // null),
+      req_rate:   (.metrics.http_reqs.values.rate      // null),
+      error_rate: (.metrics[$err].values.rate          // null),
+      iterations: (.metrics.iterations.values.count    // null),
+      data_received_bytes: (.metrics.data_received.values.count // null)
+    }
+  ' "$file"
+}
+
+explain_capture() {
+  local file="$RESULTS/$1"
+  [[ -f $file ]] || { echo null; return; }
+  jq -Rs '.' < "$file"
+}
+
+ENV_HOST="$(hostname -f 2>/dev/null || hostname)"
+ENV_KERNEL="$(uname -srm)"
+ENV_OS="$(grep -E '^PRETTY_NAME' /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '\"' || echo unknown)"
+ENV_DOCKER="$(docker --version 2>/dev/null || echo unknown)"
+ENV_K6="$(docker run --rm grafana/k6:latest version 2>/dev/null | head -1 || echo unknown)"
+ENV_COMMIT="$(git -C "$WORK/.." rev-parse HEAD 2>/dev/null || echo unknown)"
+ENV_BRANCH="$(git -C "$WORK/.." rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
+ENV_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+jq -n \
+  --arg host "$ENV_HOST" \
+  --arg kernel "$ENV_KERNEL" \
+  --arg os "$ENV_OS" \
+  --arg docker "$ENV_DOCKER" \
+  --arg k6 "$ENV_K6" \
+  --arg commit "$ENV_COMMIT" \
+  --arg branch "$ENV_BRANCH" \
+  --arg ts "$ENV_TS" \
+  --argjson mysql_sg "$(extract mysql-sheet-get sheet_get)" \
+  --argjson pg_sg    "$(extract pg-sheet-get sheet_get)" \
+  --argjson mongo_sg "$(extract mongo-sheet-get sheet_get)" \
+  --argjson mysql_se "$(extract mysql-search search)" \
+  --argjson pg_se    "$(extract pg-search search)" \
+  --argjson mongo_se "$(extract mongo-search search)" \
+  --arg explain_pg_sg    "$([[ -f $RESULTS/explain-pg-sheet-get.txt ]]    && cat "$RESULTS/explain-pg-sheet-get.txt"    || echo '')" \
+  --arg explain_pg_se    "$([[ -f $RESULTS/explain-pg-search.txt ]]       && cat "$RESULTS/explain-pg-search.txt"       || echo '')" \
+  --arg explain_mysql_sg "$([[ -f $RESULTS/explain-mysql-sheet-get.txt ]] && cat "$RESULTS/explain-mysql-sheet-get.txt" || echo '')" \
+  --arg explain_mysql_se "$([[ -f $RESULTS/explain-mysql-search.txt ]]    && cat "$RESULTS/explain-mysql-search.txt"    || echo '')" \
+  --arg explain_mongo_sg "$([[ -f $RESULTS/explain-mongo-sheet-get.txt ]] && cat "$RESULTS/explain-mongo-sheet-get.txt" || echo '')" \
+  --arg explain_mongo_se "$([[ -f $RESULTS/explain-mongo-search.txt ]]    && cat "$RESULTS/explain-mongo-search.txt"    || echo '')" \
+  '{
+     env: {
+       host: $host, kernel: $kernel, os: $os,
+       docker: $docker, k6: $k6,
+       git_commit: $commit, git_branch: $branch,
+       timestamp_utc: $ts
+     },
+     config: {
+       data: "10000 sheets x ~50KB JSONB (avg ~16 columns)",
+       vu: 50,
+       duration_per_scenario: "5m",
+       scenarios: ["sheet-get (id-based ~50KB blob)", "search (name lookup via containment / generated-col / path index)"]
+     },
+     results: {
+       mysql: { sheet_get: $mysql_sg, search: $mysql_se },
+       pg:    { sheet_get: $pg_sg,    search: $pg_se },
+       mongo: { sheet_get: $mongo_sg, search: $mongo_se }
+     },
+     explain: {
+       pg:    { sheet_get: $explain_pg_sg,    search: $explain_pg_se },
+       mysql: { sheet_get: $explain_mysql_sg, search: $explain_mysql_se },
+       mongo: { sheet_get: $explain_mongo_sg, search: $explain_mongo_se }
+     }
+   }' > "$RESULTS/combined.json"
+
+log_ok "wrote results/combined.json ($(wc -c < "$RESULTS/combined.json" | tr -d ' ') bytes)"
+
+# ─── 10. Final dump ──────────────────────────────────────────────────
+log_ok "ALL DONE"
+echo
+echo "Truth source: results/combined.json (single file with env + 6 scenarios + 6 EXPLAINs)"
+echo "Human-read:   results/SUMMARY.md"
+echo "Raw k6:       results/*.json + results/*.summary.json"
+echo "EXPLAIN raw:  results/explain-*.txt"
+echo
 cat "$RESULTS/SUMMARY.md"
