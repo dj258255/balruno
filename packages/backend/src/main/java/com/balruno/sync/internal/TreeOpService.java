@@ -19,7 +19,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Tree region op log writer — sheet_tree / doc_tree (ADR 0008 v2.0
@@ -69,6 +68,7 @@ class TreeOpService {
 
     private final JdbcTemplate jdbc;
     private final OpIdempotencyRepository idempotency;
+    private final DocumentRepository documents;
     private final ObjectMapper json;
     private final com.fasterxml.jackson.databind.ObjectMapper nodeMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
@@ -78,11 +78,13 @@ class TreeOpService {
 
     TreeOpService(JdbcTemplate jdbc,
                   OpIdempotencyRepository idempotency,
+                  DocumentRepository documents,
                   ObjectMapper json,
                   com.balruno.events.AfterCommitPublisher afterCommit,
                   com.balruno.workspace.LimitGuard limitGuard) {
         this.jdbc = jdbc;
         this.idempotency = idempotency;
+        this.documents = documents;
         this.json = json;
         this.afterCommit = afterCommit;
         this.limitGuard = limitGuard;
@@ -433,10 +435,8 @@ class TreeOpService {
      */
     private void insertDocumentShell(UUID projectId, DocLeafSpec spec) {
         byte[] emptyYState = new byte[]{0x00, 0x00};
-        jdbc.update(
-                "INSERT INTO documents (id, project_id, slug, title, ydoc_state) "
-              + "VALUES (?, ?, ?, ?, ?)",
-                spec.id(), projectId, spec.id().toString(), spec.name(), emptyYState);
+        documents.save(new DocumentEntity(
+                spec.id(), projectId, spec.id().toString(), spec.name(), emptyYState));
     }
 
     // ── op-tree mutation ──────────────────────────────────────────────
@@ -649,21 +649,9 @@ class TreeOpService {
      * supplied set. {@code AND deleted_at IS NULL} keeps the operation
      * idempotent (re-applying the same tree.delete via the
      * op_idempotency replay path doesn't bump deleted_at again).
-     *
-     * The {@code id IN (...)} predicate uses inlined UUID literals
-     * because UUID's toString() is hex+dash with no quoting hazard,
-     * which avoids prepared-statement cache fragmentation across
-     * different N-element sets. Real call volume here is low (only
-     * tree.delete on the doc tree), so the trade-off favours one SQL
-     * shape over a single cached prepared statement.
      */
     private void cascadeDocumentSoftDelete(Set<UUID> documentIds) {
-        var inClause = documentIds.stream()
-                .map(id -> "'" + id + "'")
-                .collect(Collectors.joining(",", "(", ")"));
-        jdbc.update(
-                "UPDATE documents SET deleted_at = now() "
-              + "WHERE id IN " + inClause + " AND deleted_at IS NULL");
+        documents.cascadeSoftDelete(documentIds);
     }
 
     private void applyTreeRename(ArrayNode roots, SyncMessage.TreeRename u) {
