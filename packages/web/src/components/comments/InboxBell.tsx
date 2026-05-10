@@ -1,11 +1,10 @@
 'use client';
 
 /**
- * Header bell that surfaces the user's unread @mention inbox
- * (ADR 0024 Stage G MVP). Clicking the bell toggles a popover that
- * lists the most recent unread mentions; each row deep-links into
- * the comment's project (the cell- or doc-level routing happens
- * inside the project page itself once selection lands).
+ * Inbox popover for the user's unread @mention list (ADR 0024 Stage G).
+ * Anchored to the sidebar's Inbox QuickLink — that's the trigger the
+ * user clicks; this component just renders the popover next to it
+ * via portal+fixed so the sidebar's overflow chain can't clip it.
  *
  * MVP scope deliberately small:
  *   - No "mark read" action yet — backend Mention.read_at is set
@@ -16,17 +15,29 @@
  *     once the wss bridge gains a 'comment.mention' fan-out.
  */
 
-import { useEffect, useRef, useState } from 'react';
-import { Bell } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
 
 import { listInbox, type BackendComment } from '@/lib/backend';
+import { useInbox } from '@/stores/inboxStore';
 import { CommentBody } from './CommentBody';
 
 const POLL_MS = 60_000;
 
-export function InboxBell() {
-  const [open, setOpen] = useState(false);
+interface InboxBellProps {
+  /**
+   * The button this popover anchors to (the sidebar's Inbox QuickLink).
+   * The popover sits to the *right* of the button so the sidebar
+   * stays visible behind it.
+   */
+  anchorRef: RefObject<HTMLElement | null>;
+}
+
+export function InboxBell({ anchorRef }: InboxBellProps) {
+  const open = useInbox((s) => s.open);
+  const closeInbox = useInbox((s) => s.closeInbox);
   const [items, setItems] = useState<BackendComment[]>([]);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -36,7 +47,7 @@ export function InboxBell() {
         const list = await listInbox(20);
         if (!cancelled) setItems(list);
       } catch {
-        // Inbox is best-effort; failures stay silent in the header.
+        // Inbox is best-effort; failures stay silent.
       }
     };
     void refetch();
@@ -55,86 +66,93 @@ export function InboxBell() {
     };
   }, []);
 
-  // Click-outside to dismiss the popover. We listen on mousedown so
-  // the close fires before the synthetic React click on a target
-  // inside the popover (avoids closing when the user clicks a row).
+  // Re-anchor on open + on viewport / scroll changes so the popover
+  // tracks the sidebar button if the layout reflows underneath it.
+  useLayoutEffect(() => {
+    if (!open) {
+      setPos(null);
+      return;
+    }
+    const update = () => {
+      const rect = anchorRef.current?.getBoundingClientRect();
+      if (rect) setPos({ left: rect.right + 8, top: rect.top });
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [open, anchorRef]);
+
+  // Click-outside dismiss. The anchor button is excluded so its own
+  // toggle action (sidebar QuickLink) keeps working — without this
+  // the mousedown-first listener would close *before* the button's
+  // onClick had a chance to flip the store state back open.
   useEffect(() => {
     if (!open) return;
-    const onDocClick = (e: MouseEvent) => {
-      if (!popoverRef.current) return;
-      if (popoverRef.current.contains(e.target as Node)) return;
-      setOpen(false);
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (popoverRef.current?.contains(target)) return;
+      if (anchorRef.current?.contains(target)) return;
+      closeInbox();
     };
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, [open]);
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [open, anchorRef, closeInbox]);
 
-  const unread = items.length;
+  if (!open || !pos || typeof document === 'undefined') return null;
 
-  return (
-    <div className="relative" ref={popoverRef}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded hover:bg-[var(--bg-hover)] max-md:h-11 max-md:w-11"
-        style={{ color: 'var(--text-secondary)' }}
-        aria-label={`받은 멘션 ${unread}개`}
+  return createPortal(
+    <div
+      ref={popoverRef}
+      className="fixed z-50 w-80 rounded-md border shadow-lg"
+      style={{
+        left: pos.left,
+        top: pos.top,
+        borderColor: 'var(--border-primary)',
+        background: 'var(--bg-primary)',
+      }}
+    >
+      <div
+        className="border-b px-3 py-2 text-xs font-medium"
+        style={{
+          borderColor: 'var(--border-primary)',
+          color: 'var(--text-tertiary)',
+        }}
       >
-        <Bell className="h-4 w-4" />
-        {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-4 text-white">
-            {unread > 99 ? '99+' : unread}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div
-          className="absolute right-0 top-full z-50 mt-1 w-80 rounded-md border shadow-lg"
-          style={{
-            borderColor: 'var(--border-primary)',
-            background: 'var(--bg-primary)',
-          }}
-        >
-          <div
-            className="border-b px-3 py-2 text-xs font-medium"
-            style={{
-              borderColor: 'var(--border-primary)',
-              color: 'var(--text-tertiary)',
-            }}
-          >
-            받은 멘션
-          </div>
-          {items.length === 0 ? (
-            <div className="px-3 py-6 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              읽지 않은 멘션이 없습니다.
-            </div>
-          ) : (
-            <ul className="max-h-96 overflow-y-auto">
-              {items.map((c) => (
-                <li
-                  key={c.id}
-                  className="border-b px-3 py-2 last:border-b-0"
-                  style={{ borderColor: 'var(--border-primary)' }}
-                >
-                  <div
-                    className="mb-1 flex items-center justify-between text-xs"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
-                    <span className="font-mono">{c.authorUserId.slice(0, 8)}</span>
-                    <span>{new Date(c.createdAt).toLocaleString()}</span>
-                  </div>
-                  <CommentBody
-                    body={c.bodyJson}
-                    className="line-clamp-2 text-sm"
-                    style={{ color: 'var(--text-primary)' }}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
+        받은 멘션
+      </div>
+      {items.length === 0 ? (
+        <div className="px-3 py-6 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          읽지 않은 멘션이 없습니다.
         </div>
+      ) : (
+        <ul className="max-h-96 overflow-y-auto">
+          {items.map((c) => (
+            <li
+              key={c.id}
+              className="border-b px-3 py-2 last:border-b-0"
+              style={{ borderColor: 'var(--border-primary)' }}
+            >
+              <div
+                className="mb-1 flex items-center justify-between text-xs"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                <span className="font-mono">{c.authorUserId.slice(0, 8)}</span>
+                <span>{new Date(c.createdAt).toLocaleString()}</span>
+              </div>
+              <CommentBody
+                body={c.bodyJson}
+                className="line-clamp-2 text-sm"
+                style={{ color: 'var(--text-primary)' }}
+              />
+            </li>
+          ))}
+        </ul>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

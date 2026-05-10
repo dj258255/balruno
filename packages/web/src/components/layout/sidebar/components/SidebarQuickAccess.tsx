@@ -19,7 +19,7 @@
  * useTodaysWork 훅 재사용.
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, forwardRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Home, Inbox, Zap, Bug, Gamepad2, Clock,
@@ -30,6 +30,7 @@ import { useTranslations } from 'next-intl';
 import { useTodaysWork, type RowWithContext } from '@/hooks/useTodaysWork';
 import { useProjectStore } from '@/stores/projectStore';
 import { useInbox } from '@/stores/inboxStore';
+import { InboxBell } from '@/components/comments/InboxBell';
 
 type QuickLinkKind = 'home' | 'inbox' | 'sprint' | 'bug' | 'playtest' | 'recent' | 'section-header';
 
@@ -42,7 +43,12 @@ export default function SidebarQuickAccess() {
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
   const currentSheetId = useProjectStore((s) => s.currentSheetId);
   const openInbox = useInbox((s) => s.openInbox);
+  const toggleInbox = useInbox((s) => s.toggleInbox);
   const markAllInboxRead = useInbox((s) => s.markAllRead);
+  // Anchor for the InboxBell popover. The bell is mounted once at
+  // the bottom of this component and reads this ref to position
+  // itself relative to the Inbox QuickLink button.
+  const inboxBtnRef = useRef<HTMLButtonElement>(null);
 
   // 우클릭 컨텍스트 메뉴 — kind 별로 다른 액션
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; kind: QuickLinkKind } | null>(null);
@@ -131,10 +137,11 @@ export default function SidebarQuickAccess() {
 
           {work.recentChanges.length > 0 && (
             <QuickLink
+              ref={inboxBtnRef}
               icon={Inbox}
               label="Inbox"
               count={work.recentChanges.length}
-              onClick={openInbox}
+              onClick={toggleInbox}
               onContextMenu={openCtx('inbox')}
               hint={t('sidebar.qaRecentHint')}
             />
@@ -289,6 +296,12 @@ export default function SidebarQuickAccess() {
         </div>,
         document.body,
       )}
+
+      {/* Inbox popover — anchored to the Inbox QuickLink. Mounted
+          once so the click-outside listener stays alive across the
+          QuickLink's conditional render (recentChanges may briefly
+          empty + re-fill while the popover is open). */}
+      <InboxBell anchorRef={inboxBtnRef} />
     </div>
   );
 }
@@ -317,16 +330,7 @@ function CtxItem({
   );
 }
 
-function QuickLink({
-  icon: Icon,
-  label,
-  count,
-  totalCount,
-  onClick,
-  onContextMenu,
-  active,
-  hint,
-}: {
+interface QuickLinkProps {
   icon: LucideIcon;
   label: string;
   count?: number;
@@ -335,9 +339,15 @@ function QuickLink({
   onContextMenu?: (e: React.MouseEvent) => void;
   active?: boolean;
   hint?: string;
-}) {
+}
+
+const QuickLink = forwardRef<HTMLButtonElement, QuickLinkProps>(function QuickLink(
+  { icon: Icon, label, count, totalCount, onClick, onContextMenu, active, hint },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       onClick={onClick}
       onContextMenu={onContextMenu}
       className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-left transition-colors"
@@ -370,4 +380,4 @@ function QuickLink({
       )}
     </button>
   );
-}
+});
