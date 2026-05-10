@@ -105,9 +105,21 @@ export default function SidebarQuickAccess() {
     || work.recentChanges.length > 0;
 
   if (!hasAnyQuickAccess) {
+    // Minimal mode — fresh workspace with no PM sheets / no recents.
+    // Still surface Inbox so the user can land on a mention even
+    // when their own workspace is otherwise empty (Linear pattern).
     return (
-      <div className="px-2 py-2 border-b" style={{ borderColor: 'var(--border-primary)' }}>
+      <div className="px-2 py-2 border-b space-y-0.5" style={{ borderColor: 'var(--border-primary)' }}>
         <QuickLink icon={Home} label="Home" onClick={goHome} active={isHomeActive} />
+        <QuickLink
+          ref={inboxBtnRef}
+          icon={Inbox}
+          label="Inbox"
+          onClick={toggleInbox}
+          onContextMenu={openCtx('inbox')}
+          hint={t('sidebar.qaRecentHint')}
+        />
+        <InboxBell anchorRef={inboxBtnRef} />
       </div>
     );
   }
@@ -135,17 +147,20 @@ export default function SidebarQuickAccess() {
             active={isHomeActive}
           />
 
-          {work.recentChanges.length > 0 && (
-            <QuickLink
-              ref={inboxBtnRef}
-              icon={Inbox}
-              label="Inbox"
-              count={work.recentChanges.length}
-              onClick={toggleInbox}
-              onContextMenu={openCtx('inbox')}
-              hint={t('sidebar.qaRecentHint')}
-            />
-          )}
+          {/* Inbox — always visible. The count badge tracks recentChanges
+              (sidebar's own data); mention count surfaces inside the
+              popover itself. Always-on entrypoint matches Linear / Notion
+              and avoids the "mention received but no entry path" trap
+              that the conditional render previously created. */}
+          <QuickLink
+            ref={inboxBtnRef}
+            icon={Inbox}
+            label="Inbox"
+            count={work.recentChanges.length}
+            onClick={toggleInbox}
+            onContextMenu={openCtx('inbox')}
+            hint={t('sidebar.qaRecentHint')}
+          />
 
           {hasSprintSheet && (
             <QuickLink
