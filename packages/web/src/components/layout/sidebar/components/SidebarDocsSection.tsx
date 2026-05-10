@@ -31,6 +31,7 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
   const createDoc = useProjectStore((s) => s.createDoc);
   const deleteDoc = useProjectStore((s) => s.deleteDoc);
   const updateDoc = useProjectStore((s) => s.updateDoc);
+  const duplicateDoc = useProjectStore((s) => s.duplicateDoc);
   const moveDoc = useProjectStore((s) => s.moveDoc);
   const toggleDocExpanded = useProjectStore((s) => s.toggleDocExpanded);
   const [expanded, setExpanded] = useState(true);
@@ -333,11 +334,15 @@ export default function SidebarDocsSection({ maxHeight = 240 }: SidebarDocsSecti
                 setDocCtxMenu(null);
                 return;
               }
-              const source = project?.docs?.find((x) => x.id === docCtxMenu.docId);
-              const copyName = t('copyOf', { name: docCtxMenu.docName || t('docsHeading') });
-              const newId = createDoc(currentProjectId, copyName, source?.content ?? '');
-              setCurrentSheet(null);
-              setCurrentDoc(newId);
+              // Server-side duplicate — clones the documents row's
+              // ydoc_state + grafts a doc_tree leaf, broadcasts
+              // sync.full so peers see the clone. The store action
+              // calls setCurrentDoc internally once the REST call
+              // resolves, so we don't pre-set selection here. The
+              // earlier client-side createDoc fallback only worked
+              // for the legacy local-mode `Doc.content` string and
+              // produced an empty doc on the server-canonical path.
+              duplicateDoc(currentProjectId, docCtxMenu.docId);
               setDocCtxMenu(null);
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
