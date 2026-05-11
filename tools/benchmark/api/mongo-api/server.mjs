@@ -25,6 +25,21 @@ app.get('/sheet/:id', async (req, res) => {
   }
 });
 
+// scenario 3 — write: partial patch via $set. Mongo's native partial update,
+// path index gets reindexed.
+app.use(express.json());
+app.patch('/sheet/:id/name', async (req, res) => {
+  const newName = req.body?.name;
+  if (!newName) return res.status(400).json({ error: 'name required' });
+  try {
+    const r = await col.updateOne({ _id: req.params.id }, { $set: { name: newName } });
+    if (r.matchedCount === 0) return res.status(404).json({ error: 'not found' });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 // scenario 2 — name lookup using the path index built at seed time
 app.get('/search', async (req, res) => {
   const name = req.query.name;

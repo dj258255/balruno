@@ -1,12 +1,17 @@
-// generate-sheets.mjs — produce 10,000 sheet objects shaped like Balruno's
-// `Sheet` domain (16 column types × ~100–1000 rows). Average target size is
-// ~50KB per sheet so totals match the blog post measurement claim (~500MB).
+// generate-sheets.mjs — produce sheet objects shaped like Balruno's `Sheet`
+// domain (16 column types × few rows). DB-bound benchmark profile:
+// small per-row payload (~1.5KB) so Node/HTTP serialize doesn't dominate,
+// large row count (50,000) so PG GIN actually gets selected by the planner.
+//
+// First-iteration of this script used ~185KB/sheet × 5K rows, which made the
+// load test stack-bound (50 VU × 185KB JSON serialize on ARM 2 OCPU pegged
+// Node before the DB was even queried). See results-fetched-5k-185kb/.
 //
 // Output: writes NDJSON (one sheet per line) to seed/sheets.ndjson so the
-// three DB seeders can stream it without holding 500MB in memory.
+// three DB seeders can stream it without holding the whole dataset in memory.
 //
 // Usage:  node seed/generate-sheets.mjs [count]
-//   default count = 10000
+//   default count = 50000
 
 import { createWriteStream } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -16,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outPath = path.join(__dirname, 'sheets.ndjson');
 
-const COUNT = Number(process.argv[2] ?? 10000);
+const COUNT = Number(process.argv[2] ?? 50000);
 const COLUMN_TYPES = [
   'text', 'number', 'checkbox', 'select', 'multi-select', 'date',
   'url', 'currency', 'rating', 'link', 'lookup', 'rollup',
@@ -69,14 +74,15 @@ function randomCellValue(type) {
 
 function generateSheet(index) {
   const id = randomUUID();
-  // ~30 columns per sheet, mixed types
-  const columns = Array.from({ length: 30 }, (_, i) => ({
+  // 8 columns per sheet, mixed types
+  const columns = Array.from({ length: 8 }, (_, i) => ({
     id: `col_${i}_${randStr(4)}`,
     name: `${pick(COLUMN_TYPES)}_${i}`,
     type: pick(COLUMN_TYPES),
   }));
-  // Variable row count (100~1000) so total sheet size lands near 50KB on average
-  const rowCount = randInt(80, 220);
+  // Small row count so the per-sheet payload is ~1.5KB — Node serialize
+  // becomes negligible and the load test measures DB-layer differences.
+  const rowCount = randInt(3, 8);
   const rows = Array.from({ length: rowCount }, () => {
     const cells = {};
     for (const c of columns) cells[c.id] = randomCellValue(c.type);

@@ -38,12 +38,17 @@ done
 log_ok "DBs healthy"
 
 # ─── 2. Generate sheets ───────────────────────────────────────────────
-log "2/7 generate sheets.ndjson (5,000 × 16 cols × ~140KB ≈ 700MB total)"
-# Reduced from 10K to 5K to keep the prod_app's 46GB root volume safe — the
-# blog spec was 10K × ~50KB ≈ 500MB but realistic Balruno sheet shapes land
-# at ~140KB each, pushing 10K past 1.4GB seed + ~6GB DB volumes.
+log "2/7 generate sheets.ndjson (50,000 × 8 cols × ~1.5KB ≈ 75MB total)"
+# DB-bound profile: small payload + large row count.
+# First iteration used 5K × ~185KB → the load test became stack-bound:
+# 50 VU × 185KB JSON serialize on ARM 2 OCPU pegged Node before the DB was
+# queried; PG planner also picked Seq Scan since 5K rows fit in shared_buffers
+# making GIN appear useless. Switching to 50K × ~1.5KB makes the planner
+# actually pick GIN on PG, keeps Node serialize cost negligible, and stays
+# well under the prod_app's free disk (seed 75MB + 3 DB volumes ~75MB each
+# ≈ 300MB total).
 docker run --rm -v "$WORK/seed:/work" -w /work node:22-alpine sh -c \
-  "npm install --omit=dev --silent && node generate-sheets.mjs 5000"
+  "npm install --omit=dev --silent && node generate-sheets.mjs 50000"
 
 # ─── 3. Seed in parallel ──────────────────────────────────────────────
 log "3/7 seed MySQL / PG / Mongo (parallel)"
@@ -126,6 +131,10 @@ run_k6() {
   # MB per scenario and pushed the prod_app disk to 100% on a previous run.
   # k6 still writes the *summary* JSON via handleSummary in the test scripts,
   # which is the actual truth source (p50/p95/p99 + counts + error rate).
+  # `|| true`: a single threshold violation (p95<2000 is a soft gate, not a
+  # measurement requirement) used to abort the whole script via set -e, so
+  # later scenarios were never run. We want every scenario to complete so
+  # the SUMMARY table is comparable across all six measurements.
   docker run --rm \
     --network balruno-bench_bench \
     --user "$(id -u):$(id -g)" \
@@ -137,7 +146,7 @@ run_k6() {
     -e SUMMARY_OUT="/work/results/$name.summary.json" \
     grafana/k6:latest run \
       /work/k6/$(basename "$script") \
-    | tee "$RESULTS/$name.log"
+    2>&1 | tee "$RESULTS/$name.log" || true
 }
 
 log "6/7 k6 scenario 1 — sheet GET (50 VU × 5min)"

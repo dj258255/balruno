@@ -24,6 +24,7 @@ const searchLatency = new Trend('search_latency_ms', true);
 const errors = new Rate('search_errors');
 
 export const options = {
+  summaryTrendStats: ['min', 'avg', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
   scenarios: {
     search: {
       executor: 'constant-vus',

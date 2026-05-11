@@ -1,0 +1,18 @@
+                                                               QUERY PLAN                                                               
+----------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=23.99..56.58 rows=10 width=16) (actual time=0.045..0.046 rows=1.00 loops=1)
+   Buffers: shared hit=5
+   ->  Bitmap Heap Scan on sheets  (cost=23.99..1653.41 rows=500 width=16) (actual time=0.044..0.045 rows=1.00 loops=1)
+         Recheck Cond: (data @> '{"name": "dread-kris-JHsU"}'::jsonb)
+         Heap Blocks: exact=1
+         Buffers: shared hit=5
+         ->  Bitmap Index Scan on idx_sheets_data_gin  (cost=0.00..23.86 rows=500 width=0) (actual time=0.029..0.029 rows=1.00 loops=1)
+               Index Cond: (data @> '{"name": "dread-kris-JHsU"}'::jsonb)
+               Index Searches: 1
+               Buffers: shared hit=4
+ Planning:
+   Buffers: shared hit=80
+ Planning Time: 0.532 ms
+ Execution Time: 0.083 ms
+(14 rows)
+

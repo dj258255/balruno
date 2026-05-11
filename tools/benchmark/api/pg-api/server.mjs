@@ -26,6 +26,24 @@ app.get('/sheet/:id', async (req, res) => {
   }
 });
 
+// scenario 3 — write: partial patch via jsonb_set. PG's actual differentiator
+// (binary path patch, no full document reparse).
+app.use(express.json());
+app.patch('/sheet/:id/name', async (req, res) => {
+  const newName = req.body?.name;
+  if (!newName) return res.status(400).json({ error: 'name required' });
+  try {
+    const r = await pool.query(
+      `UPDATE sheets SET data = jsonb_set(data, '{name}', $2::jsonb) WHERE id = $1`,
+      [req.params.id, JSON.stringify(newName)],
+    );
+    if (r.rowCount === 0) return res.status(404).json({ error: 'not found' });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 // scenario 2 — containment lookup (jsonb_path_ops GIN matches this exactly)
 app.get('/search', async (req, res) => {
   const name = req.query.name;

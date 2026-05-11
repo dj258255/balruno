@@ -27,6 +27,24 @@ app.get('/sheet/:id', async (req, res) => {
   }
 });
 
+// scenario 3 — write: partial patch via JSON_SET. Compare with PG jsonb_set
+// (string path expression + reparse vs binary path patch).
+app.use(express.json());
+app.patch('/sheet/:id/name', async (req, res) => {
+  const newName = req.body?.name;
+  if (!newName) return res.status(400).json({ error: 'name required' });
+  try {
+    const [r] = await pool.query(
+      `UPDATE sheets SET data = JSON_SET(data, '$.name', ?) WHERE id = ?`,
+      [newName, req.params.id],
+    );
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'not found' });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 // scenario 2 — name lookup using the generated column + B-Tree index
 app.get('/search', async (req, res) => {
   const name = req.query.name;

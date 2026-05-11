@@ -1,0 +1,12 @@
+                                                        QUERY PLAN                                                        
+--------------------------------------------------------------------------------------------------------------------------
+ Index Scan using sheets_pkey on sheets  (cost=0.29..8.31 rows=1 width=1446) (actual time=0.334..0.335 rows=1.00 loops=1)
+   Index Cond: (id = '04cd57bc-6439-43f0-bbfc-911e5942be3b'::uuid)
+   Index Searches: 1
+   Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=81 read=1
+ Planning Time: 1.322 ms
+ Execution Time: 0.689 ms
+(8 rows)
+

@@ -27,6 +27,9 @@ const getLatency = new Trend('sheet_get_latency_ms', true);
 const errors = new Rate('sheet_get_errors');
 
 export const options = {
+  // p99 is what people quote in postmortems / SLOs — the default
+  // ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)'] is missing it.
+  summaryTrendStats: ['min', 'avg', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
   scenarios: {
     sheet_get: {
       executor: 'constant-vus',

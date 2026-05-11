@@ -1,0 +1,165 @@
+{
+  "explainVersion": "1",
+  "queryPlanner": {
+    "namespace": "bench.sheets",
+    "indexFilterSet": false,
+    "parsedQuery": {
+      "name": {
+        "$eq": "dread-kris-JHsU"
+      }
+    },
+    "queryHash": "E89E3DB8",
+    "planCacheKey": "0098D71E",
+    "optimizationTimeMillis": 15,
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "winningPlan": {
+      "stage": "LIMIT",
+      "limitAmount": 10,
+      "inputStage": {
+        "stage": "PROJECTION_SIMPLE",
+        "transformBy": {
+          "_id": 1
+        },
+        "inputStage": {
+          "stage": "FETCH",
+          "inputStage": {
+            "stage": "IXSCAN",
+            "keyPattern": {
+              "name": 1
+            },
+            "indexName": "name_1",
+            "isMultiKey": false,
+            "multiKeyPaths": {
+              "name": []
+            },
+            "isUnique": false,
+            "isSparse": false,
+            "isPartial": false,
+            "indexVersion": 2,
+            "direction": "forward",
+            "indexBounds": {
+              "name": [
+                "[\"dread-kris-JHsU\", \"dread-kris-JHsU\"]"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "rejectedPlans": []
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 1,
+    "executionTimeMillis": 17,
+    "totalKeysExamined": 1,
+    "totalDocsExamined": 1,
+    "executionStages": {
+      "stage": "LIMIT",
+      "nReturned": 1,
+      "executionTimeMillisEstimate": 0,
+      "works": 2,
+      "advanced": 1,
+      "needTime": 0,
+      "needYield": 0,
+      "saveState": 0,
+      "restoreState": 0,
+      "isEOF": 1,
+      "limitAmount": 10,
+      "inputStage": {
+        "stage": "PROJECTION_SIMPLE",
+        "nReturned": 1,
+        "executionTimeMillisEstimate": 0,
+        "works": 2,
+        "advanced": 1,
+        "needTime": 0,
+        "needYield": 0,
+        "saveState": 0,
+        "restoreState": 0,
+        "isEOF": 1,
+        "transformBy": {
+          "_id": 1
+        },
+        "inputStage": {
+          "stage": "FETCH",
+          "nReturned": 1,
+          "executionTimeMillisEstimate": 0,
+          "works": 2,
+          "advanced": 1,
+          "needTime": 0,
+          "needYield": 0,
+          "saveState": 0,
+          "restoreState": 0,
+          "isEOF": 1,
+          "docsExamined": 1,
+          "alreadyHasObj": 0,
+          "inputStage": {
+            "stage": "IXSCAN",
+            "nReturned": 1,
+            "executionTimeMillisEstimate": 0,
+            "works": 2,
+            "advanced": 1,
+            "needTime": 0,
+            "needYield": 0,
+            "saveState": 0,
+            "restoreState": 0,
+            "isEOF": 1,
+            "keyPattern": {
+              "name": 1
+            },
+            "indexName": "name_1",
+            "isMultiKey": false,
+            "multiKeyPaths": {
+              "name": []
+            },
+            "isUnique": false,
+            "isSparse": false,
+            "isPartial": false,
+            "indexVersion": 2,
+            "direction": "forward",
+            "indexBounds": {
+              "name": [
+                "[\"dread-kris-JHsU\", \"dread-kris-JHsU\"]"
+              ]
+            },
+            "keysExamined": 1,
+            "seeks": 1,
+            "dupsTested": 0,
+            "dupsDropped": 0
+          }
+        }
+      }
+    }
+  },
+  "command": {
+    "find": "sheets",
+    "filter": {
+      "name": "dread-kris-JHsU"
+    },
+    "projection": {
+      "_id": 1
+    },
+    "limit": 10,
+    "$db": "bench"
+  },
+  "serverInfo": {
+    "host": "b4980d98cd69",
+    "port": 27017,
+    "version": "7.0.32",
+    "gitVersion": "40a2e0f542b0a68f0ed51fa216e9d38b9917fe14"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "forceClassicEngine"
+  },
+  "ok": 1
+}

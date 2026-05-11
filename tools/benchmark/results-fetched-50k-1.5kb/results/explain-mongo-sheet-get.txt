@@ -1,0 +1,68 @@
+{
+  "explainVersion": "1",
+  "queryPlanner": {
+    "namespace": "bench.sheets",
+    "indexFilterSet": false,
+    "parsedQuery": {
+      "_id": {
+        "$eq": "04cd57bc-6439-43f0-bbfc-911e5942be3b"
+      }
+    },
+    "queryHash": "869CED4F",
+    "planCacheKey": "333C0A17",
+    "optimizationTimeMillis": 3,
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "winningPlan": {
+      "stage": "IDHACK"
+    },
+    "rejectedPlans": []
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 1,
+    "executionTimeMillis": 9,
+    "totalKeysExamined": 1,
+    "totalDocsExamined": 1,
+    "executionStages": {
+      "stage": "IDHACK",
+      "nReturned": 1,
+      "executionTimeMillisEstimate": 0,
+      "works": 2,
+      "advanced": 1,
+      "needTime": 0,
+      "needYield": 0,
+      "saveState": 0,
+      "restoreState": 0,
+      "isEOF": 1,
+      "keysExamined": 1,
+      "docsExamined": 1
+    }
+  },
+  "command": {
+    "find": "sheets",
+    "filter": {
+      "_id": "04cd57bc-6439-43f0-bbfc-911e5942be3b"
+    },
+    "$db": "bench"
+  },
+  "serverInfo": {
+    "host": "b4980d98cd69",
+    "port": 27017,
+    "version": "7.0.32",
+    "gitVersion": "40a2e0f542b0a68f0ed51fa216e9d38b9917fe14"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "forceClassicEngine"
+  },
+  "ok": 1
+}

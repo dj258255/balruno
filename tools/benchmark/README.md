@@ -108,28 +108,29 @@ cd /tmp && rm -rf benchmark
 
 ---
 
-## 면접 시 참조 자료
+## 재현성 자료
 
-이 측정의 *진실원* 은:
+이 측정의 *진실원* :
 
-| 자료 | 위치 | 면접관 질문에 답할 때 |
-|---|---|---|
-| `results/SUMMARY.md` | 회수한 결과 디렉토리 | "측정 결과는요?" |
-| `results/*.summary.json` | 동일 | "k6 산출물 있나요?" |
-| `results/explain-*.txt` | 동일 | "GIN 인덱스가 실제로 탔는지 어떻게 확인했어요?" |
-| `seed/generate-sheets.mjs` | 본 디렉토리 (commit 권장) | "데이터 형상은 어떻게 만들었어요?" |
-| `k6/*.js` | 동일 | "k6 스크립트 보여주세요" |
-| `docker-compose.yml` | 동일 | "측정 환경 재현 가능해요?" |
+| 자료 | 위치 |
+|---|---|
+| `results/SUMMARY.md` / `SUMMARY-write.md` | 회수한 결과 디렉토리 |
+| `results/*.summary.json` | k6 산출물 |
+| `results/explain-*.txt` | EXPLAIN / executionStats 캡처 |
+| `seed/generate-sheets.mjs` | 데이터 형상 정의 (PRNG seed 고정) |
+| `k6/*.js` | 부하 스크립트 |
+| `docker-compose.yml` | 측정 환경 정의 (3 DB + 3 API + 같은 bridge 네트워크) |
 
-번들 전체를 *balruno repo 의 `tools/benchmark/` 또는 별도 `balruno-bench` 레포에 commit* 해두면 추적성이 살아남는다. 측정 시점/커밋 해시/k6 버전 모두 git 으로 봉인됨.
+번들 전체가 `tools/benchmark/` 에 commit 되어 있어 측정 시점/커밋 해시/k6 버전이 git 으로 봉인된다. 동일 명령으로 다른 환경에서 재실행 가능.
 
 ---
 
-## 알려진 한계 (정직성)
+## 알려진 한계
 
-- **5 분 부하 / 50 VU** — 24 시간 sustained 부하가 아니라 *비교 측정용 짧은 부하* 임. 절댓값보다 *3 DB 간 상대 비율* 에 의미.
+- **5 분 부하 / 50 VU** — 24 시간 sustained 부하가 아니라 *비교 측정용 짧은 부하*. 절댓값보다 *3 DB 간 상대 비율* 에 의미.
 - **단일 호스트** — DB 와 API 가 같은 ARM 12GB 머신에 공존. 실제 prod 분리 구성과 다름. 같은 호스트이므로 *네트워크 latency 가 거의 0* 인데 이게 PG/MySQL/Mongo 모두에게 똑같이 적용되므로 비교는 공정.
-- **10,000 개 시트** — Balruno 의 실제 MVP 규모에 맞춘 측정. 1M 시트 규모에서는 결과가 달라질 수 있음.
-- **prod 데이터 아님** — 합성 데이터 (PRNG seed = 20260511 로 재현 가능). 실제 사용자 시트와 모양은 비슷하지만 분포는 다름.
+- **50,000 개 시트 × 약 1.5KB** — Balruno 의 실제 MVP 규모에 맞춘 측정. 1M 시트 규모에서는 결과가 달라질 수 있음.
+- **prod 데이터 아님** — 합성 데이터 (PRNG seed 고정으로 재현 가능). 실제 사용자 시트와 모양은 비슷하지만 분포는 다름.
+- **CREATE / DELETE 측정 안 함** — sheet 생성/삭제는 사용자 액션 (분당 1회 미만) 이라 50 VU load test 의미가 약함. write 측정은 partial UPDATE 1종 (`PATCH /sheet/:id/name`) — cell event WS 의 실제 패턴.
 
-이 한계들은 *측정 결과 표 옆에 같이 적어두면* 면접관 신뢰가 오히려 올라간다. 한계를 가린 측정보다 *명시한 측정* 이 시그널이 강함.
+이 한계들은 *측정 결과 표 옆에 같이 적어두는 게* 좋은 관행이다. 한계를 가린 측정보다 *명시한 측정* 이 자료로서 강하다.
