@@ -8,12 +8,14 @@ import java.time.Duration;
 /**
  * Bound from {@code balruno.collab.token.*}. Separate from
  * {@code balruno.jwt.*} because the collab token has a different
- * audience, a shorter TTL, and — most importantly — is verified by the
- * Hocuspocus container, not by Spring's resource-server filter chain.
+ * audience and a shorter TTL — but the RSA signing key is shared with
+ * the main API JWT (ADR 0002 v1.2). The audience claim is what
+ * separates the two surfaces, not a second key.
  *
- * Splitting the secrets matters: a leak on either surface (REST API
- * session vs. WebSocket collab handshake) shouldn't compromise the
- * other (ADR 0002 v1.1, ADR 0017 §2.6 거부 이유).
+ * Hocuspocus verifies these tokens on every WebSocket onAuthenticate
+ * call using only the public key half — a leak of the Hocuspocus
+ * runtime no longer compromises issuer integrity (the v1.1 HS256
+ * scheme required sharing the secret with every verifier).
  *
  * Defaults:
  *   - ttl: 15 minutes — long enough for a single editor session to
@@ -24,7 +26,6 @@ import java.time.Duration;
  */
 @ConfigurationProperties(prefix = "balruno.collab.token")
 record CollabTokenProperties(
-        String secret,
         Duration ttl,
         String audience
 ) {}

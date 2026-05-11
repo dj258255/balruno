@@ -98,10 +98,13 @@ spring.security.oauth2.client.registration.google:
     - email
 
 # ─── Self-issued JWT settings ────────────────────────────────────────────
-# HS256 today; RS256 + JWKS endpoint planned once we have multiple
-# verifying parties (Hocuspocus sidecar in B-5).
+# RS256 (ADR 0002 v1.2). PEM-encoded RSA key pair shared with the collab
+# JWT issuer/verifier — audience claim distinguishes the two surfaces.
+# Hocuspocus only receives the public key, so a verifier-side leak can't
+# forge tokens.
 balruno.jwt:
-  secret: ${JWT_SECRET}
+  private-key: ${JWT_PRIVATE_KEY}
+  public-key: ${JWT_PUBLIC_KEY}
   issuer: https://api.balruno.com
   access-token-ttl: PT15M
   refresh-token-ttl: P7D
@@ -117,11 +120,10 @@ balruno.jwt:
   frontend-redirect-base: https://balruno.com
 
 # ─── Collab token (Hocuspocus session) ───────────────────────────────────
-# Distinct HS256 secret from balruno.jwt — the Hocuspocus container
-# verifies these, the API session JWT decoder doesn't even see them.
-# A leak on either surface stays scoped (ADR 0002 v1.1, ADR 0017 §2.6).
+# Same RSA key as balruno.jwt above (ADR 0002 v1.2) — audience claim
+# distinguishes a collab token from an API token. Hocuspocus verifies
+# with the public half only.
 balruno.collab.token:
-  secret: ${COLLAB_TOKEN_SECRET}
   ttl: PT15M
   audience: balruno-collab
 

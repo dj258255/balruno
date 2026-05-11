@@ -7,26 +7,30 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.Base64;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * CollabTokenService unit tests. The Hocuspocus side-car verifies these
- * tokens with a *separate* secret from {@link JwtProperties#secret()}
- * so the test suite double-checks audience/sub/doc claims that the
+ * tokens with the public half of the issuer's RSA key (ADR 0002 v1.2);
+ * the test suite double-checks audience/sub/doc claims that the
  * sidecar parses on every WebSocket open.
  */
 class CollabTokenServiceTest {
 
-    private static final String SECRET_BASE64 = Base64.getEncoder()
-            .encodeToString(new byte[32]);  // 32 zero bytes — minimum HS256
-
     private CollabTokenService newService(Duration ttl, String audience) {
-        var props = new CollabTokenProperties(SECRET_BASE64, ttl, audience);
-        return new CollabTokenService(props);
+        var jwtProps = new JwtProperties(
+                TestRsaKeys.PRIVATE_KEY_PEM,
+                TestRsaKeys.PUBLIC_KEY_PEM,
+                "balruno-test",
+                Duration.ofMinutes(15),
+                Duration.ofDays(30),
+                "balruno_session",
+                ".balruno.test",
+                "https://balruno.test");
+        var collabProps = new CollabTokenProperties(ttl, audience);
+        return new CollabTokenService(new JwtIssuer(jwtProps), collabProps);
     }
 
     @Nested
@@ -34,11 +38,11 @@ class CollabTokenServiceTest {
     class Happy {
 
         @Test
-        void issued_token_parses_with_hs256_signature() throws Exception {
+        void issued_token_parses_with_rs256_signature() throws Exception {
             var token = newService(Duration.ofMinutes(15), "balruno-collab")
                     .issue(UUID.randomUUID(), UUID.randomUUID()).token();
             var parsed = SignedJWT.parse(token);
-            assertThat(parsed.getHeader().getAlgorithm().getName()).isEqualTo("HS256");
+            assertThat(parsed.getHeader().getAlgorithm().getName()).isEqualTo("RS256");
         }
 
         @Test
@@ -93,38 +97,8 @@ class CollabTokenServiceTest {
         }
     }
 
-    @Nested
-    @DisplayName("Error")
-    class Error {
-
-        @Test
-        void secret_below_32_bytes_fails_construction_with_clear_message() {
-            // HS256 requires ≥256 bits = 32 bytes. Boot must fail fast,
-            // not at first sign — operators chase the wrong cause when
-            // the symptom is "auth handshake fails 6 hours after deploy".
-            var shortSecret = Base64.getEncoder().encodeToString(new byte[16]);
-            var props = new CollabTokenProperties(
-                    shortSecret, Duration.ofMinutes(15), "balruno-collab");
-
-            assertThatThrownBy(() -> new CollabTokenService(props))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("at least 32 bytes");
-        }
-
-        @Test
-        void empty_secret_fails_construction() {
-            var props = new CollabTokenProperties(
-                    "", Duration.ofMinutes(15), "balruno-collab");
-            assertThatThrownBy(() -> new CollabTokenService(props))
-                    .isInstanceOf(IllegalStateException.class);
-        }
-
-        @Test
-        void non_base64_secret_fails_construction() {
-            var props = new CollabTokenProperties(
-                    "!!!not base64!!!", Duration.ofMinutes(15), "balruno-collab");
-            assertThatThrownBy(() -> new CollabTokenService(props))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-    }
+    // Error cases that were exclusive to HS256 secret length (32-byte
+    // minimum, base64 decodability) are dropped — RSA key parsing
+    // failure modes live in JwtIssuer's constructor, which throws on
+    // bad PEM before we ever reach this service.
 }

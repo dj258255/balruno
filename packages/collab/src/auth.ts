@@ -3,25 +3,31 @@
 /**
  * Collab token verification.
  *
- * The Spring backend issues short-lived (15 min) HS256 tokens via
+ * The Spring backend issues short-lived (15 min) RS256 tokens via
  * POST /api/v1/auth/collab-token. The Hocuspocus server verifies the
- * token on every connection's onAuthenticate hook — same shared secret,
- * different audience claim from the API session JWT so a leak in either
- * surface doesn't compromise the other.
+ * token on every connection's onAuthenticate hook using the public
+ * half of the issuer's RSA key pair — the private half stays on the
+ * Spring side, so a leak in the collab runtime can't be used to forge
+ * tokens. Audience claim `balruno-collab` separates these from API
+ * session JWTs (audience `balruno-api`) issued from the same key.
  *
- * Stage A scope: this module is wired in but the matching Spring
- * endpoint lands in Stage C (ADR 0017 §2.1). Until then any non-empty
- * token will fail verification and the WS handshake errors out — that's
- * the expected behaviour while the backend half is unfinished.
+ * ADR 0002 v1.2 migrated from HS256-with-shared-secret to RS256;
+ * `COLLAB_TOKEN_SECRET` (raw HMAC bytes) was replaced by
+ * `COLLAB_TOKEN_PUBLIC_KEY` (PEM SPKI public key).
  */
 
 import jwt from 'jsonwebtoken';
 
-const SECRET = process.env.COLLAB_TOKEN_SECRET;
-if (!SECRET) {
-  throw new Error('COLLAB_TOKEN_SECRET environment variable is required');
+const PUBLIC_KEY = process.env.COLLAB_TOKEN_PUBLIC_KEY;
+if (!PUBLIC_KEY) {
+  throw new Error('COLLAB_TOKEN_PUBLIC_KEY environment variable is required');
 }
-const SECRET_BYTES = Buffer.from(SECRET, 'base64');
+// Normalise common shapes: env vars often arrive with literal `\n`
+// escapes (.env loaders) or single-line stripped PEMs. jsonwebtoken's
+// verify() wants the standard multi-line PEM block.
+const PUBLIC_KEY_PEM = PUBLIC_KEY.includes('\\n')
+  ? PUBLIC_KEY.replace(/\\n/g, '\n')
+  : PUBLIC_KEY;
 
 /** Subset of the JWT claims the collab server actually reads. */
 export interface CollabTokenClaims {
@@ -35,8 +41,8 @@ export interface CollabTokenClaims {
 }
 
 export function verifyCollabToken(token: string): CollabTokenClaims {
-  const claims = jwt.verify(token, SECRET_BYTES, {
-    algorithms: ['HS256'],
+  const claims = jwt.verify(token, PUBLIC_KEY_PEM, {
+    algorithms: ['RS256'],
     audience: 'balruno-collab',
   });
   if (typeof claims !== 'object' || claims === null) {

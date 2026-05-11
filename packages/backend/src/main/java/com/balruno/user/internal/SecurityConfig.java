@@ -12,7 +12,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
@@ -25,8 +24,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
 import java.util.List;
 
 /**
@@ -153,11 +150,10 @@ class SecurityConfig {
 
     @Bean
     JwtDecoder jwtDecoder(JwtProperties props) {
-        var keyBytes = Base64.getDecoder().decode(props.secret());
-        var key = new SecretKeySpec(keyBytes, "HmacSHA256");
-        return NimbusJwtDecoder.withSecretKey(key)
-                .macAlgorithm(MacAlgorithm.HS256)
-                .build();
+        // RS256 verifier — Spring resource-server filter chain validates
+        // every `/api/**` bearer with this. The issuer side (JwtIssuer)
+        // signs with the private half of the same PEM-encoded key pair.
+        return NimbusJwtDecoder.withPublicKey(PemKeys.parsePublic(props.publicKey())).build();
     }
 
     @Bean

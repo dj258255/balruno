@@ -16,9 +16,21 @@
 vault_postgres_password: "REPLACE_WITH_RANDOM_32_CHAR"
 vault_postgres_replication_password: "REPLACE_WITH_RANDOM_32_CHAR"
 
-# Spring Boot
-vault_jwt_secret: "REPLACE_WITH_HMAC_HS256_KEY_32_BYTES_BASE64"
-vault_jwt_collab_secret: "REPLACE_WITH_DIFFERENT_HS256_KEY"  # separate collab token, see ADR 0002 v1.1
+# Spring Boot — RSA key pair for RS256 JWT signing (ADR 0002 v1.2).
+# Same key pair signs main API JWTs (audience balruno-api) and collab
+# JWTs (audience balruno-collab); Hocuspocus only gets the public half.
+# Generate:
+#   openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -outform PEM > priv.pem
+#   openssl rsa -in priv.pem -pubout -outform PEM > pub.pem
+# Then paste the full multi-line PEM (BEGIN/END headers included) below.
+vault_jwt_rsa_private_key: |
+  -----BEGIN PRIVATE KEY-----
+  REPLACE_WITH_PKCS8_RSA_PRIVATE_KEY_PEM_BODY
+  -----END PRIVATE KEY-----
+vault_jwt_rsa_public_key: |
+  -----BEGIN PUBLIC KEY-----
+  REPLACE_WITH_X509_SPKI_RSA_PUBLIC_KEY_PEM_BODY
+  -----END PUBLIC KEY-----
 
 # Force-snapshot internal channel — backend → Hocuspocus side-car
 # (POST /internal/snapshot/:docId before doc duplicate). Both the
