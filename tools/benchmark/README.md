@@ -108,6 +108,50 @@ cd /tmp && rm -rf benchmark
 
 ---
 
+## 측정 결과 (2026-05-11)
+
+OCI prod_app (ARM Ampere A1, 2 OCPU + 12GB), docker compose 격리, 50,000 sheets × 평균 ~2KB JSONB, k6 50 VU × 5min (`sleep(0.05)` per iter, theoretical cap ~900 rps).
+원본 산출물 (summary.json + EXPLAIN + 로그): [`results-fetched-50k-1.5kb/`](./results-fetched-50k-1.5kb/).
+
+### Sheet GET — 단건 PK 조회 (latency in ms)
+
+| DB | p50 | p95 | p99 | rps | 인덱스 plan (EXPLAIN) |
+| --- | ---: | ---: | ---: | ---: | --- |
+| MySQL 8.4 | 3 | 25 | 46 | 860 | `id` PK B-Tree covering |
+| **PostgreSQL 18** | **2** | **16** | **30** | **902** | `Index Scan using sheets_pkey` (exec 1.3ms) |
+| MongoDB 7 | 9 | 45 | 72 | 760 | `_id` default |
+
+### Search — containment lookup (`WHERE data @> '{"name":"..."}' LIMIT 10`)
+
+| DB | p50 | p95 | p99 | rps | 인덱스 plan (EXPLAIN) |
+| --- | ---: | ---: | ---: | ---: | --- |
+| MySQL 8.4 | 3 | 23 | 43 | 880 | gen col `name_extracted` + B-Tree covering |
+| **PostgreSQL 18** | **2** | **16** | **32** | **904** | `Bitmap Index Scan on idx_sheets_data_gin` (exec 0.083ms) |
+| MongoDB 7 | 5 | 35 | 60 | 813 | path index on `name` |
+
+### Name UPDATE — partial patch (`PATCH /sheet/:id/name`, 인덱스 reindex 포함)
+
+| DB | p50 | p95 | p99 | rps | 쿼리 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| MySQL 8.4 | 18 | 63 | 95 | 665 | `JSON_SET(data, '$.name', ?)` + gen col B-Tree reindex |
+| PostgreSQL 18 | 10 | 40 | 94 | 743 | `jsonb_set(data, '{name}', $::jsonb)` + GIN reindex |
+| **MongoDB 7** | **6** | **37** | **63** | **804** | `updateOne({_id}, { $set: {name} })` + path index reindex |
+
+→ **Read 1등 PostgreSQL**, **Write 1등 MongoDB** (PG 8% 차이 2등).
+
+### 1차 시도 (5K × 185KB) 의 측정 함정 2종 — 왜 2차로 재설계했나
+
+처음엔 5,000 sheets × 평균 185KB 로 측정 → Sheet GET p95 PG 281 / MySQL 283 / Mongo 482ms 로 거의 동률, Search p95 PG **28163ms (Seq Scan!)**. 단발 curl 로 latency 7-13ms 확인 후 두 함정 진단:
+
+1. **응답 사이즈가 dominant** — 50 VU × 185KB JSON serialize 가 ARM 2 OCPU Node.js 를 CPU 포화. 측정된 p95 280ms 의 대부분이 *Node serialize + HTTP transfer*, DB 차이 묻힘.
+2. **PG 옵티마이저가 5K rows 면 GIN 대신 Seq Scan 선택** — `shared_buffers=1GB` 안에 5K × 185KB ≈ 700MB 가 통째로 fit → opt가 *"Seq Scan 이 GIN+heap fetch 보다 cost 추정상 빠르다"* 결정. EXPLAIN: `Seq Scan, Rows Removed by Filter: 4999, Execution Time: 860.881 ms`.
+
+2차에서 sheet shape ~2KB / 50K rows 로 바꾸니 같은 GIN 인덱스 / 같은 쿼리에서 옵티마이저가 `Bitmap Index Scan` 선택 — EXPLAIN exec time 860ms → **0.083ms** (10,000배). search p95 28163ms → **16ms** (1,760배).
+
+같은 PG / 같은 인덱스 / 데이터셋 크기만 다른 두 EXPLAIN 비교가 이 측정의 가장 중요한 학습.
+
+---
+
 ## 재현성 자료
 
 이 측정의 *진실원* :
