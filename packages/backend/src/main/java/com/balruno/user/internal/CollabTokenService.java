@@ -1,26 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.user.internal;
 
-import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
-import org.springframework.security.oauth2.jwt.JwsHeader;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.List;
+import java.util.Base64;
+import java.util.Date;
 import java.util.UUID;
 
 /**
  * Issues short-lived collab JWTs that the Hocuspocus container verifies
  * on every WebSocket connection. Module-private since only the
  * neighbouring CollabTokenController calls it.
- *
- * Signs with the same RSA key pair as the main API JWT (ADR 0002 v1.2 —
- * RS256 + audience split). The {@code aud=balruno-collab} claim is what
- * distinguishes a collab token from an API token; Hocuspocus enforces
- * the audience check in {@code packages/collab/src/auth.ts}.
  *
  * Authorisation note: this service signs whatever {@code (userId, documentId)}
  * pair the controller hands it. The controller is the right place to
@@ -35,31 +32,38 @@ import java.util.UUID;
 @Service
 class CollabTokenService {
 
-    private final NimbusJwtEncoder encoder;
+    private final byte[] keyBytes;
     private final CollabTokenProperties props;
 
-    CollabTokenService(JwtIssuer issuer, CollabTokenProperties props) {
-        // Reuse the issuer's RSA-backed encoder — single source of truth
-        // for the signing key, and any future key rotation only needs to
-        // happen in one place (JwtIssuer constructor).
-        this.encoder = issuer.encoder();
+    CollabTokenService(CollabTokenProperties props) {
         this.props = props;
+        // Key is base64-encoded raw bytes (matches the JwtProperties /
+        // packages/collab/auth.ts decoding). Verifying the format up-front
+        // makes a misconfigured deploy fail fast at boot, not at first call.
+        this.keyBytes = Base64.getDecoder().decode(props.secret());
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException(
+                    "balruno.collab.token.secret must decode to at least 32 bytes (HS256)");
+        }
     }
 
     IssuedCollabToken issue(UUID userId, UUID documentId) {
         var now = Instant.now();
         var exp = now.plus(props.ttl());
-        var claims = JwtClaimsSet.builder()
+        var claims = new JWTClaimsSet.Builder()
                 .subject(userId.toString())
-                .audience(List.of(props.audience()))
+                .audience(props.audience())
                 .claim("doc", documentId.toString())
-                .issuedAt(now)
-                .expiresAt(exp)
-                .id(UUID.randomUUID().toString())
+                .issueTime(Date.from(now))
+                .expirationTime(Date.from(exp))
                 .build();
-        var header = JwsHeader.with(SignatureAlgorithm.RS256).build();
-        var token = encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
-        return new IssuedCollabToken(token, exp);
+        var jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+        try {
+            jwt.sign(new MACSigner(keyBytes));
+        } catch (JOSEException e) {
+            throw new IllegalStateException("collab token signing failed", e);
+        }
+        return new IssuedCollabToken(jwt.serialize(), exp);
     }
 
     record IssuedCollabToken(String token, Instant expiresAt) {}

@@ -16,21 +16,9 @@
 vault_postgres_password: "REPLACE_WITH_RANDOM_32_CHAR"
 vault_postgres_replication_password: "REPLACE_WITH_RANDOM_32_CHAR"
 
-# Spring Boot — RSA key pair for RS256 JWT signing (ADR 0002 v1.2).
-# Same key pair signs main API JWTs (aud=balruno-api) and collab JWTs
-# (aud=balruno-collab); Hocuspocus only gets the public half.
-#
-# Generate (private — PKCS#8, public — X.509 SPKI):
-#   openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -outform PEM > priv.pem
-#   openssl rsa -in priv.pem -pubout -outform PEM > pub.pem
-#
-# Then paste each full PEM block (including its `-----BEGIN ... KEY-----` and
-# `-----END ... KEY-----` lines) as a YAML literal block — see below.
-# Empty strings here are intentional: this is a template, not a real vault.
-# The values must be populated before ansible-deploy. The Spring backend's
-# PemKeys parser fails fast on a missing or malformed key.
-vault_jwt_rsa_private_key: ""
-vault_jwt_rsa_public_key: ""
+# Spring Boot
+vault_jwt_secret: "REPLACE_WITH_HMAC_HS256_KEY_32_BYTES_BASE64"
+vault_jwt_collab_secret: "REPLACE_WITH_DIFFERENT_HS256_KEY"  # separate collab token, see ADR 0002 v1.1
 
 # Force-snapshot internal channel — backend → Hocuspocus side-car
 # (POST /internal/snapshot/:docId before doc duplicate). Both the

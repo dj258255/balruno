@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.Base64;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,16 +18,21 @@ import static org.assertj.core.api.Assertions.assertThat;
  * (no Mockito) so the suite verifies the actual signed claim shape —
  * sub / iss / aud / iat / exp / jti / email / name / avatar_url / locale.
  *
- * Uses the disposable RSA test key pair from {@link TestRsaKeys} (ADR
- * 0002 v1.2: RS256). JwtProperties is a record (not a Spring bean here)
- * — instantiated directly.
+ * The HS256 secret is generated per-test with a deterministic 32-byte
+ * value so signature validity can be cross-checked. JwtProperties is a
+ * record (not a Spring bean here) — instantiated directly.
  */
 class JwtIssuerTest {
 
+    private static final String SECRET_BASE64 = Base64.getEncoder()
+            .encodeToString(new byte[]{
+                    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                    17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+            });
+
     private JwtIssuer newIssuer(Duration accessTtl) {
         var props = new JwtProperties(
-                TestRsaKeys.PRIVATE_KEY_PEM,
-                TestRsaKeys.PUBLIC_KEY_PEM,
+                SECRET_BASE64,
                 "balruno-test",
                 accessTtl,
                 Duration.ofDays(30),
@@ -50,10 +56,10 @@ class JwtIssuerTest {
     class Happy {
 
         @Test
-        void token_parses_as_signed_jwt_with_rs256_header() throws Exception {
+        void token_parses_as_signed_jwt_with_hs256_header() throws Exception {
             var token = newIssuer(Duration.ofMinutes(15)).issueAccessToken(sampleUser());
             var parsed = SignedJWT.parse(token);
-            assertThat(parsed.getHeader().getAlgorithm().getName()).isEqualTo("RS256");
+            assertThat(parsed.getHeader().getAlgorithm().getName()).isEqualTo("HS256");
         }
 
         @Test
