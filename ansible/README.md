@@ -61,7 +61,7 @@ GH Secrets (Settings → Secrets and variables → Actions):
 
 | 이름 | 값 |
 |---|---|
-| `ANSIBLE_VAULT_PASSWORD` | `/Users/beomsu/Desktop/wikiEngine/ansible/.vault_pass` 파일 내용 (텍스트 그대로) |
+| `ANSIBLE_VAULT_PASSWORD` | vault password 파일 내용 (텍스트 그대로 — `$ANSIBLE_VAULT_PASSWORD_FILE` 경로 안의 값) |
 | `OCI_SSH_PRIVATE_KEY` | `~/.ssh/oci_key` 파일 내용 (PEM 헤더 포함 통째로) |
 | `ACTUATOR_INTERNAL_TOKEN` | (선택) ADR 0045 의 actuator gate token. vault.yml 의 `vault_actuator_internal_token` 과 같은 값. backend-deploy 의 smoke test 가 `X-Internal-Token` header 로 사용. 미설정 시 gate 비활성. |
 
@@ -101,7 +101,7 @@ backend / collab 컨테이너는 blue/green 슬롯 + nginx upstream `backup` dir
 export ANSIBLE_VAULT_PASSWORD_FILE="$HOME/.config/balruno/ansible.vault_pass"
 ```
 
-이 프로젝트 owner (범수) 는 wikiEngine 의 vault password 를 재사용하므로 실제 값은 `$HOME/Desktop/wikiEngine/ansible/.vault_pass` 임. OSS contributor 는 본인 password 로 vault 를 다시 암호화해야 함 (`ansible-vault rekey group_vars/all/vault.yml`).
+OSS contributor 는 본인 password 로 vault 를 다시 암호화해야 함 (`ansible-vault rekey group_vars/all/vault.yml`).
 
 CI 는 GitHub Secret `ANSIBLE_VAULT_PASSWORD` 로 자동 주입되므로 별도 설정 불필요.
 
@@ -117,7 +117,7 @@ ansible-vault encrypt group_vars/all/vault.yml --vault-password-file "$ANSIBLE_V
 ### 2. 4대 SSH 접속 검증 (Step 1 — 첫 작업)
 
 ```bash
-cd /Users/beomsu/Desktop/balruno/ansible
+cd ansible
 ansible -i inventory.yml all -m ping
 # 모든 머신에서 "pong" 반환되어야 함
 ```
@@ -177,5 +177,3 @@ Step 7: 검증 + 스크린샷 (블로그 2편/5편 자료)
 - ADR 0010: 인프라 점진 진화 9 영역
 - ADR 0008 v2.0: Tree + Cell Event Sync
 - HANDOFF.md v1.2: 결정 7대 원칙
-- 메모리 `project_infra_stack.md`
-- wikiEngine `/Users/beomsu/Desktop/wikiEngine/ansible/` (패턴 차용 원본)
