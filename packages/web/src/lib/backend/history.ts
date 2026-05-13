@@ -1,4 +1,4 @@
-import { request } from './client';
+import { backendBaseUrl, request } from './client';
 
 /**
  * One row of {@code cell_history} as returned by GET
@@ -102,13 +102,19 @@ export function fetchDocSnapshots(
  * Fetches the raw yjs state bytes for a snapshot. The caller feeds
  * them into Y.applyUpdate on a fresh Y.Doc to render the historical
  * version (read-only preview).
+ *
+ * Must prefix the backend base URL — a bare `/api/v1/...` resolves
+ * against the Vercel frontend origin and 404s. The other history
+ * helpers all go through `request()` for the same reason; this one
+ * stays on raw `fetch` because the response body is binary
+ * (ArrayBuffer) and `request()` JSON-parses by default.
  */
 export async function downloadDocSnapshotState(
   docId: string,
   snapshotId: string,
 ): Promise<ArrayBuffer> {
   const res = await fetch(
-    `/api/v1/docs/${docId}/snapshots/${snapshotId}/state`,
+    `${backendBaseUrl()}/api/v1/docs/${docId}/snapshots/${snapshotId}/state`,
     { credentials: 'include' },
   );
   if (!res.ok) {

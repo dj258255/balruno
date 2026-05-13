@@ -1051,12 +1051,26 @@ export default function WorkspaceShell({
         </div>
       ) : (
         <section
-          className="rounded-lg border p-4 text-sm"
+          className="rounded-lg border p-10 text-center"
           style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
         >
-          <p style={{ color: 'var(--text-tertiary)' }}>
-            <code>sync.full</code> 응답을 기다리는 중...
+          <h2 className="mb-2 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+            아직 시트가 없어요
+          </h2>
+          <p className="mb-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            템플릿에서 시작하거나, 왼쪽 사이드바의 <strong>+ 버튼</strong>으로 빈 시트를 추가하세요.
           </p>
+          <button
+            type="button"
+            onClick={() => setTemplateModalOpen(true)}
+            className="rounded-md px-4 py-2 text-sm font-medium transition-colors"
+            style={{
+              background: 'var(--accent-primary)',
+              color: 'var(--text-on-accent)',
+            }}
+          >
+            템플릿에서 시작
+          </button>
         </section>
       )}
 
