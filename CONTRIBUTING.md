@@ -28,7 +28,8 @@ This project and everyone participating in it is governed by our [Code of Conduc
 | `packages/web/` | MIT |
 | `packages/shared/` | MIT |
 | `packages/desktop/` | MIT |
-| `packages/backend/` (planned) | AGPL v3 |
+| `packages/backend/` | AGPL v3 |
+| `packages/collab/` | AGPL v3 |
 | `docs/` (public files) | MIT |
 
 **By submitting a PR, you agree that your contribution will be licensed under the same license as the directory you're modifying.**
@@ -146,7 +147,8 @@ balruno/
 │   │   │   ├── main/           # Electron main process
 │   │   │   └── preload/        # Preload scripts
 │   │   └── build/              # Icons & build assets
-│   └── backend/                # Spring Boot (planned, AGPL v3)
+│   ├── backend/                # Spring Boot 4.0.6 + Java 25 (AGPL v3)
+│   └── collab/                 # Hocuspocus + yjs sidecar (AGPL v3)
 ├── docs/
 ├── LICENSE                     # Repository license overview
 ├── LICENSING.md                # User-friendly licensing FAQ

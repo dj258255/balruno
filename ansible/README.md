@@ -1,17 +1,17 @@
 # Balruno Ansible
 
 > OCI Always Free 4대 (ARM 12GB ×2 + x86 1GB ×2) 자동 프로비저닝.
-> 결정 진실원: `docs/backend/decisions/0007-infrastructure.md` v1.1 + `decisions/0010-infra-evolution.md`
+> 결정 진실원: `docs/backend/decisions/0007-infrastructure.md` v1.3 + `decisions/0010-infra-evolution.md`
 > wikiEngine 패턴 차용 (vault_password_file, ssh ControlMaster, role 구조).
 
 ---
 
-## 머신 4대 (ADR 0007 v1.1 §3.1)
+## 머신 4대 (ADR 0007 v1.3 §3.1)
 
 | Hostname | Public IP | 사양 | 역할 |
 |---|---|---|---|
-| **prod-app** | 168.107.47.33 | ARM 12GB | Spring Boot 4.1 + Java 25 + Hocuspocus + Nginx |
-| **monitor** | 168.107.10.100 | ARM 12GB | PostgreSQL 17 + Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB |
+| **prod-app** | 168.107.47.33 | ARM 12GB | Spring Boot 4.0.6 + Java 25 + Hocuspocus + Nginx |
+| **monitor** | 168.107.10.100 | ARM 12GB | PostgreSQL 18.3 + Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB |
 | **backup** | 134.185.108.159 | x86 1GB | pg_dump rsync 수신 + cloudflared (monitor.balruno.com Tunnel) + node_exporter |
 | **status** | 158.179.162.44 | x86 1GB | Object Storage upload daemon (3-2-1 offsite) + node_exporter |
 
@@ -36,7 +36,7 @@ ansible/
 │   ├── common                     swap / fail2ban / Docker / SSH hardening
 │   ├── nginx                      Nginx + Cloudflare Origin Cert + reverse proxy
 │   ├── postgres                   PostgreSQL 18 + tuning + pg_hba
-│   ├── spring-boot                Spring Boot 4.1 + Java 25 systemd unit
+│   ├── backend                Spring Boot 4.0.6 + Java 25 systemd unit
 │   ├── hocuspocus                 Hocuspocus Node 22 systemd unit
 │   ├── monitoring                 Docker Compose: Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB + blackbox_exporter
 │   ├── cloudflared                Cloudflare Tunnel daemon (backup 머신)
@@ -173,7 +173,7 @@ Step 7: 검증 + 스크린샷 (블로그 2편/5편 자료)
 
 ## 참조
 
-- ADR 0007 v1.1: 인프라 결정
+- ADR 0007 v1.3: 인프라 결정
 - ADR 0010: 인프라 점진 진화 9 영역
 - ADR 0008 v2.0: Tree + Cell Event Sync
 - HANDOFF.md v1.2: 결정 7대 원칙
