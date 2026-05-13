@@ -57,7 +57,14 @@ groups:
             relativeTimeRange: { from: 300, to: 0 }
             datasourceUid: prometheus
             model:
-              expr: 'probe_success{instance=~"https://(api|collab)\\\\..+"}'
+              # Two backslashes in YAML single-quoted = one backslash to
+              # promQL string parser = literal `\.` in RE2 regex. Old
+              # value had four backslashes which by accident still matched
+              # most paths but produced false NoData on the edge cases —
+              # blue/green cutovers, prometheus scrape gaps, container
+              # restarts — and combined with noDataState: Alerting that
+              # painted Discord red whenever the cluster blinked.
+              expr: 'probe_success{instance=~"https://(api|collab)\\..+"}'
               instant: true
               refId: A
           - refId: B
@@ -69,7 +76,12 @@ groups:
               conditions:
                 - evaluator: { type: lt, params: [1] }
               refId: B
-        noDataState: Alerting
+        # NoData (5-minute window with no series) should NOT page critical —
+        # blue/green cutover, prometheus reload, or a brief blackbox scrape
+        # gap all surface as NoData transiently. probe_success == 0 (real
+        # failure) still fires via condition B (evaluator lt 1). execErr
+        # stays Alerting because that is a real prometheus/datasource fault.
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
