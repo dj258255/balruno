@@ -224,4 +224,30 @@ interface ProjectSyncRepository extends Repository<ProjectSyncEntity, UUID> {
                    """,
            nativeQuery = true)
     Optional<String> findActiveWorkspacePlanName(@Param("projectId") UUID projectId);
+
+    /**
+     * Membership probe used by {@code UndoController} to gate the
+     * /v1/projects/{id}/undo,/redo,/undo-stack endpoints. Lives in the
+     * sync slice rather than calling into {@code project.ProjectService}
+     * because that would form a {@code project → sync → project}
+     * dependency cycle (Spring Modulith ArchitectureTest rejects it).
+     *
+     * Returns {@code true} iff the project is active AND the caller is
+     * a member of its workspace. Mirrors the same check the project
+     * module's {@code findById(projectId, callerId)} performs, just
+     * routed through one native query so the sync slice stays leaf.
+     */
+    @Query(value = """
+                   SELECT EXISTS (
+                     SELECT 1
+                       FROM projects p
+                       JOIN workspace_members m ON m.workspace_id = p.workspace_id
+                      WHERE p.id = :projectId
+                        AND p.deleted_at IS NULL
+                        AND m.user_id = :userId
+                   )
+                   """,
+           nativeQuery = true)
+    boolean canUserAccessProject(@Param("projectId") UUID projectId,
+                                  @Param("userId") UUID userId);
 }

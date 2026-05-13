@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.sync.internal;
 
-import com.balruno.project.ProjectService;
 import com.balruno.security.Principals;
 
 import com.balruno.sync.UndoService;
+import java.util.NoSuchElementException;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotNull;
@@ -33,13 +33,16 @@ import java.util.UUID;
  * lookup matches.
  *
  * Auth: bearer JWT + per-request project membership check. The
- * service layer already filters {@code op_idempotency} by the caller's
- * userId, but that alone lets an ex-member (still holding a valid
+ * service layer's row filter already restricts to ops authored by the
+ * caller, but on its own that lets an ex-member (still holding a valid
  * pre-revoke JWT) probe arbitrary projectIds and receive a well-formed
  * {@code NothingToUndo} response — effectively a low-noise IDOR
- * enumeration surface. The {@code projectService.findById(projectId,
- * callerId)} gate below converts those probes into the 404 / 403 path
- * that every other project-scoped controller emits.
+ * enumeration surface. The membership probe below converts those
+ * probes into the 404 path that the rest of the project surface emits.
+ * The check is routed through {@link ProjectSyncRepository} (sync
+ * slice) rather than calling {@code project.ProjectService.findById}
+ * directly, because that would close a {@code project → sync → project}
+ * cycle the Modulith ArchitectureTest rejects.
  */
 @RestController
 @Tag(name = "Undo")
@@ -47,9 +50,9 @@ import java.util.UUID;
 class UndoController {
 
     private final UndoService undo;
-    private final ProjectService projects;
+    private final ProjectSyncRepository projects;
 
-    UndoController(UndoService undo, ProjectService projects) {
+    UndoController(UndoService undo, ProjectSyncRepository projects) {
         this.undo = undo;
         this.projects = projects;
     }
@@ -60,7 +63,7 @@ class UndoController {
             @PathVariable UUID projectId,
             @RequestHeader(name = "X-Client-Session-Id") @NotNull UUID clientSessionId) {
         var callerId = callerId(jwt);
-        projects.findById(projectId, callerId);   // throws if not member / not found
+        requireMembership(projectId, callerId);
         return undo.undo(callerId, projectId, clientSessionId);
     }
 
@@ -70,7 +73,7 @@ class UndoController {
             @PathVariable UUID projectId,
             @RequestHeader(name = "X-Client-Session-Id") @NotNull UUID clientSessionId) {
         var callerId = callerId(jwt);
-        projects.findById(projectId, callerId);
+        requireMembership(projectId, callerId);
         return undo.redo(callerId, projectId, clientSessionId);
     }
 
@@ -88,8 +91,17 @@ class UndoController {
             @RequestHeader(name = "X-Client-Session-Id") @NotNull UUID clientSessionId,
             @RequestParam(name = "limit", defaultValue = "50") int limit) {
         var callerId = callerId(jwt);
-        projects.findById(projectId, callerId);
+        requireMembership(projectId, callerId);
         return undo.recentReversible(callerId, projectId, clientSessionId, limit);
+    }
+
+    private void requireMembership(UUID projectId, UUID userId) {
+        if (!projects.canUserAccessProject(projectId, userId)) {
+            // 404 over 403 — IDOR-defence convention: don't leak whether
+            // the project exists. ApiExceptionHandler maps
+            // NoSuchElementException to 404 + RFC 7807 Problem Detail.
+            throw new NoSuchElementException("project");
+        }
     }
 
     private static UUID callerId(Jwt jwt) {
