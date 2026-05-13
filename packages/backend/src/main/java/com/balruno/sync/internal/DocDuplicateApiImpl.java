@@ -101,7 +101,12 @@ class DocDuplicateApiImpl implements DocDuplicateApi {
             // (legacy / out-of-sync state). Fall back to title +
             // root-append rather than 404 — the row clone is the
             // load-bearing part.
-            newDocId = UUID.randomUUID();
+            // ADR 0012 v1.1 — PK must be UUIDv7 (time-sortable so
+            // history paging / snapshot lookup stays sorted by creation
+            // order). The id is mirrored into the doc_tree JSONB leaf
+            // below, so we mint it up-front via the PG uuidv7() helper
+            // instead of relying on the table's DEFAULT-on-INSERT path.
+            newDocId = documents.nextV7Id();
             newName = source.getTitle() + " (복사)";
 
             var newLeaf = mapper.createObjectNode();

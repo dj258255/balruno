@@ -42,4 +42,21 @@ interface DocumentRepository extends JpaRepository<DocumentEntity, UUID> {
     @Query("SELECT d FROM DocumentEntity d "
          + " WHERE d.id = :id AND d.deletedAt IS NULL")
     Optional<DocumentEntity> findActiveById(@Param("id") UUID id);
+
+    /**
+     * Mint a UUIDv7 from PG's {@code uuidv7()} function (PG 18 native,
+     * ADR 0012 v1.1 UUID policy: PK = UUIDv7 for time-sortable history
+     * paging / snapshot lookup). Used when {@link DocumentEntity}'s id
+     * has to be known on the Java side <em>before</em> INSERT because
+     * the same UUID is mirrored into the doc_tree JSONB leaf — i.e. we
+     * can't rely on the table's DEFAULT-on-INSERT path (ADR 0008 v2.1
+     * doc tree.add cross-region mirror).
+     *
+     * One round-trip per minted id. Doc-clone / doc-tree-add are rare
+     * paths so this cost is negligible vs. the correctness win of
+     * keeping every Document PK on UUIDv7 instead of UUID.randomUUID()
+     * (v4, time-disordered).
+     */
+    @Query(value = "SELECT uuidv7()", nativeQuery = true)
+    UUID nextV7Id();
 }

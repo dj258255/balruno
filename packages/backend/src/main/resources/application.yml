@@ -161,9 +161,15 @@ balruno.storage:
 
 # Multipart upload caps — UploadController validates again at the
 # request layer so a hostile client can't sneak past these.
+#
+# 52MB matches UploadService.MAX_ATTACHMENT_BYTES (50MB) + a small
+# headroom for the multipart envelope (form boundary, headers). The
+# servlet layer must NOT be tighter than the service-layer cap, or
+# Tomcat returns 413 before our own validateAttachment ever runs and
+# the frontend's "attachments up to 50 MB" guidance becomes a lie.
 spring.servlet.multipart:
-  max-file-size: 2MB
-  max-request-size: 4MB
+  max-file-size: 52MB
+  max-request-size: 55MB
 
 # ─── springdoc / OpenAPI ─────────────────────────────────────────────────
 springdoc:

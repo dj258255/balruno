@@ -2,6 +2,7 @@
 package com.balruno.sync.internal;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -93,4 +94,22 @@ interface OpIdempotencyRepository extends JpaRepository<OpIdempotencyEntity, UUI
             @Param("clientSessionId") UUID clientSessionId,
             @Param("now") OffsetDateTime now,
             org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Disk-protection prune. Rows past the longest undo window
+     * (Cmd+Z reversibleUntil = 120 min) are unreachable through any
+     * read path — they only serve as the V8 idempotency replay
+     * cache, and that cache becomes stale within minutes of a tab
+     * close. Match {@link com.balruno.history.internal.HistoryCleanupScheduler}'s
+     * pattern: native @Modifying, range scan on created_at, return
+     * the deleted row count for cleanup logs.
+     *
+     * Retention defaults to 7 days — comfortably past the 120-min
+     * undo window so live Cmd+Z paths never see a hole.
+     */
+    @Modifying
+    @Query(value = "DELETE FROM op_idempotency "
+                 + "WHERE created_at < now() - make_interval(days => :days)",
+           nativeQuery = true)
+    int pruneOlderThan(@Param("days") int days);
 }

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.sync;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.UUID;
@@ -66,7 +68,21 @@ public interface UndoService {
      * (e.g. show a toast "Undid your last action"). {@code NothingToUndo}
      * means the user's stack is empty (or all entries past the 120-min
      * window) — frontend disables the Cmd+Z button.
+     *
+     * The {@code @JsonTypeInfo} + {@code @JsonSubTypes} annotation
+     * pair injects a {@code "type": "Applied" | "NothingToUndo"} field
+     * into the serialised response so the frontend can switch on it.
+     * Without it, {@code NothingToUndo} serialises as {@code {}} and
+     * {@code Applied} as {@code {actionGroupId, appliedOps}} — the
+     * frontend's {@code msg.type === 'Applied'} discriminator stays
+     * undefined and Cmd+Z visually no-ops even though the server
+     * executed the undo correctly.
      */
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+    @JsonSubTypes({
+            @JsonSubTypes.Type(value = UndoResult.Applied.class, name = "Applied"),
+            @JsonSubTypes.Type(value = UndoResult.NothingToUndo.class, name = "NothingToUndo"),
+    })
     sealed interface UndoResult {
         record Applied(
                 UUID actionGroupId,

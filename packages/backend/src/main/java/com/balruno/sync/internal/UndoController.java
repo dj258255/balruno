@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.balruno.sync.internal;
 
+import com.balruno.project.ProjectService;
 import com.balruno.security.Principals;
 
 import com.balruno.sync.UndoService;
@@ -31,9 +32,14 @@ import java.util.UUID;
  * time). Same header on every emit and on undo / redo so the row
  * lookup matches.
  *
- * Auth: bearer JWT. Service-layer authorisation is delegated to the
- * row filter (only ops by the caller's userId are returned), so
- * non-members of the project naturally get NothingToUndo.
+ * Auth: bearer JWT + per-request project membership check. The
+ * service layer already filters {@code op_idempotency} by the caller's
+ * userId, but that alone lets an ex-member (still holding a valid
+ * pre-revoke JWT) probe arbitrary projectIds and receive a well-formed
+ * {@code NothingToUndo} response — effectively a low-noise IDOR
+ * enumeration surface. The {@code projectService.findById(projectId,
+ * callerId)} gate below converts those probes into the 404 / 403 path
+ * that every other project-scoped controller emits.
  */
 @RestController
 @Tag(name = "Undo")
@@ -41,9 +47,11 @@ import java.util.UUID;
 class UndoController {
 
     private final UndoService undo;
+    private final ProjectService projects;
 
-    UndoController(UndoService undo) {
+    UndoController(UndoService undo, ProjectService projects) {
         this.undo = undo;
+        this.projects = projects;
     }
 
     @PostMapping(path = "/projects/{projectId}/undo", version = "1")
@@ -51,7 +59,9 @@ class UndoController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID projectId,
             @RequestHeader(name = "X-Client-Session-Id") @NotNull UUID clientSessionId) {
-        return undo.undo(callerId(jwt), projectId, clientSessionId);
+        var callerId = callerId(jwt);
+        projects.findById(projectId, callerId);   // throws if not member / not found
+        return undo.undo(callerId, projectId, clientSessionId);
     }
 
     @PostMapping(path = "/projects/{projectId}/redo", version = "1")
@@ -59,7 +69,9 @@ class UndoController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID projectId,
             @RequestHeader(name = "X-Client-Session-Id") @NotNull UUID clientSessionId) {
-        return undo.redo(callerId(jwt), projectId, clientSessionId);
+        var callerId = callerId(jwt);
+        projects.findById(projectId, callerId);
+        return undo.redo(callerId, projectId, clientSessionId);
     }
 
     /**
@@ -75,7 +87,9 @@ class UndoController {
             @PathVariable UUID projectId,
             @RequestHeader(name = "X-Client-Session-Id") @NotNull UUID clientSessionId,
             @RequestParam(name = "limit", defaultValue = "50") int limit) {
-        return undo.recentReversible(callerId(jwt), projectId, clientSessionId, limit);
+        var callerId = callerId(jwt);
+        projects.findById(projectId, callerId);
+        return undo.recentReversible(callerId, projectId, clientSessionId, limit);
     }
 
     private static UUID callerId(Jwt jwt) {
