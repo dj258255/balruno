@@ -67,5 +67,5 @@ Apache, etc).
 
 | Date | Change |
 |---|---|
-| 2026-05-03 | Initial trademark policy following ADR 0005 license split |
+| 2026-05-03 | Initial trademark policy following the license split (frontend MIT + backend AGPL) |
 | 2026-05-03 | Update directory references for monorepo (packages/web, packages/shared, packages/desktop, packages/backend) |

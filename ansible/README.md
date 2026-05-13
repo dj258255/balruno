@@ -6,7 +6,7 @@
 
 ---
 
-## 머신 4대 (ADR 0007 v1.3 §3.1)
+## 머신 4대 (deploy matrix)
 
 | Hostname | Public IP | 사양 | 역할 |
 |---|---|---|---|
@@ -63,11 +63,11 @@ GH Secrets (Settings → Secrets and variables → Actions):
 |---|---|
 | `ANSIBLE_VAULT_PASSWORD` | vault password 파일 내용 (텍스트 그대로 — `$ANSIBLE_VAULT_PASSWORD_FILE` 경로 안의 값) |
 | `OCI_SSH_PRIVATE_KEY` | `~/.ssh/oci_key` 파일 내용 (PEM 헤더 포함 통째로) |
-| `ACTUATOR_INTERNAL_TOKEN` | (선택) ADR 0045 의 actuator gate token. vault.yml 의 `vault_actuator_internal_token` 과 같은 값. backend-deploy 의 smoke test 가 `X-Internal-Token` header 로 사용. 미설정 시 gate 비활성. |
+| `ACTUATOR_INTERNAL_TOKEN` | (선택) the optional actuator gate token. vault.yml 의 `vault_actuator_internal_token` 과 같은 값. backend-deploy 의 smoke test 가 `X-Internal-Token` header 로 사용. 미설정 시 gate 비활성. |
 
 `production` Environment 도 만들어서 main 으로 merge 시 수동 approve 게이트 걸 수 있음 (선택, Stage 1+ 권장).
 
-### 무중단 배포 (ADR 0044)
+### 무중단 배포 (blue/green pattern)
 
 backend / collab 컨테이너는 blue/green 슬롯 + nginx upstream `backup` directive + snippet symlink swap 으로 무중단 배포. backend-deploy / collab-deploy 워크플로가 자동 처리.
 
@@ -76,7 +76,7 @@ backend / collab 컨테이너는 blue/green 슬롯 + nginx upstream `backup` dir
 - 첫 마이그레이션 cutover 만 ~21s 다운타임 (옛 단일 컨테이너 → 새 dual slot). 이후 모든 cutover 는 zero-downtime.
 - 수동 rollback: `gh workflow run backend-deploy.yml -f mode=rollback` (~30s 윈도 안에서만 instant flip, 이후엔 이전 SHA 재배포).
 
-### Actuator gate (ADR 0045 / Phase B-7)
+### Actuator gate (optional internal-token gate)
 
 `/actuator/*` 엔드포인트는 nginx 단계 internal-token gate 로 보호. graceful gating 패턴이라 vault token 미정의 시 gate 비활성.
 
@@ -122,7 +122,7 @@ ansible -i inventory.yml all -m ping
 # 모든 머신에서 "pong" 반환되어야 함
 ```
 
-### 3. 전체 셋업 (Phase B-6 ~ B-7)
+### 3. 전체 셋업 (initial bootstrap)
 
 ```bash
 # 전체 통합
@@ -148,7 +148,7 @@ ansible-vault edit group_vars/all/vault.yml --vault-password-file "$ANSIBLE_VAUL
 
 ---
 
-## 작업 순서 (Phase B-6)
+## 작업 순서 (initial bootstrap)
 
 ```
 Step 1: ansible -i inventory.yml all -m ping             ← 4대 SSH 검증
@@ -173,7 +173,7 @@ Step 7: 검증 + 스크린샷 (블로그 2편/5편 자료)
 
 ## 참조
 
-- ADR 0007 v1.3: 인프라 결정
-- ADR 0010: 인프라 점진 진화 9 영역
-- ADR 0008 v2.0: Tree + Cell Event Sync
+- 인프라 결정
+- 인프라 점진 진화 9 영역
+- Tree + Cell Event Sync
 - HANDOFF.md v1.2: 결정 7대 원칙

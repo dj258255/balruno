@@ -63,7 +63,7 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 | **Grid View** | Virtualized rows (TanStack Virtual), sticky header + first column on mobile, drag-drop column reorder |
 | **Formula Engine** | mathjs + @formulajs — game-specific (DPS, EHP, TTK, SCALE, DIMINISH, etc.) |
 | **Linked Records** | Bidirectional links across sheets with reverse column auto-creation |
-| **Undo/Redo** | Cmd+Z / Cmd+Shift+Z covers cell.update / row.* / column.* / tree.* — *server-backed*, refresh-survival within 120 min, per-tab scope (Baserow `MINUTES_UNTIL_ACTION_CLEANED_UP`) — ADR 0021 v3.0 |
+| **Undo/Redo** | Cmd+Z / Cmd+Shift+Z covers cell.update / row.* / column.* / tree.* — *server-backed*, refresh-survival within 120 min, per-tab scope (Baserow `MINUTES_UNTIL_ACTION_CLEANED_UP`) ||
 
 #### Document
 | Category | Features |
@@ -76,11 +76,11 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 #### Collaboration
 | Category | Features |
 |----------|----------|
-| **Sync** | Server-canonical wss op log (sheet/tree) + Hocuspocus (doc bodies, yjs CRDT) — ADR 0008 |
+| **Sync** | Server-canonical wss op log (sheet/tree) + Hocuspocus (doc bodies, yjs CRDT) ||
 | **Presence** | Sheet cell awareness via wss + doc cursor via Hocuspocus awareness |
-| **Comments** | Sheet cell + doc body (range-anchored highlights) + reply thread (1-level nesting, Slack/Linear pattern) + email + Web Push (VAPID) + daily/weekly digest — ADR 0024 v2.4 |
-| **Integrations** | Outbound webhooks (HMAC-SHA256 POSTs) + Inbound webhooks (GitHub PR / issues + generic) + Share links per view + Discord slash commands (Ed25519 verified) — ADR 0027 / 0028 / 0029 / 0030 |
-| **@mentions** | Tiptap mention extension + inbox bell + per-mention notification — ADR 0024 |
+| **Comments** | Sheet cell + doc body (range-anchored highlights) + reply thread (1-level nesting, Slack/Linear pattern) + email + Web Push (VAPID) + daily/weekly digest ||
+| **Integrations** | Outbound webhooks (HMAC-SHA256 POSTs) + Inbound webhooks (GitHub PR / issues + generic) + Share links per view + Discord slash commands (Ed25519 verified) ||
+| **@mentions** | Tiptap mention extension + inbox bell + per-mention notification ||
 
 #### Platform
 | Category | Features |
@@ -88,33 +88,33 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 | **Auth** | OAuth-only (GitHub + Google) + JWT session cookie — no SMTP dependency |
 | **Workspaces** | Multi-tenant with role-based access (Owner / Admin / Editor / Viewer) |
 | **Projects** | Per-workspace, with member invites + role management |
-| **Mobile** | Sidebar drawer + sticky first column + iOS 16px input + 44px hit targets + bottom-sheet cell editor + long-press contextmenu + sticky Tiptap toolbar + link picker search — ADR 0022 v1.4 |
-| **Views** | 10 view types: Grid (default) · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff — all on top of the server-canonical sync, so view switches and drag-drop are live multi-player. The last 4 (Heatmap / Curve / Probability / Diff) are game-balance specific and don't exist in Notion / Airtable / Baserow. — ADR 0022 v2.1 |
+| **Mobile** | Sidebar drawer + sticky first column + iOS 16px input + 44px hit targets + bottom-sheet cell editor + long-press contextmenu + sticky Tiptap toolbar + link picker search ||
+| **Views** | 10 view types: Grid (default) · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff — all on top of the server-canonical sync, so view switches and drag-drop are live multi-player. The last 4 (Heatmap / Curve / Probability / Diff) are game-balance specific and don't exist in Notion / Airtable / Baserow. ||
 | **Desktop** | Native Mac / Windows / Linux app (Electron 41 + auto-update via GitHub Releases) |
 | **i18n** | UI + 12-group starter pack catalog fully translated (en, ko) |
 | **Observability** | Sentry SaaS (env-gated, optional for self-host) |
 
 ### Recently shipped
 
-- ✅ **ADR 0021 v3.0 phase 5** — server-backed persistent undo (refresh-survival, 120-min Baserow window, per-tab scope, hydrate-on-mount)
-- ✅ **ADR 0008 v2.2** — cell style server-canonical sync (was silent local-only — now broadcasts to peers + cross-device)
-- ✅ **ADR 0008 ζ.3** — `lib/ydoc.ts` complete deletion (-3411 net lines). Sheet domain is now 100% server-canonical.
-- ✅ **ADR 0008 v2.3** — `sheet.metadata.update` wire op (activeView, view*ColumnId, savedViews, name, icon, kind, filterGroup, tags) — view switches and grouping picks broadcast to peers in real time.
-- ✅ **ADR 0022 v2.0** — Kanban + Calendar + Gantt views restored on top of server-canonical sync. Drag-drop / view config flicks are now genuinely multi-player (Linear pattern).
-- ✅ **ADR 0022 v2.1** — Remaining 6 views shipped: Form · Gallery · Heatmap · Curve · Probability · Diff. The 4 game-balance specific views (Heatmap / Curve / Probability / Diff) are where this stops being a Notion clone and starts being a Game Studio Workspace.
+- ✅ **server-backed persistent undo (refresh-survival, 120-min Baserow window, per-tab scope, hydrate-on-mount)
+- ✅ **cell style server-canonical sync (was silent local-only — now broadcasts to peers + cross-device)
+- ✅ **`lib/ydoc.ts` complete deletion (-3411 net lines). Sheet domain is now 100% server-canonical.
+- ✅ **`sheet.metadata.update` wire op (activeView, view*ColumnId, savedViews, name, icon, kind, filterGroup, tags) — view switches and grouping picks broadcast to peers in real time.
+- ✅ **Kanban + Calendar + Gantt views restored on top of server-canonical sync. Drag-drop / view config flicks are now genuinely multi-player (Linear pattern).
+- ✅ **Remaining 6 views shipped: Form · Gallery · Heatmap · Curve · Probability · Diff. The 4 game-balance specific views (Heatmap / Curve / Probability / Diff) are where this stops being a Notion clone and starts being a Game Studio Workspace.
 - ✅ **Diff baseline picker** — op_idempotency.inverse_payload backward replay reconstructs historical baselines inside the 120-min reversible window. No separate snapshot infrastructure needed; Phase 5's idempotency log already has the data.
-- ✅ **ADR 0027 share links** — read-only public viewer at `/share/:token`. UUIDv7 PK + UUIDv4 token, optional sheet / view / expiry pin, instant revoke.
-- ✅ **ADR 0028 webhook outbound** — HMAC-SHA256 signed POSTs on `comment.added` / `mention.created` / `row.added`. ApplicationEvent decoupling so the webhook module isn't a static dep on the publishers (Spring Modulith arch test green).
-- ✅ **ADR 0024 Stage I — email + Web Push notifications** — Spring's JavaMailSender (admin brings SMTP creds, Outline / AFFiNE / Baserow pattern, no built-in service) + VAPID Web Push (RFC 8030 + 8292, free forever, no third party). Per-user prefs (instant / daily / weekly / off) + per-device subscription list at `/settings/notifications`.
-- ✅ **ADR 0029 Inbound webhooks (GitHub)** — POST `/api/v1/inbound-public/:id/{github\|generic}` with HMAC-SHA256 (`X-Hub-Signature-256` for GitHub, `X-Balruno-Signature` for generic). PR / issue events auto-create rows on the target sheet (title / url / status mapped to chosen columns).
+- ✅ **share links** — read-only public viewer at `/share/:token`. UUIDv7 PK + UUIDv4 token, optional sheet / view / expiry pin, instant revoke.
+- ✅ **webhook outbound** — HMAC-SHA256 signed POSTs on `comment.added` / `mention.created` / `row.added`. ApplicationEvent decoupling so the webhook module isn't a static dep on the publishers (Spring Modulith arch test green).
+- ✅ **email + Web Push notifications** — Spring's JavaMailSender (admin brings SMTP creds, Outline / AFFiNE / Baserow pattern, no built-in service) + VAPID Web Push (RFC 8030 + 8292, free forever, no third party). Per-user prefs (instant / daily / weekly / off) + per-device subscription list at `/settings/notifications`.
+- ✅ **Inbound webhooks (GitHub)** — POST `/api/v1/inbound-public/:id/{github\|generic}` with HMAC-SHA256 (`X-Hub-Signature-256` for GitHub, `X-Balruno-Signature` for generic). PR / issue events auto-create rows on the target sheet (title / url / status mapped to chosen columns).
 - ✅ **Daily / weekly digest** — Spring `@Scheduled` aggregates per-user mentions for non-instant cadence picks (00:00 UTC daily / Monday weekly).
-- ✅ **ADR 0030 Discord slash commands** — Ed25519 verified `/v1/discord/interactions` endpoint. `/balruno bug <text>` adds a row to the workspace's default sheet.
-- ✅ **ADR 0004 Stripe billing** — Checkout + Customer Portal + signature-verified webhook. V20 schema; global cards.
-- ✅ **ADR 0031 Project-wide search** — walks cells + tree nodes + comment bodies; wired into Cmd+K with 200ms debounce.
-- ✅ **ADR 0032 Workspace audit log** — `workspace_audit_log` + `AuditLogEvent` ApplicationEvent. Per-workspace activity feed surface.
-- ✅ **ADR 0033 Game engine export** — CSV (RFC 4180 + BOM) + C# `[Serializable]` struct + readonly array. Drop straight into Unity Assets/.
-- ✅ **ADR 0034 Cmd+K + GDPR + PWA** — quick switcher, data-export + account-delete self-service, manifest for Add to Home Screen.
-- ✅ **ADR 0024 v2.2** — comment reply threads (1-level nesting via `parentId`, Slack/Linear pattern)
+- ✅ **Discord slash commands** — Ed25519 verified `/v1/discord/interactions` endpoint. `/balruno bug <text>` adds a row to the workspace's default sheet.
+- ✅ **Stripe billing** — Checkout + Customer Portal + signature-verified webhook. V20 schema; global cards.
+- ✅ **Project-wide search** — walks cells + tree nodes + comment bodies; wired into Cmd+K with 200ms debounce.
+- ✅ **Workspace audit log** — `workspace_audit_log` + `AuditLogEvent` ApplicationEvent. Per-workspace activity feed surface.
+- ✅ **Game engine export** — CSV (RFC 4180 + BOM) + C# `[Serializable]` struct + readonly array. Drop straight into Unity Assets/.
+- ✅ **Cmd+K + GDPR + PWA** — quick switcher, data-export + account-delete self-service, manifest for Add to Home Screen.
+- ✅ **comment reply threads (1-level nesting via `parentId`, Slack/Linear pattern)
 
 ### Planned (next 6 months)
 
@@ -174,7 +174,7 @@ Math engine          mathjs + @formulajs/formulajs
 i18n                 next-intl (en, ko — UI strings + 12-group starter pack catalog)
 Desktop              Electron 41 (ESM) + electron-builder + electron-updater
 Backend              Java 25 + Spring Boot 4 + PostgreSQL 18 (JSONB) · Hibernate 7
-AI / ML service      Python FastAPI · langchain · scikit-learn · scipy · trueskill (planned, ADR 0023 + 0025)
+AI / ML service      Python FastAPI · langchain · scikit-learn · scipy · trueskill (planned)
 Sync                 Wss op log (sheet/tree) + Hocuspocus (doc bodies, yjs CRDT)
 Auth                 OAuth2 (GitHub + Google) · JWT session cookie
 Observability        Sentry SaaS (env-gated, optional for self-host)
@@ -221,7 +221,7 @@ We welcome contributions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before 
 - Monorepo (Turborepo + web / shared / desktop / backend / collab)
 - Electron desktop app (Mac / Windows / Linux + auto-update via GitHub Releases)
 - Spring Boot 4 backend (AGPL v3) — OAuth, JWT, workspace + project + sheet/tree CRUD
-- Server-canonical wss sync (4 regions: sheet cells, sheet tree, doc tree, doc body via Hocuspocus) — ADR 0008
+- Server-canonical wss sync (4 regions: sheet cells, sheet tree, doc tree, doc body via Hocuspocus)
 - Real-time presence (sheet cell awareness via wss + doc cursor via Hocuspocus awareness)
 - Workspace + project lifecycle — create, list, delete with role-based access (Owner / Admin / Editor / Viewer)
 - Member invites + role management
@@ -229,20 +229,20 @@ We welcome contributions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before 
 - Template import — graft any starter group onto an existing project
 - i18n — UI + starter catalog fully translated (en, ko)
 - Sentry observability (env-gated, free tier)
-- **Undo / redo** — full op coverage (cell / row / column / tree) — ADR 0021 phases 1-4
-- **Server-backed persistent undo** — refresh-survival, per-tab scope, 120-min Baserow window, hydrate-on-mount — ADR 0021 v3.0 phase 5
-- **Comments + @mentions** — sheet cells + doc body (range-anchored highlights via Tiptap Decoration plugin), inbox bell, **reply threads (1-level nesting via parentId, Slack/Linear pattern)** — ADR 0024 v2.2
-- **Mobile UX** — full prod: sidebar drawer + sticky first column + iOS 16px input + 44px hit targets + bottom-sheet portal cell editor + long-press synthetic contextmenu + sticky Tiptap mobile toolbar + link picker search — ADR 0022 v1.4
-- **Multi-view sheet** — 10 view types: Grid · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff. The last 4 are game-balance specific (character × stat matrix, level scaling curves, drop / gacha probability tree, balance change before/after). Every drag-drop / view switch / grouping pick broadcasts to peers — ADR 0022 v2.1 + ADR 0008 v2.3 (`sheet.metadata.update` wire op)
-- **Cell style server-canonical sync** — was silent local-only, now broadcasts to all peers and survives cross-device — ADR 0008 v2.2
-- **`lib/ydoc.ts` complete deletion** — sheet domain is now 100% server-canonical, Y.Doc only survives in doc-body Hocuspocus pattern — ADR 0008 ζ.3 (-3411 net lines)
-- **v0.6 Y.Doc cleanup** — legacy local-mode + 294 dead files removed (-77K lines) — ADR 0008 §10
+- **Undo / redo** — full op coverage (cell / row / column / tree)
+- **Server-backed persistent undo** — refresh-survival, per-tab scope, 120-min Baserow window, hydrate-on-mount
+- **Comments + @mentions** — sheet cells + doc body (range-anchored highlights via Tiptap Decoration plugin), inbox bell, **reply threads (1-level nesting via parentId, Slack/Linear pattern)**
+- **Mobile UX** — full prod: sidebar drawer + sticky first column + iOS 16px input + 44px hit targets + bottom-sheet portal cell editor + long-press synthetic contextmenu + sticky Tiptap mobile toolbar + link picker search
+- **Multi-view sheet** — 10 view types: Grid · Form · Kanban · Calendar · Gallery · Gantt · Heatmap · Curve · Probability · Diff. The last 4 are game-balance specific (character × stat matrix, level scaling curves, drop / gacha probability tree, balance change before/after). Every drag-drop / view switch / grouping pick broadcasts to peers
+- **Cell style server-canonical sync** — was silent local-only, now broadcasts to all peers and survives cross-device
+- **`lib/ydoc.ts` complete deletion** — sheet domain is now 100% server-canonical, Y.Doc only survives in doc-body Hocuspocus pattern
+- **v0.6 Y.Doc cleanup** — legacy local-mode + 294 dead files removed (-77K lines)
 
 **Next (planned, ~6 months)**
-- @mention email + browser push delivery — Resend/Brevo free tier + Web Push VAPID (ADR 0024 stage I, deferred until real users land)
-- Re-introduce remaining view types — Form · Gallery · Heatmap · Curve · Probability · Diff (ADR 0022 v2.1+, trigger when users ask)
-- AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter) — ADR 0023
-- ML capabilities — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity — ADR 0025
+- @mention email + browser push delivery — Resend/Brevo free tier + Web Push VAPID
+- Re-introduce remaining view types — Form · Gallery · Heatmap · Curve · Probability · Diff
+- AI integration (BYOK Anthropic / OpenAI / Gemini / Ollama / OpenRouter)
+- ML capabilities — outlier detection · cluster visualization · curve fit · TrueSkill · embedding similarity
 - Share links per view (read-only)
 - Webhook integrations (GitHub / Discord)
 
@@ -295,7 +295,7 @@ For commercial licensing inquiries: dj258255@naver.com
 | **Grid 뷰** | 가상화 행 (TanStack Virtual), 모바일에선 sticky header + 첫 컬럼, drag-drop 컬럼 재배치 |
 | **수식 엔진** | mathjs + @formulajs — 게임 특화 (DPS, EHP, TTK, SCALE, DIMINISH 등) |
 | **링크 레코드** | 시트 간 양방향 link + reverse 컬럼 자동 생성 |
-| **Undo/Redo** | Cmd+Z / Cmd+Shift+Z 가 cell.update / row.* / column.* / tree.* 모두 커버 — *server-backed*, 페이지 새로고침 후에도 120분 내 Cmd+Z 가능, per-tab 격리 (Baserow `MINUTES_UNTIL_ACTION_CLEANED_UP`) — ADR 0021 v3.0 |
+| **Undo/Redo** | Cmd+Z / Cmd+Shift+Z 가 cell.update / row.* / column.* / tree.* 모두 커버 — *server-backed*, 페이지 새로고침 후에도 120분 내 Cmd+Z 가능, per-tab 격리 (Baserow `MINUTES_UNTIL_ACTION_CLEANED_UP`) ||
 
 #### 문서
 | 카테고리 | 기능 |
@@ -308,11 +308,11 @@ For commercial licensing inquiries: dj258255@naver.com
 #### 협업
 | 카테고리 | 기능 |
 |----------|------|
-| **동기화** | Server-canonical wss op log (시트/트리) + Hocuspocus (문서 본문, yjs CRDT) — ADR 0008 |
+| **동기화** | Server-canonical wss op log (시트/트리) + Hocuspocus (문서 본문, yjs CRDT) ||
 | **Presence** | 시트 셀 awareness via wss + 문서 커서 via Hocuspocus awareness |
-| **코멘트** | 시트 셀 + 문서 본문 (범위 핀 하이라이트) + 답글 스레드 (1단계 nesting, Slack/Linear 패턴) + 이메일 + Web Push (VAPID) delivery + daily/weekly 다이제스트 — ADR 0024 v2.4 |
-| **외부 통합** | Outbound 웹훅 (HMAC-SHA256 POST) + Inbound 웹훅 (GitHub PR/issues + generic) + 공유 링크 (per view) + Discord slash commands (Ed25519 검증) — ADR 0027 / 0028 / 0029 / 0030 |
-| **@멘션** | Tiptap mention 확장 + 인박스 종 + per-mention 알림 — ADR 0024 |
+| **코멘트** | 시트 셀 + 문서 본문 (범위 핀 하이라이트) + 답글 스레드 (1단계 nesting, Slack/Linear 패턴) + 이메일 + Web Push (VAPID) delivery + daily/weekly 다이제스트 ||
+| **외부 통합** | Outbound 웹훅 (HMAC-SHA256 POST) + Inbound 웹훅 (GitHub PR/issues + generic) + 공유 링크 (per view) + Discord slash commands (Ed25519 검증) ||
+| **@멘션** | Tiptap mention 확장 + 인박스 종 + per-mention 알림 ||
 
 #### 플랫폼
 | 카테고리 | 기능 |
@@ -320,8 +320,8 @@ For commercial licensing inquiries: dj258255@naver.com
 | **인증** | OAuth 만 (GitHub + Google) + JWT 세션 쿠키 — SMTP 의존성 0 |
 | **워크스페이스** | 멀티 테넌트 + 역할 (Owner / Admin / Editor / Viewer) |
 | **프로젝트** | 워크스페이스 별, 멤버 초대 + 역할 관리 |
-| **모바일** | 사이드바 드로어 + 첫 컬럼 sticky + iOS 16px input + 44px hit target + bottom-sheet 셀 에디터 + 길게 누르기 컨텍스트 메뉴 + 문서 sticky Tiptap 툴바 + link picker 검색 — ADR 0022 v1.4 |
-| **뷰** | 10 뷰: Grid (기본) / Form / Kanban / Calendar / Gallery / Gantt / Heatmap / Curve / Probability / Diff. 마지막 4 개 (Heatmap / Curve / Probability / Diff) 는 게임 밸런싱 도메인 특화 — Notion / Airtable / Baserow 에 없음. server-canonical sync 위에서 모든 view 전환 / drag-drop 이 실시간 멀티플레이어 — ADR 0022 v2.1 |
+| **모바일** | 사이드바 드로어 + 첫 컬럼 sticky + iOS 16px input + 44px hit target + bottom-sheet 셀 에디터 + 길게 누르기 컨텍스트 메뉴 + 문서 sticky Tiptap 툴바 + link picker 검색 ||
+| **뷰** | 10 뷰: Grid (기본) / Form / Kanban / Calendar / Gallery / Gantt / Heatmap / Curve / Probability / Diff. 마지막 4 개 (Heatmap / Curve / Probability / Diff) 는 게임 밸런싱 도메인 특화 — Notion / Airtable / Baserow 에 없음. server-canonical sync 위에서 모든 view 전환 / drag-drop 이 실시간 멀티플레이어 ||
 | **데스크톱** | Mac / Windows / Linux 네이티브 (Electron 41 + GitHub Releases 자동 업데이트) |
 | **i18n** | UI + 12-그룹 스타터 팩 카탈로그 영/한 번역 |
 | **관측** | Sentry SaaS (env-gated, 셀프호스트는 선택) |
@@ -329,25 +329,25 @@ For commercial licensing inquiries: dj258255@naver.com
 ### 출하 완료 + 계획 중
 
 **Shipped (이번 sprint)**
-- ✅ ADR 0021 v3.0 phase 5 — server-backed persistent undo (refresh 후 Cmd+Z, 120 분 Baserow 윈도우)
-- ✅ ADR 0008 v2.2 — 셀 스타일 server-canonical 동기화
-- ✅ ADR 0008 ζ.3 — `lib/ydoc.ts` 통째 삭제 (-3411 net lines). 시트 도메인 100% server-canonical.
-- ✅ ADR 0008 v2.3 — `sheet.metadata.update` wire op. activeView / view metadata 14 필드 patch. peer 가 view 전환을 실시간으로 봄.
-- ✅ ADR 0022 v2.0 — Kanban / Calendar / Gantt 3 뷰 server-canonical 위로 재도입. drag-drop 이 *진짜* 실시간 멀티플레이어 (Linear 패턴).
-- ✅ ADR 0022 v2.1 — 나머지 6 뷰 풀 (Form · Gallery · Heatmap · Curve · Probability · Diff). 뒤 4 개 (Heatmap / Curve / Probability / Diff) 가 *Notion 클론* 과 *진짜 게임 밸런싱 도구* 의 분리.
+- ✅ phase 5 — server-backed persistent undo (refresh 후 Cmd+Z, 120 분 Baserow 윈도우)
+- ✅ 셀 스타일 server-canonical 동기화
+- ✅ `lib/ydoc.ts` 통째 삭제 (-3411 net lines). 시트 도메인 100% server-canonical.
+- ✅ `sheet.metadata.update` wire op. activeView / view metadata 14 필드 patch. peer 가 view 전환을 실시간으로 봄.
+- ✅ Kanban / Calendar / Gantt 3 뷰 server-canonical 위로 재도입. drag-drop 이 *진짜* 실시간 멀티플레이어 (Linear 패턴).
+- ✅ 나머지 6 뷰 풀 (Form · Gallery · Heatmap · Curve · Probability · Diff). 뒤 4 개 (Heatmap / Curve / Probability / Diff) 가 *Notion 클론* 과 *진짜 게임 밸런싱 도구* 의 분리.
 - ✅ Diff baseline picker — op_idempotency.inverse_payload 의 backward replay 로 120 분 윈도우 안 historical baseline 재구성. 별도 snapshot 인프라 불필요.
-- ✅ ADR 0027 share links — `/share/:token` 의 인증 없는 읽기 전용 viewer. 즉시 revoke.
-- ✅ ADR 0028 webhook outbound — `comment.added` / `mention.created` / `row.added` 이벤트의 HMAC-SHA256 POST. ApplicationEvent 디커플링.
-- ✅ ADR 0024 Stage I — email + Web Push (VAPID) 알림. SMTP 는 admin 이 spring.mail.* 로 가져옴 (Outline/AFFiNE/Baserow 패턴). Web Push 는 RFC 표준이라 영구 무료. `/settings/notifications` 에서 toggles + per-device 관리.
-- ✅ ADR 0029 Inbound webhooks (GitHub) — POST + HMAC-SHA256 검증. PR / issue 이벤트가 자동으로 row 추가. ViewSwitcher 의 "받기" 버튼으로 URL + secret 발급.
+- ✅ share links — `/share/:token` 의 인증 없는 읽기 전용 viewer. 즉시 revoke.
+- ✅ webhook outbound — `comment.added` / `mention.created` / `row.added` 이벤트의 HMAC-SHA256 POST. ApplicationEvent 디커플링.
+- ✅ email + Web Push (VAPID) 알림. SMTP 는 admin 이 spring.mail.* 로 가져옴 (Outline/AFFiNE/Baserow 패턴). Web Push 는 RFC 표준이라 영구 무료. `/settings/notifications` 에서 toggles + per-device 관리.
+- ✅ Inbound webhooks (GitHub) — POST + HMAC-SHA256 검증. PR / issue 이벤트가 자동으로 row 추가. ViewSwitcher 의 "받기" 버튼으로 URL + secret 발급.
 - ✅ Daily / weekly digest — Spring `@Scheduled` 가 instant 가 아닌 사용자에게 mention 모음 1통 (00:00 UTC).
-- ✅ ADR 0030 Discord slash commands — Ed25519 검증 interaction endpoint. `/balruno bug <text>` 가 workspace 기본 시트에 row 추가.
-- ✅ ADR 0004 Stripe billing — Checkout + Customer Portal + 서명 검증 webhook. V20 schema. 글로벌 + 한국 카드 수금.
-- ✅ ADR 0031 Project-wide search — 셀/트리/코멘트 본문 검색. Cmd+K 와 200ms debounce 로 통합.
-- ✅ ADR 0032 Workspace audit log — `workspace_audit_log` + `AuditLogEvent` ApplicationEvent. 활동 피드의 backing store.
-- ✅ ADR 0033 Game engine export — CSV + C# struct. Unity Assets/ 에 그대로 드롭.
-- ✅ ADR 0034 Cmd+K + GDPR + PWA — 빠른 점프, 데이터 내보내기 / 계정 삭제 자체-서비스, 홈 화면 추가.
-- ✅ ADR 0024 v2.2 — 코멘트 답글 스레드 (1단계 nesting, Slack/Linear 패턴)
+- ✅ Discord slash commands — Ed25519 검증 interaction endpoint. `/balruno bug <text>` 가 workspace 기본 시트에 row 추가.
+- ✅ Stripe billing — Checkout + Customer Portal + 서명 검증 webhook. V20 schema. 글로벌 + 한국 카드 수금.
+- ✅ Project-wide search — 셀/트리/코멘트 본문 검색. Cmd+K 와 200ms debounce 로 통합.
+- ✅ Workspace audit log — `workspace_audit_log` + `AuditLogEvent` ApplicationEvent. 활동 피드의 backing store.
+- ✅ Game engine export — CSV + C# struct. Unity Assets/ 에 그대로 드롭.
+- ✅ Cmd+K + GDPR + PWA — 빠른 점프, 데이터 내보내기 / 계정 삭제 자체-서비스, 홈 화면 추가.
+- ✅ 코멘트 답글 스레드 (1단계 nesting, Slack/Linear 패턴)
 
 **계획 중 (다음 6 개월)**
 

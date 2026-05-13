@@ -60,7 +60,7 @@ Components:
 | **packages/web** | Next.js 16 / TypeScript | MIT | Yes (frontend) |
 | **packages/backend** | Java 25 / Spring Boot 4.0.6 | AGPL v3 | Yes (auth + sync API) |
 | **packages/collab** | Node.js / Hocuspocus | AGPL v3 | Yes (doc bodies) |
-| **packages/ai-service** | Python 3.13 / FastAPI | AGPL v3 | Optional (AI + ML features, planned ADR 0023/0025) |
+| **packages/ai-service** | Python 3.13 / FastAPI | AGPL v3 | Optional (AI + ML features, planned) |
 | **PostgreSQL 18** | (external) | PostgreSQL License | Yes |
 | **packages/desktop** | Electron | MIT | Optional (Mac/Windows/Linux app) |
 
@@ -198,7 +198,7 @@ color, poll `/actuator/health/readiness` (Spring) or a TCP probe
 (Hocuspocus), then flip the symlink + `nginx -s reload` for a
 graceful cutover. First migration ~21s downtime (legacy single
 container → dual slot); subsequent cutovers measured at 0s on the
-reference deployment. See ADR 0044.
+reference deployment. See `ansible/` for the blue/green deploy pattern.
 
 If you'd rather keep the simpler single-container pattern (Baserow /
 Plane / NocoDB style), drop the blue/green services from
@@ -211,7 +211,7 @@ is the OSS self-hosted norm.
 `/actuator/*` is accessible to anyone who can reach the public domain.
 Spring's default exposure is limited to `health` + `info`, but if you
 want defense in depth you can enable the optional internal-token
-gate from ADR 0045:
+gate (optional internal-token):
 
 1. Generate a token: `openssl rand -hex 32`.
 2. Add it to `vault.yml` as `vault_actuator_internal_token: "<token>"`.
@@ -230,7 +230,7 @@ default), so this is safe to set up after the fact.
   your infrastructure (Sentry-compatible, MIT licensed).
 - **Or no observability** — leave the env blank; logs only.
 
-### AI + ML service (optional, ADR 0023 v3.0 + ADR 0025 v2.0 — planned)
+### AI + ML service (optional, planned)
 
 AI (LLM) and ML (statistical analytics — outlier / cluster /
 curve fit / TrueSkill / similarity / RAG) live in a **separate
