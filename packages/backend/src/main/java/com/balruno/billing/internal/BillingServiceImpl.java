@@ -138,9 +138,10 @@ class BillingServiceImpl implements BillingService {
 
     /** Update workspace plan + cached subscription state from a
      *  webhook event. Called by BillingWebhookController. */
+    @Override
     @Transactional
-    void onSubscriptionChanged(String customerId, String subscriptionId, String status,
-                                Long currentPeriodEnd, String plan) {
+    public void onSubscriptionChanged(String customerId, String subscriptionId, String status,
+                                       Long currentPeriodEnd, String plan) {
         var ts = currentPeriodEnd == null
                 ? null
                 : new java.sql.Timestamp(currentPeriodEnd * 1000L);

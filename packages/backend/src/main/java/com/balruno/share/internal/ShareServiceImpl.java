@@ -7,6 +7,8 @@ import com.balruno.share.ShareLink;
 import com.balruno.share.ShareService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,8 @@ import java.util.UUID;
  */
 @Service
 class ShareServiceImpl implements ShareService {
+
+    private static final Logger log = LoggerFactory.getLogger(ShareServiceImpl.class);
 
     private final ShareLinkRepository repo;
     private final ProjectService projects;
@@ -99,11 +103,13 @@ class ShareServiceImpl implements ShareService {
         }
 
         // Diagnostic — best effort, swallow errors so the public
-        // read succeeds even if the timestamp UPDATE fails.
+        // read succeeds even if the timestamp UPDATE fails. log at
+        // DEBUG so an operator can promote it when the touch column
+        // looks stuck.
         try {
             repo.touchLastUsed(link.id(), now);
-        } catch (Exception ignored) {
-            // ignore — diagnostic only
+        } catch (Exception e) {
+            log.debug("share touchLastUsed failed linkId={}", link.id(), e);
         }
 
         return new PublicReadResult(link, snapshot);

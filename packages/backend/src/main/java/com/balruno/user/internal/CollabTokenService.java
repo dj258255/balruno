@@ -20,14 +20,11 @@ import java.util.UUID;
  * neighbouring CollabTokenController calls it.
  *
  * Authorisation note: this service signs whatever {@code (userId, documentId)}
- * pair the controller hands it. The controller is the right place to
- * gate that pair against the workspace member list — Stage C
- * deliberately ships the issuer alone so the wiring matches the
- * AGPL-side policy (Hocuspocus verifies the signature, the API does
- * the membership check). The membership check is a follow-up tracked
- * in ADR 0017 §4 — landing it here right now would couple the user
- * module to the workspace + project + document chain before the
- * document directory exists.
+ * pair the controller hands it. The membership gate lives one layer up
+ * in {@code CollabTokenController} (which calls
+ * {@code CollabAccessRepository.canUserAccessDocument} before delegating
+ * here) — keeping the issuer free of the workspace + project + document
+ * lookup chain.
  */
 @Service
 class CollabTokenService {

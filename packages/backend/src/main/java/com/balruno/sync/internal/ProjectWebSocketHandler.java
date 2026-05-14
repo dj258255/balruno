@@ -87,10 +87,10 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        // userId comes from the auth handshake (Stage B.3). Until that lands
-        // we use a deterministic placeholder so op_idempotency / audit
-        // queries don't NPE during early smoke tests; real value drops in
-        // when handshake JWT verification is wired.
+        // userId comes from the auth handshake — SyncHandshakeInterceptor
+        // pulls it out of the JWT (cookie or query-param) and parks it
+        // on the session attributes. resolveUserId throws if missing so
+        // the handler never runs on an unauthenticated socket.
         var userId = resolveUserId(session);
 
         SyncMessage op;

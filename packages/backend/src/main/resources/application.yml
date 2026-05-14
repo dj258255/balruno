@@ -116,6 +116,13 @@ balruno.jwt:
   # surface separates from the application UI.
   frontend-redirect-base: https://balruno.com
 
+# ─── Notification deep-link base ─────────────────────────────────────────
+# URL the digest email / Web Push payloads point at when the user clicks
+# a mention notification. Self-host operators override via env so digests
+# don't link back to balruno.com — for example, my-team.example.com/inbox.
+balruno.notification:
+  inbox-url: ${BALRUNO_INBOX_URL:https://balruno.com/inbox}
+
 # ─── Collab token (Hocuspocus session) ───────────────────────────────────
 # Distinct HS256 secret from balruno.jwt — the Hocuspocus container
 # verifies these, the API session JWT decoder doesn't even see them.

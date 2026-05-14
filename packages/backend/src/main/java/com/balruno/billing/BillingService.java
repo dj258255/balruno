@@ -26,4 +26,14 @@ public interface BillingService {
      * method / cancellation / invoices on Stripe-hosted UI.
      */
     String createPortalSession(UUID callerUserId, UUID workspaceId, String returnUrl);
+
+    /**
+     * Webhook handler entrypoint — called by BillingWebhookController
+     * after the Stripe signature has been verified. Promoted onto the
+     * public interface so the controller no longer needs to inject the
+     * concrete {@code BillingServiceImpl} alongside this interface
+     * (was a controller-level abstraction leak).
+     */
+    void onSubscriptionChanged(String customerId, String subscriptionId, String status,
+                               Long currentPeriodEnd, String plan);
 }

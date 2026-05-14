@@ -114,9 +114,15 @@ class WorkspaceServiceImpl implements WorkspaceService {
     @Override
     @Transactional(readOnly = true)
     public List<Workspace> listForUser(UUID userId) {
-        return memberRepo.findByUserId(userId).stream()
-                .map(m -> workspaceRepo.findById(m.getWorkspaceId()).orElse(null))
-                .filter(w -> w != null && !w.isDeleted())
+        // Single membership query then a single batched workspace fetch
+        // (instead of N findById round-trips, one per membership row).
+        // BillingController.requireMember + AuditController hit this on
+        // every request, so the N+1 amplified across those surfaces.
+        var members = memberRepo.findByUserId(userId);
+        if (members.isEmpty()) return List.of();
+        var ids = members.stream().map(WorkspaceMemberEntity::getWorkspaceId).toList();
+        return workspaceRepo.findAllById(ids).stream()
+                .filter(w -> !w.isDeleted())
                 .map(WorkspaceServiceImpl::toDto)
                 .toList();
     }

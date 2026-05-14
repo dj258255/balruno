@@ -40,15 +40,20 @@ class DigestScheduler {
     private final ObjectProvider<EmailService> emailServiceProvider;
     private final CommentService comments;
     private final UserDirectoryService users;
+    private final String inboxUrl;
 
     DigestScheduler(NotificationPreferenceRepository prefs,
                     ObjectProvider<EmailService> emailServiceProvider,
                     CommentService comments,
-                    UserDirectoryService users) {
+                    UserDirectoryService users,
+                    @org.springframework.beans.factory.annotation.Value(
+                            "${balruno.notification.inbox-url:https://balruno.com/inbox}")
+                    String inboxUrl) {
         this.prefs = prefs;
         this.emailServiceProvider = emailServiceProvider;
         this.comments = comments;
         this.users = users;
+        this.inboxUrl = inboxUrl;
     }
 
     /** Daily at 00:00 UTC. */
@@ -104,7 +109,7 @@ class DigestScheduler {
             out.add(new EmailService.DigestItem(
                     name,
                     extractSnippet(c.bodyJson(), 200),
-                    "https://balruno.com/inbox",
+                    inboxUrl,
                     c.createdAt() != null ? c.createdAt().toLocalDate().toString() : ""));
         }
         return out;

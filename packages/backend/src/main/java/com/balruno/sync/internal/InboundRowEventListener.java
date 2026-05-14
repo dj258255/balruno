@@ -42,8 +42,11 @@ class InboundRowEventListener {
             sheetOps.applyAppendRow(event.projectId(), event.actorUserId(),
                     event.sheetId(), event.rowId(), event.rowJson());
         } catch (Exception e) {
-            log.warn("inbound row append failed projectId={} sheetId={}: {}",
-                    event.projectId(), event.sheetId(), e.getMessage());
+            // Pass `e` as the final SLF4J argument so the stack trace
+            // lands in the log — the previous `e.getMessage()` form
+            // dropped the trace and turned this into a silent failure.
+            log.warn("inbound row append failed projectId={} sheetId={}",
+                    event.projectId(), event.sheetId(), e);
         }
     }
 }

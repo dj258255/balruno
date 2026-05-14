@@ -6,6 +6,8 @@ import com.balruno.comment.CommentService;
 import com.balruno.project.ProjectService;
 import com.balruno.sync.ProjectSyncService;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,8 @@ import java.util.UUID;
  */
 @Service
 class CommentServiceImpl implements CommentService {
+
+    private static final Logger log = LoggerFactory.getLogger(CommentServiceImpl.class);
 
     private final CommentRepository repo;
     private final MentionRepository mentions;
@@ -214,8 +218,11 @@ class CommentServiceImpl implements CommentService {
             for (var orphan : orphans) {
                 try {
                     storage.delete(orphan.path());
-                } catch (Exception ignored) {
-                    // best-effort — R2 lifecycle / cron will sweep
+                } catch (Exception e) {
+                    // best-effort — R2 lifecycle / cron will sweep.
+                    // log at DEBUG so an operator can flip the level
+                    // when chasing a stuck blob without spamming prod.
+                    log.debug("comment attachment delete failed path={}", orphan.path(), e);
                 }
             }
             // Aggregate the now-orphaned bytes and decrement the

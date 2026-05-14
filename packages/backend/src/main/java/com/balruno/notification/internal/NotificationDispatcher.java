@@ -39,6 +39,7 @@ class NotificationDispatcher {
     private final ObjectProvider<EmailService> emailServiceProvider;
 
     private final UserDirectoryService users;
+    private final String inboxUrl;
 
     private final ObjectMapper jsonMapper = new ObjectMapper();
 
@@ -46,12 +47,16 @@ class NotificationDispatcher {
                            WebPushSubscriptionRepository subs,
                            WebPushDispatcher pushDispatcher,
                            ObjectProvider<EmailService> emailServiceProvider,
-                           UserDirectoryService users) {
+                           UserDirectoryService users,
+                           @org.springframework.beans.factory.annotation.Value(
+                                   "${balruno.notification.inbox-url:https://balruno.com/inbox}")
+                           String inboxUrl) {
         this.prefs = prefs;
         this.subs = subs;
         this.pushDispatcher = pushDispatcher;
         this.emailServiceProvider = emailServiceProvider;
         this.users = users;
+        this.inboxUrl = inboxUrl;
     }
 
     @EventListener
@@ -106,7 +111,7 @@ class NotificationDispatcher {
             if (emailService != null) {
                 emailService.sendMentionEmail(
                         recipient.email(), authorName, projectName, snippet,
-                        "https://balruno.com/inbox");
+                        inboxUrl);
             }
         }
 
@@ -131,7 +136,7 @@ class NotificationDispatcher {
             var node = jsonMapper.createObjectNode();
             node.put("title", String.format("%s mentioned you", author));
             node.put("body", snippet);
-            node.put("url", "https://balruno.com/inbox");
+            node.put("url", inboxUrl);
             node.put("icon", "/icon-192.png");
             return jsonMapper.writeValueAsString(node);
         } catch (Exception e) {

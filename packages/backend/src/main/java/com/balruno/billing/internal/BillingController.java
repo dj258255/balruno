@@ -42,16 +42,13 @@ class BillingController {
     private static final Logger log = LoggerFactory.getLogger(BillingController.class);
 
     private final BillingService billing;
-    private final BillingServiceImpl billingImpl;
     private final WorkspaceService workspaces;
 
     @Value("${balruno.billing.stripe.webhook-secret:}")
     private String webhookSecret;
 
-    BillingController(BillingService billing, BillingServiceImpl billingImpl,
-                      WorkspaceService workspaces) {
+    BillingController(BillingService billing, WorkspaceService workspaces) {
         this.billing = billing;
-        this.billingImpl = billingImpl;
         this.workspaces = workspaces;
     }
 
@@ -141,7 +138,7 @@ class BillingController {
                         plan = "FREE";
                         status = "canceled";
                     }
-                    billingImpl.onSubscriptionChanged(
+                    billing.onSubscriptionChanged(
                             customerId, subscriptionId, status, currentPeriodEnd, plan);
                 } catch (Exception e) {
                     log.warn("stripe webhook payload parse failed: {}", e.getMessage());
@@ -157,12 +154,12 @@ class BillingController {
     }
 
     private void requireMember(UUID userId, UUID workspaceId) {
-        var memberships = workspaces.listForUser(userId);
-        var match = memberships.stream().anyMatch(w -> w.id().equals(workspaceId));
-        if (!match) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                    HttpStatus.NOT_FOUND, "workspace not found");
-        }
+        // Match the rest of the project — workspaces.requireRole gives a
+        // 404 on unknown workspaceId + 403 on non-member, which is the
+        // shape every other workspace-scoped controller emits. The
+        // previous listForUser().anyMatch() pattern silently 403'd on a
+        // non-existent workspaceId (it just returned false).
+        workspaces.requireRole(workspaceId, userId, com.balruno.workspace.WorkspaceRole.VIEWER);
     }
 
     private static UUID callerId(Jwt jwt) {
