@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { FolderPlus, LayoutTemplate } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { deleteProjectFromDB } from '@/lib/storage';
 import { AllToolId } from '@/stores/toolLayoutStore';
 import { useSheetUIStore } from '@/stores/sheetUIStore';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
@@ -575,7 +574,6 @@ export default function Sidebar({
         setProjectDeleteConfirm={() => setProjectDeleteConfirm(null)}
         onDeleteProject={async (projectId) => {
           projectStore.deleteProject(projectId);
-          await deleteProjectFromDB(projectId);
         }}
         folderDeleteConfirm={folderDeleteConfirm}
         setFolderDeleteConfirm={() => setFolderDeleteConfirm(null)}
