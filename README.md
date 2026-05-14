@@ -94,28 +94,6 @@ An open-source collaborative spreadsheet + doc workspace, focused on **game bala
 | **i18n** | UI + 12-group starter pack catalog fully translated (en, ko) |
 | **Observability** | Sentry SaaS (env-gated, optional for self-host) |
 
-### Recently shipped
-
-- ✅ **server-backed persistent undo (refresh-survival, 120-min Baserow window, per-tab scope, hydrate-on-mount)
-- ✅ **cell style server-canonical sync (was silent local-only — now broadcasts to peers + cross-device)
-- ✅ **`lib/ydoc.ts` complete deletion (-3411 net lines). Sheet domain is now 100% server-canonical.
-- ✅ **`sheet.metadata.update` wire op (activeView, view*ColumnId, savedViews, name, icon, kind, filterGroup, tags) — view switches and grouping picks broadcast to peers in real time.
-- ✅ **Kanban + Calendar + Gantt views restored on top of server-canonical sync. Drag-drop / view config flicks are now genuinely multi-player (Linear pattern).
-- ✅ **Remaining 6 views shipped: Form · Gallery · Heatmap · Curve · Probability · Diff. The 4 game-balance specific views (Heatmap / Curve / Probability / Diff) are where this stops being a Notion clone and starts being a Game Studio Workspace.
-- ✅ **Diff baseline picker** — op_idempotency.inverse_payload backward replay reconstructs historical baselines inside the 120-min reversible window. No separate snapshot infrastructure needed; Phase 5's idempotency log already has the data.
-- ✅ **share links** — read-only public viewer at `/share/:token`. UUIDv7 PK + UUIDv4 token, optional sheet / view / expiry pin, instant revoke.
-- ✅ **webhook outbound** — HMAC-SHA256 signed POSTs on `comment.added` / `mention.created` / `row.added`. ApplicationEvent decoupling so the webhook module isn't a static dep on the publishers (Spring Modulith arch test green).
-- ✅ **email + Web Push notifications** — Spring's JavaMailSender (admin brings SMTP creds, Outline / AFFiNE / Baserow pattern, no built-in service) + VAPID Web Push (RFC 8030 + 8292, free forever, no third party). Per-user prefs (instant / daily / weekly / off) + per-device subscription list at `/settings/notifications`.
-- ✅ **Inbound webhooks (GitHub)** — POST `/api/v1/inbound-public/:id/{github\|generic}` with HMAC-SHA256 (`X-Hub-Signature-256` for GitHub, `X-Balruno-Signature` for generic). PR / issue events auto-create rows on the target sheet (title / url / status mapped to chosen columns).
-- ✅ **Daily / weekly digest** — Spring `@Scheduled` aggregates per-user mentions for non-instant cadence picks (00:00 UTC daily / Monday weekly).
-- ✅ **Discord slash commands** — Ed25519 verified `/v1/discord/interactions` endpoint. `/balruno bug <text>` adds a row to the workspace's default sheet.
-- ✅ **Stripe billing** — Checkout + Customer Portal + signature-verified webhook. V20 schema; global cards.
-- ✅ **Project-wide search** — walks cells + tree nodes + comment bodies; wired into Cmd+K with 200ms debounce.
-- ✅ **Workspace audit log** — `workspace_audit_log` + `AuditLogEvent` ApplicationEvent. Per-workspace activity feed surface.
-- ✅ **Game engine export** — CSV (RFC 4180 + BOM) + C# `[Serializable]` struct + readonly array. Drop straight into Unity Assets/.
-- ✅ **Cmd+K + GDPR + PWA** — quick switcher, data-export + account-delete self-service, manifest for Add to Home Screen.
-- ✅ **comment reply threads (1-level nesting via `parentId`, Slack/Linear pattern)
-
 ### Planned (next 6 months)
 
 | ADR | Feature | Stack | Status |
@@ -326,30 +304,7 @@ For commercial licensing inquiries: dj258255@naver.com
 | **i18n** | UI + 12-그룹 스타터 팩 카탈로그 영/한 번역 |
 | **관측** | Sentry SaaS (env-gated, 셀프호스트는 선택) |
 
-### 출하 완료 + 계획 중
-
-**Shipped (이번 sprint)**
-- ✅ phase 5 — server-backed persistent undo (refresh 후 Cmd+Z, 120 분 Baserow 윈도우)
-- ✅ 셀 스타일 server-canonical 동기화
-- ✅ `lib/ydoc.ts` 통째 삭제 (-3411 net lines). 시트 도메인 100% server-canonical.
-- ✅ `sheet.metadata.update` wire op. activeView / view metadata 14 필드 patch. peer 가 view 전환을 실시간으로 봄.
-- ✅ Kanban / Calendar / Gantt 3 뷰 server-canonical 위로 재도입. drag-drop 이 *진짜* 실시간 멀티플레이어 (Linear 패턴).
-- ✅ 나머지 6 뷰 풀 (Form · Gallery · Heatmap · Curve · Probability · Diff). 뒤 4 개 (Heatmap / Curve / Probability / Diff) 가 *Notion 클론* 과 *진짜 게임 밸런싱 도구* 의 분리.
-- ✅ Diff baseline picker — op_idempotency.inverse_payload 의 backward replay 로 120 분 윈도우 안 historical baseline 재구성. 별도 snapshot 인프라 불필요.
-- ✅ share links — `/share/:token` 의 인증 없는 읽기 전용 viewer. 즉시 revoke.
-- ✅ webhook outbound — `comment.added` / `mention.created` / `row.added` 이벤트의 HMAC-SHA256 POST. ApplicationEvent 디커플링.
-- ✅ email + Web Push (VAPID) 알림. SMTP 는 admin 이 spring.mail.* 로 가져옴 (Outline/AFFiNE/Baserow 패턴). Web Push 는 RFC 표준이라 영구 무료. `/settings/notifications` 에서 toggles + per-device 관리.
-- ✅ Inbound webhooks (GitHub) — POST + HMAC-SHA256 검증. PR / issue 이벤트가 자동으로 row 추가. ViewSwitcher 의 "받기" 버튼으로 URL + secret 발급.
-- ✅ Daily / weekly digest — Spring `@Scheduled` 가 instant 가 아닌 사용자에게 mention 모음 1통 (00:00 UTC).
-- ✅ Discord slash commands — Ed25519 검증 interaction endpoint. `/balruno bug <text>` 가 workspace 기본 시트에 row 추가.
-- ✅ Stripe billing — Checkout + Customer Portal + 서명 검증 webhook. V20 schema. 글로벌 + 한국 카드 수금.
-- ✅ Project-wide search — 셀/트리/코멘트 본문 검색. Cmd+K 와 200ms debounce 로 통합.
-- ✅ Workspace audit log — `workspace_audit_log` + `AuditLogEvent` ApplicationEvent. 활동 피드의 backing store.
-- ✅ Game engine export — CSV + C# struct. Unity Assets/ 에 그대로 드롭.
-- ✅ Cmd+K + GDPR + PWA — 빠른 점프, 데이터 내보내기 / 계정 삭제 자체-서비스, 홈 화면 추가.
-- ✅ 코멘트 답글 스레드 (1단계 nesting, Slack/Linear 패턴)
-
-**계획 중 (다음 6 개월)**
+### 계획 (다음 6 개월)
 
 | ADR | 기능 | 스택 | 상태 |
 |---|---|---|---|
