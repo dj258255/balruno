@@ -520,7 +520,7 @@ export function InlineFile({
               handleRemove(idx);
             }}
             className="opacity-50 hover:opacity-100"
-            aria-label="제거"
+            aria-label={t('common.delete')}
           >
             <X className="h-3 w-3" />
           </button>

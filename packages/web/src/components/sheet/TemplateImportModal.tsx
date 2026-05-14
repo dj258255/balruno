@@ -16,6 +16,7 @@
 
 import { useEffect, useState } from 'react';
 import { Loader2, X, FileSpreadsheet } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { listCatalog, type CatalogGroupSummary } from '@/lib/backend';
 
 interface TemplateImportModalProps {
@@ -33,6 +34,7 @@ export function TemplateImportModal({
   onClose,
   onPick,
 }: TemplateImportModalProps) {
+  const t = useTranslations('common');
   const [groups, setGroups] = useState<CatalogGroupSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export function TemplateImportModal({
             onClick={onClose}
             className="rounded p-1 hover:bg-[var(--bg-hover)]"
             style={{ color: 'var(--text-tertiary)' }}
-            aria-label="닫기"
+            aria-label={t('close')}
           >
             <X className="h-4 w-4" />
           </button>

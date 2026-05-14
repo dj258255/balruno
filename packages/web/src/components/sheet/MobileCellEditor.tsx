@@ -27,6 +27,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Check, Search } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { ColumnType, SelectOption, Sheet } from '@/types';
 
 interface MobileCellEditorProps {
@@ -61,6 +62,7 @@ export function MobileCellEditor({
   onCancel,
   onChange,
 }: MobileCellEditorProps) {
+  const t = useTranslations('common');
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   // Link picker search — typing here filters the row list. The
   // displayed slice is hard-capped at 100 (mobile viewport renders
@@ -263,7 +265,7 @@ export function MobileCellEditor({
             onClick={onCancel}
             className="inline-flex h-11 w-11 items-center justify-center rounded hover:bg-[var(--bg-hover)]"
             style={{ color: 'var(--text-secondary)' }}
-            aria-label="취소"
+            aria-label={t('cancel')}
           >
             <X className="h-5 w-5" />
           </button>
@@ -321,6 +323,7 @@ function LinkPickerBody({
   onCommit,
   onChange,
 }: LinkPickerBodyProps) {
+  const t = useTranslations('common');
   const labelOf = (row: typeof linkedSheet.rows[number]) =>
     linkedDisplayColumnId
       ? String(row.cells[linkedDisplayColumnId] ?? row.id.slice(0, 8))
@@ -355,7 +358,7 @@ function LinkPickerBody({
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="검색..."
+          placeholder={t('search')}
           className="h-11 flex-1 bg-transparent outline-none text-base"
           style={{ color: 'var(--text-primary)', fontSize: '16px' }}
         />
@@ -364,7 +367,7 @@ function LinkPickerBody({
             type="button"
             onClick={() => setSearch('')}
             className="inline-flex h-8 w-8 items-center justify-center rounded hover:bg-[var(--bg-hover)]"
-            aria-label="검색어 지우기"
+            aria-label={t('close')}
           >
             <X className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
           </button>
