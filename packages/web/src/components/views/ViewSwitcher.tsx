@@ -14,10 +14,23 @@ import { downloadCSharpStruct } from '@/lib/sheet/csharpExport';
 import { useTranslations } from 'next-intl';
 import type { ViewType, Sheet, SavedView, FilterGroup } from '@/types';
 import { useProjectStore } from '@/stores/projectStore';
+import dynamic from 'next/dynamic';
 import { FilterBuilder } from './FilterBuilder';
-import { ShareLinkModal } from './ShareLinkModal';
-import { WebhooksModal } from './WebhooksModal';
-import { InboundWebhooksModal } from './InboundWebhooksModal';
+
+// Toolbar modals are hidden until the user opens them — keep them
+// out of the first-paint chunk to shrink the initial JS payload.
+const ShareLinkModal = dynamic(
+  () => import('./ShareLinkModal').then((m) => m.ShareLinkModal),
+  { ssr: false },
+);
+const WebhooksModal = dynamic(
+  () => import('./WebhooksModal').then((m) => m.WebhooksModal),
+  { ssr: false },
+);
+const InboundWebhooksModal = dynamic(
+  () => import('./InboundWebhooksModal').then((m) => m.InboundWebhooksModal),
+  { ssr: false },
+);
 
 interface ViewSwitcherProps {
   projectId: string;

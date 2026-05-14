@@ -4,16 +4,22 @@
  * Mounts the Cmd+K palette globally + binds the keyboard shortcut.
  *
  * Lives in app/layout.tsx so the palette is reachable from every
- * page (workspace picker, project page, settings, ...). Only renders
- * a hidden host until the user hits Cmd+K, so the palette code is
- * still in the bundle but cheap when idle.
+ * page (workspace picker, project page, settings, ...). The palette
+ * body is dynamic-imported so it stays out of the first-paint bundle
+ * — the chunk only loads after the user hits Cmd+K once.
  */
 
 import { useEffect, useState } from 'react';
-import { CommandPalette } from './CommandPalette';
+import dynamic from 'next/dynamic';
+
+const CommandPalette = dynamic(
+  () => import('./CommandPalette').then((m) => m.CommandPalette),
+  { ssr: false },
+);
 
 export function CommandPaletteHost() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -24,11 +30,13 @@ export function CommandPaletteHost() {
       const isShortcut = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k';
       if (!isShortcut) return;
       e.preventDefault();
+      setMounted(true);
       setOpen((v) => !v);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  if (!mounted) return null;
   return <CommandPalette open={open} onClose={() => setOpen(false)} />;
 }

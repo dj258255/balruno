@@ -82,6 +82,10 @@ const nextConfig: NextConfig = {
       "base-uri 'self'",
       "object-src 'none'",
       "upgrade-insecure-requests",
+      // Trusted Types — ships in Report-Only first so Tiptap / Sentry
+      // sink writes surface as console warnings without blocking. Flip
+      // alongside the main CSP when the policy hits stable.
+      "require-trusted-types-for 'script'",
     ].join('; ');
 
     return [
@@ -97,6 +101,12 @@ const nextConfig: NextConfig = {
           // the CSP — modern browsers honour the latter, legacy ones
           // fall back to the former. Both blanket-deny iframing.
           { key: 'X-Frame-Options', value: 'DENY' },
+          // Cross-Origin-Opener-Policy. Same-origin isolates this
+          // browsing context from popups / opener references opened
+          // on other origins — closes the window.opener phishing
+          // class and unlocks high-resolution timers / SharedArray
+          // buffers if we ever want them.
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
             key: 'Permissions-Policy',
