@@ -48,6 +48,12 @@ class UserAuthServiceImplTest {
     @Mock WorkspaceService workspaceService;
     @Mock ApplicationEventPublisher events;
     @Mock com.balruno.events.AfterCommitPublisher afterCommit;
+    // MessageSource was added to the constructor in the backend-i18n
+    // change. Mockito returns null from getMessage() by default; the
+    // tests below only verify event publication (not the project name
+    // content), so the null default is fine — the seed name flows
+    // into UserCreatedEvent unchanged.
+    @Mock org.springframework.context.MessageSource messages;
     @InjectMocks UserAuthServiceImpl service;
 
     @org.junit.jupiter.api.BeforeEach
