@@ -8,8 +8,11 @@ import com.balruno.user.UserAuthService;
 import com.balruno.events.UserCreatedEvent;
 import com.balruno.workspace.WorkspaceService;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Locale;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -29,16 +32,19 @@ class UserAuthServiceImpl implements UserAuthService {
     private final WorkspaceService workspaceService;
     private final ApplicationEventPublisher events;
     private final com.balruno.events.AfterCommitPublisher afterCommit;
+    private final MessageSource messages;
 
     UserAuthServiceImpl(UserRepository userRepo, OAuthAccountRepository oauthRepo,
                         WorkspaceService workspaceService,
                         ApplicationEventPublisher events,
-                        com.balruno.events.AfterCommitPublisher afterCommit) {
+                        com.balruno.events.AfterCommitPublisher afterCommit,
+                        MessageSource messages) {
         this.userRepo = userRepo;
         this.oauthRepo = oauthRepo;
         this.workspaceService = workspaceService;
         this.events = events;
         this.afterCommit = afterCommit;
+        this.messages = messages;
     }
 
     @Override
@@ -108,11 +114,19 @@ class UserAuthServiceImpl implements UserAuthService {
                 // fails the user can still sign in to an empty
                 // workspace (and re-seed via the empty-state path) and
                 // the user module stays free of project imports.
+                // Seed name resolves against the user's preferred locale —
+                // a fresh sign-up with locale=ko gets "내 첫 게임",
+                // anything else falls back to the English bundle.
+                var seedLocale = u.getLocale() != null
+                        ? Locale.forLanguageTag(u.getLocale())
+                        : Locale.ENGLISH;
+                var firstProjectName = messages.getMessage(
+                        "starter.firstProject", null, seedLocale);
                 events.publishEvent(new UserCreatedEvent(
                         u.getId(),
                         workspace.id(),
                         "main",
-                        "내 첫 게임",
+                        firstProjectName,
                         u.getLocale()));
 
                 yield u;

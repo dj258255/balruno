@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,14 +33,17 @@ class SheetDuplicateService {
     private final ProjectService projects;
     private final ProjectSyncService sync;
     private final com.balruno.events.AfterCommitPublisher afterCommit;
+    private final MessageSource messages;
     private final ObjectMapper mapper = new ObjectMapper();
 
     SheetDuplicateService(ProjectRepository projectRepo, ProjectService projects, ProjectSyncService sync,
-                          com.balruno.events.AfterCommitPublisher afterCommit) {
+                          com.balruno.events.AfterCommitPublisher afterCommit,
+                          MessageSource messages) {
         this.projectRepo = projectRepo;
         this.projects = projects;
         this.sync = sync;
         this.afterCommit = afterCommit;
+        this.messages = messages;
     }
 
     /** Returns the id of the newly inserted duplicate sheet. */
@@ -94,7 +99,8 @@ class SheetDuplicateService {
                     if (row.isObject()) ((ObjectNode) row).put("id", UUID.randomUUID().toString());
                 }
             }
-            clone.put("name", source.path("name").asText() + " (복사)");
+            var suffix = messages.getMessage("duplicate.suffix", null, LocaleContextHolder.getLocale());
+            clone.put("name", source.path("name").asText() + suffix);
             var now = System.currentTimeMillis();
             clone.put("createdAt", now);
             clone.put("updatedAt", now);

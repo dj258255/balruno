@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,18 +40,21 @@ class DocDuplicateApiImpl implements DocDuplicateApi {
     private final ProjectSyncService sync;
     private final AfterCommitPublisher afterCommit;
     private final CollabSidecarClient sidecar;
+    private final MessageSource messages;
     private final ObjectMapper mapper = new ObjectMapper();
 
     DocDuplicateApiImpl(ProjectSyncRepository projectSync,
                         DocumentRepository documents,
                         ProjectSyncService sync,
                         AfterCommitPublisher afterCommit,
-                        CollabSidecarClient sidecar) {
+                        CollabSidecarClient sidecar,
+                        MessageSource messages) {
         this.projectSync = projectSync;
         this.documents = documents;
         this.sync = sync;
         this.afterCommit = afterCommit;
         this.sidecar = sidecar;
+        this.messages = messages;
     }
 
     @Override
@@ -107,7 +112,8 @@ class DocDuplicateApiImpl implements DocDuplicateApi {
             // below, so we mint it up-front via the PG uuidv7() helper
             // instead of relying on the table's DEFAULT-on-INSERT path.
             newDocId = documents.nextV7Id();
-            newName = source.getTitle() + " (복사)";
+            var suffix = messages.getMessage("duplicate.suffix", null, LocaleContextHolder.getLocale());
+            newName = source.getTitle() + suffix;
 
             var newLeaf = mapper.createObjectNode();
             newLeaf.put("id", newDocId.toString());
