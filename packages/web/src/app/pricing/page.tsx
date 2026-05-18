@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * Public pricing page — Notion / Baserow / Linear pattern: three tier
  * cards above a side-by-side comparison table. Until the billing
@@ -7,18 +5,21 @@
  * accurate to the eventual product (ADR 0016) so curious self-hosters
  * see the same model that drives the in-product limit guards.
  *
- * Public path — listed in proxy.ts so the unauthenticated marketing
- * surface stays accessible without redirecting to /login.
+ * Server-rendered + force-static — the marketing surface is the same
+ * for every visitor at build time, so we let the CDN serve the HTML
+ * and skip the SSR call (cuts Vercel Origin Transfer for this route).
  */
 
 import Link from 'next/link';
 import { Check } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
 import type { WorkspacePlan } from '@/lib/backend';
 
-export default function PricingPage() {
-  const t = useTranslations('pricing');
+export const dynamic = 'force-static';
+
+export default async function PricingPage() {
+  const t = await getTranslations('pricing');
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-16">
