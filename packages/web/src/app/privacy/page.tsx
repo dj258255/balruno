@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import { LegalShell } from '@/components/legal/LegalShell';
 
+// Force static rendering — content depends on nothing per-request,
+// so we want CDN-cached HTML instead of an SSR call on every hit.
+// (Cuts Vercel Fast Origin Transfer for this route to zero.)
+export const dynamic = 'force-static';
+
 export const metadata: Metadata = {
   title: 'Privacy Policy — Balruno',
   description: 'Balruno 개인정보처리방침 / Privacy Policy',

@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import { LegalShell } from '@/components/legal/LegalShell';
 
+// Force static rendering — no per-request data, so the HTML can sit
+// on the CDN. Removes this route from the Vercel Origin Transfer
+// budget. Pair with the same flag on /privacy.
+export const dynamic = 'force-static';
+
 export const metadata: Metadata = {
   title: 'Terms of Service — Balruno',
   description: 'Balruno 이용약관 / Terms of Service',
