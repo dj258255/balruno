@@ -9,10 +9,12 @@
 
 | Hostname | Public IP | 사양 | 역할 |
 |---|---|---|---|
-| **prod-app** | 168.107.47.33 | ARM 12GB | Spring Boot 4.0.6 + Java 25 + Hocuspocus + Nginx |
-| **monitor** | 168.107.10.100 | ARM 12GB | PostgreSQL 18.3 + Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB |
-| **backup** | 134.185.108.159 | x86 1GB | pg_dump rsync 수신 + cloudflared (monitor.balruno.com Tunnel) + node_exporter |
-| **status** | 158.179.162.44 | x86 1GB | Object Storage upload daemon (3-2-1 offsite) + node_exporter |
+| **prod-app** | `{{ prod_app_public_ip }}` | ARM 12GB | Spring Boot 4.0.6 + Java 25 + Hocuspocus + Nginx |
+| **monitor** | `{{ monitor_public_ip }}` | ARM 12GB | PostgreSQL 18.3 + Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB |
+| **backup** | `{{ backup_public_ip }}` | x86 1GB | pg_dump rsync 수신 + cloudflared (monitor.balruno.com Tunnel) + node_exporter |
+| **status** | `{{ status_public_ip }}` | x86 1GB | Object Storage upload daemon (3-2-1 offsite) + node_exporter |
+
+> 실제 IP 는 `group_vars/all/vault.yml` (ansible-vault 암호화) 에 보관 — 위 표는 변수 참조만 표기.
 
 **OS**: Rocky Linux 9, **SSH user**: rocky, **SSH key**: `~/.ssh/oci_key`
 **같은 VCN** (10.0.0.0/24) — internal 통신 1ms
@@ -156,7 +158,7 @@ Step 3: ansible-playbook site.yml --limit monitor        ← PG + Grafana stack 
 Step 4: ansible-playbook site.yml --limit prod_app       ← Spring + Hocuspocus + Nginx
 Step 5: ansible-playbook site.yml --limit backup         ← pg_dump + cloudflared
 Step 6: ansible-playbook site.yml --limit status         ← Object Storage upload daemon + node_exporter
-Step 7: 검증 + 스크린샷 (블로그 2편/5편 자료)
+Step 7: 검증 (도메인 hit / actuator / Grafana 대시보드 확인)
 ```
 
 ---

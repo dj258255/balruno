@@ -255,7 +255,7 @@ For commercial licensing inquiries: dj258255@naver.com
 
 ### Balruno란?
 
-오픈소스 협업 스프레드시트 + 문서 워크스페이스. **게임 밸런싱 도메인 특화**. 실시간 동기화, 코멘트 + @멘션 (범위 핀 하이라이트), 풀 undo/redo, 모바일 친화. 1인 개발자가 진행 중이며 ML / AI 차별화를 게임 밸런싱에 맞춰 계획 중.
+오픈소스 협업 스프레드시트 + 문서 워크스페이스. **게임 밸런싱 도메인 특화**. 실시간 동기화, 코멘트 + @멘션 (범위 핀 하이라이트), 풀 undo/redo, 모바일 친화. ML / AI 차별화는 게임 밸런싱 도메인에 맞춰 진행 계획.
 
 - **실시간 스프레드시트** — server-canonical wss op log + version-vector 충돌 해결
 - **Tiptap 문서 본문** — Hocuspocus (yjs CRDT) + y-indexeddb 오프라인 캐시

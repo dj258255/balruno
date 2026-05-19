@@ -1,11 +1,10 @@
 # Balruno Ansible group variables (applied to every host).
 # Secrets live in group_vars/vault.yml (ansible-vault encrypted).
 
-# ─── OCI public IPs (override via vault.yml if rotated) ──────────────────
-prod_app_public_ip: "168.107.47.33"
-monitor_public_ip:  "168.107.10.100"
-backup_public_ip:   "134.185.108.159"
-status_public_ip:   "158.179.162.44"
+# ─── OCI public IPs ──────────────────────────────────────────────────────
+# prod_app_public_ip / monitor_public_ip / backup_public_ip / status_public_ip
+# live in vault.yml (ansible-vault encrypted). Origin IPs out of the cleartext
+# tree so Cloudflare bypass attack surface is not handed out with the repo.
 
 # ─── OCI private IPs (same VCN, 10.0.0.0/24) ─────────────────────────────
 prod_app_private_ip: "10.0.0.11"

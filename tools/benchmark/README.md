@@ -2,7 +2,7 @@
 
 **일회성 DB 벤치마크 번들.** OCI prod_app 에서 docker compose 로 MySQL 8 / PostgreSQL 18 / MongoDB 7 를 임시로 띄워서 같은 CRUD API 와 같은 부하 패턴으로 비교 측정한 뒤, 결과를 회수하고 흔적을 0으로 정리한다.
 
-이력서/블로그의 *"같은 CRUD API 를 3개 DB 에 각각 연결해 직접 측정"* 명세에 맞는 실측 자료를 만드는 게 목적이다.
+같은 프레임워크 / 같은 부하 스크립트 / 같은 호스트 위에서 *DB 와 쿼리 플랜 차이만* 분리해 측정하는 것이 목적이다. Balruno backend 의 시트 저장소 선택 (PostgreSQL 18 + JSONB GIN) 을 뒷받침할 실측 자료를 git 으로 봉인된 형태로 남긴다.
 
 ---
 

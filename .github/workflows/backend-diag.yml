@@ -21,7 +21,7 @@ permissions:
   contents: read
 
 env:
-  PROD_HOST: 168.107.47.33
+  PROD_HOST: ${{ secrets.PROD_HOST }}
   PROD_USER: rocky
   INSTALL_DIR: /opt/balruno/backend
 
