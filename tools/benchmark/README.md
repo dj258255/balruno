@@ -52,7 +52,7 @@ balruno-bench/
 
 ### 0. (선행) 모니터링 보강 (선택)
 
-cAdvisor + Spring Actuator + 3 Grafana 대시보드 보강이 필요하면 `docs/backend/MONITORING_UPGRADE.md` 가이드 먼저 적용. 측정 자체는 모니터링 보강 없이도 돌아간다.
+cAdvisor + Spring Actuator + 3 Grafana 대시보드 보강은 별도 가이드를 따른다. 측정 자체는 모니터링 보강 없이도 돌아간다.
 
 ### 1. 번들 전송 (Mac → prod_app)
 

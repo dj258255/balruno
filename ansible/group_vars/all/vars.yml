@@ -1,7 +1,5 @@
 # Balruno Ansible group variables (applied to every host).
 # Secrets live in group_vars/vault.yml (ansible-vault encrypted).
-#
-# Source of truth: docs/backend/decisions/0007-infrastructure.md v1.1
 
 # ─── OCI public IPs (override via vault.yml if rotated) ──────────────────
 prod_app_public_ip: "168.107.47.33"

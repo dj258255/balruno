@@ -22,8 +22,8 @@
  *                      `/uuid` slash command, anywhere a creation-timestamp
  *                      leak via the ID would be undesirable.
  *
- * Auth tokens (refresh, collab, invite, reset) are NOT UUIDs — see
- * docs/backend/01-auth.md §4 for those (32-byte base64url random).
+ * Auth tokens (refresh, collab, invite, reset) are NOT UUIDs — they
+ * use 32-byte base64url random material instead, generated server-side.
  */
 
 import { v4, v7 } from 'uuid';

@@ -1,7 +1,6 @@
 # Balruno Ansible
 
 > OCI Always Free 4대 (ARM 12GB ×2 + x86 1GB ×2) 자동 프로비저닝.
-> 결정 진실원: `docs/backend/decisions/0007-infrastructure.md` v1.3 + `decisions/0010-infra-evolution.md`
 > wikiEngine 패턴 차용 (vault_password_file, ssh ControlMaster, role 구조).
 
 ---

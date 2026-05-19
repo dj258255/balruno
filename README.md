@@ -243,9 +243,9 @@ For commercial licensing inquiries: dj258255@naver.com
 ### Links
 
 - [Live Demo](https://balruno.com)
-- [Self-hosting Guide](docs/SELF_HOSTING.md)
-- [Backend overview](docs/backend/00-overview.md)
-- [Architecture decisions (ADRs)](docs/backend/decisions/)
+- [Architecture overview](docs/ARCHITECTURE.md) — start here if you're new to the codebase
+- [Self-hosting guide](docs/SELF_HOSTING.md)
+- [Security policy](SECURITY.md)
 - [Report Bug](https://github.com/dj258255/balruno/issues/new?template=bug_report.md)
 - [Request Feature](https://github.com/dj258255/balruno/issues/new?template=feature_request.md)
 
@@ -358,6 +358,12 @@ cd packages/desktop && npm run dev
 3. 변경사항 커밋 (커밋 메시지 + 코드 주석은 영어)
 4. 브랜치에 Push
 5. Pull Request 생성
+
+### 프로젝트 문서
+
+- [아키텍처 개요](docs/ARCHITECTURE.md) — 처음 보는 사람을 위한 30분 onboarding
+- [셀프호스팅 가이드](docs/SELF_HOSTING.md)
+- [보안 정책](SECURITY.md)
 
 ### 참고 자료
 

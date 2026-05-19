@@ -25,9 +25,11 @@ Thumbs.db
 docs/draft/
 **/draft/
 
-# 비공개 설계 문서 (로컬 보존, 원격 제외)
-docs/backend/
+# Local-only design notes (drafts, internal narrative, scratch).
+# Public-facing documentation lives under docs/.
+notes/
 docs/archive/
+outputs/
 
 # firebase
 firebase-debug.log

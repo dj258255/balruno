@@ -38,8 +38,6 @@ For external contributors, a Contributor License Agreement (CLA) check via [CLA 
 
 **라이센스 안내**: 본 저장소는 디렉토리별로 다른 라이센스를 사용합니다 (`LICENSING.md` 참조). PR 제출 시 해당 디렉토리의 라이센스에 동의하는 것으로 간주되며, 외부 기여자는 PR 시 CLA 자동 검증이 진행됩니다.
 
-자세한 정책: `docs/backend/decisions/0005-oss-monetization.md`
-
 ## How Can I Contribute? / 어떻게 기여할 수 있나요?
 
 ### Reporting Bugs / 버그 제보

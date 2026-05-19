@@ -21,14 +21,12 @@ packages/backend/ (TBD)  AGPL v3       Server code (Spring Boot). Self-host
                                        freely; if you modify and offer as a
                                        service to others, you must publish your
                                        changes. Created at Phase B-1 bootstrap.
-docs/ (public files)     MIT           Same as packages/web. (docs/backend/
-                                       and docs/archive/ are kept private via
-                                       .gitignore — internal design notes.)
+docs/ (public files)     MIT           Architecture overview, self-hosting
+                                       guide, and supporting reference material.
 
 The historical project-wide MIT license (Copyright (c) 2025 Balruno) applies
 to all code committed before 2026-05-03. The license split above takes effect
-for files added on or after 2026-05-03 per ADR 0005
-(`docs/backend/decisions/0005-oss-monetization.md`).
+for files added on or after 2026-05-03.
 
 For the trademark "PowerBalance" and "balruno", and the project logo, see
 `TRADEMARK.md`. These are NOT covered by the source code licenses above.
