@@ -50,9 +50,9 @@ const missingInKo = Object.keys(enFlat).filter((k) => !(k in koFlat));
 
 console.log(`ko.json keys: ${Object.keys(koFlat).length}`);
 console.log(`en.json keys: ${Object.keys(enFlat).length}`);
-console.log(`\n❌ en.json 에 누락: ${missingInEn.length}개`);
+console.log(`\nMISSING in en.json: ${missingInEn.length}개`);
 missingInEn.forEach((k) => console.log(`  - ${k} = "${koFlat[k]}"`));
-console.log(`\n❌ ko.json 에 누락: ${missingInKo.length}개`);
+console.log(`\nMISSING in ko.json: ${missingInKo.length}개`);
 missingInKo.forEach((k) => console.log(`  - ${k} = "${enFlat[k]}"`));
 
 if (process.argv.includes('--fix')) {
@@ -62,5 +62,5 @@ if (process.argv.includes('--fix')) {
     count++;
   }
   fs.writeFileSync(enPath, JSON.stringify(en, null, 2) + '\n', 'utf8');
-  console.log(`\n✅ en.json 에 ${count}개 키 추가 (ko 값 복사). 실제 번역은 수동으로 교체하세요.`);
+  console.log(`\nADDED ${count} keys to en.json (copied from ko). Translate manually afterwards.`);
 }

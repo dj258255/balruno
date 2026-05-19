@@ -253,7 +253,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                     placeholder={t('select')}
                     options={sources.map(s => ({
                       value: s.id,
-                      label: `${s.type === 'snapshot' ? '📸 ' : '📄 '}${s.name}`,
+                      label: `${s.type === 'snapshot' ? `[${t('snapshotPrefix')}] ` : ''}${s.name}`,
                     }))}
                     size="md"
                   />
@@ -312,7 +312,7 @@ export default function PresetComparisonModal({ onClose, isPanel = false, showHe
                     placeholder={t('select')}
                     options={sources.map(s => ({
                       value: s.id,
-                      label: `${s.type === 'snapshot' ? '📸 ' : '📄 '}${s.name}`,
+                      label: `${s.type === 'snapshot' ? `[${t('snapshotPrefix')}] ` : ''}${s.name}`,
                     }))}
                     size="md"
                   />

@@ -221,7 +221,7 @@ export const COLUMN_TYPE_META: Record<ColumnType, ColumnTypeMeta> = {
     Icon: Paperclip,
     label: 'File',
     description: '첨부 파일 (이미지/PDF/문서/ZIP)',
-    preview: '📎 design.pdf',
+    preview: 'design.pdf',
     shownIn: ALL_KINDS,
     recommendedIn: ['reference', 'pm'],
   },

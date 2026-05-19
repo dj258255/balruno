@@ -205,24 +205,24 @@ const RELEASE_NOTES = `
 <h1>릴리스 노트 v1.0</h1>
 <p>발행일: YYYY-MM-DD</p>
 
-<h2>🎯 주요 변경</h2>
+<h2>주요 변경</h2>
 <ul>
   <li>항목 1</li>
   <li>항목 2</li>
 </ul>
 
-<h2>⚖️ 밸런스 조정</h2>
+<h2>밸런스 조정</h2>
 <p>주요 수치 변경 (자동 채움 권장 — changelog 기반):</p>
 <ul>
   <li>전사 HP 변경: 이전 → 현재 (근거: @task:GAME-xx)</li>
 </ul>
 
-<h2>🐛 버그 수정</h2>
+<h2>버그 수정</h2>
 <ul>
   <li>@task:BUG-xx 해결</li>
 </ul>
 
-<h2>📈 지표 목표</h2>
+<h2>지표 목표</h2>
 <p>이번 릴리스 KPI:</p>
 <ul>
   <li>Day 1 Retention: ≥ 50%</li>

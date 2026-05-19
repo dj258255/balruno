@@ -322,7 +322,7 @@ export function verifyAndAnalyzeSensitivity(
     message = `보통 민감도 (해 ±5% → 목표 ${volatility.toFixed(1)}% 변동)`;
   } else {
     level = 'high';
-    message = `⚠️ 매우 민감한 해 — 해를 ±5% 만 바꿔도 목표가 ${volatility.toFixed(1)}% 흔들림. 약간의 오차로 큰 편차 가능`;
+    message = `매우 민감한 해 — 해를 ±5% 만 바꿔도 목표가 ${volatility.toFixed(1)}% 흔들림. 약간의 오차로 큰 편차 가능`;
   }
 
   void baseline;
