@@ -17,6 +17,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -162,6 +163,26 @@ class ApiExceptionHandler {
                 "Not found",
                 "NOT_FOUND",
                 e.getMessage() == null ? "Resource not found." : e.getMessage());
+    }
+
+    /**
+     * Spring's static-resource handler raises this when a request hits
+     * a path with no registered controller and no matching static file
+     * (e.g. {@code GET /}, {@code GET /v3/api-docs} on a backend that
+     * doesn't ship Springdoc). It extends {@code ErrorResponseException}
+     * — NOT {@link ResponseStatusException} — so the existing
+     * {@link #handleResponseStatus} grid misses it and the catch-all
+     * collapses every 404 here to a synthetic 500. Same shape of bug
+     * as the historical collab-token 404 → 500 leak that
+     * {@link #handleResponseStatus} originally fixed.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    ProblemDetail handleNoResource(NoResourceFoundException e) {
+        log.warn("no_resource path={}", e.getResourcePath());
+        return ProblemDetails.of(HttpStatus.NOT_FOUND,
+                "Not Found",
+                "NOT_FOUND",
+                "No handler for the requested path.");
     }
 
     /**

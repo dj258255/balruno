@@ -4,6 +4,7 @@ package com.balruno.shared.api;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,5 +48,27 @@ class ApiExceptionHandlerTest {
 
         assertThat(pd.getStatus()).isEqualTo(415);
         assertThat(pd.getProperties()).containsEntry("code", "UNSUPPORTED_MEDIA_TYPE");
+    }
+
+    /**
+     * Regression guard for the second 404 → 500 leak: Spring's
+     * {@code NoResourceFoundException} (raised on requests to paths
+     * with no controller, e.g. {@code GET /} or {@code GET /v3/api-docs})
+     * is an {@code ErrorResponseException}, not a {@code ResponseStatusException},
+     * so it slipped through {@code handleResponseStatus} and got
+     * collapsed to {@code INTERNAL_ERROR / 500} by the catch-all. The
+     * dedicated handler must surface a 404.
+     */
+    @Test
+    void noResourceFoundSurfacesAs404() {
+        // NoResourceFoundException(HttpMethod, requestPath, resourcePath) —
+        // Spring 6.2+ signature. The third arg is the original resource
+        // path that the static-resource handler failed to resolve.
+        var pd = handler.handleNoResource(
+                new NoResourceFoundException(org.springframework.http.HttpMethod.GET, "/", "/"));
+
+        assertThat(pd.getStatus()).isEqualTo(404);
+        assertThat(pd.getTitle()).isEqualTo("Not Found");
+        assertThat(pd.getProperties()).containsEntry("code", "NOT_FOUND");
     }
 }
