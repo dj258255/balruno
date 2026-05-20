@@ -176,9 +176,19 @@ jobs:
           echo "stopped collab-${ACTIVE} (port 1245 released)"
 
           # 4. Bring up the replacement color.
+          # --force-recreate guarantees a fresh container even when the
+          # compose config-hash hasn't changed — necessary because a
+          # prior failed deploy can leave a stale container with
+          # HostConfig.PortBindings set but no actual host-side bind
+          # (observed 2026-05-20: stale blue from 2026-05-19 had the
+          # bindings recorded but `ss -tlnp` showed no listener on the
+          # mapped ports, so `docker compose port` returned 'no port
+          # 1234/tcp' and the readiness probe couldn't start). Plain
+          # `up -d` re-starts the stale container without retrying the
+          # port bind.
           # --remove-orphans cleans up the legacy `balruno-collab`
           # single-service container on the first migration.
-          COMPOSE_PROFILES="$INACTIVE" docker compose up -d --remove-orphans "collab-${INACTIVE}"
+          COMPOSE_PROFILES="$INACTIVE" docker compose up -d --force-recreate --remove-orphans "collab-${INACTIVE}"
 
           # 5. Resolve the host port mapped to the inactive container,
           # then probe TCP reachability (Hocuspocus has no /readiness
