@@ -145,24 +145,42 @@ jobs:
           esac
           echo "current active=$ACTIVE, target=$INACTIVE, mode=$MODE"
 
+          # Shared internal host port (hocuspocus_internal_host_port=1245) is
+          # mapped by BOTH colors in the compose template — docker refuses
+          # to start the second container while the first still binds it.
+          # The hocuspocus role defaults document this trade-off: the brief
+          # WS reconnect window (~5-15s, until the replacement color passes
+          # the TCP readiness probe) is acceptable; force-snapshot degrades
+          # to best-effort the same way it does during any unconfigured
+          # deploy. Both rollback and normal cutover must therefore stop
+          # the currently-active color BEFORE bringing the replacement up.
+
           if [ "$MODE" = "rollback" ]; then
+            cd "$INSTALL_DIR"
+            COMPOSE_PROFILES="$ACTIVE" docker compose stop "collab-${ACTIVE}"
             sudo ln -sfn "$SNIPPET_DIR/upstream-balruno-collab-${INACTIVE}.conf" "$ACTIVE_LINK"
             sudo nginx -s reload
-            cd "$INSTALL_DIR"
             COMPOSE_PROFILES="$INACTIVE" docker compose up -d "collab-${INACTIVE}"
             echo "rollback complete: active=${INACTIVE}"
             exit 0
           fi
 
-          # 2. Pull the new image and bring up the inactive color.
-          # --remove-orphans cleans up the legacy `balruno-collab`
-          # single-service container on the first migration.
+          # 2. Pull the new image (no container action yet).
           echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
           cd "$INSTALL_DIR"
           docker compose pull "collab-${INACTIVE}"
+
+          # 3. Stop the currently-active color to release the shared
+          # internal host port before the replacement starts.
+          COMPOSE_PROFILES="$ACTIVE" docker compose stop "collab-${ACTIVE}"
+          echo "stopped collab-${ACTIVE} (port 1245 released)"
+
+          # 4. Bring up the replacement color.
+          # --remove-orphans cleans up the legacy `balruno-collab`
+          # single-service container on the first migration.
           COMPOSE_PROFILES="$INACTIVE" docker compose up -d --remove-orphans "collab-${INACTIVE}"
 
-          # 3. Resolve the host port mapped to the inactive container,
+          # 5. Resolve the host port mapped to the inactive container,
           # then probe TCP reachability (Hocuspocus has no /readiness
           # endpoint; a successful TCP connect means the WS listener is
           # accepting handshakes). Max 60s.
@@ -187,18 +205,10 @@ jobs:
             sleep 3
           done
 
-          # 4. Cutover: flip active symlink + graceful nginx reload.
+          # 6. Cutover: flip active symlink + graceful nginx reload.
           sudo ln -sfn "$SNIPPET_DIR/upstream-balruno-collab-${INACTIVE}.conf" "$ACTIVE_LINK"
           sudo nginx -s reload
           echo "cutover: active=${INACTIVE}"
-
-          # 5. Wait 30s (rollback window — yjs clients reconnect via the
-          # new color in the meantime), then stop the old. WebSocket
-          # connections held by old nginx workers are capped by the
-          # main-context worker_shutdown_timeout 30s (ADR 0044).
-          sleep 30
-          COMPOSE_PROFILES="$ACTIVE" docker compose stop "collab-${ACTIVE}"
-          echo "stopped collab-${ACTIVE}"
           REMOTE
 
       - name: Smoke-test via Cloudflare

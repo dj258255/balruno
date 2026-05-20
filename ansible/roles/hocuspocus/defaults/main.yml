@@ -39,9 +39,11 @@ hocuspocus_collab_port: "{{ hocuspocus_container_port }}"
 
 # Internal HTTP port — Spring → side-car force-snapshot channel.
 # Same container port across blue/green; the host-side mapping is
-# also shared (1245). ADR 0044 cutover is short enough that the
-# brief host-port collision (both colors briefly up) only degrades
-# force-snapshot to best-effort during the swap — clone falls back
+# also shared (1245). docker compose refuses to bind the same host
+# port twice, so the collab-deploy workflow stops the active color
+# before starting the replacement (see .github/workflows/collab-deploy.yml).
+# During the ~5-15s gap between stop and the replacement passing TCP
+# readiness, force-snapshot degrades to best-effort — clone falls back
 # to the last persisted ydoc_state, which is the same outcome
 # unconfigured deployments already use.
 hocuspocus_internal_container_port: 1235
