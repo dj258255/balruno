@@ -166,9 +166,9 @@ Step 7: 검증 (도메인 hit / actuator / Grafana 대시보드 확인)
 ## 보안
 
 - SSH: `PasswordAuthentication no`, `PermitRootLogin no`, `AllowUsers rocky`, fail2ban 3회 실패 → 1시간 차단
-- Security List: 22 (본인 IP only), 80/443 (Cloudflare IP only), 5432/3000/9090 (VCN only)
+- Security List: 80/443 (Cloudflare IPv4 CIDR ×15 only — 2026-05-20 lockdown), 22 (0.0.0.0/0 — fail2ban + key-only 의존, 추후 Cloudflare Tunnel SSH 이전 고려), 5432/3000/9090 (VCN 10.0.0.0/16 only)
 - vault: ansible-vault AES256 — 모든 시크릿 (DB password / JWT secret / OAuth client / Grafana admin / Cloudflare Tunnel token / OCI API key)
-- 암호 파일: `~/.ssh/.vault_pass` (chmod 600) — wikiEngine 재사용
+- 암호 파일: `ansible/.vault_pass` (chmod 600, gitignored) — operator local + CI 의 `ANSIBLE_VAULT_PASSWORD` GitHub Secret
 
 ---
 
