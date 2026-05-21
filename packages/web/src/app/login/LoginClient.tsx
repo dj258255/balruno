@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Globe } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
-import { startOAuthLogin } from '@/lib/backend';
+import { listWorkspaces, startOAuthLogin } from '@/lib/backend';
+import { useBackendAuthStore } from '@/stores/backendAuthStore';
 import { AuthShell } from '@/components/auth/AuthShell';
 
 /**
@@ -18,13 +19,52 @@ import { AuthShell } from '@/components/auth/AuthShell';
  * Split out of page.tsx so the route shell can render server-side
  * (force-static, CDN-cached). The interactive bits (useSearchParams,
  * useState, locale toggle) hydrate on the client.
+ *
+ * Already-authenticated visitors are routed away from /login to the
+ * same destination LandingClient picks for `/` — keeps the auth-wall
+ * symmetric on both entry points.
  */
 export function LoginClient() {
+  const router = useRouter();
   const params = useSearchParams();
   const error = params.get('error');
-  const status = params.get('status');
+  const queryStatus = params.get('status');
   const [pending, setPending] = useState<'github' | 'google' | null>(null);
+  const [resolving, setResolving] = useState(false);
   const t = useTranslations('auth.oauth');
+  const authStatus = useBackendAuthStore((s) => s.status);
+
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || resolving) return;
+    setResolving(true);
+
+    void (async () => {
+      try {
+        if (typeof window !== 'undefined') {
+          const lastWs = window.localStorage.getItem('balruno:lastWorkspace');
+          const lastProj = lastWs
+            ? window.localStorage.getItem(`balruno:lastProject:${lastWs}`)
+            : null;
+          if (lastWs && lastProj) {
+            router.replace(`/${lastWs}/projects/${lastProj}`);
+            return;
+          }
+          if (lastWs) {
+            router.replace(`/${lastWs}`);
+            return;
+          }
+        }
+        const list = await listWorkspaces();
+        if (list.length > 0) {
+          router.replace(`/${list[0].slug}`);
+          return;
+        }
+        router.replace('/workspaces');
+      } catch {
+        router.replace('/workspaces');
+      }
+    })();
+  }, [authStatus, resolving, router]);
 
   const handle = (provider: 'github' | 'google') => () => {
     setPending(provider);
@@ -69,7 +109,7 @@ export function LoginClient() {
         </button>
       </div>
 
-      {(status === 'error' || error) && (
+      {(queryStatus === 'error' || error) && (
         <p
           className="mt-4 rounded-md px-3 py-2 text-sm"
           style={{
