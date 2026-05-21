@@ -25,9 +25,12 @@ monitoring_port_influxdb: 8086
 monitoring_port_node_exporter: 9100
 monitoring_port_blackbox_exporter: 9115
 
-# Bind to private VCN IP only — the Cloudflare Tunnel daemon (on backup host)
+# Bind to the host's own VCN IP — Cloudflare Tunnel daemon on backup
 # proxies Grafana to the public internet via monitor.balruno.com.
-monitoring_bind_address: "{{ monitor_private_ip }}"
+# Post-2026-05-21 consolidation the monitoring stack runs on prod_app
+# instead of monitor; `private_ip` follows the host inventory entry so
+# the bind target moves with the role.
+monitoring_bind_address: "{{ private_ip }}"
 
 # Retention.
 monitoring_prometheus_retention: "{{ prometheus_retention_days }}d"
@@ -52,13 +55,12 @@ monitoring_blackbox_targets:
   - https://api.balruno.com/actuator/health
   - https://collab.balruno.com
   - https://monitor.balruno.com
-  - https://status.balruno.com
   - https://balruno.com
 
 # Hosts that Prometheus scrapes via node_exporter (each runs its own exporter).
-# Filled at apply time — see prometheus.yml.j2.
+# Filled at apply time — see prometheus.yml.j2. Reduced from 4 to 2 after
+# the 2026-05-21 consolidation removed monitor + status hosts; only
+# prod_app (everything-host) and backup (former backup+status) remain.
 monitoring_node_targets:
   - "{{ prod_app_private_ip }}:{{ monitoring_port_node_exporter }}"
-  - "{{ monitor_private_ip }}:{{ monitoring_port_node_exporter }}"
   - "{{ backup_private_ip }}:{{ monitoring_port_node_exporter }}"
-  - "{{ status_private_ip }}:{{ monitoring_port_node_exporter }}"

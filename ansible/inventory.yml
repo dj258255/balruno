@@ -24,15 +24,6 @@ all:
       memory_gb: 12
       ocpu: 2
 
-    monitor:
-      ansible_host: "{{ monitor_public_ip }}"
-      private_ip: "{{ monitor_private_ip }}"
-      ansible_user: "{{ ssh_user_arm }}"
-      server_role: monitor
-      arch: arm64
-      memory_gb: 12
-      ocpu: 2
-
     backup:
       ansible_host: "{{ backup_public_ip }}"
       private_ip: "{{ backup_private_ip }}"
@@ -55,7 +46,6 @@ all:
     arm:
       hosts:
         prod_app:
-        monitor:
 
     x86:
       hosts:

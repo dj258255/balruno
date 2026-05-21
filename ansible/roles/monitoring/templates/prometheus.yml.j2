@@ -33,37 +33,30 @@ scrape_configs:
 
   - job_name: alloy
     static_configs:
-      # Alloy now runs as part of monitoring-agent on each host that has
-      # Docker (prod_app + monitor). backup/status skip alloy to save RAM.
+      # Alloy runs as part of monitoring-agent on each host with Docker.
+      # Post-2026-05-21 consolidation only prod_app needs it; backup
+      # skips alloy to save RAM.
       - targets:
           - "{{ prod_app_private_ip }}:12345"
-          - "{{ monitor_private_ip }}:12345"
 
   - job_name: postgres
     static_configs:
-      - targets: ["{{ monitor_private_ip }}:9187"]
+      - targets: ["{{ prod_app_private_ip }}:9187"]
         labels:
           db: balruno
 
-  # cAdvisor — per-container CPU/memory/IO on each host that runs containers.
-  # prod_app: Spring backend + Hocuspocus + benchmark containers (temp).
-  # monitor: Grafana stack + Postgres + InfluxDB.
+  # cAdvisor — per-container CPU/memory/IO. After consolidation only
+  # prod_app runs the multi-container workload (Spring + Hocuspocus +
+  # PG + monitoring stack), so it's the single cadvisor target.
   - job_name: cadvisor
     static_configs:
       - targets:
           - "{{ prod_app_private_ip }}:9101"
-            # label injected via target group below
-      - targets:
-          - "{{ monitor_private_ip }}:9101"
     relabel_configs:
       - source_labels: [__address__]
         regex: "{{ prod_app_private_ip }}:.*"
         target_label: host
         replacement: prod_app
-      - source_labels: [__address__]
-        regex: "{{ monitor_private_ip }}:.*"
-        target_label: host
-        replacement: monitor
 
   # Spring Boot Actuator — /actuator/prometheus on the *active* backend slot.
   # Blue/green deploy means port 8080 (blue) or 8081 (green) is the live one;

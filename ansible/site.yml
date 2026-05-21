@@ -25,7 +25,8 @@
 
 # ───────────────────────────────────────────────────────────────────
 # 2. Per-host monitoring agent — node_exporter + cadvisor + alloy.
-#    Runs on every host so the central Prometheus on monitor can scrape.
+#    Runs on every host so the central Prometheus (now on prod_app)
+#    can scrape.
 # ───────────────────────────────────────────────────────────────────
 - name: Deploy monitoring agent (all hosts)
   hosts: all
@@ -36,41 +37,34 @@
       vars:
         # backup/status are x86 1GB and don't run Docker containers besides
         # the agent itself, so they skip alloy to save memory.
-        monitoring_agent_deploy_alloy: "{{ inventory_hostname in ['prod_app', 'monitor'] }}"
+        monitoring_agent_deploy_alloy: "{{ inventory_hostname == 'prod_app' }}"
 
 # ───────────────────────────────────────────────────────────────────
-# 3. prod-app — backend (Spring) + hocuspocus (collab) Docker compose +
-#    Nginx (TLS terminator + reverse proxy).
+# 3. prod-app — Spring + hocuspocus + nginx + PostgreSQL + monitoring
+#    stack + pg_dump source. After the 2026-05-21 consolidation
+#    everything compute-heavy lives here.
 # ───────────────────────────────────────────────────────────────────
-- name: Deploy prod-app (backend + collab Docker compose + nginx)
+- name: Deploy prod-app (app + collab + nginx + PG + monitoring + backup source)
   hosts: prod_app
   become: true
   tags: [prod-app]
   roles:
+    - role: postgres
+      tags: [postgres]
     - role: backend
       tags: [backend]
     - role: hocuspocus
       tags: [hocuspocus, collab]
     - role: nginx
       tags: [nginx]
-
-# ───────────────────────────────────────────────────────────────────
-# 4. monitor — PostgreSQL + Grafana stack + InfluxDB (Phase B-6 follow-up).
-# ───────────────────────────────────────────────────────────────────
-- name: Deploy monitor (monitoring stack + Postgres + backup source)
-  hosts: monitor
-  become: true
-  tags: [monitor]
-  roles:
     - role: monitoring
       tags: [monitoring]
-    - role: postgres
-      tags: [postgres]
     - role: backup
       tags: [backup]
 
 # ───────────────────────────────────────────────────────────────────
-# 5. backup — pg_dump rsync receiver + cloudflared.
+# 4. backup — pg_dump rsync receiver + cloudflared tunnel + (TODO Phase 5+)
+#    R2 upload daemon.
 # ───────────────────────────────────────────────────────────────────
 - name: Deploy backup (rsync receiver + retention + cloudflared)
   hosts: backup
@@ -83,7 +77,9 @@
       tags: [cloudflared]
 
 # ───────────────────────────────────────────────────────────────────
-# 6. status — Object Storage upload daemon (3-2-1 offsite).
+# 5. status — Object Storage upload daemon (3-2-1 offsite). Kept as
+#    a separate x86 1GB micro for now; future cleanup will merge it
+#    into backup so the box can be reclaimed too.
 # ───────────────────────────────────────────────────────────────────
 - name: Deploy status (R2 upload daemon)
   hosts: status

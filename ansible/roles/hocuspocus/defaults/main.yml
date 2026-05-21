@@ -12,7 +12,7 @@ hocuspocus_env_file: "{{ hocuspocus_install_dir }}/.env"
 # the backend uses (documents.ydoc_state read/write). Credential comes
 # from vault.yml (vault_postgres_password); this file declares the
 # non-secret routing only.
-hocuspocus_postgres_host: "{{ monitor_private_ip }}"
+hocuspocus_postgres_host: "{{ private_ip }}"
 hocuspocus_postgres_port: "{{ postgres_port | default(5432) }}"
 hocuspocus_postgres_db: "{{ postgres_db_name | default('balruno') }}"
 hocuspocus_postgres_user: "{{ postgres_db_user | default('balruno') }}"

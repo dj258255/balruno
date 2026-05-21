@@ -7,10 +7,14 @@ backend_install_dir: /opt/balruno/backend
 backend_compose_file: "{{ backend_install_dir }}/docker-compose.yml"
 backend_env_file: "{{ backend_install_dir }}/.env"
 
-# DB connection — Spring on prod_app talks to PG 18 on monitor across the
-# OCI VCN private range. The credential itself comes from vault.yml
-# (vault_postgres_password) — this file only declares non-secret routing.
-backend_postgres_host: "{{ monitor_private_ip }}"
+# DB connection — Spring on prod_app talks to PG 18. After the
+# 2026-05-21 consolidation PG runs on the same host as backend
+# (prod_app), so the default uses `private_ip` (the running host's
+# own VCN address) instead of monitor_private_ip. PG listens on both
+# the host's VCN IP and 127.0.0.1; the backend container reaches the
+# VCN IP through the docker bridge gateway.
+# Credential itself comes from vault.yml (vault_postgres_password).
+backend_postgres_host: "{{ private_ip }}"
 backend_postgres_port: "{{ postgres_port | default(5432) }}"
 backend_postgres_db: "{{ postgres_db_name | default('balruno') }}"
 backend_postgres_user: "{{ postgres_db_user | default('balruno') }}"

@@ -37,10 +37,11 @@ monitoring_agent_mem_alloy: "256m"
 # alloy to save memory — they have nothing interesting to ship anyway.
 monitoring_agent_deploy_alloy: true
 
-# Where the central Loki lives (always monitor host private IP).
-monitoring_agent_loki_url: "http://{{ monitor_private_ip }}:3100/loki/api/v1/push"
+# Where the central Loki lives — moved from monitor to prod_app in the
+# 2026-05-21 consolidation.
+monitoring_agent_loki_url: "http://{{ prod_app_private_ip }}:3100/loki/api/v1/push"
 
 # Whether this host has a Docker daemon whose container logs alloy should
-# scrape (prod_app + monitor yes; backup/status no — they only run a
-# small systemd daemon set).
-monitoring_agent_collect_docker_logs: "{{ inventory_hostname in ['prod_app', 'monitor'] }}"
+# scrape (prod_app yes; backup/status no — they only run a small systemd
+# daemon set).
+monitoring_agent_collect_docker_logs: "{{ inventory_hostname == 'prod_app' }}"
