@@ -33,14 +33,6 @@ all:
       memory_gb: 1
       ocpu: 1
 
-    status:
-      ansible_host: "{{ status_public_ip }}"
-      private_ip: "{{ status_private_ip }}"
-      ansible_user: "{{ ssh_user_x86 }}"
-      server_role: status
-      arch: x86_64
-      memory_gb: 1
-      ocpu: 1
 
   children:
     arm:
@@ -50,7 +42,6 @@ all:
     x86:
       hosts:
         backup:
-        status:
 
   vars:
     ansible_ssh_private_key_file: "{{ ssh_key_path }}"

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # {{ ansible_managed }}
 # Balruno offsite backup uploader.
-# Pulls newest pg_dump from backup host, uploads to Cloudflare R2, deletes local copy.
+# Reads the newest pg_dump from {{ osu_source_dir }} (same host, written by
+# the backup role's target side), uploads it to Cloudflare R2.
 # Run by cron as the {{ osu_user }} user.
 
 set -euo pipefail
@@ -9,8 +10,8 @@ set -euo pipefail
 # cron's spawned shell may inherit a cwd this user cannot read (e.g. /root).
 cd "{{ osu_home }}"
 
+SOURCE_DIR="{{ osu_source_dir }}"
 STAGING="{{ osu_staging_dir }}"
-REMOTE="{{ osu_remote_user }}@{{ osu_remote_host }}:{{ osu_remote_dir }}/"
 BUCKET="{{ osu_r2_bucket }}"
 ENDPOINT="{{ osu_r2_endpoint }}"
 PREFIX="{{ osu_r2_prefix }}"
@@ -22,16 +23,14 @@ fail() { log "ERROR: $*"; exit 1; }
 
 log "starting daily upload run for $TODAY"
 
-# 1. Pull the newest .sql.gz file from backup host. We only need the latest one;
-#    the backup role keeps 7 days locally on the backup machine.
-mkdir -p "$STAGING"
-rsync -az --partial --remove-source-files=false \
-  -e 'ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes' \
-  "$REMOTE" "$STAGING/" \
-  || fail "rsync from backup failed"
-
-LATEST="$(ls -1t "$STAGING"/*.sql.gz 2>/dev/null | head -1 || true)"
-[ -n "$LATEST" ] || fail "no .sql.gz found in staging after rsync"
+# 1. Find the newest .sql.gz in the local backup dir. The backup role's
+#    target side (rsync receiver) deposits files here; we read them
+#    in-place — no copy, no SSH. Pre-2026-05-21 the source dir lived on
+#    a different host (status pulled via rsync from backup); the
+#    consolidation merged status into backup so both stages are now
+#    local file ops.
+LATEST="$(ls -1t "$SOURCE_DIR"/*.sql.gz 2>/dev/null | head -1 || true)"
+[ -n "$LATEST" ] || fail "no .sql.gz found in $SOURCE_DIR"
 
 log "latest dump: $(basename "$LATEST") ($(du -h "$LATEST" | cut -f1))"
 
@@ -53,7 +52,7 @@ log "uploaded -> s3://$BUCKET/$KEY"
 
 log "verified -> s3://$BUCKET/$KEY"
 
-# 4. Trim local staging — keep only today's run for debugging, delete older.
-find "$STAGING" -type f -mmin +60 -name '*.sql.gz' -delete
-
+# 4. (No staging cleanup needed — we read from the canonical SOURCE_DIR
+#    in-place; the backup role's retention cron handles old files.)
+mkdir -p "$STAGING"
 log "done"

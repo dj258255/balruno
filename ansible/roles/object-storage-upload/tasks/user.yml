@@ -1,5 +1,9 @@
 # Dedicated system user for the upload daemon. Non-login shell, locked
 # password — only Ansible-installed cron entries or sudo can execute as it.
+#
+# `groups: rocky` is the post-2026-05-21 consolidation requirement: the
+# upload script now reads the local backup dir (owned by rocky:rocky,
+# mode 0750) so the daemon user needs to be in the rocky group to enter.
 
 - name: Create system user for backup uploader
   ansible.builtin.user:
@@ -8,6 +12,8 @@
     shell: /sbin/nologin
     home: "{{ osu_home }}"
     create_home: true
+    groups: rocky
+    append: true
     state: present
 
 - name: Ensure staging directory exists

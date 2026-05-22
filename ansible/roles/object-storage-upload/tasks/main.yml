@@ -1,22 +1,22 @@
 # object-storage-upload role — daily pg_dump → Cloudflare R2 (3-2-1 offsite).
 #
-# Flow:
-#   05:00 UTC daily, on the status host:
-#     1. SSH+rsync to backup host, fetch the latest pg_dump file
+# Flow (post-2026-05-21 consolidation, runs on backup host):
+#   05:00 UTC daily:
+#     1. Find newest pg_dump in {{ osu_source_dir }} (local file, same host)
 #     2. aws s3 cp the file to s3://{r2_bucket}/daily/YYYY-MM-DD/...
-#     3. Delete the local copy (R2 lifecycle rule handles 30-day retention)
+#     3. (No copy / no SSH — backup role's retention cron handles old files)
 #
-# All steps run as a non-root system user (balruno-backup). The user has its
-# own SSH key for pulling from backup, and its own ~/.aws/ credentials for R2.
+# All steps run as a non-root system user (balruno-backup, member of rocky
+# group so it can read /var/backups/postgres). The user has its own ~/.aws/
+# credentials for R2. The legacy ssh-key.yml task that provisioned a key
+# for cross-host pull is kept on disk as a tombstone but is no longer
+# imported — Phase 5 of the consolidation made the source dir local.
 
 - import_tasks: user.yml
   tags: [object-storage, user]
 
 - import_tasks: awscli.yml
   tags: [object-storage, awscli]
-
-- import_tasks: ssh-key.yml
-  tags: [object-storage, ssh]
 
 - import_tasks: credentials.yml
   tags: [object-storage, credentials]

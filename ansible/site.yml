@@ -63,10 +63,12 @@
       tags: [backup]
 
 # ───────────────────────────────────────────────────────────────────
-# 4. backup — pg_dump rsync receiver + cloudflared tunnel + (TODO Phase 5+)
-#    R2 upload daemon.
+# 4. backup — pg_dump rsync receiver + retention + cloudflared tunnel
+#    + R2 upload daemon. Phase 5 of the 2026-05-21 consolidation merged
+#    the status host's R2 uploader into this play; the script now reads
+#    /var/backups/postgres locally instead of pulling over SSH.
 # ───────────────────────────────────────────────────────────────────
-- name: Deploy backup (rsync receiver + retention + cloudflared)
+- name: Deploy backup (rsync receiver + retention + cloudflared + R2 upload)
   hosts: backup
   become: true
   tags: [backup]
@@ -75,16 +77,5 @@
       tags: [backup]
     - role: cloudflared
       tags: [cloudflared]
-
-# ───────────────────────────────────────────────────────────────────
-# 5. status — Object Storage upload daemon (3-2-1 offsite). Kept as
-#    a separate x86 1GB micro for now; future cleanup will merge it
-#    into backup so the box can be reclaimed too.
-# ───────────────────────────────────────────────────────────────────
-- name: Deploy status (R2 upload daemon)
-  hosts: status
-  become: true
-  tags: [status]
-  roles:
     - role: object-storage-upload
       tags: [object-storage]
