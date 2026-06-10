@@ -521,7 +521,10 @@ class TreeOpService {
         if (findById(siblings, UUID.fromString(obj.get("id").asText())) != null) {
             return; // duplicate id — drop silently (same defence as sheet ops)
         }
-        var clamped = Math.max(0, Math.min(siblings.size(), u.position()));
+        // position is a long (MAX_SAFE_INTEGER append sentinel); clamp to
+        // [0, size] then narrow — the clamped value never exceeds the
+        // sibling count so the cast can't truncate.
+        int clamped = (int) Math.max(0L, Math.min(siblings.size(), u.position()));
         siblings.insert(clamped, obj);
     }
 
@@ -598,7 +601,7 @@ class TreeOpService {
                 ? roots
                 : ensureChildrenOf(findById(roots, u.newParentId()),
                         () -> new IllegalArgumentException("parent not found: " + u.newParentId()));
-        var clamped = Math.max(0, Math.min(siblings.size(), u.newPosition()));
+        int clamped = (int) Math.max(0L, Math.min(siblings.size(), u.newPosition()));
         siblings.insert(clamped, moving);
     }
 

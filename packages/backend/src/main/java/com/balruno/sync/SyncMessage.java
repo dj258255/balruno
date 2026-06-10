@@ -187,23 +187,31 @@ public sealed interface SyncMessage {
         }
     }
 
+    // position / newPosition are {@code long}, not {@code int}: the
+    // frontend appends with a {@code Number.MAX_SAFE_INTEGER}
+    // (9_007_199_254_740_991) sentinel meaning "end of the sibling
+    // list", which the server clamps to {@code [0, size]}. That value
+    // overflows a Java int, so an int field makes Jackson reject the
+    // whole frame at readValue() time — the op is then swallowed by the
+    // handler's parse-catch with no ack and no conflict, and the tree
+    // mutation silently never happens (the doc-never-persists bug).
     record TreeAdd(
-            TreeKind treeKind, UUID parentId, int position, Object node,
+            TreeKind treeKind, UUID parentId, long position, Object node,
             long baseVersion, UUID clientMsgId,
             UndoMeta undo
     ) implements SyncMessage {
-        public TreeAdd(TreeKind treeKind, UUID parentId, int position, Object node,
+        public TreeAdd(TreeKind treeKind, UUID parentId, long position, Object node,
                        long baseVersion, UUID clientMsgId) {
             this(treeKind, parentId, position, node, baseVersion, clientMsgId, null);
         }
     }
 
     record TreeMove(
-            TreeKind treeKind, UUID nodeId, UUID newParentId, int newPosition,
+            TreeKind treeKind, UUID nodeId, UUID newParentId, long newPosition,
             long baseVersion, UUID clientMsgId,
             UndoMeta undo
     ) implements SyncMessage {
-        public TreeMove(TreeKind treeKind, UUID nodeId, UUID newParentId, int newPosition,
+        public TreeMove(TreeKind treeKind, UUID nodeId, UUID newParentId, long newPosition,
                         long baseVersion, UUID clientMsgId) {
             this(treeKind, nodeId, newParentId, newPosition, baseVersion, clientMsgId, null);
         }
