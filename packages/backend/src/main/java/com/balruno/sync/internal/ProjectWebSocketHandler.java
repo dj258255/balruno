@@ -140,7 +140,7 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
             case SyncMessage.OpAcked       ignored -> rejectClientMessage(session, "op.acked");
         };
 
-        broadcaster.dispatch(projectId, session, opClientMsgId(op), result);
+        broadcaster.dispatch(projectId, session, opClientMsgId(op), scopeOf(op), result);
 
         if (log.isDebugEnabled()) {
             log.debug("ws_op sessionId={} type={} result={}",
@@ -174,6 +174,31 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
             case SyncMessage.Conflict ignored  -> new UUID(0L, 0L);
             case SyncMessage.OpAcked ignored   -> new UUID(0L, 0L);
         };
+    }
+
+    /**
+     * Which of the three independent version regions this op rode —
+     * the server-side mirror of the frontend's writeQueue.regionOf
+     * (ADR 0008 v2.0 §3). Sheet cell / row / column ops ride the
+     * {@code data} column; tree ops split by {@code treeKind} into
+     * {@code sheetTree} / {@code docTree}. The value is echoed back in
+     * the op.acked / conflict envelope so the sender advances exactly
+     * one baseVersion counter — never cross-contaminates the other two.
+     * The server-only variants never reach a real dispatch with a
+     * meaningful scope, so they fall through to {@code data}.
+     */
+    private static String scopeOf(SyncMessage op) {
+        return switch (op) {
+            case SyncMessage.TreeAdd u    -> treeScope(u.treeKind());
+            case SyncMessage.TreeMove u   -> treeScope(u.treeKind());
+            case SyncMessage.TreeDelete u -> treeScope(u.treeKind());
+            case SyncMessage.TreeRename u -> treeScope(u.treeKind());
+            default -> "data";
+        };
+    }
+
+    private static String treeScope(SyncMessage.TreeKind kind) {
+        return kind == SyncMessage.TreeKind.SHEET ? "sheetTree" : "docTree";
     }
 
     private SyncResult rejectClientMessage(WebSocketSession session, String type) {

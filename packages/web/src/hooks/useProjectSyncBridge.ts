@@ -24,7 +24,7 @@
 import { useEffect } from 'react';
 
 import { useProjectSync, type ServerMsg, type SyncFullPayload } from './useProjectSync';
-import { setSyncSender, setVersions, bumpVersion } from '@/lib/sync/writeQueue';
+import { setSyncSender, setVersions, bumpVersion, setRegionVersion } from '@/lib/sync/writeQueue';
 import { useProjectStore } from '@/stores/projectStore';
 import { usePresenceStore } from '@/stores/presenceStore';
 import type { CellValue, Column, Row, Sheet, TreeNode } from '@balruno/shared';
@@ -70,11 +70,32 @@ function handleServerMsg(msg: ServerMsg, projectId: string): void {
       hydrateProjectFromSyncFull(projectId, msg);
       break;
     case 'op.acked':
-      bumpVersion('data', msg.version);
-      bumpVersion('sheetTree', msg.version);
-      bumpVersion('docTree', msg.version);
+      // Advance ONLY the region this op rode. The three version
+      // columns are independent (ADR 0008 v2.0 §3); bumping all three
+      // (the old behaviour) let a high-traffic region — e.g. sheet
+      // edits — inflate the idle doc-tree counter via Math.max, so
+      // every later doc op conflicted against a baseVersion the server
+      // never reached and silently failed to persist (no documents
+      // row → collab-token 404; deletes no-op'd too).
+      if (msg.scope) {
+        bumpVersion(msg.scope, msg.version);
+      } else {
+        // Pre-scope server (older deploy): fall back to the legacy
+        // bump-all so a frontend-before-backend rollout still acks.
+        bumpVersion('data', msg.version);
+        bumpVersion('sheetTree', msg.version);
+        bumpVersion('docTree', msg.version);
+      }
       break;
     case 'conflict':
+      // Self-heal: adopt the server's authoritative version for the
+      // conflicting region so the next op rides the correct base
+      // instead of looping on the same stale value. setRegionVersion
+      // (not bumpVersion) because our local counter ran *ahead* and
+      // must be pulled back down.
+      if (msg.scope) {
+        setRegionVersion(msg.scope, msg.serverVersion);
+      }
       break;
     case 'presence':
       handlePresence(msg, projectId);

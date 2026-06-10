@@ -94,14 +94,26 @@ export interface SyncFullPayload {
   versions: { data: number; sheetTree: number; docTree: number };
 }
 
+/**
+ * Which of the three independent version regions the ack/conflict
+ * refers to (ADR 0008 v2.0 §3). The server stamps it so the bridge
+ * advances exactly one baseVersion counter instead of all three —
+ * see useProjectSyncBridge. Optional on the wire only to stay
+ * forward/backward compatible during a frontend-before-backend
+ * rollout; once both are deployed it is always present.
+ */
+export type RegionScope = 'data' | 'sheetTree' | 'docTree';
+
 export interface OpAckedPayload {
   type: 'op.acked';
   clientMsgId: string;
+  scope?: RegionScope;
   version: number;
 }
 
 export interface ConflictPayload {
   type: 'conflict';
+  scope?: RegionScope;
   serverVersion: number;
 }
 

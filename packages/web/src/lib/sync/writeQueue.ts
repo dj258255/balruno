@@ -82,6 +82,19 @@ export function bumpVersion(region: Region, newVersion: number): void {
   versions = { ...versions, [region]: Math.max(versions[region], newVersion) };
 }
 
+/**
+ * Force a single region's version to an exact value — used on a
+ * {@code conflict} reply to adopt the server's authoritative version.
+ * Unlike {@link bumpVersion} this is NOT a Math.max: a conflict means
+ * our local counter ran ahead of the server (e.g. it was wrongly
+ * inflated by a cross-region ack), so we must be able to move it
+ * *down* to the server value, otherwise the next op rides the same
+ * stale-high baseVersion and conflicts again forever.
+ */
+export function setRegionVersion(region: Region, version: number): void {
+  versions = { ...versions, [region]: version };
+}
+
 /** Read the current version of a region — useful for tests / inspection. */
 export function getVersion(region: Region): number {
   return versions[region];

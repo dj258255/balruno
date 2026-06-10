@@ -37,35 +37,52 @@ class SyncBroadcaster {
         this.json = json;
     }
 
-    void dispatch(UUID projectId, WebSocketSession sender, UUID clientMsgId, SyncResult result) {
+    /**
+     * @param scope which version region this op rode — "data",
+     *              "sheetTree", or "docTree" (mirrors the three
+     *              independent version columns, ADR 0008 v2.0 §3). The
+     *              sender's bridge advances ONLY this region's baseVersion
+     *              on op.acked / adopts the server value on conflict.
+     *              Without it the client cannot tell which of the three
+     *              counters moved and historically bumped all three,
+     *              inflating the idle regions so every later op against
+     *              them conflicted (the doc-tree-never-persists bug).
+     */
+    void dispatch(UUID projectId, WebSocketSession sender, UUID clientMsgId,
+                  String scope, SyncResult result) {
         switch (result) {
             case SyncResult.Acked acked -> {
-                sendQuietly(sender, ackedReply(clientMsgId, acked.version()));
+                sendQuietly(sender, ackedReply(clientMsgId, scope, acked.version()));
                 broadcastQuietly(projectId, acked.broadcastPayload());
             }
             case SyncResult.Conflict conflict ->
-                    sendQuietly(sender, conflictReply(conflict.serverVersion()));
+                    sendQuietly(sender, conflictReply(scope, conflict.serverVersion()));
             case SyncResult.Cached cached -> {
                 // Re-send the originally cached envelope so the client
                 // sees the same op.acked it would have seen the first
                 // time. No re-broadcast — the rest of the project saw
-                // the change when the original op landed.
+                // the change when the original op landed. The cached
+                // payload is the broadcast echo (op shape + version),
+                // which the client routes by treeKind on its own, so it
+                // needs no scope hint here.
                 sendQuietly(sender, cached.payload());
             }
         }
     }
 
-    private String ackedReply(UUID clientMsgId, long version) {
+    private String ackedReply(UUID clientMsgId, String scope, long version) {
         var envelope = new LinkedHashMap<String, Object>();
         envelope.put("type", "op.acked");
         envelope.put("clientMsgId", clientMsgId.toString());
+        envelope.put("scope", scope);
         envelope.put("version", version);
         return writeOrFallback(envelope);
     }
 
-    private String conflictReply(long serverVersion) {
+    private String conflictReply(String scope, long serverVersion) {
         var envelope = new LinkedHashMap<String, Object>();
         envelope.put("type", "conflict");
+        envelope.put("scope", scope);
         envelope.put("serverVersion", serverVersion);
         return writeOrFallback(envelope);
     }
