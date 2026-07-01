@@ -20,8 +20,8 @@ import java.util.UUID;
 public interface ProjectSyncService {
 
     /**
-     * Snapshot the project's current data + sheet_tree + doc_tree +
-     * three matching versions inside a read-only transaction, then
+     * Snapshot the project's current data + sheet_tree + their two
+     * matching versions inside a read-only transaction, then
      * send the resulting {@code sync.full} frame to every WebSocket
      * session currently registered against this project.
      *

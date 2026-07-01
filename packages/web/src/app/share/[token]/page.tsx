@@ -54,7 +54,6 @@ export default function PublicSharePage({ params }: PageProps) {
           name: string;
           data?: { sheets?: Sheet[] };
           sheetTree?: unknown;
-          docTree?: unknown;
         };
         const proj: Project = {
           id: snap.id,
@@ -63,7 +62,6 @@ export default function PublicSharePage({ params }: PageProps) {
           updatedAt: Date.now(),
           sheets: (snap.data?.sheets ?? []) as Sheet[],
           sheetTree: (snap.sheetTree as Project['sheetTree']) ?? [],
-          docTree: (snap.docTree as Project['docTree']) ?? [],
         };
         useProjectStore.setState((s) => ({
           projects: [...s.projects.filter((p) => p.id !== proj.id), proj],

@@ -180,10 +180,10 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
      * Which of the three independent version regions this op rode —
      * the server-side mirror of the frontend's writeQueue.regionOf
      * (ADR 0008 v2.0 §3). Sheet cell / row / column ops ride the
-     * {@code data} column; tree ops split by {@code treeKind} into
-     * {@code sheetTree} / {@code docTree}. The value is echoed back in
-     * the op.acked / conflict envelope so the sender advances exactly
-     * one baseVersion counter — never cross-contaminates the other two.
+     * {@code data} column; tree ops ride {@code sheetTree}. The value
+     * is echoed back in the op.acked / conflict envelope so the sender
+     * advances exactly one baseVersion counter — never cross-
+     * contaminates the other.
      * The server-only variants never reach a real dispatch with a
      * meaningful scope, so they fall through to {@code data}.
      */
@@ -198,7 +198,8 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
     }
 
     private static String treeScope(SyncMessage.TreeKind kind) {
-        return kind == SyncMessage.TreeKind.SHEET ? "sheetTree" : "docTree";
+        // Only the sheet tree region rides this op log today.
+        return "sheetTree";
     }
 
     private SyncResult rejectClientMessage(WebSocketSession session, String type) {

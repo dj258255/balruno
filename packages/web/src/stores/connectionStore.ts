@@ -1,12 +1,10 @@
 /**
- * Connection store — aggregates the sheet & doc sync channel statuses.
+ * Connection store — tracks the sheet sync channel status.
  *
  * The sidebar footer ConnectionStatus component reads `aggregate` to render a
- * single dot. Each sync hook (useProjectSync, useDocYjsCloudSync) calls
- * `setSheetStatus` / `setDocStatus` to publish their state. The "sheet"
- * channel here is the project-scoped op-log socket (sheet cell + sheet
- * tree + doc tree, ADR 0008 v2.0); the "doc" channel is the Hocuspocus
- * document body.
+ * single dot. useProjectSync calls `setSheetStatus` to publish its state.
+ * The "sheet" channel is the project-scoped op-log socket (sheet cell +
+ * sheet tree, ADR 0008 v2.0).
  */
 
 import { create } from 'zustand';
@@ -20,32 +18,17 @@ interface ChannelEntry {
 
 interface ConnectionState {
   sheet: ChannelEntry;
-  doc: ChannelEntry;
 
   setSheetStatus: (id: string | null, status: ChannelStatus) => void;
-  setDocStatus: (id: string | null, status: ChannelStatus) => void;
 
-  /** Highest-severity status across both channels. */
+  /** Current channel status. */
   aggregate: () => ChannelStatus;
 }
 
-const PRIORITY: Record<ChannelStatus, number> = {
-  error: 5,
-  offline: 4,
-  connecting: 3,
-  connected: 2,
-  idle: 1,
-};
-
 export const useConnectionStore = create<ConnectionState>((set, get) => ({
   sheet: { id: null, status: 'idle' },
-  doc: { id: null, status: 'idle' },
 
   setSheetStatus: (id, status) => set({ sheet: { id, status } }),
-  setDocStatus: (id, status) => set({ doc: { id, status } }),
 
-  aggregate: () => {
-    const { sheet, doc } = get();
-    return PRIORITY[sheet.status] >= PRIORITY[doc.status] ? sheet.status : doc.status;
-  },
+  aggregate: () => get().sheet.status,
 }));

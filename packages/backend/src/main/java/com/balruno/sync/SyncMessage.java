@@ -16,13 +16,9 @@ import java.util.UUID;
  * in the handler and keeps the JSON shape literal-equal to what the
  * frontend already consumes (lib/backend mirrors).
  *
- * Three op log regions ride this single channel:
+ * Two op log regions ride this single channel:
  *   - sheet cell ops (cell.update / row.* / column.*)
  *   - sheet tree ops (tree.* with treeKind=SHEET)
- *   - doc tree ops   (tree.* with treeKind=DOC)
- *
- * The fourth region (document body, yjs binary) lives on the separate
- * Hocuspocus channel — never travels through this interface.
  *
  * Stage B.1 scope: schema only. The handler that decodes / dispatches
  * lands in Stage B.4-B.5.
@@ -52,11 +48,11 @@ import java.util.UUID;
 })
 public sealed interface SyncMessage {
 
-    /** Document tree differs from sheet tree only in target region; same op shape. */
-    enum TreeKind { SHEET, DOC }
+    /** Tree region target. Only the sheet tree rides this op log today. */
+    enum TreeKind { SHEET }
 
     /** Conflict scope = which version column tripped. */
-    enum ConflictScope { SHEET_CELL, SHEET_TREE, DOC_TREE }
+    enum ConflictScope { SHEET_CELL, SHEET_TREE }
 
     /**
      * Undo/redo metadata attached to each op (ADR 0021 v2.3 Phase 5).
@@ -253,12 +249,12 @@ public sealed interface SyncMessage {
 
     /**
      * Initial hydrate after connect. {@code projectState} carries the
-     * three JSONB blobs (data / sheet_tree / doc_tree); {@code versions}
-     * the matching counters so the client knows what {@code baseVersion}
-     * to send back on its first op.
+     * JSONB blobs (data / sheet_tree); {@code versions} the matching
+     * counters so the client knows what {@code baseVersion} to send
+     * back on its first op.
      */
     record SyncFull(Object projectState, Versions versions) implements SyncMessage {
-        public record Versions(long data, long sheetTree, long docTree) {}
+        public record Versions(long data, long sheetTree) {}
     }
 
     record Conflict(ConflictScope scope, Object op, long serverVersion) implements SyncMessage {}

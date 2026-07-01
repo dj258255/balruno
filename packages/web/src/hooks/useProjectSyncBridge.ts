@@ -17,7 +17,7 @@
  *      (which only propagates to state through useYDocSync, not
  *      mounted on the server-canonical project page).
  *
- * Tree broadcasts (sheet_tree / doc_tree) only update the version
+ * Tree broadcasts (sheet_tree) only update the version
  * counter for now — the apply path lands with Stage G.
  */
 
@@ -70,13 +70,10 @@ function handleServerMsg(msg: ServerMsg, projectId: string): void {
       hydrateProjectFromSyncFull(projectId, msg);
       break;
     case 'op.acked':
-      // Advance ONLY the region this op rode. The three version
-      // columns are independent (ADR 0008 v2.0 §3); bumping all three
-      // (the old behaviour) let a high-traffic region — e.g. sheet
-      // edits — inflate the idle doc-tree counter via Math.max, so
-      // every later doc op conflicted against a baseVersion the server
-      // never reached and silently failed to persist (no documents
-      // row → collab-token 404; deletes no-op'd too).
+      // Advance ONLY the region this op rode. The version columns are
+      // independent (ADR 0008 v2.0 §3); bumping both let a high-traffic
+      // region — e.g. sheet edits — inflate the idle tree counter via
+      // Math.max.
       if (msg.scope) {
         bumpVersion(msg.scope, msg.version);
       } else {
@@ -84,7 +81,6 @@ function handleServerMsg(msg: ServerMsg, projectId: string): void {
         // bump-all so a frontend-before-backend rollout still acks.
         bumpVersion('data', msg.version);
         bumpVersion('sheetTree', msg.version);
-        bumpVersion('docTree', msg.version);
       }
       break;
     case 'conflict':
@@ -169,9 +165,8 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
     bumpVersion('data', msg.version);
   } else if (msg.type === 'tree.add' || msg.type === 'tree.move' ||
              msg.type === 'tree.delete' || msg.type === 'tree.rename') {
-    const treeKind = (msg.op as { treeKind?: 'SHEET' | 'DOC' } | null)?.treeKind;
+    const treeKind = (msg.op as { treeKind?: 'SHEET' } | null)?.treeKind;
     if (treeKind === 'SHEET') bumpVersion('sheetTree', msg.version);
-    else if (treeKind === 'DOC') bumpVersion('docTree', msg.version);
   }
 
   // Store apply — direct setState, Y.Doc-bypass. The sender's own
@@ -354,7 +349,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
       // both may be present — peer apply has to walk the tree once
       // and patch whichever fields landed in the op.
       const op = msg.op as {
-        treeKind?: 'SHEET' | 'DOC';
+        treeKind?: 'SHEET';
         nodeId?: string;
         newName?: string;
         newIcon?: string;
@@ -392,7 +387,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
     }
     case 'tree.add': {
       const op = msg.op as {
-        treeKind?: 'SHEET' | 'DOC';
+        treeKind?: 'SHEET';
         parentId?: string | null;
         position?: number;
         node?: TreeNode;
@@ -437,7 +432,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
     }
     case 'tree.delete': {
       const op = msg.op as {
-        treeKind?: 'SHEET' | 'DOC';
+        treeKind?: 'SHEET';
         nodeId?: string;
       } | null;
       if (!op?.nodeId || !op.treeKind) break;
@@ -460,7 +455,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
     }
     case 'tree.move': {
       const op = msg.op as {
-        treeKind?: 'SHEET' | 'DOC';
+        treeKind?: 'SHEET';
         nodeId?: string;
         newParentId?: string | null;
         newPosition?: number;
@@ -494,13 +489,11 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
 
 /**
  * Map an ADR 0008 treeKind onto the matching Project field name. The
- * tree.* broadcast handlers use this to dispatch one shared mutation
- * helper across both regions instead of duplicating the case body.
+ * tree.* broadcast handlers use this to resolve the mutation target.
  */
-type TreeFieldKey = 'sheetTree' | 'docTree';
-function treeFieldFor(kind: 'SHEET' | 'DOC' | undefined): TreeFieldKey | null {
+type TreeFieldKey = 'sheetTree';
+function treeFieldFor(kind: 'SHEET' | undefined): TreeFieldKey | null {
   if (kind === 'SHEET') return 'sheetTree';
-  if (kind === 'DOC') return 'docTree';
   return null;
 }
 
@@ -538,21 +531,18 @@ export function hydrateProjectFromSyncFull(
   const sheetTree: TreeNode[] = Array.isArray(msg.sheetTree)
     ? (msg.sheetTree as TreeNode[])
     : [];
-  const docTree: TreeNode[] = Array.isArray(msg.docTree)
-    ? (msg.docTree as TreeNode[])
-    : [];
   useProjectStore.setState((state) => {
     const idx = state.projects.findIndex((p) => p.id === projectId);
     if (idx >= 0) {
       const next = [...state.projects];
-      next[idx] = { ...next[idx], sheets, sheetTree, docTree };
+      next[idx] = { ...next[idx], sheets, sheetTree };
       return { projects: next };
     }
     const now = Date.now();
     return {
       projects: [
         ...state.projects,
-        { id: projectId, name: '', sheets, sheetTree, docTree, createdAt: now, updatedAt: now },
+        { id: projectId, name: '', sheets, sheetTree, createdAt: now, updatedAt: now },
       ],
     };
   });

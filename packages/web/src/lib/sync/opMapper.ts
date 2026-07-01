@@ -13,8 +13,6 @@
  * policy: it is the PK of the backend's op_idempotency cache, so
  * collision resistance matters more than time-ordering.
  *
- * Doc-body actions are intentionally NOT mapped — they live on the
- * separate Hocuspocus channel (ADR 0017 §2.1 pattern B).
  */
 
 import type { Column, Row, CellValue, CellStyle, Sheet } from '@balruno/shared';
@@ -76,10 +74,10 @@ export type StoreActionIntent =
   | { kind: 'column.add'; sheetId: string; column: Column }
   | { kind: 'column.update'; sheetId: string; columnId: string; patch: Partial<Column> }
   | { kind: 'column.delete'; sheetId: string; columnId: string }
-  | { kind: 'tree.add'; treeKind: 'SHEET' | 'DOC'; parentId: string | null; position: number; node: unknown }
-  | { kind: 'tree.move'; treeKind: 'SHEET' | 'DOC'; nodeId: string; newParentId: string | null; newPosition: number }
-  | { kind: 'tree.delete'; treeKind: 'SHEET' | 'DOC'; nodeId: string }
-  | { kind: 'tree.rename'; treeKind: 'SHEET' | 'DOC'; nodeId: string;
+  | { kind: 'tree.add'; treeKind: 'SHEET'; parentId: string | null; position: number; node: unknown }
+  | { kind: 'tree.move'; treeKind: 'SHEET'; nodeId: string; newParentId: string | null; newPosition: number }
+  | { kind: 'tree.delete'; treeKind: 'SHEET'; nodeId: string }
+  | { kind: 'tree.rename'; treeKind: 'SHEET'; nodeId: string;
       newName?: string; newIcon?: string };
 
 /**

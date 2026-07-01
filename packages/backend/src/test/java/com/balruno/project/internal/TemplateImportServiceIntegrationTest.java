@@ -136,13 +136,13 @@ class TemplateImportServiceIntegrationTest {
                 userId);
 
         // 3. projects — base columns from V4 + JSONB sync columns from
-        //    V8. Versions default to 0; data/sheet_tree/doc_tree
-        //    default to '[]'::jsonb on the schema side.
+        //    V8. Versions default to 0; data/sheet_tree default to
+        //    '[]'::jsonb on the schema side.
         jdbc.update(
                 "INSERT INTO projects ("
               + "  id, workspace_id, slug, name, description, created_by, "
-              + "  data, sheet_tree, doc_tree"
-              + ") VALUES (?, ?, ?, ?, ?, ?, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)",
+              + "  data, sheet_tree"
+              + ") VALUES (?, ?, ?, ?, ?, ?, '[]'::jsonb, '[]'::jsonb)",
                 projectId,
                 workspaceId,
                 "test-project",

@@ -39,9 +39,6 @@ export { WORKSPACE_ROLES } from './types';
 
 export { fetchUserQuota, isUnlimited } from './quota';
 
-export { fetchCollabToken, collabBaseUrl, isCollabConfigured } from './collab';
-export type { CollabTokenResponse } from './collab';
-
 export {
   acceptInvite,
   changeMemberRole,
@@ -63,7 +60,6 @@ export {
   createProject,
   deleteProject,
   duplicateSheet,
-  duplicateDoc,
   getProject,
   listProjects,
   setProjectPosition,
@@ -84,10 +80,8 @@ export { resolveMediaUrl } from './media';
 export {
   fetchRowHistory,
   fetchSheetHistory,
-  fetchDocSnapshots,
-  downloadDocSnapshotState,
 } from './history';
-export type { HistoryEntry, HistoryListOptions, DocSnapshot } from './history';
+export type { HistoryEntry, HistoryListOptions } from './history';
 
 export {
   createComment,
@@ -95,7 +89,6 @@ export {
   setCommentResolved,
   deleteComment,
   listCommentsForCell,
-  listCommentsForDoc,
   listCommentsForProject,
   listInbox,
 } from './comments';

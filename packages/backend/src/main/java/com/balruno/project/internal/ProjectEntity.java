@@ -94,13 +94,6 @@ class ProjectEntity {
     @Column(name = "sheet_tree_version", nullable = false)
     private long sheetTreeVersion = 1L;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "doc_tree", nullable = false, columnDefinition = "jsonb")
-    private String docTree = "[]";
-
-    @Column(name = "doc_tree_version", nullable = false)
-    private long docTreeVersion = 1L;
-
     protected ProjectEntity() {}
 
     ProjectEntity(UUID workspaceId, String slug, String name, String description, UUID createdBy) {
@@ -168,8 +161,6 @@ class ProjectEntity {
     public long   getDataVersion()      { return dataVersion; }
     public String getSheetTree()        { return sheetTree; }
     public long   getSheetTreeVersion() { return sheetTreeVersion; }
-    public String getDocTree()          { return docTree; }
-    public long   getDocTreeVersion()   { return docTreeVersion; }
 
     void rename(String newName) { this.name = newName; }
     void changeSlug(String newSlug) { this.slug = newSlug; }

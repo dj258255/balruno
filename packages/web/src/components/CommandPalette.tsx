@@ -17,7 +17,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useParams } from 'next/navigation';
-import { Search, FileSpreadsheet, FileText, Settings, Inbox, Hash, MessageSquare } from 'lucide-react';
+import { Search, FileSpreadsheet, Settings, Inbox, Hash, MessageSquare } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { searchProject, type SearchHit } from '@/lib/backend';
 
@@ -67,18 +67,6 @@ export function CommandPalette({ open, onClose }: Props) {
           icon: FileSpreadsheet,
           run: () => {
             useProjectStore.getState().setCurrentSheet(sheet.id);
-            onClose();
-          },
-        });
-      }
-      for (const doc of project.docs ?? []) {
-        out.push({
-          id: `doc-${doc.id}`,
-          label: doc.name || '(unnamed doc)',
-          hint: '문서',
-          icon: FileText,
-          run: () => {
-            useProjectStore.setState({ currentDocId: doc.id, currentSheetId: null });
             onClose();
           },
         });
@@ -152,8 +140,6 @@ export function CommandPalette({ open, onClose }: Props) {
         run: () => {
           if (h.sheetId) {
             useProjectStore.getState().setCurrentSheet(h.sheetId);
-          } else if (h.documentId) {
-            useProjectStore.setState({ currentDocId: h.documentId, currentSheetId: null });
           }
           onClose();
         },

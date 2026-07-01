@@ -7,11 +7,10 @@
  *
  * Tag conventions used in the codebase:
  *   - sync.ws      — useProjectSync WebSocket lifecycle
- *   - sync.doc     — useDocYjsCloudSync / Hocuspocus
  *   - sync.bridge  — useProjectSyncBridge dispatch
  *   - sync.queue   — writeQueue emit / region routing
  *   - presence     — usePresence merge / publish
- *   - tree         — sheet_tree / doc_tree mutation surface
+ *   - tree         — sheet_tree mutation surface
  *   - import       — Stage F template import
  *
  * Usage:

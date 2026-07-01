@@ -34,8 +34,7 @@ interface ProjectSearchRepository extends Repository<ProjectEntity, UUID> {
      */
     @Query(value = """
                    SELECT data::text       AS data_text,
-                          sheet_tree::text AS st_text,
-                          doc_tree::text   AS dt_text
+                          sheet_tree::text AS st_text
                      FROM projects
                     WHERE id = :projectId AND deleted_at IS NULL
                    """,
@@ -45,7 +44,6 @@ interface ProjectSearchRepository extends Repository<ProjectEntity, UUID> {
     interface JsonBlobsRow {
         String getDataText();
         String getStText();
-        String getDtText();
     }
 
     /**
@@ -60,7 +58,6 @@ interface ProjectSearchRepository extends Repository<ProjectEntity, UUID> {
                           scope_kind    AS scopeKind,
                           sheet_id      AS sheetId,
                           row_id        AS rowId,
-                          document_id   AS documentId,
                           body_json::text AS bodyText
                      FROM comments
                     WHERE project_id = :projectId
@@ -78,7 +75,6 @@ interface ProjectSearchRepository extends Repository<ProjectEntity, UUID> {
         String getScopeKind();
         UUID getSheetId();
         UUID getRowId();
-        UUID getDocumentId();
         String getBodyText();
     }
 }

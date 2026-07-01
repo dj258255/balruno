@@ -41,9 +41,6 @@ public interface CommentService {
             UUID rowId,
             UUID columnId);
 
-    /** List comments on a document body. */
-    List<Comment> listForDoc(UUID callerUserId, UUID projectId, UUID documentId);
-
     /**
      * Project-wide comment browse used by the dock CommentsPanel —
      * every non-deleted comment in the project, newest first, capped
@@ -67,9 +64,6 @@ public interface CommentService {
             UUID sheetId,
             UUID rowId,
             UUID columnId,
-            UUID documentId,
-            Integer anchorPosition,
-            Integer anchorLength,
             UUID parentId,
             JsonNode bodyJson
     ) {}

@@ -188,7 +188,7 @@ class UndoServiceImpl implements UndoService {
     /**
      * Look up the current version counter for the project, picking the
      * column that matches the op's region (data_version for sheet-cell
-     * ops, sheet_tree_version / doc_tree_version for tree ops). The
+     * ops, sheet_tree_version for tree ops). The
      * apply() flow rejects the op if baseVersion doesn't match the
      * current version, so we read it just before dispatch.
      */
@@ -199,12 +199,8 @@ class UndoServiceImpl implements UndoService {
                  "row.add", "row.update", "row.delete", "row.move",
                  "column.add", "column.update", "column.delete"
                     -> projects.readDataVersion(projectId);
-            case "tree.add", "tree.move", "tree.delete", "tree.rename" -> {
-                var treeKind = op.path("treeKind").asText();
-                yield "SHEET".equals(treeKind)
-                        ? projects.readSheetTreeVersion(projectId)
-                        : projects.readDocTreeVersion(projectId);
-            }
+            case "tree.add", "tree.move", "tree.delete", "tree.rename" ->
+                    projects.readSheetTreeVersion(projectId);
             default -> throw new IllegalStateException("not an undoable op type: " + type);
         };
         return read.orElseThrow(

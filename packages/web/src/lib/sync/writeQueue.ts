@@ -12,12 +12,11 @@
  *   - One project is open at a time. There is no list of senders —
  *     the previous registration is replaced.
  *
- * Why three baseVersions instead of one:
- *   - ADR 0008 v2.0 §3 splits the project state into three regions
- *     (projects.data / sheet_tree / doc_tree) with independent
- *     version columns. A cell.update has to ride the data version,
- *     a tree.add(treeKind=SHEET) the sheet_tree version, and a
- *     tree.add(treeKind=DOC) the doc_tree version. {@link emitOp}
+ * Why two baseVersions instead of one:
+ *   - ADR 0008 v2.0 §3 splits the project state into regions
+ *     (projects.data / sheet_tree) with independent version columns.
+ *     A cell.update has to ride the data version and a
+ *     tree.add(treeKind=SHEET) the sheet_tree version. {@link emitOp}
  *     does the region routing so the store middleware can stay
  *     region-agnostic.
  *
@@ -39,17 +38,16 @@ import type { ClientOp, UndoMeta } from '@/hooks/useProjectSync';
  */
 type Sender = (op: ClientOp) => boolean;
 
-/** Region key — matches the three baseVersion columns in projects. */
-type Region = 'data' | 'sheetTree' | 'docTree';
+/** Region key — matches the baseVersion columns in projects. */
+type Region = 'data' | 'sheetTree';
 
 interface RegionVersions {
   data: number;
   sheetTree: number;
-  docTree: number;
 }
 
 let currentSender: Sender | null = null;
-let versions: RegionVersions = { data: 0, sheetTree: 0, docTree: 0 };
+let versions: RegionVersions = { data: 0, sheetTree: 0 };
 
 /**
  * Register the live WebSocket sender. Pass {@code null} on
@@ -61,11 +59,12 @@ export function setSyncSender(sender: Sender | null): void {
 }
 
 /**
- * Replace the full version triple — typically called when sync.full
- * arrives (initial hydrate or post-conflict resync).
+ * Replace the full version set — typically called when sync.full
+ * arrives (initial hydrate or post-conflict resync). Reads only the
+ * regions we track; any extra fields (legacy docTree) are ignored.
  */
 export function setVersions(next: RegionVersions): void {
-  versions = next;
+  versions = { data: next.data, sheetTree: next.sheetTree };
 }
 
 /**
@@ -187,7 +186,7 @@ export function hasSender(): boolean {
 /** Test-only — reset module state between cases. */
 export function __resetWriteQueueForTests(): void {
   currentSender = null;
-  versions = { data: 0, sheetTree: 0, docTree: 0 };
+  versions = { data: 0, sheetTree: 0 };
 }
 
 function regionOf(intent: StoreActionIntent): Region {
@@ -207,6 +206,6 @@ function regionOf(intent: StoreActionIntent): Region {
     case 'tree.move':
     case 'tree.delete':
     case 'tree.rename':
-      return intent.treeKind === 'SHEET' ? 'sheetTree' : 'docTree';
+      return 'sheetTree';
   }
 }

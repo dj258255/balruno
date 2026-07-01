@@ -26,7 +26,6 @@ import type { SheetMetadataPatch } from '@/lib/sync/opMapper';
 import {
   deleteProject as deleteProjectRest,
   duplicateSheet as duplicateSheetRest,
-  duplicateDoc as duplicateDocRest,
   setProjectPosition,
   updateProject as updateProjectRest,
 } from '@/lib/backend';
@@ -38,26 +37,26 @@ type SetFn = StoreApi<ProjectState>['setState'];
 type GetFn = StoreApi<ProjectState>['getState'];
 
 interface TreeMoveEventDetail {
-  kind: 'SHEET' | 'DOC';
+  kind: 'SHEET';
   nodeId: string;
   newParentId: string | null;
   newPosition: number;
 }
 
 interface TreeAddEventDetail {
-  kind: 'SHEET' | 'DOC';
+  kind: 'SHEET';
   parentId: string | null;
   position: number;
   node: unknown; // tree leaf or group; shape matches the on-wire op
 }
 
 interface TreeDeleteEventDetail {
-  kind: 'SHEET' | 'DOC';
+  kind: 'SHEET';
   nodeId: string;
 }
 
 interface TreeRenameEventDetail {
-  kind: 'SHEET' | 'DOC';
+  kind: 'SHEET';
   nodeId: string;
   newName: string;
 }
@@ -321,24 +320,6 @@ export const createTreeMutationActions = (set: SetFn, get: GetFn) => ({
     })();
     return '';
   }) as (projectId: string, sheetId: string) => string,
-
-  /**
-   * Server-side doc duplicate. Backend clones documents.ydoc_state +
-   * grafts a new doc_tree leaf, then broadcasts sync.full so peers
-   * re-hydrate. After ack we setCurrentDoc to the duplicate so the
-   * caller lands on it.
-   */
-  duplicateDoc: ((projectId: string, docId: string) => {
-    void (async () => {
-      try {
-        const { newDocId } = await duplicateDocRest(projectId, docId);
-        get().setCurrentDoc(newDocId);
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : '문서 복제 실패');
-      }
-    })();
-    return '';
-  }) as (projectId: string, docId: string) => string,
 });
 
 export type { TreeMoveEventDetail };

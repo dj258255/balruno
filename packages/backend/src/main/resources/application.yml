@@ -123,24 +123,6 @@ balruno.jwt:
 balruno.notification:
   inbox-url: ${BALRUNO_INBOX_URL:https://balruno.com/inbox}
 
-# ─── Collab token (Hocuspocus session) ───────────────────────────────────
-# Distinct HS256 secret from balruno.jwt — the Hocuspocus container
-# verifies these, the API session JWT decoder doesn't even see them.
-# A leak on either surface stays scoped (ADR 0002 v1.1, ADR 0017 §2.6).
-balruno.collab.token:
-  secret: ${COLLAB_TOKEN_SECRET}
-  ttl: PT15M
-  audience: balruno-collab
-
-# Internal HTTP channel from Spring → Hocuspocus side-car. Used by
-# DocDuplicateApiImpl to force-flush the live yjs state before reading
-# documents.ydoc_state for a clone (otherwise the clone may lag the
-# last onStoreDocument throttle window). Loopback only; don't expose.
-balruno.collab.sidecar:
-  url: ${COLLAB_INTERNAL_URL:http://127.0.0.1:1235}
-  secret: ${COLLAB_INTERNAL_SECRET:}
-  timeout: PT2S
-
 # ─── CORS allowed origins ────────────────────────────────────────────────
 # allowCredentials=true (we send the session cookie) rules out wildcard,
 # so origins are enumerated. Self-host operators override via env:

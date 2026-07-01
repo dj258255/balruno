@@ -8,17 +8,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Daily prune of {@code cell_history} + {@code doc_snapshots} rows
- * past the longest workspace plan's retention window (TEAM = 180d).
+ * Daily prune of {@code cell_history} rows past the longest workspace
+ * plan's retention window (TEAM = 180d).
  *
  * Per-plan accuracy at query time is already enforced by
- * {@link HistoryServiceImpl#authorisedCutoff} and
- * {@link DocSnapshotServiceImpl}; this scheduler is a disk-protection
- * net so a noisy workspace doesn't bloat the table indefinitely.
+ * {@link HistoryServiceImpl#authorisedCutoff}; this scheduler is a
+ * disk-protection net so a noisy workspace doesn't bloat the table
+ * indefinitely.
  *
- * Runs at 03:00 UTC. Both DELETEs run as native @Modifying queries
- * on the matching repositories — they hit the
- * {@code *_created_idx} range scans and stay off JdbcTemplate.
+ * Runs at 03:00 UTC. The DELETE runs as a native @Modifying query
+ * on the matching repository — it hits the {@code *_created_idx}
+ * range scan and stays off JdbcTemplate.
  */
 @Component
 class HistoryCleanupScheduler {
@@ -33,11 +33,9 @@ class HistoryCleanupScheduler {
     private static final int MAX_RETENTION_DAYS = 180;
 
     private final HistoryRepository history;
-    private final DocSnapshotRepository snapshots;
 
-    HistoryCleanupScheduler(HistoryRepository history, DocSnapshotRepository snapshots) {
+    HistoryCleanupScheduler(HistoryRepository history) {
         this.history = history;
-        this.snapshots = snapshots;
     }
 
     @Scheduled(cron = "0 0 3 * * *", zone = "UTC")
@@ -45,10 +43,8 @@ class HistoryCleanupScheduler {
     public void prune() {
         try {
             var cellRows = history.pruneOlderThan(MAX_RETENTION_DAYS);
-            var snapshotRows = snapshots.pruneOlderThan(MAX_RETENTION_DAYS);
-            if (cellRows > 0 || snapshotRows > 0) {
-                log.info("history cleanup pruned cell_history={} doc_snapshots={}",
-                        cellRows, snapshotRows);
+            if (cellRows > 0) {
+                log.info("history cleanup pruned cell_history={}", cellRows);
             }
         } catch (RuntimeException e) {
             // Swallow — the next daily run will retry. Bubbling here

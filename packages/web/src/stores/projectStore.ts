@@ -6,13 +6,11 @@ import type {
   Row,
   CellValue,
   CellStyle,
-  Doc,
 } from '@/types';
 import { createProjectActions } from './slices/projectSlice';
 import { createSheetActions } from './slices/sheetSlice';
 import { createCellActions } from './slices/cellSlice';
 import { createSelectionActions } from './slices/selectionSlice';
-import { createDocActions, bindDocSliceGetters } from './slices/docSlice';
 import { createLegacyStubActions } from './slices/legacyStubSlice';
 import { createTreeMutationActions } from './slices/treeMutationSlice';
 
@@ -34,10 +32,8 @@ export interface CellSelectionMode {
   callback: ((value: number, rowId?: string, columnId?: string) => void) | null;
 }
 
-/** 상단 탭바 entry — 시트/문서 단일 배열 순서로 섞임. 드래그 재정렬 지원. */
-export type TabEntry =
-  | { kind: 'sheet'; id: string }
-  | { kind: 'doc'; id: string };
+/** 상단 탭바 entry — 시트 단일 배열 순서. 드래그 재정렬 지원. */
+export type TabEntry = { kind: 'sheet'; id: string };
 
 // ==== 스토어 상태 ====
 
@@ -46,7 +42,7 @@ export interface ProjectState {
   projects: Project[];
   currentProjectId: string | null;
   currentSheetId: string | null;
-  /** 시트·문서 통합 탭 배열 — 한 줄에 섞인 순서대로 저장. 드래그 재정렬 지원. */
+  /** 시트 탭 배열 — 순서대로 저장. 드래그 재정렬 지원. */
   openTabs: TabEntry[];
   isLoading: boolean;
   lastSaved: number | null;
@@ -181,28 +177,6 @@ export interface ProjectState {
   completeCellSelection: (value: number, rowId?: string, columnId?: string) => void;
   cancelCellSelection: () => void;
 
-  // 문서 액션 (Phase A — Doc 계층, Notion 식 nested 트리)
-  currentDocId: string | null;
-  createDoc: (
-    projectId: string,
-    name: string,
-    content?: string,
-    options?: { parentId?: string },
-  ) => string;
-  updateDoc: (
-    projectId: string,
-    docId: string,
-    updates: Partial<Pick<Doc, 'name' | 'content' | 'icon' | 'parentId' | 'isExpanded' | 'position'>>
-  ) => void;
-  deleteDoc: (projectId: string, docId: string) => void;
-  /** 부모 변경 — Notion 식 트리에서 다른 위치로 이동. parentId === undefined 면 루트로. */
-  moveDoc: (projectId: string, docId: string, parentId: string | undefined, position?: number) => void;
-  /** 사이드바 펼침/접힘 토글. */
-  toggleDocExpanded: (projectId: string, docId: string) => void;
-  setCurrentDoc: (docId: string | null) => void;
-  openDocTab: (docId: string) => void;
-  closeDocTab: (docId: string) => void;
-
   // ── Legacy v0.5 stubs ────────────────────────────────────────────
   // The v0.6 cleanup moved local-mode multi-project state to
   // server-canonical REST. The Sidebar/SheetTabs/BranchModal still
@@ -219,7 +193,6 @@ export interface ProjectState {
   createSheet: (...args: unknown[]) => string;
   updateSheet: (projectId: string, sheetId: string, updates: Partial<Sheet>) => void;
   duplicateSheet: (projectId: string, sheetId: string) => string;
-  duplicateDoc: (projectId: string, docId: string) => string;
   deleteSheet: (projectId: string, sheetId: string) => void;
   reorderSheets: (...args: unknown[]) => void;
   moveSheetToFolder: (projectId: string, sheetId: string, folderId: string | null) => void;
@@ -247,24 +220,17 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   lastSaved: null,
   selectedRows: [],
   cellSelectionMode: { active: false, fieldLabel: '', callback: null },
-  currentDocId: null,
 
   // 액션은 슬라이스에서 주입
   ...createProjectActions(set, get),
   ...createSheetActions(set, get),
   ...createCellActions(set, get),
   ...createSelectionActions(set, get),
-  ...createDocActions(set),
   ...createLegacyStubActions(),
   // Override stub mutations with server-canonical re-wires. Spread
   // last so the live implementations win over the alert stubs.
   ...createTreeMutationActions(set, get),
 }));
-
-// Wire docSlice getters now that the store is created (avoids circular import).
-bindDocSliceGetters((projectId) =>
-  useProjectStore.getState().projects.find((p) => p.id === projectId),
-);
 
 // dev 모드에서만 콘솔 디버깅용으로 window 에 노출. 데이터 무결성 점검·일회성
 // 쿼리 등에 활용. 프로덕션 빌드에선 NODE_ENV 가 'production' 이라 미노출.

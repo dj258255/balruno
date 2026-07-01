@@ -97,9 +97,6 @@ class CommentServiceImpl implements CommentService {
                 req.sheetId(),
                 req.rowId(),
                 req.columnId(),
-                req.documentId(),
-                req.anchorPosition(),
-                req.anchorLength(),
                 req.parentId(),
                 callerUserId,
                 req.bodyJson());
@@ -261,14 +258,6 @@ class CommentServiceImpl implements CommentService {
         projects.findById(projectId, callerUserId);
         return repo.findByProjectIdAndScopeKindAndSheetIdAndRowIdAndColumnIdAndDeletedAtIsNullOrderByCreatedAtAsc(
                         projectId, Comment.ScopeKind.SHEET_CELL, sheetId, rowId, columnId)
-                .stream().map(CommentEntity::toDto).toList();
-    }
-
-    @Override
-    public List<Comment> listForDoc(UUID callerUserId, UUID projectId, UUID documentId) {
-        projects.findById(projectId, callerUserId);
-        return repo.findByProjectIdAndScopeKindAndDocumentIdAndDeletedAtIsNullOrderByCreatedAtAsc(
-                        projectId, Comment.ScopeKind.DOC_BODY, documentId)
                 .stream().map(CommentEntity::toDto).toList();
     }
 

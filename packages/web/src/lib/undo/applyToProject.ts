@@ -151,10 +151,10 @@ function mapSheet(
 
 function mapTree(
   project: Project,
-  treeKind: 'SHEET' | 'DOC',
+  _treeKind: 'SHEET',
   mutator: (tree: TreeNode[]) => TreeNode[],
 ): Project {
-  const field = treeKind === 'SHEET' ? 'sheetTree' : 'docTree';
+  const field = 'sheetTree';
   return {
     ...project,
     [field]: mutator((project[field] as TreeNode[] | undefined) ?? []),

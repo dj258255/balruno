@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, X, Edit2, Copy, Check, LayoutTemplate, GripVertical, ChevronLeft, ChevronRight, XCircle, FileText, FileSpreadsheet, FolderOpen, Trash2 } from 'lucide-react';
+import { Plus, X, Edit2, Copy, Check, LayoutTemplate, ChevronLeft, ChevronRight, XCircle, FileSpreadsheet, FolderOpen } from 'lucide-react';
 import DocIconPicker from '@/components/docs/DocIconPicker';
 import { SheetTagChips } from '@/components/sheet/SheetTagChips';
 import { SheetKindBadge } from '@/components/sheet/SheetKindBadge';
@@ -30,20 +30,12 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     duplicateSheet,
     closeSheetTab,
     reorderOpenTabs,
-    currentDocId,
-    setCurrentDoc,
-    closeDocTab,
-    updateDoc,
-    deleteDoc,
-    duplicateDoc,
   } = useProjectStore();
 
-  // Inline rename state — unified across sheet + doc tabs. Same
-  // pattern as SidebarDocsSection / SheetHeader: click-to-edit,
-  // Enter / blur commits, Escape cancels. `editingTab` carries kind
-  // so the commit dispatches to updateSheet vs updateDoc.
+  // Inline rename state — click-to-edit, Enter / blur commits,
+  // Escape cancels.
   const [editingTab, setEditingTab] = useState<
-    { kind: 'sheet' | 'doc'; id: string } | null
+    { kind: 'sheet'; id: string } | null
   >(null);
   const [editName, setEditName] = useState('');
   const [showNewSheet, setShowNewSheet] = useState(false);
@@ -64,11 +56,9 @@ export default function SheetTabs({ project }: SheetTabsProps) {
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
 
-  // 컨텍스트 메뉴 상태 — sheet 와 doc 둘 다 지원. 두 탭 종류가 다른
-  // 메뉴 항목을 보여주기 위해 kind 분기.
+  // 컨텍스트 메뉴 상태.
   const [contextMenu, setContextMenu] = useState<
     | { x: number; y: number; kind: 'sheet'; id: string; name: string }
-    | { x: number; y: number; kind: 'doc'; id: string; name: string }
     | null
   >(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -138,19 +128,14 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     };
   }, [resizingTabId, resizeStartX, resizeStartWidth, saveTabWidths]);
 
-  const handleStartEdit = (kind: 'sheet' | 'doc', id: string, name: string) => {
+  const handleStartEdit = (kind: 'sheet', id: string, name: string) => {
     setEditingTab({ kind, id });
     setEditName(name);
   };
 
   const handleFinishEdit = () => {
     if (editingTab && editName.trim()) {
-      const next = editName.trim();
-      if (editingTab.kind === 'sheet') {
-        updateSheet(project.id, editingTab.id, { name: next });
-      } else {
-        updateDoc(project.id, editingTab.id, { name: next });
-      }
+      updateSheet(project.id, editingTab.id, { name: editName.trim() });
     }
     setEditingTab(null);
     setEditName('');
@@ -176,34 +161,30 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     }
   };
 
-  // 열린 탭을 (sheet|doc) 객체와 함께 entry 로 materialize — 순서 유지
+  // 열린 탭을 sheet 객체와 함께 entry 로 materialize — 순서 유지
   type RenderableTab =
-    | { kind: 'sheet'; id: string; sheet: NonNullable<ReturnType<typeof project.sheets.find>> }
-    | { kind: 'doc'; id: string; doc: NonNullable<NonNullable<typeof project.docs>[number]> };
+    { kind: 'sheet'; id: string; sheet: NonNullable<ReturnType<typeof project.sheets.find>> };
 
   const renderables: RenderableTab[] = openTabs
     .map((entry): RenderableTab | null => {
-      if (entry.kind === 'sheet') {
-        const sheet = project.sheets.find((s) => s.id === entry.id);
-        return sheet ? { kind: 'sheet', id: entry.id, sheet } : null;
-      }
-      const doc = project.docs?.find((d) => d.id === entry.id);
-      return doc ? { kind: 'doc', id: entry.id, doc } : null;
+      if (entry.kind !== 'sheet') return null;
+      const sheet = project.sheets.find((s) => s.id === entry.id);
+      return sheet ? { kind: 'sheet', id: entry.id, sheet } : null;
     })
     .filter((r): r is RenderableTab => r !== null);
 
-  // 드래그할 때는 "entry key" 로 식별. 시트·문서 구분을 위해 prefix.
-  const entryKey = (kind: 'sheet' | 'doc', id: string) => `${kind}:${id}`;
+  // 드래그할 때는 "entry key" 로 식별.
+  const entryKey = (kind: 'sheet', id: string) => `${kind}:${id}`;
 
-  // 탭 드래그 핸들러 — 같은 배열 안에서 시트/문서 자유롭게 재정렬
-  const handleTabDragStart = (e: React.DragEvent, kind: 'sheet' | 'doc', id: string) => {
+  // 탭 드래그 핸들러 — 배열 안에서 시트 재정렬
+  const handleTabDragStart = (e: React.DragEvent, kind: 'sheet', id: string) => {
     e.dataTransfer.setData('text/plain', id);
     e.dataTransfer.setData('application/x-tab', entryKey(kind, id));
     e.dataTransfer.effectAllowed = 'move';
     setDraggedTabId(entryKey(kind, id));
   };
 
-  const handleTabDragOver = (e: React.DragEvent, kind: 'sheet' | 'doc', id: string) => {
+  const handleTabDragOver = (e: React.DragEvent, kind: 'sheet', id: string) => {
     e.preventDefault();
     if (e.dataTransfer.types.includes('application/x-tab')) {
       setDragOverTabId(entryKey(kind, id));
@@ -214,7 +195,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     setDragOverTabId(null);
   };
 
-  const handleTabDrop = (e: React.DragEvent, targetKind: 'sheet' | 'doc', targetId: string) => {
+  const handleTabDrop = (e: React.DragEvent, targetKind: 'sheet', targetId: string) => {
     e.preventDefault();
     const targetKey = entryKey(targetKind, targetId);
     if (draggedTabId && draggedTabId !== targetKey) {
@@ -233,10 +214,10 @@ export default function SheetTabs({ project }: SheetTabsProps) {
     setDragOverTabId(null);
   };
 
-  // 컨텍스트 메뉴 핸들러 — sheet / doc 공통 entrypoint.
+  // 컨텍스트 메뉴 핸들러.
   const handleContextMenu = (
     e: React.MouseEvent,
-    kind: 'sheet' | 'doc',
+    kind: 'sheet',
     id: string,
     name: string,
   ) => {
@@ -356,12 +337,10 @@ export default function SheetTabs({ project }: SheetTabsProps) {
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
         {renderables.map((entry) => {
-          const isSheet = entry.kind === 'sheet';
-          const name = isSheet ? entry.sheet.name : (entry.doc.name || t('sheet.untitled'));
-          const isActive = isSheet ? currentSheetId === entry.id : currentDocId === entry.id;
-          const tabWidth = isSheet ? getTabWidth(entry.id) : Math.max(MIN_TAB_WIDTH, 180);
+          const name = entry.sheet.name;
+          const isActive = currentSheetId === entry.id;
+          const tabWidth = getTabWidth(entry.id);
           const dragKey = entryKey(entry.kind, entry.id);
-          const Icon = isSheet ? FileSpreadsheet : FileText;
 
           return (
             <div
@@ -385,7 +364,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                 marginBottom: isActive ? '-1px' : '0',
                 opacity: draggedTabId === dragKey ? 0.5 : 1,
               }}
-              onClick={() => (isSheet ? setCurrentSheet(entry.id) : setCurrentDoc(entry.id))}
+              onClick={() => setCurrentSheet(entry.id)}
               onContextMenu={(e) => handleContextMenu(e, entry.kind, entry.id, name)}
               onMouseEnter={(e) => {
                 if (!isActive && !draggedTabId) e.currentTarget.style.background = 'var(--bg-hover)';
@@ -395,28 +374,20 @@ export default function SheetTabs({ project }: SheetTabsProps) {
               }}
               title={name}
             >
-              {/* 아이콘 — 시트·문서 둘 다 클릭으로 이모지 변경 가능 (각자 fallback 다름) */}
+              {/* 아이콘 — 클릭으로 이모지 변경 가능 */}
               <span
                 className="flex-shrink-0"
                 onClick={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
                 draggable={false}
               >
-                {isSheet ? (
-                  <DocIconPicker
-                    icon={entry.sheet.icon}
-                    onChange={(emoji) => updateSheet(project.id, entry.id, { icon: emoji })}
-                    fallbackIcon={FileSpreadsheet}
-                    fallbackColor={isActive ? 'var(--accent)' : 'var(--text-secondary)'}
-                    size="sm"
-                  />
-                ) : (
-                  <DocIconPicker
-                    icon={entry.doc.icon}
-                    onChange={(emoji) => updateDoc(project.id, entry.id, { icon: emoji })}
-                    size="sm"
-                  />
-                )}
+                <DocIconPicker
+                  icon={entry.sheet.icon}
+                  onChange={(emoji) => updateSheet(project.id, entry.id, { icon: emoji })}
+                  fallbackIcon={FileSpreadsheet}
+                  fallbackColor={isActive ? 'var(--accent)' : 'var(--text-secondary)'}
+                  size="sm"
+                />
               </span>
 
               {editingTab?.kind === entry.kind && editingTab?.id === entry.id ? (
@@ -469,13 +440,12 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                     {name}
                   </span>
                   {/* 좁은 탭에선 chip/badge 숨김 — 이름과 함께 progressive 하게 사라지는 일관성 */}
-                  {isSheet && tabWidth >= 180 && <SheetTagChips sheet={entry.sheet} max={1} />}
-                  {isSheet && tabWidth >= 140 && <SheetKindBadge sheet={entry.sheet} showDefault size="xs" />}
+                  {tabWidth >= 180 && <SheetTagChips sheet={entry.sheet} max={1} />}
+                  {tabWidth >= 140 && <SheetKindBadge sheet={entry.sheet} showDefault size="xs" />}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (isSheet) closeSheetTab(entry.id);
-                      else closeDocTab(entry.id);
+                      closeSheetTab(entry.id);
                     }}
                     className="p-0.5 rounded transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
                     style={{ color: 'var(--text-tertiary)' }}
@@ -497,14 +467,12 @@ export default function SheetTabs({ project }: SheetTabsProps) {
                 </>
               )}
 
-              {/* 리사이즈 핸들 — 시트 탭만 */}
-              {isSheet && (
-                <div
-                  className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-[var(--accent)] opacity-0 group-hover:opacity-50 transition-opacity"
-                  onMouseDown={(e) => handleResizeStart(e, entry.id)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              )}
+              {/* 리사이즈 핸들 */}
+              <div
+                className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-[var(--accent)] opacity-0 group-hover:opacity-50 transition-opacity"
+                onMouseDown={(e) => handleResizeStart(e, entry.id)}
+                onClick={(e) => e.stopPropagation()}
+              />
             </div>
           );
         })}
@@ -643,9 +611,8 @@ export default function SheetTabs({ project }: SheetTabsProps) {
         )}
       </div>
 
-      {/* 탭 컨텍스트 메뉴 — sheet / doc 둘 다 지원. 메뉴 항목은 kind 별로
-          분기: 시트는 inline rename + duplicate, 문서는 prompt rename +
-          삭제. close / close-others / close-all 은 공통. */}
+      {/* 탭 컨텍스트 메뉴 — inline rename + duplicate + close /
+          close-others / close-all. */}
       {contextMenu && (
         <div
           ref={contextMenuRef}
@@ -659,9 +626,6 @@ export default function SheetTabs({ project }: SheetTabsProps) {
         >
           <button
             onClick={() => {
-              // Unified inline rename — same pattern for sheet + doc.
-              // editingTab carries kind so handleFinishEdit dispatches
-              // to the right update action.
               handleStartEdit(contextMenu.kind, contextMenu.id, contextMenu.name);
               setContextMenu(null);
             }}
@@ -676,11 +640,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
 
           <button
             onClick={() => {
-              if (contextMenu.kind === 'sheet') {
-                duplicateSheet(project.id, contextMenu.id);
-              } else {
-                duplicateDoc(project.id, contextMenu.id);
-              }
+              duplicateSheet(project.id, contextMenu.id);
               setContextMenu(null);
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
@@ -698,8 +658,7 @@ export default function SheetTabs({ project }: SheetTabsProps) {
           {/* 이 탭 닫기 */}
           <button
             onClick={() => {
-              if (contextMenu.kind === 'sheet') closeSheetTab(contextMenu.id);
-              else closeDocTab(contextMenu.id);
+              closeSheetTab(contextMenu.id);
               setContextMenu(null);
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
@@ -711,16 +670,12 @@ export default function SheetTabs({ project }: SheetTabsProps) {
             {t('sheet.closeTab')}
           </button>
 
-          {/* 다른 탭 모두 닫기 — 시트/문서 모두 */}
+          {/* 다른 탭 모두 닫기 */}
           <button
             onClick={() => {
-              const targetKind = contextMenu.kind;
               const targetId = contextMenu.id;
               openTabs.forEach((tab) => {
-                const same = tab.kind === targetKind && tab.id === targetId;
-                if (same) return;
-                if (tab.kind === 'sheet') closeSheetTab(tab.id);
-                else closeDocTab(tab.id);
+                if (tab.kind === 'sheet' && tab.id !== targetId) closeSheetTab(tab.id);
               });
               setContextMenu(null);
             }}
@@ -734,12 +689,11 @@ export default function SheetTabs({ project }: SheetTabsProps) {
             {t('sheet.closeOthers')}
           </button>
 
-          {/* 모든 탭 닫기 — 시트/문서 모두 */}
+          {/* 모든 탭 닫기 */}
           <button
             onClick={() => {
               [...openTabs].forEach((tab) => {
                 if (tab.kind === 'sheet') closeSheetTab(tab.id);
-                else closeDocTab(tab.id);
               });
               setContextMenu(null);
             }}
@@ -751,33 +705,6 @@ export default function SheetTabs({ project }: SheetTabsProps) {
             <XCircle className="w-4 h-4" />
             {t('sheet.closeAll')}
           </button>
-
-          {/* 문서 삭제 — doc 탭에만. 별도 구분선으로 destructive
-              action 시각 분리. confirm 으로 실수 방지 + deleteDoc 의
-              30 일 grace period (ADR 0015) 안내. */}
-          {contextMenu.kind === 'doc' && (
-            <>
-              <div className="my-1 border-t" style={{ borderColor: 'var(--border-primary)' }} />
-              <button
-                onClick={() => {
-                  const ok = window.confirm(
-                    t('sheet.deleteDocConfirm', { name: contextMenu.name }),
-                  );
-                  if (ok) {
-                    deleteDoc(project.id, contextMenu.id);
-                  }
-                  setContextMenu(null);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left"
-                style={{ color: 'var(--status-error)' }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <Trash2 className="w-4 h-4" />
-                {t('sheet.deleteDoc')}
-              </button>
-            </>
-          )}
         </div>
       )}
     </>

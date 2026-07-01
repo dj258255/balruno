@@ -154,8 +154,6 @@
     "project": "게임",
     "panelTools": "패널 도구",
     "dropHere": "하단에서 드래그해서 추가",
-    "resizeAriaLabel": "게임/문서 영역 크기 조절",
-    "resizeTitle": "드래그로 문서 섹션 높이 조절 · 우클릭으로 기본 크기 리셋",
     "startFromTemplate": "템플릿 갤러리에서 시작",
     "templateGallery": "템플릿 갤러리",
     "templateGalleryTooltip": "템플릿으로 빠르게 시작 · 우클릭: 빠른 샘플",
@@ -222,8 +220,6 @@
     "noSheets": "시트가 없습니다",
     "clickToRename": "클릭하여 이름 변경",
     "doubleClickToRename": "더블클릭으로 이름 변경",
-    "deleteDoc": "문서 삭제",
-    "deleteDocConfirm": "\"{name}\" 문서를 삭제할까요? 30일간 복구 가능합니다.",
     "createSheet": "새 시트 만들기",
     "createSheetDesc": "새 시트를 만들어 데이터를 관리해보세요",
     "noTabsOpenTitle": "열린 탭이 없습니다",
@@ -531,10 +527,6 @@
     "areYouSure": "정말 진행하시겠습니까?",
     "confirmDelete": "정말 삭제하시겠습니까?",
     "remove": "제거"
-  },
-  "docContext": {
-    "showHistory": "변경 이력 보기",
-    "selectFirst": "먼저 텍스트를 선택하세요"
   },
   "contextMenu": {
     "openRecordDetail": "레코드 상세 보기",
@@ -4906,24 +4898,6 @@
     "moreSuffix": "+ {n}개 더",
     "noPlaytest": "Playtest 시트 없음"
   },
-  "sidebarDocs": {
-    "newDocName": "새 문서",
-    "deleteDocConfirm": "\"{name}\" 문서를 삭제할까요?",
-    "docsLabel": "문서",
-    "newDocBtn": "새 문서",
-    "startWithTemplate": "템플릿으로 시작",
-    "gddGenre": "GDD 장르",
-    "system": "시스템",
-    "docsHint": "GDD · 설계안 · 릴리스 노트를 여기에.",
-    "untitled": "(제목 없음)",
-    "deleteDocAria": "문서 삭제",
-    "renamePrompt": "문서 이름",
-    "renameBtn": "이름 변경",
-    "docFallbackName": "문서",
-    "copyNameSuffix": "({name}) (사본)",
-    "duplicateBtn": "복제",
-    "deleteBtn": "삭제"
-  },
   "deadZone": {
     "hpFull": "HP (체력)",
     "atkFull": "ATK (공격력)",
@@ -5018,20 +4992,6 @@
     "cleaning": "정리 중...",
     "cleanCount": "{count}개 정리",
     "cleanedToast": "{count}개 게임을 정리했습니다"
-  },
-  "docView": {
-    "deleteConfirm": "\"{name}\" 문서를 삭제할까요? 되돌릴 수 없습니다.",
-    "docsTitle": "문서",
-    "subtitle": "/ 슬래시 명령 · @ 참조",
-    "mdExport": "Markdown 내보내기",
-    "pdfExport": "PDF 로 인쇄",
-    "syntaxHelp": "문법 도움말",
-    "deleteDoc": "문서 삭제",
-    "docTitlePlaceholder": "문서 제목",
-    "updatedAt": "수정: {date}",
-    "backlinksCount": "{n}개 문서에서 참조",
-    "editorUsage": "에디터 사용법",
-    "referenceDoc": "이 문서를 참조"
   },
   "aiCopilot": {
     "title": "AI Copilot",
@@ -5810,16 +5770,6 @@
     "editorAriaLabel": "코멘트",
     "noMembers": "멤버 없음",
     "memberMentionAriaLabel": "멤버 멘션"
-  },
-  "docBody": {
-    "placeholder": "내용을 입력하세요.",
-    "loading": "문서 로딩 중...",
-    "addCommentToSelection": "선택한 부분에 코멘트 달기",
-    "selectTextFirst": "먼저 텍스트를 선택하세요",
-    "addComment": "선택한 부분에 코멘트",
-    "history": "변경 이력",
-    "historyTooltip": "페이지 변경 이력",
-    "titleEditTooltip": "클릭해서 제목 편집"
   },
   "branches": {
     "mainBranch": "main",

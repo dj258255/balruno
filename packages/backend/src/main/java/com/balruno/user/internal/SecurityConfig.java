@@ -42,7 +42,7 @@ import java.util.List;
  *     the two.
  */
 @Configuration
-@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class, CollabTokenProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class})
 class SecurityConfig {
 
     @Bean

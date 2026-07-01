@@ -35,8 +35,6 @@ interface SidebarPrefsState {
    * keeps workspaces with many projects calm on first paint.
    */
   expandedProjectIds: string[];
-  /** Doc nodes the user has expanded. Same per-user preference. */
-  expandedDocIds: string[];
 
   togglePinSheet: (sheetId: string) => void;
   isSheetPinned: (sheetId: string) => boolean;
@@ -46,7 +44,6 @@ interface SidebarPrefsState {
   clearTagFilter: (projectId: string) => void;
   toggleProjectExpanded: (projectId: string) => void;
   setProjectExpanded: (projectId: string, expanded: boolean) => void;
-  toggleDocExpanded: (docId: string) => void;
 }
 
 export const useSidebarPrefs = create<SidebarPrefsState>()(
@@ -56,7 +53,6 @@ export const useSidebarPrefs = create<SidebarPrefsState>()(
       activeWorkspaceId: '',
       tagFilters: {},
       expandedProjectIds: [],
-      expandedDocIds: [],
 
       togglePinSheet: (sheetId) => {
         set((state) => {
@@ -116,16 +112,6 @@ export const useSidebarPrefs = create<SidebarPrefsState>()(
         });
       },
 
-      toggleDocExpanded: (docId) => {
-        set((state) => {
-          const has = state.expandedDocIds.includes(docId);
-          return {
-            expandedDocIds: has
-              ? state.expandedDocIds.filter((id) => id !== docId)
-              : [...state.expandedDocIds, docId],
-          };
-        });
-      },
     }),
     { name: 'balruno:sidebar-prefs' },
   ),

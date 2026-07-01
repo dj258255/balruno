@@ -1,29 +1,27 @@
 /**
- * Active-users abstraction — unifies presence across the two sync channels.
+ * Active-users abstraction — presence for the sheet sync channel.
  *
  *   { kind: 'sheet', sheetId } → cell-event WebSocket presence broadcasts (custom protocol)
- *   { kind: 'doc',   docId   } → yjs awareness on the document Y.Doc
  *
- * Returns the same shape regardless of channel so UI components (UserAvatarStack,
- * RemoteCursor, CellPresenceBadge) don't need to know.
+ * Returns a stable shape so UI components (UserAvatarStack, RemoteCursor,
+ * CellPresenceBadge) don't need to know the transport.
  *
  * Until the backend is wired up the hook returns the local user only — useful for
  * developing the UI without a running server.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { usePresenceStore, type PresenceUser } from '@/stores/presenceStore';
 import { useAuthStore } from '@/stores/authStore';
 
 export type PresenceScope =
-  | { kind: 'sheet'; sheetId: string }
-  | { kind: 'doc'; docId: string };
+  | { kind: 'sheet'; sheetId: string };
 
 export function useActiveUsers(scope: PresenceScope | null): PresenceUser[] {
   const presenceMap = usePresenceStore((s) => s.byScope);
   const localUser = useAuthStore((s) => s.user);
 
-  const key = scope ? `${scope.kind}:${'sheetId' in scope ? scope.sheetId : scope.docId}` : null;
+  const key = scope ? `${scope.kind}:${scope.sheetId}` : null;
 
   const remote = useMemo<PresenceUser[]>(() => {
     if (!key) return [];

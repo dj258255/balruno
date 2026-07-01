@@ -13,16 +13,12 @@ import java.util.UUID;
  * Builds the {@code sync.full} hydrate payload sent to a client right
  * after a successful WebSocket handshake — ADR 0008 v2.0 §2.2.
  *
- * Single SELECT pulls all three op-log regions (data / sheet_tree /
- * doc_tree) plus their versions, so the client gets a snapshot whose
- * version triple is guaranteed coherent (same MVCC visibility window).
- * Once the client receives this, every subsequent op carries one of
- * those versions as {@code baseVersion} and the conflict check in
+ * Single SELECT pulls both op-log regions (data / sheet_tree) plus
+ * their versions, so the client gets a snapshot whose version pair is
+ * guaranteed coherent (same MVCC visibility window). Once the client
+ * receives this, every subsequent op carries one of those versions as
+ * {@code baseVersion} and the conflict check in
  * {@link SheetCellOpService} / {@link TreeOpService} is meaningful.
- *
- * Document body (yjs) is NOT included here — that lives on the
- * separate Hocuspocus channel and hydrates lazily per-document when
- * the client opens an editor (ADR 0017 § 4-region split).
  */
 @Service
 class ProjectStateLoader {
@@ -45,11 +41,9 @@ class ProjectStateLoader {
         envelope.put("type", "sync.full");
         envelope.put("data",      parse(row.getDataJson()));
         envelope.put("sheetTree", parse(row.getSheetTreeJson()));
-        envelope.put("docTree",   parse(row.getDocTreeJson()));
         envelope.put("versions", Map.of(
                 "data",      row.getDataVersion(),
-                "sheetTree", row.getSheetTreeVersion(),
-                "docTree",   row.getDocTreeVersion()));
+                "sheetTree", row.getSheetTreeVersion()));
         try {
             return json.writeValueAsString(envelope);
         } catch (Exception e) {

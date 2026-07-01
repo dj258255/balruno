@@ -66,10 +66,8 @@ interface ShareLinkRepository extends JpaRepository<ShareLinkEntity, UUID> {
                           name                    AS name,
                           data::text              AS data_json,
                           sheet_tree::text        AS sheet_tree_json,
-                          doc_tree::text          AS doc_tree_json,
                           data_version            AS data_version,
-                          sheet_tree_version      AS sheet_tree_version,
-                          doc_tree_version        AS doc_tree_version
+                          sheet_tree_version      AS sheet_tree_version
                      FROM projects
                     WHERE id = :projectId AND deleted_at IS NULL
                    """,
@@ -81,9 +79,7 @@ interface ShareLinkRepository extends JpaRepository<ShareLinkEntity, UUID> {
         String getName();
         String getDataJson();
         String getSheetTreeJson();
-        String getDocTreeJson();
         long getDataVersion();
         long getSheetTreeVersion();
-        long getDocTreeVersion();
     }
 }

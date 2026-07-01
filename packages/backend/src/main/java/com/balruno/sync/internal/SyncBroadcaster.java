@@ -38,15 +38,14 @@ class SyncBroadcaster {
     }
 
     /**
-     * @param scope which version region this op rode — "data",
-     *              "sheetTree", or "docTree" (mirrors the three
-     *              independent version columns, ADR 0008 v2.0 §3). The
-     *              sender's bridge advances ONLY this region's baseVersion
-     *              on op.acked / adopts the server value on conflict.
-     *              Without it the client cannot tell which of the three
-     *              counters moved and historically bumped all three,
-     *              inflating the idle regions so every later op against
-     *              them conflicted (the doc-tree-never-persists bug).
+     * @param scope which version region this op rode — "data" or
+     *              "sheetTree" (mirrors the independent version
+     *              columns, ADR 0008 v2.0 §3). The sender's bridge
+     *              advances ONLY this region's baseVersion on op.acked /
+     *              adopts the server value on conflict. Without it the
+     *              client cannot tell which counter moved and
+     *              historically bumped every region, inflating the idle
+     *              ones so every later op against them conflicted.
      */
     void dispatch(UUID projectId, WebSocketSession sender, UUID clientMsgId,
                   String scope, SyncResult result) {

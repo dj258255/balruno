@@ -188,8 +188,8 @@ class ApiExceptionHandler {
     /**
      * Pass through the controller-thrown {@link ResponseStatusException}
      * status verbatim. Without this handler the catch-all below would
-     * map every intentional 4xx (404 from CollabTokenController, 413 /
-     * 415 from UploadService, 404 from DiscordController, 403 from
+     * map every intentional 4xx (413 / 415 from UploadService, 404
+     * from DiscordController, 403 from
      * ShareService etc.) to 500 INTERNAL_ERROR — clients can't tell
      * 'not found' from 'real failure', and the alerting pipeline fires
      * on synthetic 5xx noise.

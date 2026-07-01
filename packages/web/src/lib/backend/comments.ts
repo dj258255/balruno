@@ -1,6 +1,6 @@
 import { request } from './client';
 
-export type CommentScopeKind = 'SHEET_CELL' | 'DOC_BODY';
+export type CommentScopeKind = 'SHEET_CELL';
 
 export interface BackendComment {
   id: string;
@@ -9,7 +9,6 @@ export interface BackendComment {
   sheetId: string | null;
   rowId: string | null;
   columnId: string | null;
-  documentId: string | null;
   anchorPosition: number | null;
   anchorLength: number | null;
   parentId: string | null;
@@ -28,7 +27,6 @@ export interface CreateCommentInput {
   sheetId?: string;
   rowId?: string;
   columnId?: string;
-  documentId?: string;
   anchorPosition?: number;
   anchorLength?: number;
   parentId?: string;
@@ -73,16 +71,6 @@ export function listCommentsForCell(input: ListCommentsForCellInput): Promise<Ba
   });
   return request<BackendComment[]>(
     `/api/v1/projects/${input.projectId}/comments?${params.toString()}`,
-  );
-}
-
-export function listCommentsForDoc(
-  projectId: string,
-  documentId: string,
-): Promise<BackendComment[]> {
-  const params = new URLSearchParams({ scope: 'DOC_BODY', documentId });
-  return request<BackendComment[]>(
-    `/api/v1/projects/${projectId}/comments?${params.toString()}`,
   );
 }
 

@@ -16,8 +16,7 @@ function makeSyncFull(data: unknown): SyncFullPayload {
     type: 'sync.full',
     data,
     sheetTree: [],
-    docTree: [],
-    versions: { data: 5, sheetTree: 0, docTree: 0 },
+    versions: { data: 5, sheetTree: 0 },
   };
 }
 

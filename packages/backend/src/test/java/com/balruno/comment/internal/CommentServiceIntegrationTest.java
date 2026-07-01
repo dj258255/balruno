@@ -29,8 +29,7 @@ import static org.mockito.Mockito.when;
 /**
  * Integration test for ADR 0024 comments — round-trips create /
  * read / update / resolve / delete against the real Postgres
- * (Testcontainers). Also covers the F.2 anchor_length addition
- * (V12) so range-pinned doc comments survive the SELECT.
+ * (Testcontainers).
  *
  * Auth is mocked at {@link ProjectService#findById}; the membership
  * + workspace chain is exercised by separate unit tests.
@@ -60,7 +59,7 @@ class CommentServiceIntegrationTest {
         var created = comments.create(ctx.userId, new CommentService.CreateRequest(
                 ctx.projectId, Comment.ScopeKind.SHEET_CELL,
                 sheetId, rowId, columnId,
-                null, null, null, null, body));
+                null, body));
 
         assertThat(created.id()).isNotNull();
         assertThat(created.scopeKind()).isEqualTo(Comment.ScopeKind.SHEET_CELL);
@@ -83,69 +82,6 @@ class CommentServiceIntegrationTest {
 
     @Test
     @Transactional
-    void docBodyCommentWithAnchorRangeRoundTrips() throws Exception {
-        var ctx = seed();
-        when(projects.findById(any(), any())).thenReturn(Mockito.mock(Project.class));
-
-        var documentId = UUID.randomUUID();
-        // Insert a documents row so the FK from comments.document_id
-        // is satisfiable. V7 schema: (id, project_id, slug, title,
-        // ydoc_state) NOT NULL — Hocuspocus normally populates the
-        // ydoc_state with an encoded Y.Doc; for the test an empty
-        // BYTEA suffices because the comment path never reads it.
-        jdbc.update(
-                "INSERT INTO documents (id, project_id, slug, title, ydoc_state) "
-              + "VALUES (?, ?, ?, ?, ?)",
-                documentId, ctx.projectId,
-                "test-" + documentId.toString().substring(0, 8),
-                "test doc", new byte[0]);
-
-        var body = bodyOf("highlighted range");
-        var created = comments.create(ctx.userId, new CommentService.CreateRequest(
-                ctx.projectId, Comment.ScopeKind.DOC_BODY,
-                null, null, null,
-                documentId, /* anchorPosition */ 12, /* anchorLength */ 7,
-                null, body));
-
-        assertThat(created.documentId()).isEqualTo(documentId);
-        assertThat(created.anchorPosition()).isEqualTo(12);
-        assertThat(created.anchorLength()).isEqualTo(7);
-
-        var listed = comments.listForDoc(ctx.userId, ctx.projectId, documentId);
-        assertThat(listed).hasSize(1);
-        assertThat(listed.get(0).anchorLength()).isEqualTo(7);
-    }
-
-    @Test
-    @Transactional
-    void docCommentWithoutAnchorIsAcceptedByCheckConstraint() throws Exception {
-        var ctx = seed();
-        when(projects.findById(any(), any())).thenReturn(Mockito.mock(Project.class));
-
-        var documentId = UUID.randomUUID();
-        jdbc.update(
-                "INSERT INTO documents (id, project_id, slug, title, ydoc_state) "
-              + "VALUES (?, ?, ?, ?, ?)",
-                documentId, ctx.projectId,
-                "test-" + documentId.toString().substring(0, 8),
-                "test doc", new byte[0]);
-
-        // anchorPosition + anchorLength both null = doc-level (V12
-        // CHECK accepts). V11 already accepts null/null on the older
-        // anchor_position-only invariant.
-        var body = bodyOf("doc-level comment");
-        var created = comments.create(ctx.userId, new CommentService.CreateRequest(
-                ctx.projectId, Comment.ScopeKind.DOC_BODY,
-                null, null, null,
-                documentId, null, null,
-                null, body));
-
-        assertThat(created.anchorPosition()).isNull();
-        assertThat(created.anchorLength()).isNull();
-    }
-
-    @Test
-    @Transactional
     void onlyAuthorCanDelete() throws Exception {
         var ctx = seed();
         when(projects.findById(any(), any())).thenReturn(Mockito.mock(Project.class));
@@ -156,7 +92,7 @@ class CommentServiceIntegrationTest {
         var created = comments.create(ctx.userId, new CommentService.CreateRequest(
                 ctx.projectId, Comment.ScopeKind.SHEET_CELL,
                 sheetId, rowId, columnId,
-                null, null, null, null, bodyOf("hi")));
+                null, bodyOf("hi")));
 
         var otherUser = UUID.randomUUID();
         jdbc.update(
@@ -189,8 +125,8 @@ class CommentServiceIntegrationTest {
         jdbc.update(
                 "INSERT INTO projects ("
               + "  id, workspace_id, slug, name, description, created_by, "
-              + "  data, sheet_tree, doc_tree"
-              + ") VALUES (?, ?, ?, ?, ?, ?, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)",
+              + "  data, sheet_tree"
+              + ") VALUES (?, ?, ?, ?, ?, ?, '[]'::jsonb, '[]'::jsonb)",
                 projectId, workspaceId, "ct-proj", "Comment Test Project", null, userId);
         return new SeedContext(projectId, userId, workspaceId);
     }

@@ -19,11 +19,11 @@ import java.util.UUID;
  * lives inside Repository files. ServiceImpl injects this repo and
  * calls methods only.
  *
- * Region columns (sheet_tree / doc_tree) are duplicated as separate
- * methods rather than parameterised — column names cannot be bound
- * via {@code :param}, and string interpolation would need a guarded
- * switch inside this class anyway. The duplication keeps each query
- * a static SQL string the JPA query parser can validate at boot.
+ * Region columns are kept as separate static-SQL methods rather than
+ * parameterised — column names cannot be bound via {@code :param},
+ * and string interpolation would need a guarded switch inside this
+ * class anyway. Static strings let the JPA query parser validate each
+ * query at boot.
  */
 interface ProjectSyncRepository extends Repository<ProjectSyncEntity, UUID> {
 
@@ -39,9 +39,7 @@ interface ProjectSyncRepository extends Repository<ProjectSyncEntity, UUID> {
                    SELECT data::text       AS data_json,
                           data_version     AS data_version,
                           sheet_tree::text AS sheet_tree_json,
-                          sheet_tree_version AS sheet_tree_version,
-                          doc_tree::text   AS doc_tree_json,
-                          doc_tree_version AS doc_tree_version
+                          sheet_tree_version AS sheet_tree_version
                      FROM projects
                     WHERE id = :projectId AND deleted_at IS NULL
                    """,
@@ -53,8 +51,6 @@ interface ProjectSyncRepository extends Repository<ProjectSyncEntity, UUID> {
         long getDataVersion();
         String getSheetTreeJson();
         long getSheetTreeVersion();
-        String getDocTreeJson();
-        long getDocTreeVersion();
     }
 
     // ── TreeOpService.apply — SELECT FOR UPDATE per region ────────────
@@ -68,16 +64,6 @@ interface ProjectSyncRepository extends Repository<ProjectSyncEntity, UUID> {
                    """,
            nativeQuery = true)
     Optional<TreeRow> lockSheetTreeForUpdate(@Param("projectId") UUID projectId);
-
-    @Query(value = """
-                   SELECT doc_tree::text       AS tree_json,
-                          doc_tree_version     AS tree_version
-                     FROM projects
-                    WHERE id = :projectId AND deleted_at IS NULL
-                    FOR UPDATE
-                   """,
-           nativeQuery = true)
-    Optional<TreeRow> lockDocTreeForUpdate(@Param("projectId") UUID projectId);
 
     /**
      * Sheet-leaf-creation cross-region read — pulls sheet_tree + data
@@ -120,19 +106,6 @@ interface ProjectSyncRepository extends Repository<ProjectSyncEntity, UUID> {
     int updateSheetTree(@Param("projectId") UUID projectId,
                         @Param("treeJson") String treeJson,
                         @Param("treeVersion") long treeVersion);
-
-    @Modifying
-    @Query(value = """
-                   UPDATE projects
-                      SET doc_tree         = CAST(:treeJson AS jsonb),
-                          doc_tree_version = :treeVersion,
-                          updated_at       = now()
-                    WHERE id = :projectId
-                   """,
-           nativeQuery = true)
-    int updateDocTree(@Param("projectId") UUID projectId,
-                      @Param("treeJson") String treeJson,
-                      @Param("treeVersion") long treeVersion);
 
     /** Sheet-leaf-creation cross-region UPDATE — sheet_tree + data in one shot. */
     @Modifying
@@ -193,11 +166,6 @@ interface ProjectSyncRepository extends Repository<ProjectSyncEntity, UUID> {
                  + "WHERE id = :projectId AND deleted_at IS NULL",
            nativeQuery = true)
     Optional<Long> readSheetTreeVersion(@Param("projectId") UUID projectId);
-
-    @Query(value = "SELECT doc_tree_version FROM projects "
-                 + "WHERE id = :projectId AND deleted_at IS NULL",
-           nativeQuery = true)
-    Optional<Long> readDocTreeVersion(@Param("projectId") UUID projectId);
 
     // ── Misc cross-aggregate lookups used by sync services ────────────
 

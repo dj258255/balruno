@@ -109,17 +109,6 @@ export default function CommentsPanel({ onClose }: CommentsPanelProps) {
           },
         }),
       );
-    } else if (c.scopeKind === 'DOC_BODY' && c.documentId) {
-      window.dispatchEvent(
-        new CustomEvent('balruno:comment-jump', {
-          detail: {
-            kind: 'doc',
-            projectId: c.projectId,
-            documentId: c.documentId,
-            commentId: c.id,
-          },
-        }),
-      );
     }
   };
 

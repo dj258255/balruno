@@ -69,7 +69,6 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
         const project = state.projects.find((p) => p.sheets.some((s) => s.id === id));
         return {
           currentSheetId: id,
-          currentDocId: null,
           currentProjectId: project?.id ?? state.currentProjectId,
           openTabs: withTab(state.openTabs, 'sheet', id),
         };
@@ -94,7 +93,6 @@ export const createSheetActions = (set: SetFn, get: GetFn) => ({
       return {
         openTabs: newTabs,
         currentSheetId: next?.kind === 'sheet' ? next.id : null,
-        currentDocId: next?.kind === 'doc' ? next.id : null,
       };
     });
   },

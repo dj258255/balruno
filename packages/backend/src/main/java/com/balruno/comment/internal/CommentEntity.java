@@ -18,7 +18,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
- * JPA mapping for comments (V11 + V12 anchor_length).
+ * JPA mapping for comments (V11).
  *
  * scope_kind is a Postgres ENUM (comment_scope_kind) so it maps via
  * Enumerated.STRING + JdbcTypeCode.NAMED_ENUM, the same idiom used
@@ -58,15 +58,6 @@ class CommentEntity {
     @Column(name = "column_id", updatable = false)
     private UUID columnId;
 
-    @Column(name = "document_id", updatable = false)
-    private UUID documentId;
-
-    @Column(name = "anchor_position", updatable = false)
-    private Integer anchorPosition;
-
-    @Column(name = "anchor_length", updatable = false)
-    private Integer anchorLength;
-
     @Column(name = "parent_id", updatable = false)
     private UUID parentId;
 
@@ -101,16 +92,12 @@ class CommentEntity {
 
     CommentEntity(UUID projectId, Comment.ScopeKind scopeKind,
                   UUID sheetId, UUID rowId, UUID columnId,
-                  UUID documentId, Integer anchorPosition, Integer anchorLength,
                   UUID parentId, UUID authorUserId, JsonNode bodyJson) {
         this.projectId = projectId;
         this.scopeKind = scopeKind;
         this.sheetId = sheetId;
         this.rowId = rowId;
         this.columnId = columnId;
-        this.documentId = documentId;
-        this.anchorPosition = anchorPosition;
-        this.anchorLength = anchorLength;
         this.parentId = parentId;
         this.authorUserId = authorUserId;
         this.bodyJson = bodyJson;
@@ -122,7 +109,6 @@ class CommentEntity {
         return new Comment(
                 id, projectId, scopeKind,
                 sheetId, rowId, columnId,
-                documentId, anchorPosition, anchorLength,
                 parentId, authorUserId, bodyJson,
                 resolved, resolvedBy, resolvedAt,
                 createdAt, updatedAt);

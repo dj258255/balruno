@@ -46,14 +46,14 @@ describe('mapStoreActionToOp', () => {
     });
   });
 
-  it('tree.delete — carries treeKind so backend routes to sheet_tree vs doc_tree', () => {
+  it('tree.delete — carries treeKind so backend routes to sheet_tree', () => {
     const op = mapStoreActionToOp(
-      { kind: 'tree.delete', treeKind: 'DOC', nodeId: 'n1' },
+      { kind: 'tree.delete', treeKind: 'SHEET', nodeId: 'n1' },
       3,
     );
     expect(op).toMatchObject({
       type: 'tree.delete',
-      treeKind: 'DOC',
+      treeKind: 'SHEET',
       nodeId: 'n1',
       baseVersion: 3,
     });

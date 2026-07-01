@@ -15,9 +15,9 @@ import java.util.UUID;
 /**
  * Persistence for comments + mentions (V11 / V12 / ADR 0024).
  *
- * Reads use derived methods so the partial indexes
- * (comments_sheet_cell_idx, comments_doc_body_idx) are picked up
- * directly. The two write paths (updateBody / setResolved /
+ * Reads use derived methods so the partial index
+ * (comments_sheet_cell_idx) is picked up directly. The two write
+ * paths (updateBody / setResolved /
  * softDelete) stay native @Modifying so they get a single-row
  * UPDATE without dirty-checking and we can keep updated_at = now()
  * + the resolved-pair invariants in one statement.
@@ -34,9 +34,6 @@ interface CommentRepository extends JpaRepository<CommentEntity, UUID> {
     List<CommentEntity> findByProjectIdAndScopeKindAndSheetIdAndRowIdAndColumnIdAndDeletedAtIsNullOrderByCreatedAtAsc(
             UUID projectId, com.balruno.comment.Comment.ScopeKind scopeKind,
             UUID sheetId, UUID rowId, UUID columnId);
-
-    List<CommentEntity> findByProjectIdAndScopeKindAndDocumentIdAndDeletedAtIsNullOrderByCreatedAtAsc(
-            UUID projectId, com.balruno.comment.Comment.ScopeKind scopeKind, UUID documentId);
 
     List<CommentEntity> findByProjectIdAndDeletedAtIsNullOrderByCreatedAtDesc(
             UUID projectId, Limit limit);

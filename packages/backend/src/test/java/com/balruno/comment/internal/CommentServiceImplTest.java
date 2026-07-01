@@ -348,7 +348,7 @@ class CommentServiceImplTest {
         }
     }
 
-    // ── listForCell / listForDoc / listForProject ────────────────────
+    // ── listForCell / listForProject ─────────────────────────────────
 
     @Nested
     @DisplayName("list — auth gating")
@@ -363,17 +363,6 @@ class CommentServiceImplTest {
 
             assertThatThrownBy(() -> service.listForCell(caller, projectId,
                     UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()))
-                    .isInstanceOf(RuntimeException.class);
-        }
-
-        @Test
-        void listForDoc_requires_project_membership() {
-            var caller = UUID.randomUUID();
-            var projectId = UUID.randomUUID();
-            when(projects.findById(eq(projectId), eq(caller)))
-                    .thenThrow(new RuntimeException("PROJECT_NOT_FOUND"));
-
-            assertThatThrownBy(() -> service.listForDoc(caller, projectId, UUID.randomUUID()))
                     .isInstanceOf(RuntimeException.class);
         }
 
@@ -436,7 +425,7 @@ class CommentServiceImplTest {
         return new CommentService.CreateRequest(
                 projectId, Comment.ScopeKind.SHEET_CELL,
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                null, null, null, null,
+                null,
                 body);
     }
 
@@ -445,7 +434,7 @@ class CommentServiceImplTest {
             var entity = new CommentEntity(
                     projectId, Comment.ScopeKind.SHEET_CELL,
                     UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                    null, null, null, null,
+                    null,
                     author, body);
             setField(entity, "id", UUID.randomUUID());
             setField(entity, "createdAt", OffsetDateTime.now());
@@ -462,7 +451,7 @@ class CommentServiceImplTest {
             var entity = new CommentEntity(
                     projectId, Comment.ScopeKind.SHEET_CELL,
                     UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                    null, null, null, null,
+                    null,
                     author, JSON.createObjectNode());
             setField(entity, "id", commentId);
             setField(entity, "createdAt", OffsetDateTime.now());

@@ -116,10 +116,10 @@ class ShareServiceImpl implements ShareService {
     }
 
     /**
-     * Build the JSON envelope: id + name + data + sheetTree + docTree
-     * read straight off the projects row. Mirrors the WebSocket
-     * sync.full payload so the public viewer can reuse the live
-     * sheet renderers unchanged.
+     * Build the JSON envelope: id + name + data + sheetTree read
+     * straight off the projects row. Mirrors the WebSocket sync.full
+     * payload so the public viewer can reuse the live sheet renderers
+     * unchanged.
      */
     private JsonNode readProjectSnapshot(UUID projectId) {
         return repo.findProjectSnapshot(projectId)
@@ -134,14 +134,12 @@ class ShareServiceImpl implements ShareService {
         try {
             out.set("data", nodeMapper.readTree(row.getDataJson()));
             out.set("sheetTree", nodeMapper.readTree(row.getSheetTreeJson()));
-            out.set("docTree", nodeMapper.readTree(row.getDocTreeJson()));
         } catch (Exception e) {
             throw new IllegalStateException("malformed project JSON", e);
         }
         ObjectNode versions = nodeMapper.createObjectNode();
         versions.put("data", row.getDataVersion());
         versions.put("sheetTree", row.getSheetTreeVersion());
-        versions.put("docTree", row.getDocTreeVersion());
         out.set("versions", versions);
         return out;
     }

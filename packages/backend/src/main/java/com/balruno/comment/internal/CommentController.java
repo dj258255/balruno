@@ -32,7 +32,7 @@ import java.util.UUID;
  *   POST  /v1/comments                          — create
  *   PATCH /v1/comments/{id}                     — body / resolved toggle
  *   DELETE /v1/comments/{id}                    — soft delete
- *   GET   /v1/projects/{id}/comments            — list (cell or doc scope)
+ *   GET   /v1/projects/{id}/comments            — list (cell scope)
  *   GET   /v1/me/inbox                          — unread mentions
  *
  * Auth: bearer JWT, member of the project. Service layer enforces
@@ -58,9 +58,6 @@ class CommentController {
                 body.sheetId(),
                 body.rowId(),
                 body.columnId(),
-                body.documentId(),
-                body.anchorPosition(),
-                body.anchorLength(),
                 body.parentId(),
                 body.bodyJson()));
     }
@@ -92,8 +89,7 @@ class CommentController {
             @RequestParam(required = false) Comment.ScopeKind scope,
             @RequestParam(required = false) UUID sheetId,
             @RequestParam(required = false) UUID rowId,
-            @RequestParam(required = false) UUID columnId,
-            @RequestParam(required = false) UUID documentId) {
+            @RequestParam(required = false) UUID columnId) {
         // scope omitted → project-wide browse (CommentsPanel dock).
         if (scope == null) {
             return comments.listForProject(callerId(jwt), projectId);
@@ -105,12 +101,6 @@ class CommentController {
                             "scope=SHEET_CELL requires sheetId + rowId + columnId");
                 }
                 yield comments.listForCell(callerId(jwt), projectId, sheetId, rowId, columnId);
-            }
-            case DOC_BODY -> {
-                if (documentId == null) {
-                    throw new IllegalArgumentException("scope=DOC_BODY requires documentId");
-                }
-                yield comments.listForDoc(callerId(jwt), projectId, documentId);
             }
         };
     }
@@ -132,9 +122,6 @@ class CommentController {
             UUID sheetId,
             UUID rowId,
             UUID columnId,
-            UUID documentId,
-            Integer anchorPosition,
-            Integer anchorLength,
             UUID parentId,
             @NotNull JsonNode bodyJson
     ) {}

@@ -1,8 +1,7 @@
 /**
- * Project-scoped op-log WebSocket — sheet cell + sheet tree + doc tree
- * (ADR 0008 v2.0 §2). One connection per project, three regions ride
- * the same channel; document body lives on the separate Hocuspocus
- * provider in {@link useDocYjsCloudSync}.
+ * Project-scoped op-log WebSocket — sheet cell + sheet tree
+ * (ADR 0008 v2.0 §2). One connection per project, two regions ride
+ * the same channel.
  *
  * Wire protocol matches the Spring sealed types
  * {@code com.balruno.sync.SyncMessage}:
@@ -72,14 +71,14 @@ export type ClientOp =
       baseVersion: number; clientMsgId: string; undo?: UndoMeta }
   | { type: 'column.delete'; sheetId: string; columnId: string;
       baseVersion: number; clientMsgId: string; undo?: UndoMeta }
-  | { type: 'tree.add'; treeKind: 'SHEET' | 'DOC'; parentId: string | null; position: number;
+  | { type: 'tree.add'; treeKind: 'SHEET'; parentId: string | null; position: number;
       node: unknown; baseVersion: number; clientMsgId: string; undo?: UndoMeta }
-  | { type: 'tree.move'; treeKind: 'SHEET' | 'DOC'; nodeId: string;
+  | { type: 'tree.move'; treeKind: 'SHEET'; nodeId: string;
       newParentId: string | null; newPosition: number;
       baseVersion: number; clientMsgId: string; undo?: UndoMeta }
-  | { type: 'tree.delete'; treeKind: 'SHEET' | 'DOC'; nodeId: string;
+  | { type: 'tree.delete'; treeKind: 'SHEET'; nodeId: string;
       baseVersion: number; clientMsgId: string; undo?: UndoMeta }
-  | { type: 'tree.rename'; treeKind: 'SHEET' | 'DOC'; nodeId: string;
+  | { type: 'tree.rename'; treeKind: 'SHEET'; nodeId: string;
       newName?: string; newIcon?: string;
       baseVersion: number; clientMsgId: string; undo?: UndoMeta }
   | { type: 'presence'; userId: string; cursor?: unknown };
@@ -90,19 +89,18 @@ export interface SyncFullPayload {
   type: 'sync.full';
   data: unknown;
   sheetTree: unknown;
-  docTree: unknown;
-  versions: { data: number; sheetTree: number; docTree: number };
+  versions: { data: number; sheetTree: number };
 }
 
 /**
- * Which of the three independent version regions the ack/conflict
+ * Which of the independent version regions the ack/conflict
  * refers to (ADR 0008 v2.0 §3). The server stamps it so the bridge
- * advances exactly one baseVersion counter instead of all three —
+ * advances exactly one baseVersion counter instead of both —
  * see useProjectSyncBridge. Optional on the wire only to stay
  * forward/backward compatible during a frontend-before-backend
  * rollout; once both are deployed it is always present.
  */
-export type RegionScope = 'data' | 'sheetTree' | 'docTree';
+export type RegionScope = 'data' | 'sheetTree';
 
 export interface OpAckedPayload {
   type: 'op.acked';

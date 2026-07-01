@@ -74,8 +74,6 @@ import {
 } from '@/lib/tree';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { CellCommentPanel } from '@/components/comments/CellCommentPanel';
-import { DocCommentPanel } from '@/components/comments/DocCommentPanel';
-import { ServerDocView } from '@/components/docs/ServerDocView';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
 import SheetTable from '@/components/sheet/SheetTable';
 import KanbanView from '@/components/views/KanbanView';
@@ -112,18 +110,6 @@ function cellLabelFor(sel: CommentSelection, sheets: Sheet[]): string {
   const column = sheet.columns.find((c) => c.id === sel.columnId);
   const colName = column?.name ?? sel.columnId.slice(0, 8);
   return `${sheet.name} · Row ${rowIdx + 1} · ${colName}`;
-}
-
-/** DFS the tree for a node id, return its name (or null). */
-function findNodeName(tree: TreeNode[], nodeId: string): string | null {
-  for (const node of tree) {
-    if (node.id === nodeId) return node.name;
-    if (node.children && node.children.length > 0) {
-      const found = findNodeName(node.children, nodeId);
-      if (found !== null) return found;
-    }
-  }
-  return null;
 }
 
 // Tree mutators live in /lib/tree — same helpers used by the wss
@@ -338,18 +324,15 @@ export default function WorkspaceShell({
   );
   const sheets = localProject?.sheets ?? [];
   const sheetTree = localProject?.sheetTree ?? [];
-  const docTree = localProject?.docTree ?? [];
 
-  // Selection is polymorphic — at most one of {sheet leaf, doc leaf}
-  // is active. Keep a discriminated union so the main panel knows
-  // whether to render the SheetTable or the doc editor placeholder.
+  // Selection tracks the active sheet leaf.
   //
   // Default selection (first sheet) is computed *during render* from
   // the live sheets array — no effect-driven setState. Invalidation
   // is handled by the same derive: if the explicit selection points
-  // at an id that no longer exists (peer deleted the sheet, doc
-  // moved out of view, etc.) we fall through to the first sheet.
-  type Selection = { kind: 'sheet' | 'doc'; id: string } | null;
+  // at an id that no longer exists (peer deleted the sheet, etc.) we
+  // fall through to the first sheet.
+  type Selection = { kind: 'sheet'; id: string } | null;
   const [explicitSelection, setExplicitSelection] = useState<Selection>(null);
   // Selection must respect *openTabs* — closing the active tab clears
   // the body even though the underlying sheet still exists in the
@@ -361,9 +344,7 @@ export default function WorkspaceShell({
   const explicitStillValid =
     explicitSelection &&
     isInOpenTabs(explicitSelection) &&
-    (explicitSelection.kind === 'sheet'
-      ? sheets.some((s) => s.id === explicitSelection.id)
-      : findNodeName(docTree, explicitSelection.id) !== null);
+    sheets.some((s) => s.id === explicitSelection.id);
   // Fallback selection — first *open* tab, not first sheet. With no
   // tabs open we leave selection null so the main panel shows an
   // empty-state prompt rather than a stale sheet.
@@ -371,9 +352,6 @@ export default function WorkspaceShell({
     for (const t of openTabs) {
       if (t.kind === 'sheet' && sheets.some((s) => s.id === t.id)) {
         return { kind: 'sheet' as const, id: t.id };
-      }
-      if (t.kind === 'doc' && findNodeName(docTree, t.id) !== null) {
-        return { kind: 'doc' as const, id: t.id };
       }
     }
     return null;
@@ -394,26 +372,19 @@ export default function WorkspaceShell({
   // state above ignored every sidebar click and the sheet area kept
   // showing whichever sheet was the default.
   const storeCurrentSheetId = useProjectStore((s) => s.currentSheetId);
-  const storeCurrentDocId = useProjectStore((s) => s.currentDocId);
   const setCurrentSheet = useProjectStore((s) => s.setCurrentSheet);
-  const setCurrentDoc = useProjectStore((s) => s.setCurrentDoc);
   useEffect(() => {
     if (storeCurrentSheetId) {
       if (selection?.kind === 'sheet' && selection.id === storeCurrentSheetId) return;
       if (sheets.some((s) => s.id === storeCurrentSheetId)) {
         setSelection({ kind: 'sheet', id: storeCurrentSheetId });
       }
-    } else if (storeCurrentDocId) {
-      if (selection?.kind === 'doc' && selection.id === storeCurrentDocId) return;
-      if (findNodeName(docTree, storeCurrentDocId) !== null) {
-        setSelection({ kind: 'doc', id: storeCurrentDocId });
-      }
     }
-    // selection / sheets / docTree intentionally omitted — re-running on
+    // selection / sheets intentionally omitted — re-running on
     // every sheets array reference change would fight the user's manual
     // selection. Only react to the store id changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeCurrentSheetId, storeCurrentDocId]);
+  }, [storeCurrentSheetId]);
 
   // Auto-derived first-sheet selection needs to flow back into the
   // store so SheetTabs (browser-tab pattern, reads openTabs) shows
@@ -444,12 +415,11 @@ export default function WorkspaceShell({
     if (!projectId) return;
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<{
-        kind: 'cell' | 'doc';
+        kind: 'cell';
         projectId: string;
         sheetId?: string;
         rowId?: string;
         columnId?: string;
-        documentId?: string;
       }>).detail;
       if (!detail || detail.projectId !== projectId) return;
       if (detail.kind === 'cell' && detail.sheetId && detail.rowId) {
@@ -466,28 +436,16 @@ export default function WorkspaceShell({
             }),
           );
         }, 80);
-      } else if (detail.kind === 'doc' && detail.documentId) {
-        setCurrentDoc(detail.documentId);
       }
     };
     window.addEventListener('balruno:comment-jump', handler);
     return () => window.removeEventListener('balruno:comment-jump', handler);
-  }, [projectId, storeCurrentSheetId, setCurrentSheet, setCurrentDoc]);
+  }, [projectId, storeCurrentSheetId, setCurrentSheet]);
 
-  const selectedDocId = selection?.kind === 'doc' ? selection.id : null;
-  // Selected doc's title from the tree leaf — falls back to a
-  // generic label while the broadcast for a freshly-added doc races
-  // the user's leaf-click. ServerDocView only needs this for its
-  // header; the body lives entirely in the Y.Doc.
-  const selectedDocTitle = selectedDocId ? findNodeName(docTree, selectedDocId) ?? '제목 없음' : '';
-
-  // Tree handlers are identical between sheet_tree and doc_tree
-  // regions — only the treeKind on the emit and the Project field
-  // they mutate differ. Build them via a factory so the doc handlers
-  // stay in lockstep with the sheet handlers automatically. Direct
-  // setState on the store (Y.Doc bypass) + writeQueue.emitOp so peers
-  // pick up the change via the matching broadcast. ADR 0018 paired
-  // pattern.
+  // Tree handlers for the sheet_tree region — treeKind on the emit
+  // and the Project field they mutate. Direct setState on the store
+  // + writeQueue.emitOp so peers pick up the change via the matching
+  // broadcast. ADR 0018 paired pattern.
   // Push a tree.* undo entry into the per-project stack. Bound at
   // makeTreeHandlers time so each handler can call `pushTreeUndo`
   // with just (label, forward, inverse). Anonymous / pre-auth users
@@ -517,9 +475,8 @@ export default function WorkspaceShell({
     };
   };
 
-  const makeTreeHandlers = (treeKind: 'SHEET' | 'DOC') => {
-    const treeField: 'sheetTree' | 'docTree' =
-      treeKind === 'SHEET' ? 'sheetTree' : 'docTree';
+  const makeTreeHandlers = (treeKind: 'SHEET') => {
+    const treeField = 'sheetTree' as const;
     const setTree = (mutator: (tree: TreeNode[]) => TreeNode[]) => {
       if (!project) return;
       useProjectStore.setState((state) => ({
@@ -598,11 +555,10 @@ export default function WorkspaceShell({
       addLeaf: () => {
         if (!project) return;
         const leafId = newId();
-        const leafType: 'sheet' | 'doc' = treeKind === 'SHEET' ? 'sheet' : 'doc';
         const newLeaf: TreeNode = {
           id: leafId,
-          type: leafType,
-          name: leafType === 'sheet' ? '새 시트' : '새 문서',
+          type: 'sheet',
+          name: '새 시트',
         };
         const position = (localProject?.[treeField]?.length ?? 0);
         setTree((tree) => [...tree, newLeaf]);
@@ -618,7 +574,7 @@ export default function WorkspaceShell({
           position,
           node: newLeaf,
         }, addLeafMeta);
-        setSelection({ kind: leafType, id: leafId });
+        setSelection({ kind: 'sheet', id: leafId });
       },
       // addAt is the parameterised counterpart used by the sidebar
       // CustomEvent bridge. addLeaf / addFolder above stay 0-arg
@@ -633,8 +589,8 @@ export default function WorkspaceShell({
           [{ type: 'tree.delete', treeKind, nodeId: node.id, baseVersion: 0, clientMsgId: '' }],
         );
         emitOp({ kind: 'tree.add', treeKind, parentId, position, node }, addMeta);
-        if (node.type === 'sheet' || node.type === 'doc') {
-          setSelection({ kind: node.type, id: node.id });
+        if (node.type === 'sheet') {
+          setSelection({ kind: 'sheet', id: node.id });
         }
       },
       deleteNode: (nodeId: string) => {
@@ -699,55 +655,50 @@ export default function WorkspaceShell({
   };
 
   const sheetTreeOps = makeTreeHandlers('SHEET');
-  const docTreeOps = makeTreeHandlers('DOC');
 
   // Bridge for legacy store mutations re-wired in treeMutationSlice.
-  // Sidebar mutations dispatch CustomEvents we forward to the matching
-  // sheetTreeOps / docTreeOps so a single tree.* op is emitted and
-  // broadcast through the sync bridge. Same pattern works for add /
-  // delete / rename / move — store actions stay free of React/hook
-  // context, the shell owns the actual op emit.
+  // Sidebar mutations dispatch CustomEvents we forward to sheetTreeOps
+  // so a single tree.* op is emitted and broadcast through the sync
+  // bridge. Same pattern works for add / delete / rename / move —
+  // store actions stay free of React/hook context, the shell owns the
+  // actual op emit.
   useEffect(() => {
     const onMove = (raw: Event) => {
       const d = (raw as CustomEvent<{
-        kind: 'SHEET' | 'DOC';
+        kind: 'SHEET';
         nodeId: string;
         newParentId: string | null;
         newPosition: number;
       }>).detail;
       if (!d) return;
-      const ops = d.kind === 'DOC' ? docTreeOps : sheetTreeOps;
-      ops.move(d.nodeId, d.newParentId, d.newPosition);
+      sheetTreeOps.move(d.nodeId, d.newParentId, d.newPosition);
     };
     const onAdd = (raw: Event) => {
       const d = (raw as CustomEvent<{
-        kind: 'SHEET' | 'DOC';
+        kind: 'SHEET';
         parentId: string | null;
         position: number;
         node: unknown;
       }>).detail;
       if (!d) return;
-      const ops = d.kind === 'DOC' ? docTreeOps : sheetTreeOps;
       // The op layer treats `node` as opaque; sidebar emits the
       // shape (sheet leaf / group) the wire op expects.
-      ops.addAt(d.parentId, d.position, d.node as TreeNode);
+      sheetTreeOps.addAt(d.parentId, d.position, d.node as TreeNode);
     };
     const onDelete = (raw: Event) => {
-      const d = (raw as CustomEvent<{ kind: 'SHEET' | 'DOC'; nodeId: string }>).detail;
+      const d = (raw as CustomEvent<{ kind: 'SHEET'; nodeId: string }>).detail;
       if (!d) return;
-      const ops = d.kind === 'DOC' ? docTreeOps : sheetTreeOps;
-      ops.deleteNode(d.nodeId);
+      sheetTreeOps.deleteNode(d.nodeId);
     };
     const onRename = (raw: Event) => {
       const d = (raw as CustomEvent<{
-        kind: 'SHEET' | 'DOC';
+        kind: 'SHEET';
         nodeId: string;
         newName?: string;
         newIcon?: string;
       }>).detail;
       if (!d) return;
-      const ops = d.kind === 'DOC' ? docTreeOps : sheetTreeOps;
-      ops.rename(d.nodeId, d.newName, d.newIcon);
+      sheetTreeOps.rename(d.nodeId, d.newName, d.newIcon);
     };
     window.addEventListener('balruno:tree-move', onMove);
     window.addEventListener('balruno:tree-add', onAdd);
@@ -759,7 +710,7 @@ export default function WorkspaceShell({
       window.removeEventListener('balruno:tree-delete', onDelete);
       window.removeEventListener('balruno:tree-rename', onRename);
     };
-  }, [sheetTreeOps, docTreeOps]);
+  }, [sheetTreeOps]);
 
   // Stage F — "Add from template" modal state. Backend mutates +
   // broadcasts sync.full so we don't predict / mutate the local
@@ -772,19 +723,6 @@ export default function WorkspaceShell({
   const commentPanelOpen = useCommentSelectionStore((s) => s.panelOpen);
   const setCommentPanelOpen = useCommentSelectionStore((s) => s.setPanelOpen);
   const commentSelection = useCommentSelectionStore((s) => s.selection);
-  const setCommentSelection = useCommentSelectionStore((s) => s.setSelection);
-
-  // Mirror the active doc into commentSelection so DocCommentPanel
-  // can render comments scoped to the current document. SheetTable's
-  // own effect handles the sheet-cell case; this effect covers
-  // doc-body. When neither a sheet-cell nor a doc is active the
-  // selection is left as-is (sheet selection persists across a brief
-  // tree click flicker that way).
-  useEffect(() => {
-    if (selection?.kind === 'doc' && selection.id) {
-      setCommentSelection({ kind: 'doc-body', documentId: selection.id });
-    }
-  }, [selection, setCommentSelection]);
 
   // Mobile sidebar drawer state — desktop (md+) ignores this and
   // renders the sidebar inline. ADR 0022 stage A.
@@ -984,13 +922,6 @@ export default function WorkspaceShell({
                   )}
                 </div>
               </div>
-            ) : selection?.kind === 'doc' && selectedDocId ? (
-              <ServerDocView
-                documentId={selectedDocId}
-                projectId={project.id}
-                title={selectedDocTitle}
-                onTitleChange={(next) => docTreeOps.rename(selectedDocId, next)}
-              />
             ) : (
               <div className="flex-1 flex items-center justify-center p-8">
                 <EmptyState
@@ -1015,19 +946,8 @@ export default function WorkspaceShell({
               onClose={() => setCommentPanelOpen(false)}
             />
           )}
-          {commentPanelOpen && commentSelection?.kind === 'doc-body' && (
-            <DocCommentPanel
-              projectId={project.id}
-              documentId={commentSelection.documentId}
-              docTitle={selectedDocTitle || '문서'}
-              anchorPosition={commentSelection.anchorPosition}
-              anchorLength={commentSelection.anchorLength}
-              onClose={() => setCommentPanelOpen(false)}
-            />
-          )}
           {commentPanelOpen
-            && commentSelection?.kind !== 'sheet-cell'
-            && commentSelection?.kind !== 'doc-body' && (
+            && commentSelection?.kind !== 'sheet-cell' && (
             <aside
               className="md:w-[320px] md:flex-shrink-0 md:h-full md:overflow-y-auto border-l p-4 text-sm"
               style={{

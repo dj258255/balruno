@@ -154,8 +154,6 @@
     "project": "Game",
     "panelTools": "Panel Tools",
     "dropHere": "Drag from bottom to add",
-    "resizeAriaLabel": "Resize game / docs section",
-    "resizeTitle": "Drag to resize docs section · Right-click to reset to default",
     "startFromTemplate": "Start from template gallery",
     "templateGallery": "Template gallery",
     "templateGalleryTooltip": "Quick start with templates · Right-click: quick samples",
@@ -222,8 +220,6 @@
     "noSheets": "No sheets",
     "clickToRename": "Click to rename",
     "doubleClickToRename": "Double-click to rename",
-    "deleteDoc": "Delete document",
-    "deleteDocConfirm": "Delete document \"{name}\"? Recoverable within 30 days.",
     "createSheet": "Create New Sheet",
     "createSheetDesc": "Create a new sheet to manage your data",
     "noTabsOpenTitle": "No open tabs",
@@ -531,10 +527,6 @@
     "areYouSure": "Are you sure?",
     "confirmDelete": "Are you sure you want to delete?",
     "remove": "Remove"
-  },
-  "docContext": {
-    "showHistory": "Show change history",
-    "selectFirst": "Select text first"
   },
   "contextMenu": {
     "openRecordDetail": "Open record detail",
@@ -4906,24 +4898,6 @@
     "moreSuffix": "+ {n} more",
     "noPlaytest": "No playtest sheet"
   },
-  "sidebarDocs": {
-    "newDocName": "New doc",
-    "deleteDocConfirm": "Delete \"{name}\" doc?",
-    "docsLabel": "Docs",
-    "newDocBtn": "New doc",
-    "startWithTemplate": "Start with template",
-    "gddGenre": "GDD genre",
-    "system": "System",
-    "docsHint": "Place GDDs · design notes · release notes here.",
-    "untitled": "(Untitled)",
-    "deleteDocAria": "Delete doc",
-    "renamePrompt": "Doc name",
-    "renameBtn": "Rename",
-    "docFallbackName": "Doc",
-    "copyNameSuffix": "({name}) (copy)",
-    "duplicateBtn": "Duplicate",
-    "deleteBtn": "Delete"
-  },
   "deadZone": {
     "hpFull": "HP (Health)",
     "atkFull": "ATK (Attack)",
@@ -5018,20 +4992,6 @@
     "cleaning": "Cleaning...",
     "cleanCount": "Clean up {count}",
     "cleanedToast": "Cleaned up {count} game(s)"
-  },
-  "docView": {
-    "deleteConfirm": "Delete \"{name}\" doc? This cannot be undone.",
-    "docsTitle": "Docs",
-    "subtitle": "/ slash commands · @ references",
-    "mdExport": "Markdown export",
-    "pdfExport": "Print to PDF",
-    "syntaxHelp": "Syntax help",
-    "deleteDoc": "Delete doc",
-    "docTitlePlaceholder": "Doc title",
-    "updatedAt": "Updated: {date}",
-    "backlinksCount": "Referenced by {n} docs",
-    "editorUsage": "Editor usage",
-    "referenceDoc": "Reference this doc"
   },
   "aiCopilot": {
     "title": "AI Copilot",
@@ -5810,16 +5770,6 @@
     "editorAriaLabel": "Comment",
     "noMembers": "No members",
     "memberMentionAriaLabel": "Mention member"
-  },
-  "docBody": {
-    "placeholder": "Write something.",
-    "loading": "Loading document...",
-    "addCommentToSelection": "Add a comment on the selection",
-    "selectTextFirst": "Select text first",
-    "addComment": "Comment on selection",
-    "history": "History",
-    "historyTooltip": "Page change history",
-    "titleEditTooltip": "Click to edit the title"
   },
   "branches": {
     "mainBranch": "main",

@@ -38,7 +38,7 @@ describe('writeQueue', () => {
       calls.push(op);
       return true;
     });
-    setVersions({ data: 7, sheetTree: 11, docTree: 13 });
+    setVersions({ data: 7, sheetTree: 11 });
 
     emitOp({ kind: 'cell.update', sheetId: 's1', rowId: 'r1', columnId: 'c1', value: 42 });
 
@@ -52,7 +52,7 @@ describe('writeQueue', () => {
       calls.push(op);
       return true;
     });
-    setVersions({ data: 7, sheetTree: 11, docTree: 13 });
+    setVersions({ data: 7, sheetTree: 11 });
 
     emitOp({
       kind: 'tree.add',
@@ -65,21 +65,21 @@ describe('writeQueue', () => {
     expect(calls[0]).toMatchObject({ type: 'tree.add', treeKind: 'SHEET', baseVersion: 11 });
   });
 
-  it('routes tree.delete(DOC) through docTree baseVersion', () => {
+  it('routes tree.delete(SHEET) through sheetTree baseVersion', () => {
     const calls: ClientOp[] = [];
     setSyncSender((op) => {
       calls.push(op);
       return true;
     });
-    setVersions({ data: 7, sheetTree: 11, docTree: 13 });
+    setVersions({ data: 7, sheetTree: 11 });
 
-    emitOp({ kind: 'tree.delete', treeKind: 'DOC', nodeId: 'n1' });
+    emitOp({ kind: 'tree.delete', treeKind: 'SHEET', nodeId: 'n1' });
 
-    expect(calls[0]).toMatchObject({ type: 'tree.delete', treeKind: 'DOC', baseVersion: 13 });
+    expect(calls[0]).toMatchObject({ type: 'tree.delete', treeKind: 'SHEET', baseVersion: 11 });
   });
 
   it('bumpVersion is monotonic — out-of-order acks do not regress version', () => {
-    setVersions({ data: 5, sheetTree: 0, docTree: 0 });
+    setVersions({ data: 5, sheetTree: 0 });
 
     bumpVersion('data', 8); // broadcast arrives first
     bumpVersion('data', 6); // late ack — should not regress
@@ -89,7 +89,7 @@ describe('writeQueue', () => {
 
   it('clearing the sender (setSyncSender(null)) reverts emitOp to false', () => {
     setSyncSender(() => true);
-    setVersions({ data: 1, sheetTree: 0, docTree: 0 });
+    setVersions({ data: 1, sheetTree: 0 });
     expect(
       emitOp({ kind: 'cell.update', sheetId: 's1', rowId: 'r1', columnId: 'c1', value: 'x' }),
     ).toBe(true);

@@ -95,10 +95,8 @@ public interface UserAccountRepository
                           p.description         AS description,
                           p.data::text          AS data,
                           p.sheet_tree::text    AS sheetTree,
-                          p.doc_tree::text      AS docTree,
                           p.data_version        AS dataVersion,
                           p.sheet_tree_version  AS sheetTreeVersion,
-                          p.doc_tree_version    AS docTreeVersion,
                           p.created_at          AS createdAt,
                           p.updated_at          AS updatedAt
                      FROM projects p
@@ -116,10 +114,8 @@ public interface UserAccountRepository
         String getDescription();
         String getData();
         String getSheetTree();
-        String getDocTree();
         long getDataVersion();
         long getSheetTreeVersion();
-        long getDocTreeVersion();
         OffsetDateTime getCreatedAt();
         OffsetDateTime getUpdatedAt();
     }

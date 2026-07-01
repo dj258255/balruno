@@ -136,8 +136,8 @@ class UndoServiceIntegrationTest {
         jdbc.update(
                 "INSERT INTO projects ("
               + "  id, workspace_id, slug, name, description, created_by, "
-              + "  data, sheet_tree, doc_tree"
-              + ") VALUES (?, ?, ?, ?, ?, ?, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)",
+              + "  data, sheet_tree"
+              + ") VALUES (?, ?, ?, ?, ?, ?, '[]'::jsonb, '[]'::jsonb)",
                 projectId, workspaceId, "ut-proj", "Undo Test Project", null, userId);
         return new SeedContext(projectId, userId, workspaceId);
     }

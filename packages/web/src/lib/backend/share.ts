@@ -54,8 +54,7 @@ export interface PublicReadResponse {
     name: string;
     data: unknown;
     sheetTree: unknown;
-    docTree: unknown;
-    versions: { data: number; sheetTree: number; docTree: number };
+    versions: { data: number; sheetTree: number };
   };
 }
 

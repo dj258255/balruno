@@ -25,7 +25,6 @@ import java.util.UUID;
  * Project-wide search (ADR 0031). Returns hits across:
  *   * sheets — cell values + column names
  *   * sheet tree — node names (sheet group / sheet labels)
- *   * doc tree — node names
  *   * comments — body text
  *
  * Implementation: pg_trgm-indexed substring scan on each region's
@@ -77,7 +76,6 @@ class SearchController {
         try {
             walkSheets(json.readTree(blobs.getDataText()), lower, hits);
             walkTree(json.readTree(blobs.getStText()), "sheet-tree", lower, hits);
-            walkTree(json.readTree(blobs.getDtText()), "doc-tree", lower, hits);
         } catch (Exception ignored) {
             // Malformed JSON — return whatever hits we already accumulated.
         }
@@ -94,7 +92,6 @@ class SearchController {
             hit.put("scopeKind", c.getScopeKind());
             hit.put("sheetId", c.getSheetId() != null ? c.getSheetId().toString() : null);
             hit.put("rowId", c.getRowId() != null ? c.getRowId().toString() : null);
-            hit.put("documentId", c.getDocumentId() != null ? c.getDocumentId().toString() : null);
             hits.add(hit);
         }
 

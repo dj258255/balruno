@@ -19,7 +19,6 @@ const STATUS_COLOR: Record<ChannelStatus, string> = {
 export function ConnectionStatus({ compact = false }: ConnectionStatusProps) {
   const t = useTranslations('connection');
   const sheet = useConnectionStore((s) => s.sheet);
-  const doc = useConnectionStore((s) => s.doc);
 
   const status: ChannelStatus = useConnectionStore((s) => s.aggregate());
 
@@ -32,7 +31,7 @@ export function ConnectionStatus({ compact = false }: ConnectionStatusProps) {
   return (
     <span
       className="inline-flex items-center gap-1.5 text-xs"
-      title={tooltipFor(t, sheet, doc, backendConfigured)}
+      title={tooltipFor(t, sheet, backendConfigured)}
     >
       <Icon className={`w-3.5 h-3.5 ${effective === 'connecting' ? 'animate-spin' : ''}`} style={{ color: STATUS_COLOR[effective] }} />
       {!compact && <span style={{ color: 'var(--text-secondary)' }}>{label}</span>}
@@ -68,9 +67,8 @@ function labelFor(t: ReturnType<typeof useTranslations<'connection'>>, status: C
 function tooltipFor(
   t: ReturnType<typeof useTranslations<'connection'>>,
   sheet: { id: string | null; status: ChannelStatus },
-  doc: { id: string | null; status: ChannelStatus },
   backendConfigured: boolean,
 ): string {
   if (!backendConfigured) return t('localOnlyHint');
-  return `${t('sheet')}: ${sheet.status} · ${t('doc')}: ${doc.status}`;
+  return `${t('sheet')}: ${sheet.status}`;
 }

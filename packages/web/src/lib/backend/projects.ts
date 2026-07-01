@@ -88,17 +88,3 @@ export function duplicateSheet(projectId: string, sheetId: string): Promise<{ ne
     { method: 'POST' },
   );
 }
-
-/**
- * Server-side doc duplicate. Backend deep-clones the source doc's
- * ydoc_state into a fresh row, grafts a new doc_tree leaf next to
- * the source, and broadcasts sync.full so peers see the clone. The
- * snapshot reflects the last-stored ydoc_state — Hocuspocus throttles
- * onStoreDocument so very recent in-memory edits may lag.
- */
-export function duplicateDoc(projectId: string, docId: string): Promise<{ newDocId: string }> {
-  return request<{ newDocId: string }>(
-    `/api/v1/projects/${projectId}/docs/${docId}/duplicate`,
-    { method: 'POST' },
-  );
-}

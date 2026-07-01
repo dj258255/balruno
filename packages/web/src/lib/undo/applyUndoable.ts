@@ -5,7 +5,7 @@
  * to suppress the *next* undo push (we don't want undo to push its
  * own undo onto the stack — Cmd+Z+Cmd+Z would chase its tail).
  *
- * Each op type maps to the matching cellSlice / docSlice / page
+ * Each op type maps to the matching cellSlice / page
  * handler. Doing this through the store actions instead of raw
  * writeQueue.send lets the rest of the pipeline (link cascade,
  * presence cleanup, etc.) keep working unmodified.
@@ -137,8 +137,8 @@ function applySingle(op: UndoableOp): void {
   }
 }
 
-function treeFieldFor(treeKind: 'SHEET' | 'DOC'): 'sheetTree' | 'docTree' {
-  return treeKind === 'SHEET' ? 'sheetTree' : 'docTree';
+function treeFieldFor(_treeKind: 'SHEET'): 'sheetTree' {
+  return 'sheetTree';
 }
 
 function applyTreeOp(projectId: string, op: UndoableOp): void {

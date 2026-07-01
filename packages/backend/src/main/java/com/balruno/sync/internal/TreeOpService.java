@@ -19,27 +19,18 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Tree region op log writer — sheet_tree / doc_tree (ADR 0008 v2.0
- * §3.4 / §3.5). Same transaction shape as {@link SheetCellOpService}
- * (idempotency / FOR UPDATE / version check / mutate / op_idempotency)
- * with two tree-specific extras:
+ * Tree region op log writer — sheet_tree (ADR 0008 v2.0 §3.4). Same
+ * transaction shape as {@link SheetCellOpService} (idempotency / FOR
+ * UPDATE / version check / mutate / op_idempotency) with one tree-
+ * specific extra:
  *
  *   - {@code tree.move} runs an application-level ancestor walk so a
  *     node can't be moved underneath itself or any of its descendants
  *     (ADR 0008 §3.4 BFS cycle prevention).
- *   - {@code tree.delete} on the document tree cascade-soft-deletes the
- *     matching {@code documents} rows so the Hocuspocus container can't
- *     re-hydrate yjs state for an orphaned node. Soft delete (not hard)
- *     so the 30-day grace period (ADR 0015 §6 Q4) still applies; a
- *     separate cron does the hard delete after retention. {@code id IN
- *     (...)} is the matched key — doc_tree node id and documents.id are
- *     both UUIDs and are intentionally the same value for a given doc.
  *
- * Two regions ride this service via {@link SyncMessage.TreeKind}:
+ * One region rides this service via {@link SyncMessage.TreeKind}:
  *   - SHEET → projects.sheet_tree / projects.sheet_tree_version
  *     (idempotency scope SHEET_TREE)
- *   - DOC   → projects.doc_tree   / projects.doc_tree_version
- *     (idempotency scope DOC_TREE)
  *
  * Tree node shape (ADR 0011 — Outline JSONB tree pattern):
  *   {@code [{ id, name, type?, ...region-specific..., children: [...] }]}
@@ -66,25 +57,19 @@ class TreeOpService {
 
     private final ProjectSyncRepository projectsRepo;
     private final OpIdempotencyRepository idempotency;
-    private final DocumentRepository documents;
     private final ObjectMapper json;
     private final com.fasterxml.jackson.databind.ObjectMapper nodeMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
-    private final com.balruno.events.AfterCommitPublisher afterCommit;
     private final com.balruno.workspace.LimitGuard limitGuard;
 
     TreeOpService(ProjectSyncRepository projectsRepo,
                   OpIdempotencyRepository idempotency,
-                  DocumentRepository documents,
                   ObjectMapper json,
-                  com.balruno.events.AfterCommitPublisher afterCommit,
                   com.balruno.workspace.LimitGuard limitGuard) {
         this.projectsRepo = projectsRepo;
         this.idempotency = idempotency;
-        this.documents = documents;
         this.json = json;
-        this.afterCommit = afterCommit;
         this.limitGuard = limitGuard;
     }
 
@@ -99,12 +84,6 @@ class TreeOpService {
         // appends an empty Sheet shell to projects.data. We need this
         // upfront so the FOR UPDATE locks both columns in one shot.
         var sheetLeaf = detectSheetLeafCreation(op, treeKind);
-        // Mirror for the doc tree — tree.add(DOC, type=doc) needs a
-        // matching documents row INSERT in the same transaction so the
-        // collab token issuer (CollabAccessRepository) can find the doc
-        // and Hocuspocus has a row to load yjs state from. Only the
-        // documents table is touched here, not projects.data.
-        var docLeaf = detectDocLeafCreation(op, treeKind);
 
         // 1. idempotency replay shortcut.
         var cached = idempotency.findById(clientMsgId).orElse(null);
@@ -112,8 +91,8 @@ class TreeOpService {
             return new SyncResult.Cached(cached.getResultVersion(), cached.getResultPayload());
         }
 
-        // 2. lock + read. Each region (sheet_tree / doc_tree) has its
-        //    own repository method so column names are static SQL. The
+        // 2. lock + read. The sheet_tree region has its own repository
+        //    method so column names are static SQL. The
         //    data column is pulled only on sheet-leaf creation — keeps
         //    the row size for the 99% folder-add / move / delete /
         //    rename path the same as before.
@@ -128,10 +107,8 @@ class TreeOpService {
                     .orElseThrow(() -> new IllegalStateException(
                             "project not found: " + projectId));
         } else {
-            var read = treeKind == SyncMessage.TreeKind.SHEET
-                    ? projectsRepo.lockSheetTreeForUpdate(projectId)
-                    : projectsRepo.lockDocTreeForUpdate(projectId);
-            row = read.map(r -> new ProjectRow(
+            row = projectsRepo.lockSheetTreeForUpdate(projectId)
+                    .map(r -> new ProjectRow(
                             r.getTreeJson(), r.getTreeVersion(), null, 0L))
                     .orElseThrow(() -> new IllegalStateException(
                             "project not found: " + projectId));
@@ -142,24 +119,21 @@ class TreeOpService {
             return new SyncResult.Conflict(row.treeVersion);
         }
 
-        // 4. apply to the JSON tree. tree.delete returns the BFS-collected
-        //    ids of the detached subtree so DOC kind can cascade them onto
-        //    documents below; other ops return an empty set.
+        // 4. apply to the JSON tree.
         ArrayNode roots;
-        Set<UUID> deletedNodeIds;
         try {
             JsonNode parsed = nodeMapper.readTree(row.treeJson);
             roots = parsed.isArray() ? (ArrayNode) parsed : nodeMapper.createArrayNode();
             // Per-plan cap before mutating — tree.add of a sheet leaf
-            // hits maxSheetsPerProject, doc leaf hits maxDocumentsPerProject.
-            // Reads the plan via a project→workspace JDBC join inside
-            // the same transaction. WorkspaceLimits.forPlan(...) lookup is
-            // local; only the workspace_id+plan SELECT is on the wire.
-            // Folder leaves are uncapped.
+            // hits maxSheetsPerProject. Reads the plan via a
+            // project→workspace JDBC join inside the same transaction.
+            // WorkspaceLimits.forPlan(...) lookup is local; only the
+            // workspace_id+plan SELECT is on the wire. Folder leaves
+            // are uncapped.
             if (op instanceof SyncMessage.TreeAdd add) {
                 requireTreeAddBelowPlanLimit(projectId, treeKind, roots, add);
             }
-            deletedNodeIds = applyToTree(roots, op);
+            applyToTree(roots, op);
         } catch (Exception e) {
             throw new IllegalStateException("failed to apply op to projects."
                   + columns.treeColumn, e);
@@ -190,27 +164,8 @@ class TreeOpService {
             projectsRepo.updateSheetTreeWithData(
                     projectId, roots.toString(), newVersion,
                     sheets.toString(), newDataVersion);
-        } else if (treeKind == SyncMessage.TreeKind.SHEET) {
-            projectsRepo.updateSheetTree(projectId, roots.toString(), newVersion);
         } else {
-            projectsRepo.updateDocTree(projectId, roots.toString(), newVersion);
-        }
-
-        // 4.6 cascade soft-delete on documents — DOC tree.delete only.
-        // Same transaction as the JSONB tree mutation so the doc body
-        // and the doc_tree node disappear atomically.
-        if (treeKind == SyncMessage.TreeKind.DOC && !deletedNodeIds.isEmpty()) {
-            cascadeDocumentSoftDelete(deletedNodeIds);
-        }
-
-        // 4.7 paired documents row INSERT — DOC tree.add(type=doc) only.
-        // Same transaction so peers + the collab token issuer can never
-        // observe a doc_tree leaf without a matching documents row. Empty
-        // ydoc_state is the 2-byte yjs no-op (Y.encodeStateAsUpdate of a
-        // fresh Y.Doc); Hocuspocus loads it on first connect and the
-        // first real edit overwrites via onStoreDocument.
-        if (docLeaf != null) {
-            insertDocumentShell(projectId, docLeaf);
+            projectsRepo.updateSheetTree(projectId, roots.toString(), newVersion);
         }
 
         // 5. broadcast payload + idempotency cache.
@@ -236,74 +191,7 @@ class TreeOpService {
             return new SyncResult.Cached(winning.getResultVersion(), winning.getResultPayload());
         }
 
-        // Doc tree changes (create / rename / move / delete) get
-        // published into the workspace audit log so the share-dock
-        // ChangeHistoryPanel surfaces them next to project / member /
-        // comment events. Sheet tree changes stay out — they're
-        // micro-edits already captured by cell_history (ADR 0038
-        // Stage A); duplicating them in the workspace narrative
-        // would drown out the bigger sheet/project sense.
-        if (treeKind == SyncMessage.TreeKind.DOC) {
-            publishDocTreeAuditEvent(projectId, userId, op);
-        }
-
         return new SyncResult.Acked(newVersion, broadcast);
-    }
-
-    /**
-     * Maps the doc tree op to a workspace AuditLogEvent, hooked to
-     * afterCommit so a rolled-back tree.* never appears in the audit
-     * narrative. Mirrors the existing webhook publish in
-     * SheetCellOpService — same lifecycle, same Modulith-friendly
-     * leaf event package.
-     */
-    private void publishDocTreeAuditEvent(UUID projectId, UUID userId, SyncMessage op) {
-        // Resolve workspaceId off the project — separate read so we
-        // don't reach across modules. Cheap (PK lookup) and only
-        // runs on doc tree ops.
-        var workspaceId = projectsRepo.findWorkspaceId(projectId).orElse(null);
-        if (workspaceId == null) return;
-
-        String action;
-        UUID nodeId;
-        var payload = nodeMapper.createObjectNode();
-        payload.put("projectId", projectId.toString());
-        switch (op) {
-            case SyncMessage.TreeAdd add -> {
-                action = "doc.created";
-                nodeId = nodeIdOf(add.node());
-                payload.set("node", nodeMapper.valueToTree(add.node()));
-            }
-            case SyncMessage.TreeRename rn -> {
-                action = "doc.renamed";
-                nodeId = rn.nodeId();
-                if (rn.newName() != null) payload.put("newName", rn.newName());
-                if (rn.newIcon() != null) payload.put("newIcon", rn.newIcon());
-            }
-            case SyncMessage.TreeMove mv -> {
-                action = "doc.moved";
-                nodeId = mv.nodeId();
-                if (mv.newParentId() != null) payload.put("newParentId", mv.newParentId().toString());
-                payload.put("newPosition", mv.newPosition());
-            }
-            case SyncMessage.TreeDelete del -> {
-                action = "doc.deleted";
-                nodeId = del.nodeId();
-            }
-            default -> { return; }
-        }
-        afterCommit.publish(new com.balruno.events.AuditLogEvent(
-                workspaceId, userId, action, "doc", nodeId, payload));
-    }
-
-    private static UUID nodeIdOf(Object node) {
-        if (node instanceof java.util.Map<?, ?> m) {
-            var id = m.get("id");
-            if (id instanceof String s) {
-                try { return UUID.fromString(s); } catch (IllegalArgumentException ignored) { }
-            }
-        }
-        return null;
     }
 
     /**
@@ -368,72 +256,13 @@ class TreeOpService {
 
     private record SheetLeafSpec(UUID id, String name) {}
 
-    /**
-     * Mirror of {@link #detectSheetLeafCreation} for the doc tree —
-     * detects {@code tree.add(DOC, type=doc)}, which has the cross-
-     * region side-effect of inserting a row into the {@code documents}
-     * table (id-equal to the leaf id, see V7 schema). Returns the leaf
-     * spec when matched, {@code null} otherwise.
-     */
-    private DocLeafSpec detectDocLeafCreation(SyncMessage op, SyncMessage.TreeKind kind) {
-        if (kind != SyncMessage.TreeKind.DOC) return null;
-        if (!(op instanceof SyncMessage.TreeAdd add)) return null;
-        var node = nodeMapper.valueToTree(add.node());
-        if (!(node instanceof ObjectNode obj)) return null;
-        var typeField = obj.get("type");
-        if (typeField == null || !"doc".equals(typeField.asText())) return null;
-        var idField = obj.get("id");
-        if (idField == null || idField.isNull()) return null;
-        UUID docId;
-        try {
-            docId = UUID.fromString(idField.asText());
-        } catch (IllegalArgumentException e) {
-            return null; // validateTreeAddNodeBudget will reject before we get here
-        }
-        var nameField = obj.get("name");
-        var name = nameField == null || nameField.isNull()
-                ? "Document"
-                : nameField.asText();
-        return new DocLeafSpec(docId, name);
-    }
-
-    private record DocLeafSpec(UUID id, String name) {}
-
-    /**
-     * INSERT a fresh {@code documents} row in the same transaction as
-     * the doc_tree leaf addition. id = leaf id (frontend keys collab
-     * sessions and tree nodes off the same UUID, see ADR 0017). slug =
-     * id-as-string — slug is internal-only (the documents table has
-     * UNIQUE(project_id, slug) but no surface in the API uses it for
-     * routing), and reusing the id keeps the constraint trivially
-     * satisfied without a kebab-case generator on the hot path.
-     *
-     * ydoc_state is the empty yjs update — {@code [0x00, 0x00]} matches
-     * {@code Y.encodeStateAsUpdate(new Y.Doc())} on the JS side.
-     * Hocuspocus's database-extension reads it on first connect and
-     * applies it as a no-op, then the {@code onStoreDocument} hook
-     * overwrites with the real state on the first real edit.
-     */
-    private void insertDocumentShell(UUID projectId, DocLeafSpec spec) {
-        byte[] emptyYState = new byte[]{0x00, 0x00};
-        documents.save(new DocumentEntity(
-                spec.id(), projectId, spec.id().toString(), spec.name(), emptyYState));
-    }
-
     // ── op-tree mutation ──────────────────────────────────────────────
 
     /**
-     * Returns the BFS-collected ids of any deleted subtree (for {@code
-     * tree.delete}; an empty set for the other tree ops). The caller
-     * uses these to cascade-soft-delete {@code documents} rows when
-     * the affected tree is the doc tree.
-     */
-    /**
      * Per-plan cap for {@code tree.add} — sheet leaves count toward
-     * {@code maxSheetsPerProject}, doc leaves toward
-     * {@code maxDocumentsPerProject}. Folder nodes are uncapped (they
-     * don't carry sheet/doc rows). Reads the workspace plan via a
-     * single JDBC join inside the existing transaction.
+     * {@code maxSheetsPerProject}. Folder nodes are uncapped (they
+     * don't carry sheet rows). Reads the workspace plan via a single
+     * JDBC join inside the existing transaction.
      */
     private void requireTreeAddBelowPlanLimit(UUID projectId, SyncMessage.TreeKind kind,
                                               ArrayNode currentRoots, SyncMessage.TreeAdd op) {
@@ -448,9 +277,6 @@ class TreeOpService {
         if (kind == SyncMessage.TreeKind.SHEET && "sheet".equals(leafType)) {
             var current = countLeavesByType(currentRoots, "sheet");
             limitGuard.requireBelow(plan, "sheetsPerProject", current, limits.maxSheetsPerProject());
-        } else if (kind == SyncMessage.TreeKind.DOC && "doc".equals(leafType)) {
-            var current = countLeavesByType(currentRoots, "doc");
-            limitGuard.requireBelow(plan, "documentsPerProject", current, limits.maxDocumentsPerProject());
         }
     }
 
@@ -619,16 +445,6 @@ class TreeOpService {
                     "node lookup succeeded but detach missed: " + u.nodeId());
         }
         return ids;
-    }
-
-    /**
-     * Soft-delete every {@code documents} row whose id is in the
-     * supplied set. {@code AND deleted_at IS NULL} keeps the operation
-     * idempotent (re-applying the same tree.delete via the
-     * op_idempotency replay path doesn't bump deleted_at again).
-     */
-    private void cascadeDocumentSoftDelete(Set<UUID> documentIds) {
-        documents.cascadeSoftDelete(documentIds);
     }
 
     private void applyTreeRename(ArrayNode roots, SyncMessage.TreeRename u) {
@@ -903,7 +719,6 @@ class TreeOpService {
         static TreeColumns forKind(SyncMessage.TreeKind kind) {
             return switch (kind) {
                 case SHEET -> new TreeColumns("sheet_tree", "sheet_tree_version", OpScopeKind.SHEET_TREE);
-                case DOC   -> new TreeColumns("doc_tree",   "doc_tree_version",   OpScopeKind.DOC_TREE);
             };
         }
     }
