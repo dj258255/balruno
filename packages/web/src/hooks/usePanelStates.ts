@@ -55,6 +55,10 @@ export function usePanelStates(): {
   const [hordeSurvivor, setHordeSurvivor] = useState(false);
   const [aiPlaytest, setAiPlaytest] = useState(false);
   const [formulaVerifier, setFormulaVerifier] = useState(false);
+  const [balanceHeatmap, setBalanceHeatmap] = useState(false);
+  const [curveOverlay, setCurveOverlay] = useState(false);
+  const [probabilityTree, setProbabilityTree] = useState(false);
+  const [sheetDiff, setSheetDiff] = useState(false);
 
   const panels: Record<ToolId, PanelState> = useMemo(() => ({
     calculator: { show: calculator, setShow: setCalculator },
@@ -94,12 +98,17 @@ export function usePanelStates(): {
     hordeSurvivor: { show: hordeSurvivor, setShow: setHordeSurvivor },
     aiPlaytest: { show: aiPlaytest, setShow: setAiPlaytest },
     formulaVerifier: { show: formulaVerifier, setShow: setFormulaVerifier },
+    balanceHeatmap: { show: balanceHeatmap, setShow: setBalanceHeatmap },
+    curveOverlay: { show: curveOverlay, setShow: setCurveOverlay },
+    probabilityTree: { show: probabilityTree, setShow: setProbabilityTree },
+    sheetDiff: { show: sheetDiff, setShow: setSheetDiff },
   }), [
     calculator, comparison, chart, preset, imbalance, goal, balance,
     economy, dpsVariance, curveFitting, formulaHelper, balanceValidator,
     difficultyCurve, simulation, entityDefinition, autoBalancer, lootSimulator,
     powerCurveCompare, comments, interfaceDesigner, automations, sensitivity,
     changeHistory, fpsSimulation, fpsTeamSimulation, deckSimulation, frameData, aiBehavior, matchupMatrix, snapshotCompare, mobaLaning, rtsBuildOrder, mmoRaid, autoBattler, hordeSurvivor, aiPlaytest, formulaVerifier,
+    balanceHeatmap, curveOverlay, probabilityTree, sheetDiff,
   ]);
 
   const openByName = useCallback((name: string) => {

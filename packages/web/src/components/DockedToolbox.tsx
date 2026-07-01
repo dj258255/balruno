@@ -58,6 +58,10 @@ const AutomationsPanel = dynamic(() => import('@/components/panels/AutomationsPa
 const SensitivityAnalysisPanel = dynamic(() => import('@/components/panels/SensitivityAnalysisPanel'), { ssr: false });
 const ChangeHistoryPanel = dynamic(() => import('@/components/panels/ChangeHistoryPanel'), { ssr: false });
 const PresetComparisonModal = dynamic(() => import('@/components/modals/PresetComparisonModal'), { ssr: false });
+const BalanceHeatmapPanel = dynamic(() => import('@/components/panels/AnalysisViewPanels').then((m) => m.BalanceHeatmapPanel), { ssr: false });
+const CurveOverlayPanel = dynamic(() => import('@/components/panels/AnalysisViewPanels').then((m) => m.CurveOverlayPanel), { ssr: false });
+const ProbabilityTreePanel = dynamic(() => import('@/components/panels/AnalysisViewPanels').then((m) => m.ProbabilityTreePanel), { ssr: false });
+const SheetDiffPanel = dynamic(() => import('@/components/panels/AnalysisViewPanels').then((m) => m.SheetDiffPanel), { ssr: false });
 
 interface PanelState {
   show: boolean;
@@ -106,6 +110,10 @@ const TOOL_LABEL_KEYS: Record<ToolId, string> = {
   hordeSurvivor: 'sidebar.hordeSurvivor',
   aiPlaytest: 'sidebar.aiPlaytest',
   formulaVerifier: 'sidebar.formulaVerifier',
+  balanceHeatmap: 'sidebar.balanceHeatmap',
+  curveOverlay: 'sidebar.curveOverlay',
+  probabilityTree: 'sidebar.probabilityTree',
+  sheetDiff: 'sidebar.sheetDiff',
 };
 
 function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
@@ -185,6 +193,14 @@ function renderToolContent(toolId: ToolId, panels: Record<ToolId, PanelState>) {
       return <AiPlaytestPanel onClose={close} />;
     case 'formulaVerifier':
       return <FormulaVerifierPanel onClose={close} />;
+    case 'balanceHeatmap':
+      return <BalanceHeatmapPanel onClose={close} isPanel />;
+    case 'curveOverlay':
+      return <CurveOverlayPanel onClose={close} isPanel />;
+    case 'probabilityTree':
+      return <ProbabilityTreePanel onClose={close} isPanel />;
+    case 'sheetDiff':
+      return <SheetDiffPanel onClose={close} isPanel />;
   }
 }
 

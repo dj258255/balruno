@@ -212,7 +212,11 @@
     "tagFilterClick": "Filter by {tag}",
     "tagFilterActive": "Remove {tag} filter",
     "tagFilterClear": "Clear",
-    "sheetCount": "{n} sheets"
+    "sheetCount": "{n} sheets",
+    "balanceHeatmap": "Balance Heatmap",
+    "curveOverlay": "Curve Overlay",
+    "probabilityTree": "Probability Tree",
+    "sheetDiff": "Sheet Diff"
   },
   "sheet": {
     "newSheet": "New Sheet",
@@ -1696,7 +1700,39 @@
     "kanbanNeedSelectDesc": "Kanban view needs a select-type column (status, phase, etc.).",
     "kanbanNone": "(none)",
     "kanbanUngrouped": "No group",
-    "kanbanUrlColFirst": "URL column must come first"
+    "kanbanUrlColFirst": "URL column must come first",
+    "heatmap": {
+      "noSheet": "Select a sheet first.",
+      "noNumericColumns": "No numeric columns to build a heatmap.",
+      "rowHeader": "Row",
+      "legendLow": "Low",
+      "legendHigh": "High"
+    },
+    "curve": {
+      "noSheet": "Select a sheet first.",
+      "needTwoNumericColumns": "Curve overlay needs at least two numeric columns.",
+      "xAxisLabel": "X axis",
+      "seriesLabel": "Series"
+    },
+    "probability": {
+      "noSheet": "Select a sheet first.",
+      "cantInfer": "No probability/weight column found (weight · probability · rate).",
+      "inferredHint": "Inferred from weight {weight} · label {label}.",
+      "groupTotal": "{count} · {total} of all",
+      "overall": "overall",
+      "weightsNote": "Total weight {total} — normalized to ratios even if it does not sum to 1 (100%)."
+    },
+    "diff": {
+      "noSheetInBoth": "This sheet was not found in either snapshot.",
+      "added": "added",
+      "changed": "changed",
+      "removed": "removed",
+      "unchanged": "unchanged",
+      "rowHeader": "Row",
+      "currentSource": "Current",
+      "beforePicker": "Before",
+      "afterPicker": "After"
+    }
   },
   "toolGroups": {
     "build": "Build",
@@ -1743,7 +1779,11 @@
     "automations": "Trigger · condition · action pipeline",
     "interfaceDesigner": "Dashboard · KPI widgets",
     "changeHistory": "Cell change log · reasons",
-    "comments": "Cell comments · discussion threads"
+    "comments": "Cell comments · discussion threads",
+    "balanceHeatmap": "Numeric-column heatmap · spot stat outliers at a glance",
+    "probabilityTree": "Drop/gacha pool tree · verify pools sum to 100%",
+    "curveOverlay": "Overlay multiple X/Y curves to compare shapes",
+    "sheetDiff": "Diff two snapshots · highlight cell changes"
   },
   "commandPalette": {
     "title": "Command Palette",

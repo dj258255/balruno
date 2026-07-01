@@ -52,7 +52,11 @@ export type ToolId =
   | 'autoBattler'
   | 'hordeSurvivor'
   | 'aiPlaytest'
-  | 'formulaVerifier';
+  | 'formulaVerifier'
+  | 'balanceHeatmap'
+  | 'curveOverlay'
+  | 'probabilityTree'
+  | 'sheetDiff';
 
 export type ToolGroupId =
   | 'build'
@@ -81,6 +85,7 @@ import {
   PenTool, BookOpen, Shield, Swords, Users, Wand2, Dice5, MessageCircle, LayoutGrid,
   Workflow, Sliders, History, Crosshair, UsersRound, Zap, Brain, GitCompare, Play,
   Camera, Factory, Sword, Dices, Skull, TestTube, Sigma,
+  Grid3x3, LineChart, ListTree, FileDiff,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -99,6 +104,8 @@ export const TOOL_ICONS: Record<ToolId, LucideIcon> = {
   matchupMatrix: GitCompare,
   aiPlaytest: TestTube,
   formulaVerifier: Sigma,
+  balanceHeatmap: Grid3x3,
+  probabilityTree: ListTree,
   // simulate
   simulation: Swords,
   fpsSimulation: Crosshair,
@@ -119,6 +126,8 @@ export const TOOL_ICONS: Record<ToolId, LucideIcon> = {
   chart: TrendingUp,
   powerCurveCompare: Layers,
   curveFitting: PenTool,
+  curveOverlay: LineChart,
+  sheetDiff: FileDiff,
   // auto
   goal: Target,
   autoBalancer: Wand2,
@@ -141,7 +150,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'check',
     titleKey: 'toolGroups.check',
     color: '#ec4899',
-    tools: ['balance', 'imbalance', 'balanceValidator', 'sensitivity', 'matchupMatrix', 'aiPlaytest', 'formulaVerifier'],
+    tools: ['balance', 'imbalance', 'balanceValidator', 'sensitivity', 'matchupMatrix', 'balanceHeatmap', 'probabilityTree', 'aiPlaytest', 'formulaVerifier'],
   },
   {
     id: 'simulate',
@@ -153,7 +162,7 @@ export const TOOL_GROUPS: ToolGroupConfig[] = [
     id: 'compare',
     titleKey: 'toolGroups.compare',
     color: '#3b82f6',
-    tools: ['comparison', 'chart', 'powerCurveCompare', 'curveFitting'],
+    tools: ['comparison', 'chart', 'powerCurveCompare', 'curveFitting', 'curveOverlay', 'sheetDiff'],
   },
   {
     id: 'auto',
@@ -220,6 +229,8 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   balanceValidator: 'toolDesc.balanceValidator', // 런칭 전 룰 기반 최종 검증
   sensitivity: 'toolDesc.sensitivity',         // 변수 민감도 · Tornado/Spider
   matchupMatrix: 'toolDesc.matchupMatrix',     // N×N 매치업 heatmap · Perfect Imbalance
+  balanceHeatmap: 'toolDesc.balanceHeatmap',   // 수치 컬럼 heatmap · 스탯 이상치 한눈에
+  probabilityTree: 'toolDesc.probabilityTree', // 드롭/가챠 풀 트리 · 100% 합 검증
   snapshotCompare: 'toolDesc.snapshotCompare', // 시뮬 스냅샷 저장 · rebalance 전후 diff
   mobaLaning: 'toolDesc.mobaLaning',           // LoL/Dota 라인전 CS/gold/XP 곡선
   rtsBuildOrder: 'toolDesc.rtsBuildOrder',     // SC2/AoE 빌드 오더 경제·병력 타이밍
@@ -245,6 +256,8 @@ export const TOOL_DESCRIPTIONS: Record<ToolId, string> = {
   chart: 'toolDesc.chart',                     // 성장 곡선 라인차트
   powerCurveCompare: 'toolDesc.powerCurveCompare', // 여러 시트 곡선 오버레이
   curveFitting: 'toolDesc.curveFitting',       // 데이터 → 수식 역산 (회귀)
+  curveOverlay: 'toolDesc.curveOverlay',       // X/Y 컬럼 다중 곡선 오버레이 비교
+  sheetDiff: 'toolDesc.sheetDiff',             // 두 스냅샷 셀 변경 diff 하이라이트
 
   // auto — 자동
   goal: 'toolDesc.goal',                       // 목표값 → 필요 입력 역산

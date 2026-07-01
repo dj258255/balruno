@@ -212,7 +212,11 @@
     "tagFilterClick": "{tag} 로 필터",
     "tagFilterActive": "{tag} 필터 해제",
     "tagFilterClear": "필터 초기화",
-    "sheetCount": "시트 {n}개"
+    "sheetCount": "시트 {n}개",
+    "balanceHeatmap": "밸런스 히트맵",
+    "curveOverlay": "곡선 오버레이",
+    "probabilityTree": "확률 트리",
+    "sheetDiff": "시트 Diff"
   },
   "sheet": {
     "newSheet": "새 시트",
@@ -1696,7 +1700,39 @@
     "kanbanNeedSelectDesc": "칸반 뷰는 status / phase 같은 select 타입 컬럼이 있어야 합니다.",
     "kanbanNone": "(없음)",
     "kanbanUngrouped": "분류 없음",
-    "kanbanUrlColFirst": "URL 컬럼이 먼저 와야 합니다"
+    "kanbanUrlColFirst": "URL 컬럼이 먼저 와야 합니다",
+    "heatmap": {
+      "noSheet": "시트를 먼저 선택하세요.",
+      "noNumericColumns": "수치형 컬럼이 없어 히트맵을 그릴 수 없습니다.",
+      "rowHeader": "행",
+      "legendLow": "낮음",
+      "legendHigh": "높음"
+    },
+    "curve": {
+      "noSheet": "시트를 먼저 선택하세요.",
+      "needTwoNumericColumns": "곡선 비교에는 수치형 컬럼이 2개 이상 필요합니다.",
+      "xAxisLabel": "X축",
+      "seriesLabel": "계열"
+    },
+    "probability": {
+      "noSheet": "시트를 먼저 선택하세요.",
+      "cantInfer": "확률/가중치 컬럼을 찾지 못했습니다. (weight·probability·rate·확률·가중치)",
+      "inferredHint": "가중치 {weight} · 라벨 {label} 기준으로 추론했습니다.",
+      "groupTotal": "{count}개 · 전체의 {total}",
+      "overall": "전체",
+      "weightsNote": "가중치 합계 {total} — 합이 1(100%)이 아니어도 비율로 정규화해 표시합니다."
+    },
+    "diff": {
+      "noSheetInBoth": "두 스냅샷 모두에서 이 시트를 찾지 못했습니다.",
+      "added": "추가",
+      "changed": "변경",
+      "removed": "삭제",
+      "unchanged": "동일",
+      "rowHeader": "행",
+      "currentSource": "현재",
+      "beforePicker": "이전",
+      "afterPicker": "이후"
+    }
   },
   "toolGroups": {
     "build": "만들기",
@@ -1743,7 +1779,11 @@
     "automations": "트리거·조건·액션 파이프라인",
     "interfaceDesigner": "대시보드·KPI 위젯 조립",
     "changeHistory": "셀 변경 히스토리·사유",
-    "comments": "셀 코멘트·논의 스레드"
+    "comments": "셀 코멘트·논의 스레드",
+    "balanceHeatmap": "수치 컬럼 heatmap · 스탯 이상치 한눈에",
+    "probabilityTree": "드롭/가챠 풀 트리 · 100% 합 검증",
+    "curveOverlay": "X/Y 컬럼 다중 곡선 오버레이 비교",
+    "sheetDiff": "두 스냅샷 셀 변경 diff 하이라이트"
   },
   "commandPalette": {
     "title": "명령 팔레트",
