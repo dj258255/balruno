@@ -113,6 +113,9 @@ export interface ConflictPayload {
   type: 'conflict';
   scope?: RegionScope;
   serverVersion: number;
+  /** Which op was rejected — lets the bridge retry it once on the
+   *  healed baseVersion. Optional: older servers omit it. */
+  clientMsgId?: string;
 }
 
 export interface BroadcastPayload {

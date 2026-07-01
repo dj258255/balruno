@@ -458,8 +458,12 @@ export default function Sidebar({
         menu={folderContextMenu}
         menuRef={folderContextMenuRef}
         onNewSheet={(projectId, folderId) => {
-          const newSheetId = projectStore.createSheet(projectId, t('sheet.newSheet'));
-          projectStore.moveSheetToFolder(projectId, newSheetId, folderId);
+          // Single tree.add with parentId. A create-then-move pair rode the
+          // same sheetTree baseVersion in one tick, so the move op always
+          // conflicted server-side and was silently dropped — the sheet
+          // landed at root on the server but inside the folder locally,
+          // then "disappeared" from the folder on the next sync.full.
+          const newSheetId = projectStore.createSheet(projectId, t('sheet.newSheet'), folderId);
           projectStore.setCurrentSheet(newSheetId);
         }}
         onNewSubfolder={(projectId, parentId) => {

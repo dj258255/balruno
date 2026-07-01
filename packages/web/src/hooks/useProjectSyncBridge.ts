@@ -24,7 +24,14 @@
 import { useEffect } from 'react';
 
 import { useProjectSync, type ServerMsg, type SyncFullPayload } from './useProjectSync';
-import { setSyncSender, setVersions, bumpVersion, setRegionVersion } from '@/lib/sync/writeQueue';
+import {
+  setSyncSender,
+  setVersions,
+  bumpVersion,
+  setRegionVersion,
+  ackOp,
+  retryConflictedOp,
+} from '@/lib/sync/writeQueue';
 import { useProjectStore } from '@/stores/projectStore';
 import { usePresenceStore } from '@/stores/presenceStore';
 import type { CellValue, Column, Row, Sheet, TreeNode } from '@balruno/shared';
@@ -83,6 +90,7 @@ function handleServerMsg(msg: ServerMsg, projectId: string): void {
         bumpVersion('data', msg.version);
         bumpVersion('sheetTree', msg.version);
       }
+      ackOp(msg.clientMsgId);
       break;
     case 'conflict':
       // Self-heal: adopt the server's authoritative version for the
@@ -92,6 +100,20 @@ function handleServerMsg(msg: ServerMsg, projectId: string): void {
       // must be pulled back down.
       if (msg.scope) {
         setRegionVersion(msg.scope, msg.serverVersion);
+      }
+      // Retry-once (ADR 0018 Stage E): re-emit the rejected op on the
+      // healed baseVersion. Before this, a conflicted op was silently
+      // dropped — the optimistic state stayed on screen while the
+      // server never had it, and the next sync.full made it "vanish".
+      // Older servers don't send clientMsgId on conflict; heal-only
+      // is the compatible fallback there.
+      if (msg.clientMsgId) {
+        const retried = retryConflictedOp(msg.clientMsgId);
+        if (!retried) {
+          void import('sonner').then(({ toast }) => {
+            toast.error('변경사항이 서버와 충돌해 저장되지 않았습니다. 새로고침 후 다시 시도해주세요.');
+          }).catch(() => {});
+        }
       }
       break;
     case 'presence':
@@ -416,19 +438,29 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
             position,
             newNode,
           );
-          // Echo dedup: if the sender's own broadcast comes back,
-          // p.sheets[] already has the shell. Skip the duplicate
-          // append so list ordering and reference identity stay
-          // stable. Doc leaves have no body to inject here.
+          // Echo reconcile: if the sender's own broadcast comes back,
+          // p.sheets[] holds the OPTIMISTIC shell whose row/column ids
+          // were generated client-side and differ from the server's.
+          // REPLACE it with the authoritative shell — keeping the local
+          // one meant the first cell edit referenced ids the server
+          // didn't know, which threw and closed the socket.
           const sheetAlreadyPresent =
             !!sheetShell && p.sheets.some((s) => s.id === sheetShell.id);
-          const nextSheets =
-            sheetShell && !sheetAlreadyPresent
-              ? [...p.sheets, sheetShell]
-              : p.sheets;
+          const nextSheets = sheetShell
+            ? sheetAlreadyPresent
+              ? p.sheets.map((s) => (s.id === sheetShell.id ? sheetShell : s))
+              : [...p.sheets, sheetShell]
+            : p.sheets;
           return withDerivedFolders({ ...p, [treeKey]: nextTree, sheets: nextSheets });
         }),
       }));
+      // Cross-region version: tree.add(sheet) also bumps the server's
+      // data_version (the shell row landed in projects.data). Mirror it
+      // locally or the next data-region op (first cell edit) rides a
+      // stale base and conflicts.
+      if (sheetShell && typeof op.newDataVersion === 'number') {
+        bumpVersion('data', op.newDataVersion);
+      }
       break;
     }
     case 'tree.delete': {

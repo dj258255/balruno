@@ -55,7 +55,7 @@ class SyncBroadcaster {
                 broadcastQuietly(projectId, acked.broadcastPayload());
             }
             case SyncResult.Conflict conflict ->
-                    sendQuietly(sender, conflictReply(scope, conflict.serverVersion()));
+                    sendQuietly(sender, conflictReply(clientMsgId, scope, conflict.serverVersion()));
             case SyncResult.Cached cached -> {
                 // Re-send the originally cached envelope so the client
                 // sees the same op.acked it would have seen the first
@@ -78,12 +78,35 @@ class SyncBroadcaster {
         return writeOrFallback(envelope);
     }
 
-    private String conflictReply(String scope, long serverVersion) {
+    private String conflictReply(UUID clientMsgId, String scope, long serverVersion) {
         var envelope = new LinkedHashMap<String, Object>();
         envelope.put("type", "conflict");
+        // Identifies WHICH op was rejected so the client can retry it
+        // once on the healed baseVersion. Without it a conflicted op was
+        // silently dropped — optimistic state diverged until the next
+        // sync.full made it "vanish".
+        envelope.put("clientMsgId", clientMsgId.toString());
         envelope.put("scope", scope);
         envelope.put("serverVersion", serverVersion);
         return writeOrFallback(envelope);
+    }
+
+    /**
+     * Op-level rejection for validation failures (row/parent not
+     * found, malformed op) — anything that used to THROW out of the
+     * handler and let Spring's ExceptionWebSocketHandlerDecorator
+     * close the whole socket. Reuses the {@code conflict} type so the
+     * client's existing retry-once path handles it: no {@code scope}
+     * means "not a version mismatch, don't touch your counters"; the
+     * retry will fail the same way and surface a toast instead of a
+     * silent socket death + sync.full wipe.
+     */
+    void rejectOp(WebSocketSession sender, UUID clientMsgId, String reason) {
+        var envelope = new LinkedHashMap<String, Object>();
+        envelope.put("type", "conflict");
+        envelope.put("clientMsgId", clientMsgId.toString());
+        envelope.put("reason", reason);
+        sendQuietly(sender, writeOrFallback(envelope));
     }
 
     private String writeOrFallback(LinkedHashMap<String, Object> envelope) {

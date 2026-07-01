@@ -50,6 +50,56 @@ let currentSender: Sender | null = null;
 let versions: RegionVersions = { data: 0, sheetTree: 0 };
 
 /**
+ * Ops sent but not yet acked, keyed by clientMsgId — the retry-once
+ * buffer for {@link retryConflictedOp}. Entries leave on op.acked.
+ * Capped so lost acks (socket churn) can't grow it unbounded; the
+ * oldest entry is evicted first (Map preserves insertion order).
+ */
+interface PendingOp {
+  op: MappedClientOp;
+  region: Region;
+  retried: boolean;
+}
+const PENDING_CAP = 64;
+const pending = new Map<string, PendingOp>();
+
+function rememberPending(op: MappedClientOp, region: Region): void {
+  pending.set(op.clientMsgId, { op, region, retried: false });
+  if (pending.size > PENDING_CAP) {
+    const oldest = pending.keys().next().value;
+    if (oldest !== undefined) pending.delete(oldest);
+  }
+}
+
+/** op.acked landed — the op is server-canonical, drop the retry buffer entry. */
+export function ackOp(clientMsgId: string): void {
+  pending.delete(clientMsgId);
+}
+
+/**
+ * Conflict recovery (retry-once). Called by the bridge AFTER it has
+ * healed the region version via {@link setRegionVersion}. Rebuilds the
+ * conflicted op on the healed baseVersion and resends it — the same
+ * clientMsgId is safe because a conflicted op was never persisted, so
+ * the op_idempotency dedup has no row for it.
+ *
+ * Returns false when the op can't be retried (already retried once,
+ * unknown id, or no sender) — the caller should surface that to the
+ * user instead of letting the optimistic state silently diverge.
+ */
+export function retryConflictedOp(clientMsgId: string): boolean {
+  const entry = pending.get(clientMsgId);
+  if (!entry || entry.retried || !currentSender) {
+    pending.delete(clientMsgId);
+    return false;
+  }
+  entry.retried = true;
+  const healed = { ...entry.op, baseVersion: versions[entry.region] } as MappedClientOp;
+  entry.op = healed;
+  return currentSender(healed);
+}
+
+/**
  * Register the live WebSocket sender. Pass {@code null} on
  * unmount; subsequent emitOp calls will return false until a new
  * sender registers.
@@ -149,6 +199,7 @@ export function emitOp(intent: StoreActionIntent, undo?: UndoMeta | null): boole
   const region = regionOf(intent);
   const op = mapStoreActionToOp(intent, versions[region], undo ?? undefined);
   const sent = currentSender(op);
+  if (sent) rememberPending(op, region);
   if (!sent) {
     console.warn(
       '[writeQueue] sender refused op (likely WS not OPEN yet):',
@@ -187,6 +238,7 @@ export function hasSender(): boolean {
 export function __resetWriteQueueForTests(): void {
   currentSender = null;
   versions = { data: 0, sheetTree: 0 };
+  pending.clear();
 }
 
 function regionOf(intent: StoreActionIntent): Region {

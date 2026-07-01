@@ -114,6 +114,24 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
 
         // Sealed switch — every concrete record routes to exactly one
         // service, and missing a new variant becomes a compile error.
+        //
+        // The whole dispatch is guarded: an op that throws (row/parent
+        // not found, malformed payload) must reject THAT op, not
+        // propagate to Spring's ExceptionWebSocketHandlerDecorator —
+        // which closes the socket, forcing a reconnect + sync.full that
+        // wipes every unacked optimistic change on the client.
+        try {
+            dispatchOp(projectId, session, userId, op);
+        } catch (Exception e) {
+            log.warn("ws_op_rejected sessionId={} type={} cause={}",
+                    session.getId(), op.getClass().getSimpleName(),
+                    e.getClass().getSimpleName(), e);
+            broadcaster.rejectOp(session, opClientMsgId(op), e.getClass().getSimpleName());
+        }
+    }
+
+    private void dispatchOp(UUID projectId, WebSocketSession session, UUID userId,
+                            SyncMessage op) {
         var result = switch (op) {
             case SyncMessage.CellUpdate      msg -> sheetCellOps.apply(projectId, userId, msg);
             case SyncMessage.CellStyleUpdate msg -> sheetCellOps.apply(projectId, userId, msg);

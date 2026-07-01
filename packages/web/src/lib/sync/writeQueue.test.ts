@@ -10,7 +10,10 @@ import {
   setSyncSender,
   setVersions,
   bumpVersion,
+  setRegionVersion,
   getVersion,
+  ackOp,
+  retryConflictedOp,
   __resetWriteQueueForTests,
 } from './writeQueue';
 import type { ClientOp } from '@/hooks/useProjectSync';
@@ -98,5 +101,63 @@ describe('writeQueue', () => {
     expect(
       emitOp({ kind: 'cell.update', sheetId: 's1', rowId: 'r1', columnId: 'c1', value: 'x' }),
     ).toBe(false);
+  });
+
+  describe('conflict retry-once', () => {
+    it('re-sends the conflicted op exactly once, on the healed baseVersion', () => {
+      const calls: ClientOp[] = [];
+      setSyncSender((op) => {
+        calls.push(op);
+        return true;
+      });
+      setVersions({ data: 0, sheetTree: 3 }); // stale local counter
+
+      emitOp({
+        kind: 'tree.add',
+        treeKind: 'SHEET',
+        parentId: 'folder-1',
+        position: 0,
+        node: { id: 'n1' },
+      });
+      expect(calls.length).toBe(1);
+      const sent = calls[0] as ClientOp & { clientMsgId: string; baseVersion: number };
+      expect(sent.baseVersion).toBe(3);
+
+      // Server rejects (real version was 4) → bridge heals then retries.
+      setRegionVersion('sheetTree', 4);
+      expect(retryConflictedOp(sent.clientMsgId)).toBe(true);
+      expect(calls.length).toBe(2);
+      expect(calls[1]).toMatchObject({
+        type: 'tree.add',
+        baseVersion: 4,
+        clientMsgId: sent.clientMsgId, // same id — conflicted op never persisted
+      });
+
+      // Second conflict on the same op → give up (no infinite loop).
+      setRegionVersion('sheetTree', 5);
+      expect(retryConflictedOp(sent.clientMsgId)).toBe(false);
+      expect(calls.length).toBe(2);
+    });
+
+    it('acked ops are not retryable', () => {
+      const calls: ClientOp[] = [];
+      setSyncSender((op) => {
+        calls.push(op);
+        return true;
+      });
+      setVersions({ data: 2, sheetTree: 0 });
+
+      emitOp({ kind: 'cell.update', sheetId: 's1', rowId: 'r1', columnId: 'c1', value: 1 });
+      const sent = calls[0] as ClientOp & { clientMsgId: string };
+
+      ackOp(sent.clientMsgId);
+      expect(retryConflictedOp(sent.clientMsgId)).toBe(false);
+      expect(calls.length).toBe(1);
+    });
+
+    it('unknown clientMsgId returns false', () => {
+      setSyncSender(() => true);
+      expect(retryConflictedOp('nope')).toBe(false);
+    });
   });
 });
