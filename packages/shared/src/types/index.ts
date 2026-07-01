@@ -34,13 +34,12 @@ export interface ProjectMember {
  */
 export interface TreeNode {
   id: string;
-  type: 'folder' | 'sheet' | 'doc';
+  type: 'folder' | 'sheet';
   name: string;
   /**
    * Optional emoji / icon for the node. Persisted into the
-   * project's sheet_tree / doc_tree JSONB on tree.add so other
-   * workspace members see the same icon. Doc nodes default to
-   * '📄' on creation; sheets / folders leave this undefined.
+   * project's sheet_tree JSONB on tree.add so other workspace
+   * members see the same icon. Sheets / folders leave this undefined.
    */
   icon?: string;
   children?: TreeNode[];
@@ -67,15 +66,7 @@ export interface Project {
    * undefined and renders a flat sheet list.
    */
   sheetTree?: TreeNode[];
-  /**
-   * Document tree (mirrors sheetTree shape, leaves type='doc'). The
-   * doc body itself stays in yjs — the tree only carries id/name so
-   * the sidebar can list, rename, organise documents.
-   * Server-canonical mode hydrates from projects.doc_tree.
-   */
-  docTree?: TreeNode[];
   folders?: Folder[];       // 시트 폴더 (navigation only — ACL 없음)
-  docs?: Doc[];             // GDD · 설계안 문서 (Phase A) — Notion 식 nested 트리 (Doc.parentId)
   // 동기화 설정
   syncMode?: ProjectSyncMode;  // 'local' (기본) | 'cloud'
   syncRoomId?: string;         // 클라우드 모드 시 협업 룸 ID
@@ -86,23 +77,6 @@ export interface Project {
   starterId?: string;
   /** B2B 팀 모드 대비 — 게임당 멤버. 백엔드 연결 전엔 미사용 (자리만 확보). */
   members?: ProjectMember[];
-}
-
-// GDD · 설계안 문서 (Tiptap 기반)
-export interface Doc {
-  id: string;
-  name: string;
-  /** 사용자 지정 아이콘 — 유니코드 이모지 문자 (예: "📝", "🎮"). 없으면 FileText fallback. */
-  icon?: string;
-  content: string;  // Tiptap JSON 또는 HTML 직렬화
-  /** 부모 Doc ID — Notion 식 nested page tree. 없으면 루트. */
-  parentId?: string;
-  /** 사이드바에서 자식 펼침 여부. */
-  isExpanded?: boolean;
-  /** 같은 부모 안에서 형제 순서. Y.Array drift 방지용 + 사용자 드래그 정렬. */
-  position?: number;
-  createdAt: number;
-  updatedAt: number;
 }
 
 // stat-snapshot 컬럼에 저장되는 값 (JSON 직렬화)

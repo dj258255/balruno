@@ -35,7 +35,7 @@ import {
   FilePlus2,
   type LucideIcon,
 } from 'lucide-react';
-import type { Project, Sheet, Column, Row, Doc } from '@/types';
+import type { Project, Sheet, Column, Row } from '@/types';
 
 const now = () => Date.now();
 
@@ -460,31 +460,6 @@ function playtestSheet(): Sheet {
 // Welcome doc 빌더 — 장르별 커스텀 가이드
 // =====================================================================
 
-function welcomeDoc(genreLabel: string, sheetNames: string[], extraTip?: string): Doc {
-  const tips = sheetNames.map((n) => `<li><strong>${n}</strong> 시트 — 셀 클릭해서 값을 바꿔 보세요</li>`).join('');
-  const extra = extraTip ? `<p>${extraTip}</p>` : '';
-  return {
-    id: newId(),
-    name: 'Welcome',
-    content: `<h1>${genreLabel} 시작 팩</h1>
-<p>${genreLabel} 도메인에 맞춘 시트가 미리 들어 있어요. 빈 화면 대신 살아있는 데이터로 즉시 시작하세요.</p>
-<h2>이 워크스페이스에 든 것</h2>
-<ul>${tips}</ul>
-<h2>30초 안에 해 볼 것</h2>
-<ol>
-<li>아무 셀이나 <strong>클릭</strong> → 값 편집</li>
-<li>셀에 <code>=</code> → 함수 자동완성 popover</li>
-<li>일반 셀에 <code>/</code> → <code>/today</code> <code>/uuid</code> 같은 빠른 명령</li>
-<li>행 우클릭 → "이 행으로 시뮬 실행" (hp/atk 컬럼이 있으면)</li>
-<li><code>?</code> 키 → 단축키, <code>⌘K</code> → 모든 검색</li>
-</ol>
-${extra}
-<p>오른쪽 우하단 코치마크 카드에서 단계별 가이드도 보실 수 있어요.</p>`,
-    createdAt: now(),
-    updatedAt: now(),
-  };
-}
-
 // =====================================================================
 // Starter Catalog — 12개 장르
 // =====================================================================
@@ -535,7 +510,6 @@ export const STARTER_CATALOG: StarterEntry[] = [
     color: '#8b5cf6',
     build: () => buildProject('튜토리얼', '시작용 예시 — 자유롭게 편집/삭제하세요',
       [characterSheet(), sprintBacklogSheet()],
-      welcomeDoc('튜토리얼', ['캐릭터', '스프린트']),
       'tutorial'),
     stepCount: COMMON_STEPS_COUNT,
     stepsI18nKey: COMMON_STEPS_KEY,
@@ -547,8 +521,6 @@ export const STARTER_CATALOG: StarterEntry[] = [
     color: '#dc2626',
     build: () => buildProject('RPG 프로젝트', 'RPG 밸런싱 시작 팩',
       [characterSheet(), weaponSheet(), expCurveSheet(), gachaSheet()],
-      welcomeDoc('RPG', ['캐릭터', '무기', 'EXP 곡선', '가챠 확률'],
-        'EXP 곡선의 base/rate 만 바꾸면 1-20렙 자동 재계산. 무기는 등급(별점)으로 정렬해 보세요.'),
       'rpg'),
     stepCount: 5,
   },
@@ -559,8 +531,6 @@ export const STARTER_CATALOG: StarterEntry[] = [
     color: '#ea580c',
     build: () => buildProject('FPS 프로젝트', 'FPS 슈터 밸런싱',
       [fpsWeaponSheet()],
-      welcomeDoc('FPS 슈터', ['FPS 무기'],
-        'TTK = 1000 / (DPS / target_hp). 카테고리별 평균 TTK 가 비슷해야 균형. PM 작업은 별도 "스프린트 보드" 프로젝트 사용.'),
       'fps'),
     stepCount: 5,
   },
@@ -571,8 +541,6 @@ export const STARTER_CATALOG: StarterEntry[] = [
     color: '#0ea5e9',
     build: () => buildProject('MOBA 프로젝트', 'MOBA 챔피언 밸런싱',
       [mobaChampionSheet()],
-      welcomeDoc('MOBA', ['챔피언'],
-        '난이도 별점은 1=쉬움 5=어려움. 같은 포지션 끼리 ad/ap/hp 평균 비교. PM 작업은 별도 "스프린트 보드" 프로젝트 사용.'),
       'moba'),
     stepCount: 5,
   },
@@ -583,8 +551,6 @@ export const STARTER_CATALOG: StarterEntry[] = [
     color: '#16a34a',
     build: () => buildProject('RTS 프로젝트', 'RTS 유닛 밸런싱',
       [rtsUnitSheet()],
-      welcomeDoc('RTS', ['RTS 유닛'],
-        '카운터 컬럼은 가위바위보. 보병 → 기병 → 궁수 → 보병 같은 순환이 핵심. PM 작업은 별도 "스프린트 보드" 프로젝트 사용.'),
       'rts'),
     stepCount: 5,
   },
@@ -595,8 +561,6 @@ export const STARTER_CATALOG: StarterEntry[] = [
     color: '#f59e0b',
     build: () => buildProject('Idle 프로젝트', 'Idle 클리커 밸런싱',
       [idleUpgradeSheet()],
-      welcomeDoc('Idle 클리커', ['Idle 업그레이드'],
-        '회수 시간(s) 가 일정하게 늘어야 진행 곡선 부드러움. 비용 1.5배수 / 수익 1.3배수 가 기본. PM 작업은 별도 "스프린트 보드" 프로젝트 사용.'),
       'idle'),
     stepCount: 5,
   },
@@ -607,8 +571,6 @@ export const STARTER_CATALOG: StarterEntry[] = [
     color: '#7c3aed',
     build: () => buildProject('덱빌더 프로젝트', '로그라이크 덱빌더 밸런싱',
       [roguelikeDeckSheet()],
-      welcomeDoc('로그라이크 덱빌더', ['카드 덱'],
-        '희귀도별 평균 데미지/방어 비율 점검. starter 카드는 약하지만 시너지 기반. PM 작업은 별도 "스프린트 보드" 프로젝트 사용.'),
       'roguelike'),
     stepCount: 5,
   },
@@ -619,8 +581,6 @@ export const STARTER_CATALOG: StarterEntry[] = [
     color: '#3b82f6',
     build: () => buildProject('스프린트 보드', 'PM 작업 관리',
       [sprintBacklogSheet()],
-      welcomeDoc('스프린트 보드', ['스프린트'],
-        '칸반 뷰 (단축키 K) 로 status 별 카드. 다른 status 로 drag.'),
       'sprint'),
     stepCount: 5,
   },
@@ -631,7 +591,6 @@ export const STARTER_CATALOG: StarterEntry[] = [
     color: '#ef4444',
     build: () => buildProject('버그 트래커', '버그 관리',
       [bugTrackerSheet()],
-      welcomeDoc('버그 트래커', ['버그 트래커']),
       'bug'),
     stepCount: 5,
   },
@@ -642,8 +601,6 @@ export const STARTER_CATALOG: StarterEntry[] = [
     color: '#10b981',
     build: () => buildProject('로드맵', '에픽 로드맵',
       [epicRoadmapSheet()],
-      welcomeDoc('에픽 로드맵', ['에픽 로드맵'],
-        '간트 뷰 (단축키 T) 로 분기별 일정 시각화.'),
       'roadmap'),
     stepCount: 5,
   },
@@ -654,8 +611,6 @@ export const STARTER_CATALOG: StarterEntry[] = [
     color: '#06b6d4',
     build: () => buildProject('플레이테스트', '플레이테스트 세션 기록',
       [playtestSheet()],
-      welcomeDoc('플레이테스트', ['플레이테스트'],
-        '재미도 별점 평균 + 핵심 피드백 텍스트로 회고.'),
       'playtest'),
     stepCount: 5,
   },
@@ -664,13 +619,13 @@ export const STARTER_CATALOG: StarterEntry[] = [
     i18nKey: 'blank',
     icon: FilePlus2,
     color: '#94a3b8',
-    build: () => buildProject('새 프로젝트', '', [], undefined, 'blank'),
+    build: () => buildProject('새 프로젝트', '', [], 'blank'),
     stepCount: COMMON_STEPS_COUNT,
     stepsI18nKey: COMMON_STEPS_KEY,
   },
 ];
 
-function buildProject(name: string, description: string, sheets: Sheet[], doc?: Doc, starterId?: string): Project {
+function buildProject(name: string, description: string, sheets: Sheet[], starterId?: string): Project {
   return {
     id: newId(),
     name,
@@ -678,7 +633,6 @@ function buildProject(name: string, description: string, sheets: Sheet[], doc?: 
     createdAt: now(),
     updatedAt: now(),
     sheets,
-    docs: doc ? [doc] : [],
     starterId,
   };
 }
