@@ -252,6 +252,73 @@ export const CellEditor = forwardRef<HTMLInputElement, CellEditorProps>(
       );
     }
 
+    // longText — 여러 줄 textarea 팝오버.
+    // select/multiSelect 팝업과 동일하게 셀 위치에 absolute 로 띄운다.
+    // Ctrl/Cmd+Enter 또는 blur 로 commit, Esc 로 취소. 그리드 인라인
+    // 편집이 아니라 mini editor 성격 — plain 문자열로 저장 (op-log 그대로).
+    if (columnType === 'longText' && !isFormula) {
+      return (
+        <div
+          className="absolute z-50 rounded shadow-lg flex flex-col"
+          style={{
+            top: position.top,
+            left: position.left,
+            width: Math.max(position.width, 280),
+            background: 'var(--bg-primary)',
+            border: `${borderWidth}px solid var(--editor-border-focus)`,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <textarea
+            autoFocus
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                if (onCommit) onCommit(value);
+                else onBlur?.();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                // 부모 onKeyDown 의 Escape 경로가 편집 상태를 취소 (commit 안 함)
+                onKeyDown(e as unknown as React.KeyboardEvent<HTMLInputElement>);
+              }
+              // plain Enter 는 textarea 기본 줄바꿈 — 가로채지 않음
+            }}
+            onBlur={() => onBlur?.()}
+            rows={6}
+            spellCheck={false}
+            className="w-full resize-none rounded-t px-2 py-1.5 text-xs outline-none"
+            style={{
+              background: 'var(--editor-bg)',
+              color: cellStyle?.fontColor || 'var(--text-primary)',
+              fontSize: cellStyle?.fontSize ? `${cellStyle.fontSize}px` : '13px',
+              minHeight: Math.max(position.height * 3, 96),
+            }}
+          />
+          <div
+            className="flex items-center justify-between border-t px-2 py-1"
+            style={{ borderColor: 'var(--border-primary)' }}
+          >
+            <span className="text-caption" style={{ color: 'var(--text-tertiary)' }}>
+              {t('sheet.longTextCommitHint')}
+            </span>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => (onCommit ? onCommit(value) : onBlur?.())}
+              className="text-caption px-2 py-0.5 rounded"
+              style={{ background: 'var(--accent)', color: 'white' }}
+            >
+              {t('sheet.complete')}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     // link — 검색 가능한 레코드 피커 (단일/다중 모드)
     if (columnType === 'link' && linkedSheet && !isFormula) {
       return (

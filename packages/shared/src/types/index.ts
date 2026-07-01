@@ -198,12 +198,13 @@ export interface Sheet {
 // 에서 추가될 예정: link/lookup/rollup/attachment
 export type ColumnType =
   | 'general'
+  | 'url'
+  | 'longText'       // 여러 줄 텍스트 + 경량 마크다운 (디자인 노트/설계 근거)
   | 'formula'
   | 'checkbox'
   | 'select'
   | 'multiSelect'
   | 'date'
-  | 'url'
   | 'currency'
   | 'rating'
   | 'link'           // 다른 시트 레코드 참조

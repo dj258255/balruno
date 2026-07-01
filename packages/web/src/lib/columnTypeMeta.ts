@@ -11,6 +11,7 @@
  */
 import {
   Type,
+  AlignLeft,
   CheckSquare,
   Calendar,
   Link as LinkIcon,
@@ -97,6 +98,16 @@ export const COLUMN_TYPE_META: Record<ColumnType, ColumnTypeMeta> = {
     preview: 'docs.google.com/...',
     shownIn: ALL_KINDS,
     recommendedIn: ['reference', 'pm'],
+  },
+  longText: {
+    type: 'longText',
+    category: 'basic',
+    Icon: AlignLeft,
+    label: '긴 텍스트',
+    description: '여러 줄 텍스트 + 경량 마크다운',
+    preview: '## 설계 노트\n- 밸런스 근거...',
+    shownIn: ALL_KINDS,
+    recommendedIn: ['reference', 'pm', 'analysis'],
   },
 
   select: {

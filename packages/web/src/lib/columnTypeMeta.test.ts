@@ -16,6 +16,7 @@ import {
 
 const ALL_COLUMN_TYPES: ColumnType[] = [
   'general',
+  'longText',
   'formula',
   'checkbox',
   'select',

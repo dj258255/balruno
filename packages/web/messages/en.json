@@ -331,6 +331,7 @@
     "kindChangeBlockedHint": "We don't auto-convert or delete data. Remove the columns or switch them to a compatible type, then try again.",
     "noOptionsHint": "No options — add in column settings",
     "completeEsc": "Done (Esc)",
+    "longTextCommitHint": "⌘/Ctrl+Enter to save · Esc to cancel",
     "cmdToday": "Today's date",
     "cmdNow": "Current time",
     "cmdUuid8": "UUID (8 chars)",

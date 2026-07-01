@@ -94,6 +94,10 @@ export function formatDisplayValue(
       return String(value);
     case 'url':
       return String(value);
+    case 'longText':
+      // 그리드 셀은 단일 줄 미리보기만. 줄바꿈은 공백으로 접고 마크다운
+      // 마커(#, **, - )를 벗겨 truncate 스팬이 말줄임 처리하도록.
+      return stripMarkdownInline(String(value));
     case 'currency': {
       const num = typeof value === 'number' ? value : Number(String(value));
       if (isNaN(num)) return String(value);
@@ -152,6 +156,25 @@ export function formatDisplayValue(
     return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
   }
   return String(value);
+}
+
+/**
+ * longText 그리드 미리보기용 — 여러 줄 마크다운을 단일 줄 평문으로 축약.
+ * miniMarkdown 이 지원하는 마커(heading `#`, bold `**`, bullet `- `)만
+ * 제거하고 나머지 텍스트는 보존. 줄바꿈은 공백으로 접는다.
+ */
+export function stripMarkdownInline(raw: string): string {
+  return raw
+    .split(/\r?\n/)
+    .map((line) =>
+      line
+        .replace(/^\s{0,3}#{1,3}\s+/, '') // heading 마커
+        .replace(/^\s*[-*]\s+/, '') // bullet 마커
+        .replace(/\*\*(.+?)\*\*/g, '$1'), // bold 마커
+    )
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // 셀에 값이 있는지 확인

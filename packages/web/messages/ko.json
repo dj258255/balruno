@@ -331,6 +331,7 @@
     "kindChangeBlockedHint": "데이터 손실을 막기 위해 자동 변환/삭제는 하지 않습니다. 컬럼을 삭제하거나 호환되는 타입으로 직접 변경 후 다시 시도하세요.",
     "noOptionsHint": "옵션 없음 — 컬럼 설정에서 추가",
     "completeEsc": "완료 (Esc)",
+    "longTextCommitHint": "⌘/Ctrl+Enter 저장 · Esc 취소",
     "cmdToday": "오늘 날짜",
     "cmdNow": "현재 시간",
     "cmdUuid8": "UUID 8자리",
