@@ -52,6 +52,11 @@ import CreateWorkspaceModal from '@/app/components/CreateWorkspaceModal';
 import TemplateGalleryModal from '@/app/components/TemplateGalleryModal';
 import MobileNotice from '@/app/components/MobileNotice';
 import KeyboardShortcuts from '@/components/modals/KeyboardShortcuts';
+import PersonaModal from '@/components/modals/PersonaModal';
+import ProductIntroModal from '@/components/modals/ProductIntroModal';
+import StarterCoachmark from '@/components/onboarding/StarterCoachmark';
+import { usePersona } from '@/stores/personaStore';
+import { useProductIntro } from '@/stores/productIntroStore';
 import Sidebar from '@/components/layout/Sidebar';
 import SheetTabs from '@/components/layout/SheetTabs';
 import SidebarResizer from '@/app/components/SidebarResizer';
@@ -847,6 +852,24 @@ export default function WorkspaceShell({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // First-run onboarding sequence (persona → product intro). PersonaModal
+  // self-gates on !hasChosen and renders first (full-screen, z-1200). The
+  // product intro is held back until the persona step is resolved (picked
+  // *or* dismissed) so the two centered modals never stack. seenAt guards
+  // the intro across sessions — once closed (markSeen) it won't reopen,
+  // and existing users who already chose a persona before this modal
+  // shipped still get the intro exactly once. StarterCoachmark is
+  // independent (bottom-right, per-starter localStorage) and self-gates.
+  const personaChosen = usePersona((s) => s.hasChosen);
+  const introOpen = useProductIntro((s) => s.open);
+  const introSeenAt = useProductIntro((s) => s.seenAt);
+  const openIntro = useProductIntro((s) => s.openIntro);
+  useEffect(() => {
+    if (personaChosen && introSeenAt === null && !introOpen) {
+      openIntro();
+    }
+  }, [personaChosen, introSeenAt, introOpen, openIntro]);
+
   const sidebarCallbacks = {
     onShowChart: toggleTool('chart'),
     onShowHelp: () => { /* OnboardingGuide not yet rewired */ },
@@ -1157,6 +1180,20 @@ export default function WorkspaceShell({
       {/* Keyboard-shortcuts cheatsheet — opened by the global `?` /
           ⌘Ctrl+/ listener above. Renders null while closed. */}
       <KeyboardShortcuts open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      {/* First-run onboarding. PersonaModal self-gates on !hasChosen and
+          shows first; ProductIntroModal is driven by productIntroStore and
+          only opens once the persona step is resolved (see the sequencing
+          effect above) so the two never stack. Both render null when their
+          store says otherwise. Reopen path: productIntroStore.openIntro
+          (wired to the workspace switcher "app intro" entry). */}
+      <PersonaModal />
+      <ProductIntroModal />
+
+      {/* Per-starter step guide — floating bottom-right, self-gates on the
+          active project's starterId (STARTER_CATALOG match) and persists
+          dismissal per starterId in localStorage. Renders null otherwise. */}
+      <StarterCoachmark />
     </main>
   );
 }
