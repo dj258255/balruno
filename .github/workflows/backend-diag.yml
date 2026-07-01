@@ -45,7 +45,13 @@ jobs:
               "${PROD_USER}@${PROD_HOST}" \
               "cd ${INSTALL_DIR} && docker compose ps"
 
-      - name: docker compose logs backend
+      - name: docker compose logs (all services)
+        # Blue/green (ADR 0044) means the service is backend-blue /
+        # backend-green, not `backend` — log all services so the active
+        # backend's boot/Flyway lines are captured regardless of color.
+        # continue-on-error so a log hiccup never blocks the schema-history
+        # step below.
+        continue-on-error: true
         env:
           TAIL_LINES: ${{ inputs.tail_lines }}
         run: |
@@ -59,7 +65,7 @@ jobs:
           ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
               -i ~/.ssh/oci_key \
               "${PROD_USER}@${PROD_HOST}" \
-              "cd ${INSTALL_DIR} && docker compose logs backend --tail ${TAIL_LINES}"
+              "cd ${INSTALL_DIR} && docker compose logs --tail ${TAIL_LINES}"
 
       - name: System resources
         run: |
