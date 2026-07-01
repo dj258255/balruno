@@ -33,6 +33,7 @@ import {
   removeNodeFromTree,
   moveNodeInTreeRaw,
   insertNodeAt,
+  withDerivedFolders,
 } from '@/lib/tree';
 
 interface UseProjectSyncBridgeOptions {
@@ -375,12 +376,12 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
         projects: state.projects.map((p) =>
           p.id !== projectId
             ? p
-            : {
+            : withDerivedFolders({
                 ...p,
                 [treeKey]: patchNode(
                   (p[treeKey] as TreeNode[] | undefined) ?? [],
                 ),
-              },
+              }),
         ),
       }));
       break;
@@ -425,7 +426,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
             sheetShell && !sheetAlreadyPresent
               ? [...p.sheets, sheetShell]
               : p.sheets;
-          return { ...p, [treeKey]: nextTree, sheets: nextSheets };
+          return withDerivedFolders({ ...p, [treeKey]: nextTree, sheets: nextSheets });
         }),
       }));
       break;
@@ -442,13 +443,13 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
         projects: state.projects.map((p) =>
           p.id !== projectId
             ? p
-            : {
+            : withDerivedFolders({
                 ...p,
                 [treeKey]: removeNodeFromTree(
                   (p[treeKey] as TreeNode[] | undefined) ?? [],
                   op.nodeId!,
                 ),
-              },
+              }),
         ),
       }));
       break;
@@ -469,7 +470,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
         projects: state.projects.map((p) =>
           p.id !== projectId
             ? p
-            : {
+            : withDerivedFolders({
                 ...p,
                 [treeKey]: moveNodeInTreeRaw(
                   (p[treeKey] as TreeNode[] | undefined) ?? [],
@@ -477,7 +478,7 @@ function handleBroadcast(msg: Exclude<ServerMsg, { type: 'sync.full' | 'op.acked
                   newParentId,
                   newPosition,
                 ),
-              },
+              }),
         ),
       }));
       break;
@@ -535,14 +536,14 @@ export function hydrateProjectFromSyncFull(
     const idx = state.projects.findIndex((p) => p.id === projectId);
     if (idx >= 0) {
       const next = [...state.projects];
-      next[idx] = { ...next[idx], sheets, sheetTree };
+      next[idx] = withDerivedFolders({ ...next[idx], sheets, sheetTree });
       return { projects: next };
     }
     const now = Date.now();
     return {
       projects: [
         ...state.projects,
-        { id: projectId, name: '', sheets, sheetTree, createdAt: now, updatedAt: now },
+        withDerivedFolders({ id: projectId, name: '', sheets, sheetTree, createdAt: now, updatedAt: now }),
       ],
     };
   });

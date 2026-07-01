@@ -71,6 +71,7 @@ import {
   isDescendant,
   locateNodeParent,
   findNodeInTree,
+  withDerivedFolders,
 } from '@/lib/tree';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { CellCommentPanel } from '@/components/comments/CellCommentPanel';
@@ -115,6 +116,32 @@ function cellLabelFor(sel: CommentSelection, sheets: Sheet[]): string {
 // Tree mutators live in /lib/tree — same helpers used by the wss
 // broadcast handler + applyUndoableOps for tree.* undo (ADR 0021
 // phase 3).
+
+/**
+ * Minimal empty Sheet shell for an optimistic local insert on
+ * sheet-leaf creation. The creator emits tree.add but may never
+ * receive its own broadcast (which carries the server's authoritative
+ * shell), so without this the new sheet leaf lands in sheetTree with
+ * no matching row in project.sheets — and the sidebar (which renders
+ * off sheets[]) shows nothing. The id matches the tree leaf so the
+ * later server shell dedups by id instead of double-inserting.
+ *
+ * Column shape mirrors the frontend starterPack factory (one
+ * '이름' general column, one empty row). The backend's
+ * TreeOpService.buildEmptySheetShell uses "Column 1" / type "text";
+ * a sync.full re-hydrate reconciles to the canonical shape.
+ */
+function makeEmptySheetShell(id: string, name: string): Sheet {
+  const now = Date.now();
+  return {
+    id,
+    name,
+    columns: [{ id: newId(), name: '이름', type: 'general', width: 140 }],
+    rows: [{ id: newId(), cells: {} }],
+    createdAt: now,
+    updatedAt: now,
+  };
+}
 
 /**
  * Reusable workspace + project shell. Both the bare `/w/{ws}` route
@@ -483,8 +510,32 @@ export default function WorkspaceShell({
         projects: state.projects.map((p) =>
           p.id !== project.id
             ? p
-            : { ...p, [treeField]: mutator(p[treeField] ?? []) },
+            // Re-derive folders[] + sheet.folderId off the mutated
+            // sheetTree so an optimistic local write (add / move /
+            // rename folder, reparent sheet) shows in the sidebar
+            // instantly — same projection the sync bridge applies to
+            // inbound broadcasts.
+            : withDerivedFolders({ ...p, [treeField]: mutator(p[treeField] ?? []) }),
         ),
+      }));
+    };
+
+    // Optimistic Sheet shell insert for sheet-leaf creation (see
+    // makeEmptySheetShell). Runs after setTree has placed the leaf in
+    // sheetTree, so withDerivedFolders here stamps the shell's
+    // folderId from its enclosing folder. id-deduped so a later server
+    // shell broadcast doesn't double-insert.
+    const insertOptimisticSheet = (leafId: string, name: string) => {
+      if (!project) return;
+      useProjectStore.setState((state) => ({
+        projects: state.projects.map((p) => {
+          if (p.id !== project.id) return p;
+          if (p.sheets.some((s) => s.id === leafId)) return p;
+          return withDerivedFolders({
+            ...p,
+            sheets: [...p.sheets, makeEmptySheetShell(leafId, name)],
+          });
+        }),
       }));
     };
 
@@ -562,6 +613,7 @@ export default function WorkspaceShell({
         };
         const position = (localProject?.[treeField]?.length ?? 0);
         setTree((tree) => [...tree, newLeaf]);
+        insertOptimisticSheet(leafId, newLeaf.name);
         const addLeafMeta = pushTreeUndo(
           'Tree add',
           [{ type: 'tree.add', treeKind, parentId: null, position, node: newLeaf, baseVersion: 0, clientMsgId: '' }],
@@ -583,6 +635,9 @@ export default function WorkspaceShell({
         // Position MAX_SAFE_INTEGER from the sidebar = "append";
         // insertNodeAt clamps to the children length internally.
         setTree((tree) => insertNodeAt(tree, parentId, position, node));
+        if (node.type === 'sheet') {
+          insertOptimisticSheet(node.id, node.name);
+        }
         const addMeta = pushTreeUndo(
           'Tree add',
           [{ type: 'tree.add', treeKind, parentId, position, node, baseVersion: 0, clientMsgId: '' }],

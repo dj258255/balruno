@@ -23,7 +23,78 @@
  *     slot matches where the user pointed.
  */
 
-import type { TreeNode } from '@/types';
+import type { Folder, Project, TreeNode } from '@/types';
+
+/**
+ * Derive the flat Folder[] the sidebar renders from, plus a
+ * sheetId → enclosing-folderId map, by walking a sheet_tree. The
+ * sidebar (ProjectList / FolderItem) reads project.folders +
+ * sheet.folderId, but creation only writes the nested sheetTree —
+ * so folders never appeared and moved sheets never re-parented.
+ * This is the adapter: sheetTree is the single source of truth,
+ * folders[] + folderId are projected from it on every write.
+ *
+ * isExpanded is PRESERVED from prevFolders by id (default true when
+ * a folder is newly seen) so a user's expand/collapse survives the
+ * re-derivation that follows the next tree write. createdAt /
+ * updatedAt likewise carry over (0 when unknown — the sheetTree node
+ * doesn't persist timestamps).
+ */
+function deriveFolders(
+  tree: TreeNode[],
+  prevFolders?: Folder[],
+): { folders: Folder[]; sheetFolder: Map<string, string> } {
+  const prevById = new Map<string, Folder>();
+  for (const f of prevFolders ?? []) prevById.set(f.id, f);
+  const folders: Folder[] = [];
+  const sheetFolder = new Map<string, string>();
+  const walk = (nodes: TreeNode[], parentId: string | undefined): void => {
+    for (const node of nodes) {
+      if (node.type === 'folder') {
+        const prev = prevById.get(node.id);
+        folders.push({
+          id: node.id,
+          name: node.name,
+          parentId,
+          isExpanded: prev?.isExpanded ?? true,
+          createdAt: prev?.createdAt ?? 0,
+          updatedAt: prev?.updatedAt ?? 0,
+        });
+        if (node.children && node.children.length > 0) walk(node.children, node.id);
+      } else if (node.type === 'sheet') {
+        if (parentId) sheetFolder.set(node.id, parentId);
+      }
+    }
+  };
+  walk(tree, undefined);
+  return { folders, sheetFolder };
+}
+
+/**
+ * Project the sidebar-facing flat arrays off the canonical
+ * sheetTree. Returns a new Project with:
+ *   - folders   = every folder node in sheetTree (isExpanded
+ *                 preserved from the incoming project.folders)
+ *   - sheets    = same array, each sheet's folderId re-stamped to
+ *                 its enclosing folder id (undefined at root)
+ *
+ * Sheet references are preserved when folderId is unchanged so
+ * React subtrees don't churn on unrelated tree writes.
+ */
+export function withDerivedFolders(project: Project): Project {
+  const { folders, sheetFolder } = deriveFolders(
+    project.sheetTree ?? [],
+    project.folders,
+  );
+  return {
+    ...project,
+    folders,
+    sheets: project.sheets.map((s) => {
+      const folderId = sheetFolder.get(s.id);
+      return s.folderId === folderId ? s : { ...s, folderId };
+    }),
+  };
+}
 
 /** Find a node by id (DFS). Returns null when missing. */
 export function findNodeInTree(tree: TreeNode[], nodeId: string): TreeNode | null {

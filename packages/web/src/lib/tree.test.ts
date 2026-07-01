@@ -11,8 +11,9 @@ import {
   moveNodeInTreeRaw,
   removeNodeFromTree,
   renameNodeInTree,
+  withDerivedFolders,
 } from './tree';
-import type { TreeNode } from '@/types';
+import type { Project, Sheet, TreeNode } from '@/types';
 
 const leaf = (id: string, name = id): TreeNode => ({ id, type: 'sheet', name });
 const folder = (id: string, children: TreeNode[] = []): TreeNode =>

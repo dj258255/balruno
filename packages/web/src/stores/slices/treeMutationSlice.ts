@@ -245,6 +245,31 @@ export const createTreeMutationActions = (set: SetFn, get: GetFn) => ({
     }
   }) as (projectId: string, folderId: string, updates: unknown) => void,
 
+  /**
+   * Toggle a folder's expand/collapse chevron. Overrides the
+   * legacyStub alert (spread earlier in the projectStore composition).
+   * Folders are derived off sheetTree by withDerivedFolders, which
+   * PRESERVES isExpanded by id — so this local flip survives the
+   * re-derivation that follows any subsequent tree write. Purely
+   * client-side (navigation state, no server round-trip / op emit).
+   */
+  toggleFolderExpanded: ((projectId: string, folderId: string) => {
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id !== projectId
+          ? p
+          : {
+              ...p,
+              folders: (p.folders ?? []).map((f) =>
+                f.id === folderId
+                  ? { ...f, isExpanded: !(f.isExpanded ?? true) }
+                  : f,
+              ),
+            },
+      ),
+    }));
+  }) as (projectId: string, folderId: string) => void,
+
   // ── Project-level mutations (REST) ──────────────────────────────────
 
   updateProject: ((projectId: string, updates: Partial<Project> & { visibility?: unknown }) => {
