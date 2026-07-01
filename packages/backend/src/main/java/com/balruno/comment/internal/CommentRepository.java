@@ -35,6 +35,11 @@ interface CommentRepository extends JpaRepository<CommentEntity, UUID> {
             UUID projectId, com.balruno.comment.Comment.ScopeKind scopeKind,
             UUID sheetId, UUID rowId, UUID columnId);
 
+    // Row-anchored (record) thread — columnId IS NULL for SHEET_ROW scope.
+    List<CommentEntity> findByProjectIdAndScopeKindAndSheetIdAndRowIdAndColumnIdIsNullAndDeletedAtIsNullOrderByCreatedAtAsc(
+            UUID projectId, com.balruno.comment.Comment.ScopeKind scopeKind,
+            UUID sheetId, UUID rowId);
+
     List<CommentEntity> findByProjectIdAndDeletedAtIsNullOrderByCreatedAtDesc(
             UUID projectId, Limit limit);
 

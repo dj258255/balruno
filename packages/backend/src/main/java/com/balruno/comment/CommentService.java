@@ -42,6 +42,17 @@ public interface CommentService {
             UUID columnId);
 
     /**
+     * Row-anchored (record-level) thread — every non-deleted SHEET_ROW
+     * comment on the given row, oldest first. Auth: caller must be a
+     * member of the project.
+     */
+    List<Comment> listForRow(
+            UUID callerUserId,
+            UUID projectId,
+            UUID sheetId,
+            UUID rowId);
+
+    /**
      * Project-wide comment browse used by the dock CommentsPanel —
      * every non-deleted comment in the project, newest first, capped
      * at 200. Replies are included; the panel groups them client-side.

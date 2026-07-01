@@ -13,6 +13,7 @@ import java.util.UUID;
  *
  * scope_kind drives which anchor fields are populated:
  *   - SHEET_CELL: sheetId + rowId + columnId
+ *   - SHEET_ROW:  sheetId + rowId (columnId NULL) — record-level thread
  *
  * parentId is NULL for thread roots, set for replies.
  */
@@ -32,5 +33,5 @@ public record Comment(
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {
-    public enum ScopeKind { SHEET_CELL }
+    public enum ScopeKind { SHEET_CELL, SHEET_ROW }
 }

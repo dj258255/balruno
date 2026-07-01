@@ -262,6 +262,18 @@ class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    public List<Comment> listForRow(
+            UUID callerUserId,
+            UUID projectId,
+            UUID sheetId,
+            UUID rowId) {
+        projects.findById(projectId, callerUserId);
+        return repo.findByProjectIdAndScopeKindAndSheetIdAndRowIdAndColumnIdIsNullAndDeletedAtIsNullOrderByCreatedAtAsc(
+                        projectId, Comment.ScopeKind.SHEET_ROW, sheetId, rowId)
+                .stream().map(CommentEntity::toDto).toList();
+    }
+
+    @Override
     public List<Comment> listForProject(UUID callerUserId, UUID projectId) {
         projects.findById(projectId, callerUserId);
         return repo.findByProjectIdAndDeletedAtIsNullOrderByCreatedAtDesc(projectId, Limit.of(200))

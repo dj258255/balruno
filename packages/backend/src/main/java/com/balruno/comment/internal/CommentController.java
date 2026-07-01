@@ -102,6 +102,13 @@ class CommentController {
                 }
                 yield comments.listForCell(callerId(jwt), projectId, sheetId, rowId, columnId);
             }
+            case SHEET_ROW -> {
+                if (sheetId == null || rowId == null) {
+                    throw new IllegalArgumentException(
+                            "scope=SHEET_ROW requires sheetId + rowId");
+                }
+                yield comments.listForRow(callerId(jwt), projectId, sheetId, rowId);
+            }
         };
     }
 
