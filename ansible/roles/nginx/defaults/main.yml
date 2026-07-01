@@ -2,7 +2,6 @@
 # nginx terminates TLS with the Cloudflare Origin Certificate, then
 # reverse-proxies to the local backend processes:
 #   api.balruno.com    → 127.0.0.1:8080  (Spring Boot)
-#   collab.balruno.com → 127.0.0.1:1234  (Hocuspocus, WS upgrade)
 
 # Where to drop the cert pair. /etc/nginx/cert/ is dedicated and 0700.
 nginx_cert_dir: /etc/nginx/cert
@@ -10,9 +9,8 @@ nginx_origin_cert_path: "{{ nginx_cert_dir }}/cloudflare-origin.crt"
 nginx_origin_key_path: "{{ nginx_cert_dir }}/cloudflare-origin.key"
 
 # Blue/green upstream wiring — ADR 0044. Backend ports come from the
-# backend role defaults (backend_blue_host_port / backend_green_host_port);
-# collab ports come from the hocuspocus role defaults. nginx routes via
-# the snippet symlink swap pattern:
+# backend role defaults (backend_blue_host_port / backend_green_host_port).
+# nginx routes via the snippet symlink swap pattern:
 #
 #   /etc/nginx/snippets/upstream-balruno-backend-{blue,green}.conf  (rendered)
 #   /etc/nginx/conf.d/balruno-backend-active.conf                   (symlink)
@@ -63,5 +61,3 @@ nginx_keepalive_timeout: "65s"
 nginx_proxy_connect_timeout: "10s"
 nginx_proxy_send_timeout: "60s"
 nginx_proxy_read_timeout: "60s"
-# Hocuspocus needs a longer read timeout for idle WS connections.
-nginx_proxy_read_timeout_ws: "3600s"

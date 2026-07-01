@@ -53,7 +53,6 @@ monitoring_mem_blackbox_exporter: "64m"
 # URLs and reports up=1/0 + latency.
 monitoring_blackbox_targets:
   - https://api.balruno.com/actuator/health
-  - https://collab.balruno.com
   - https://monitor.balruno.com
   - https://balruno.com
 

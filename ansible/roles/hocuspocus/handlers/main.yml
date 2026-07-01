@@ -1,7 +1,0 @@
-# Handler intentionally left empty — ADR 0044.
-#
-# Same rationale as the backend role: under blue/green deploy the active
-# container set is the workflow's responsibility, not Ansible's. Ansible
-# renders compose.yml + .env on disk; the collab-deploy workflow handles
-# `docker compose up -d <service>`, readiness probing, and the nginx
-# cutover.

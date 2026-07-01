@@ -13,9 +13,9 @@
     persistent: true
 
 # ADR 0044 — main-context tweak. nginx -s reload during a WebSocket-heavy
-# proxy (Hocuspocus) can leave old workers alive indefinitely while their
-# WS connections persist. 30s caps the drain so old workers are forcibly
-# shut down — yjs clients reconnect to the new worker via auto-retry.
+# proxy can leave old workers alive indefinitely while their WS connections
+# persist. 30s caps the drain so old workers are forcibly shut down — WS
+# clients reconnect to the new worker via auto-retry.
 - name: Set worker_shutdown_timeout in main nginx config
   ansible.builtin.lineinfile:
     path: /etc/nginx/nginx.conf
@@ -92,8 +92,6 @@
   loop:
     - upstream-balruno-backend-blue.conf
     - upstream-balruno-backend-green.conf
-    - upstream-balruno-collab-blue.conf
-    - upstream-balruno-collab-green.conf
   notify: reload nginx
 
 - name: Stat active backend upstream symlink
@@ -110,33 +108,10 @@
   when: not backend_active_link.stat.exists
   notify: reload nginx
 
-- name: Stat active collab upstream symlink
-  ansible.builtin.stat:
-    path: /etc/nginx/conf.d/balruno-collab-active.conf
-  register: collab_active_link
-
-- name: Set initial active collab upstream symlink (first apply only)
-  ansible.builtin.file:
-    src: "/etc/nginx/snippets/upstream-balruno-collab-{{ nginx_initial_active_color }}.conf"
-    dest: /etc/nginx/conf.d/balruno-collab-active.conf
-    state: link
-    force: true
-  when: not collab_active_link.stat.exists
-  notify: reload nginx
-
 - name: Render api.balruno.com vhost
   ansible.builtin.template:
     src: api.conf.j2
     dest: /etc/nginx/conf.d/api.balruno.com.conf
-    owner: root
-    group: root
-    mode: '0644'
-  notify: reload nginx
-
-- name: Render collab.balruno.com vhost
-  ansible.builtin.template:
-    src: collab.conf.j2
-    dest: /etc/nginx/conf.d/collab.balruno.com.conf
     owner: root
     group: root
     mode: '0644'

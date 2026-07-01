@@ -9,7 +9,7 @@
 
 | Hostname | Public IP | 사양 | 역할 |
 |---|---|---|---|
-| **prod-app** | `{{ prod_app_public_ip }}` | ARM 12GB | Spring Boot 4.0.6 + Java 25 + Hocuspocus + Nginx |
+| **prod-app** | `{{ prod_app_public_ip }}` | ARM 12GB | Spring Boot 4.0.6 + Java 25 + Nginx |
 | **monitor** | `{{ monitor_public_ip }}` | ARM 12GB | PostgreSQL 18.3 + Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB |
 | **backup** | `{{ backup_public_ip }}` | x86 1GB | pg_dump rsync 수신 + cloudflared (monitor.balruno.com Tunnel) + node_exporter |
 | **status** | `{{ status_public_ip }}` | x86 1GB | Object Storage upload daemon (3-2-1 offsite) + node_exporter |
@@ -38,7 +38,6 @@ ansible/
 │   ├── nginx                      Nginx + Cloudflare Origin Cert + reverse proxy
 │   ├── postgres                   PostgreSQL 18 + tuning + pg_hba
 │   ├── backend                Spring Boot 4.0.6 + Java 25 systemd unit
-│   ├── hocuspocus                 Hocuspocus Node 22 systemd unit
 │   ├── monitoring                 Docker Compose: Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB + blackbox_exporter
 │   ├── cloudflared                Cloudflare Tunnel daemon (backup 머신)
 │   ├── backup                     pg_dump cron + rsync 수신
@@ -70,9 +69,9 @@ GH Secrets (Settings → Secrets and variables → Actions):
 
 ### 무중단 배포 (blue/green pattern)
 
-backend / collab 컨테이너는 blue/green 슬롯 + nginx upstream `backup` directive + snippet symlink swap 으로 무중단 배포. backend-deploy / collab-deploy 워크플로가 자동 처리.
+backend 컨테이너는 blue/green 슬롯 + nginx upstream `backup` directive + snippet symlink swap 으로 무중단 배포. backend-deploy 워크플로가 자동 처리.
 
-- 평소: 한 색깔 (blue 또는 green) 만 running. nginx active symlink (`/etc/nginx/conf.d/balruno-{backend,collab}-active.conf`) 가 그 색깔의 snippet 가리킴.
+- 평소: 한 색깔 (blue 또는 green) 만 running. nginx active symlink (`/etc/nginx/conf.d/balruno-backend-active.conf`) 가 그 색깔의 snippet 가리킴.
 - 배포: 반대 색깔 컨테이너 시작 → `/actuator/health/readiness` 200 대기 → symlink swap + `nginx -s reload` (graceful) → 30s rollback window → 옛 색깔 stop.
 - 첫 마이그레이션 cutover 만 ~21s 다운타임 (옛 단일 컨테이너 → 새 dual slot). 이후 모든 cutover 는 zero-downtime.
 - 수동 rollback: `gh workflow run backend-deploy.yml -f mode=rollback` (~30s 윈도 안에서만 instant flip, 이후엔 이전 SHA 재배포).
@@ -155,7 +154,7 @@ ansible-vault edit group_vars/all/vault.yml --vault-password-file "$ANSIBLE_VAUL
 Step 1: ansible -i inventory.yml all -m ping             ← 4대 SSH 검증
 Step 2: ansible-playbook site.yml --tags common --limit all   ← swap/fail2ban/Docker
 Step 3: ansible-playbook site.yml --limit monitor        ← PG + Grafana stack 먼저
-Step 4: ansible-playbook site.yml --limit prod_app       ← Spring + Hocuspocus + Nginx
+Step 4: ansible-playbook site.yml --limit prod_app       ← Spring + Nginx
 Step 5: ansible-playbook site.yml --limit backup         ← pg_dump + cloudflared
 Step 6: ansible-playbook site.yml --limit status         ← Object Storage upload daemon + node_exporter
 Step 7: 검증 (도메인 hit / actuator / Grafana 대시보드 확인)

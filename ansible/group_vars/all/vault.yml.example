@@ -18,15 +18,6 @@ vault_postgres_replication_password: "REPLACE_WITH_RANDOM_32_CHAR"
 
 # Spring Boot
 vault_jwt_secret: "REPLACE_WITH_HMAC_HS256_KEY_32_BYTES_BASE64"
-vault_jwt_collab_secret: "REPLACE_WITH_DIFFERENT_HS256_KEY"  # separate collab token, see ADR 0002 v1.1
-
-# Force-snapshot internal channel — backend → Hocuspocus side-car
-# (POST /internal/snapshot/:docId before doc duplicate). Both the
-# backend container and the collab container read this same value;
-# mismatch = 401 from the side-car + best-effort fall back to the
-# last persisted ydoc_state.
-# Generate via: openssl rand -hex 32
-vault_collab_internal_secret: "REPLACE_WITH_OPENSSL_RAND_HEX_32"
 
 # OAuth (GitHub + Google)
 vault_github_oauth_client_id: ""

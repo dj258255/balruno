@@ -2,7 +2,7 @@
 # Stage 0 alert rules. Conservative — 4 rules covering the 'paying user just
 # noticed' tier of incidents:
 #   1. Postgres down
-#   2. blackbox probe to api/collab failing
+#   2. blackbox probe to api failing
 #   3. TLS cert expires within 14 days
 #   4. host CPU pegged > 90% for 15 minutes
 #
@@ -48,7 +48,7 @@ groups:
           severity: critical
           service: postgres
 
-      # ─── Public endpoints (api/collab) ─────────────────────────────
+      # ─── Public endpoints (api) ────────────────────────────────────
       - uid: bal-blackbox-down
         title: Public endpoint probe failing
         condition: B
@@ -64,7 +64,7 @@ groups:
               # blue/green cutovers, prometheus scrape gaps, container
               # restarts — and combined with noDataState: Alerting that
               # painted Discord red whenever the cluster blinked.
-              expr: 'probe_success{instance=~"https://(api|collab)\\..+"}'
+              expr: 'probe_success{instance=~"https://api\\..+"}'
               instant: true
               refId: A
           - refId: B
@@ -85,7 +85,7 @@ groups:
         execErrState: Alerting
         for: 5m
         annotations:
-          summary: 'blackbox HTTP probe failing for api or collab'
+          summary: 'blackbox HTTP probe failing for api'
         labels:
           severity: critical
           service: public-api
