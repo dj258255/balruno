@@ -75,6 +75,7 @@ import {
 } from '@/lib/tree';
 import { ConnectionStatus } from '@/components/sync/ConnectionStatus';
 import { CellCommentPanel } from '@/components/comments/CellCommentPanel';
+import { GlobalRecordDetail } from '@/components/panels/GlobalRecordDetail';
 import { ServerSheetTree } from '@/components/sheet/ServerSheetTree';
 import SheetTable from '@/components/sheet/SheetTable';
 import KanbanView from '@/components/views/KanbanView';
@@ -1109,6 +1110,12 @@ export default function WorkspaceShell({
           workspaceSlug={workspace.slug}
         />
       )}
+
+      {/* Global record-detail slide panel — store-driven (recordDetailStore).
+          Mounted once here so any view (grid / kanban / calendar / …) that
+          calls useRecordDetail.openRecord(...) renders the RecordEditor.
+          Renders null while nothing is opened. */}
+      <GlobalRecordDetail />
     </main>
   );
 }

@@ -1623,6 +1623,10 @@
   },
   "recordEditor": {
     "title": "레코드 편집",
+    "preview": "미리보기",
+    "edit": "편집",
+    "longTextPlaceholder": "마크다운으로 작성…",
+    "longTextEmpty": "내용 없음",
     "yes": "예",
     "no": "아니오",
     "noOptions": "옵션이 없습니다",

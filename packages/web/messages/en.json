@@ -1623,6 +1623,10 @@
   },
   "recordEditor": {
     "title": "Edit Record",
+    "preview": "Preview",
+    "edit": "Edit",
+    "longTextPlaceholder": "Write in markdown…",
+    "longTextEmpty": "No content",
     "yes": "Yes",
     "no": "No",
     "noOptions": "No options",
