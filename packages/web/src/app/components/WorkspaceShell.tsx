@@ -50,6 +50,8 @@ import AccountSettingsClient from '@/app/components/AccountSettingsClient';
 import NotificationSettingsClient from '@/app/components/NotificationSettingsClient';
 import CreateWorkspaceModal from '@/app/components/CreateWorkspaceModal';
 import TemplateGalleryModal from '@/app/components/TemplateGalleryModal';
+import MobileNotice from '@/app/components/MobileNotice';
+import KeyboardShortcuts from '@/components/modals/KeyboardShortcuts';
 import Sidebar from '@/components/layout/Sidebar';
 import SheetTabs from '@/components/layout/SheetTabs';
 import SidebarResizer from '@/app/components/SidebarResizer';
@@ -815,6 +817,36 @@ export default function WorkspaceShell({
   const [accountOpen, setAccountOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+
+  // Global keyboard-shortcuts cheatsheet. Opened by `?` (Shift+/) or
+  // ⌘/Ctrl+/. Mounted once here (app shell) alongside the other
+  // root-level modals. Esc-to-close lives inside KeyboardShortcuts.
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  useEffect(() => {
+    // Ignore the key when focus is inside an input / textarea / select
+    // / contentEditable — otherwise typing "?" into a cell (CellEditor)
+    // or a text field would pop the cheatsheet instead of inserting the
+    // character. Cmd/Ctrl+/ is safe there too (no cell uses it), but we
+    // apply the same guard for consistency.
+    const isEditableTarget = (el: EventTarget | null): boolean => {
+      const node = el as HTMLElement | null;
+      if (!node || typeof node.tagName !== 'string') return false;
+      const tag = node.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+      return node.isContentEditable === true;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (isEditableTarget(e.target) || isEditableTarget(document.activeElement)) return;
+      const isHelp = e.key === '?' || (e.key === '/' && e.shiftKey);
+      const isHelpAlt = (e.metaKey || e.ctrlKey) && e.key === '/';
+      if (!isHelp && !isHelpAlt) return;
+      e.preventDefault();
+      setShortcutsOpen(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const sidebarCallbacks = {
     onShowChart: toggleTool('chart'),
     onShowHelp: () => { /* OnboardingGuide not yet rewired */ },
@@ -1116,6 +1148,15 @@ export default function WorkspaceShell({
           calls useRecordDetail.openRecord(...) renders the RecordEditor.
           Renders null while nothing is opened. */}
       <GlobalRecordDetail />
+
+      {/* Mobile "best on desktop" banner — self-hides on md+ widths and
+          when dismissed (1-week localStorage TTL), so mounting once at
+          the app shell is safe. */}
+      <MobileNotice />
+
+      {/* Keyboard-shortcuts cheatsheet — opened by the global `?` /
+          ⌘Ctrl+/ listener above. Renders null while closed. */}
+      <KeyboardShortcuts open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </main>
   );
 }
