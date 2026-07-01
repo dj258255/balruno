@@ -1,6 +1,6 @@
 import { request } from './client';
 
-export type CommentScopeKind = 'SHEET_CELL';
+export type CommentScopeKind = 'SHEET_CELL' | 'SHEET_ROW';
 
 export interface BackendComment {
   id: string;
@@ -68,6 +68,28 @@ export function listCommentsForCell(input: ListCommentsForCellInput): Promise<Ba
     sheetId: input.sheetId,
     rowId: input.rowId,
     columnId: input.columnId,
+  });
+  return request<BackendComment[]>(
+    `/api/v1/projects/${input.projectId}/comments?${params.toString()}`,
+  );
+}
+
+export interface ListCommentsForRowInput {
+  projectId: string;
+  sheetId: string;
+  rowId: string;
+}
+
+/**
+ * Row-anchored (record-level) comments — scope SHEET_ROW, columnId
+ * null (Airtable/Baserow record thread). Mirrors listCommentsForCell
+ * but omits columnId; the backend keys the thread on (sheetId, rowId).
+ */
+export function listCommentsForRow(input: ListCommentsForRowInput): Promise<BackendComment[]> {
+  const params = new URLSearchParams({
+    scope: 'SHEET_ROW',
+    sheetId: input.sheetId,
+    rowId: input.rowId,
   });
   return request<BackendComment[]>(
     `/api/v1/projects/${input.projectId}/comments?${params.toString()}`,

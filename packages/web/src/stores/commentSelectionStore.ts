@@ -10,6 +10,7 @@ import { create } from 'zustand';
 
 export type CommentSelection =
   | { kind: 'sheet-cell'; sheetId: string; rowId: string; columnId: string }
+  | { kind: 'sheet-row'; sheetId: string; rowId: string }
   | null;
 
 interface CommentSelectionState {

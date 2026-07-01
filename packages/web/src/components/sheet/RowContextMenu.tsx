@@ -12,6 +12,7 @@ import {
   Maximize2,
   Swords,
   History,
+  MessageSquare,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useSheetUIStore } from '@/stores/sheetUIStore';
@@ -34,6 +35,8 @@ interface RowContextMenuProps {
   runSimulation?: { label: string; onClick: () => void; disabled?: boolean } | null;
   /** 변경 이력 패널 열기 — server-canonical mode 에서만 (행 단위 timeline). */
   onShowHistory?: () => void;
+  /** 행 단위(레코드) 댓글 스레드 열기 — server-canonical mode 에서만. */
+  onAddRowComment?: () => void;
 }
 
 interface MenuItem {
@@ -63,6 +66,7 @@ export default function RowContextMenu({
   onOpenDetail,
   runSimulation,
   onShowHistory,
+  onAddRowComment,
 }: RowContextMenuProps) {
   const t = useTranslations();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -114,6 +118,16 @@ export default function RowContextMenu({
             label: t('contextMenu.openRecordDetail'),
             icon: <Maximize2 className="w-4 h-4" />,
             onClick: onOpenDetail,
+            divider: true,
+          } as MenuItem,
+        ]
+      : []),
+    ...(onAddRowComment
+      ? [
+          {
+            label: t('contextMenu.addRowComment'),
+            icon: <MessageSquare className="w-4 h-4" />,
+            onClick: onAddRowComment,
             divider: true,
           } as MenuItem,
         ]

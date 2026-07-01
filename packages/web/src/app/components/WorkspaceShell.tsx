@@ -113,6 +113,18 @@ function cellLabelFor(sel: CommentSelection, sheets: Sheet[]): string {
   return `${sheet.name} · Row ${rowIdx + 1} · ${colName}`;
 }
 
+/**
+ * Header label for the record-level (SHEET_ROW) comment thread —
+ * "{sheetName} · 행 {n}". Best-effort lookup mirrors cellLabelFor.
+ */
+function rowLabelFor(sel: CommentSelection, sheets: Sheet[]): string {
+  if (!sel || sel.kind !== 'sheet-row') return '';
+  const sheet = sheets.find((s) => s.id === sel.sheetId);
+  if (!sheet) return sel.rowId.slice(0, 8);
+  const rowIdx = sheet.rows.findIndex((r) => r.id === sel.rowId);
+  return `${sheet.name} · 행 ${rowIdx + 1}`;
+}
+
 // Tree mutators live in /lib/tree — same helpers used by the wss
 // broadcast handler + applyUndoableOps for tree.* undo (ADR 0021
 // phase 3).
@@ -1001,8 +1013,21 @@ export default function WorkspaceShell({
               onClose={() => setCommentPanelOpen(false)}
             />
           )}
+          {/* Record-level (row-anchored) thread — same panel, SHEET_ROW
+              scope, no columnId. Airtable/Baserow record-comment model. */}
+          {commentPanelOpen && commentSelection?.kind === 'sheet-row' && (
+            <CellCommentPanel
+              projectId={project.id}
+              sheetId={commentSelection.sheetId}
+              rowId={commentSelection.rowId}
+              scopeKind="SHEET_ROW"
+              cellLabel={rowLabelFor(commentSelection, sheets)}
+              onClose={() => setCommentPanelOpen(false)}
+            />
+          )}
           {commentPanelOpen
-            && commentSelection?.kind !== 'sheet-cell' && (
+            && commentSelection?.kind !== 'sheet-cell'
+            && commentSelection?.kind !== 'sheet-row' && (
             <aside
               className="md:w-[320px] md:flex-shrink-0 md:h-full md:overflow-y-auto border-l p-4 text-sm"
               style={{

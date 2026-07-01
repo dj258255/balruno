@@ -75,6 +75,7 @@ import { COLUMN_TYPE_META } from '@/lib/columnTypeMeta';
 import { usePresence } from '@/hooks/usePresence';
 import { emitPresence } from '@/lib/sync/writeQueue';
 import { useCommentSelectionStore } from '@/stores/commentSelectionStore';
+import { listCommentsForProject } from '@/lib/backend';
 
 export default function SheetTable({ projectId, sheet }: SheetTableProps) {
   const t = useTranslations();
@@ -306,6 +307,47 @@ export default function SheetTable({ projectId, sheet }: SheetTableProps) {
     // unmount 시 cleanup
     return () => publishActiveCell(null);
   }, [selectedCell, sheet.id, publishActiveCell]);
+
+  // Row-anchored (record-level) comment counts for the row-number
+  // badge. No bulk-count endpoint exists, so we group-by client-side
+  // over the project-wide browse list (server-capped at 200 — the
+  // same list backing the dock CommentsPanel). Counts root SHEET_ROW
+  // threads on this sheet, keyed by rowId. Refetch on mount + on any
+  // comment-event broadcast so the badge tracks peer activity.
+  const [rowCommentCounts, setRowCommentCounts] = useState<Map<string, number>>(
+    () => new Map(),
+  );
+  useEffect(() => {
+    let cancelled = false;
+    const refetch = async () => {
+      try {
+        const all = await listCommentsForProject(projectId);
+        if (cancelled) return;
+        const counts = new Map<string, number>();
+        for (const c of all) {
+          if (c.scopeKind !== 'SHEET_ROW') continue;
+          if (c.sheetId !== sheet.id) continue;
+          if (c.parentId) continue; // count root threads, not replies
+          if (!c.rowId) continue;
+          counts.set(c.rowId, (counts.get(c.rowId) ?? 0) + 1);
+        }
+        setRowCommentCounts(counts);
+      } catch {
+        // Best-effort — a failed fetch just leaves the badges hidden.
+      }
+    };
+    void refetch();
+    const onEvent = (e: Event) => {
+      const detail = (e as CustomEvent<{ projectId?: string }>).detail;
+      if (detail?.projectId && detail.projectId !== projectId) return;
+      void refetch();
+    };
+    window.addEventListener('balruno:comment-event', onEvent);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('balruno:comment-event', onEvent);
+    };
+  }, [projectId, sheet.id]);
 
   // P9a — selectedCells (drag 범위) publish. 단일 cell 일 땐 노이즈 제거 위해 빈 배열.
   useEffect(() => {
@@ -702,9 +744,10 @@ export default function SheetTable({ projectId, sheet }: SheetTableProps) {
       header: () => null,
       cell: ({ row }) => {
         const rowIndex = sheet.rows.findIndex((r) => r.id === row.original.id);
+        const commentCount = rowCommentCounts.get(row.original.id) ?? 0;
         return (
           <div
-            className="flex items-center justify-center select-none cursor-pointer hover:bg-[var(--bg-hover)] transition-colors"
+            className="relative flex items-center justify-center select-none cursor-pointer hover:bg-[var(--bg-hover)] transition-colors"
             style={{ height: '100%', width: '100%' }}
             onClick={(e) => {
               e.stopPropagation();
@@ -728,6 +771,16 @@ export default function SheetTable({ projectId, sheet }: SheetTableProps) {
             >
               {rowIndex + 1}
             </span>
+            {commentCount > 0 && (
+              <span
+                className="absolute top-0.5 right-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-1 text-[9px] font-semibold leading-none"
+                style={{ background: 'var(--accent, #2563eb)', color: '#fff' }}
+                title={`${commentCount}개의 행 댓글`}
+                aria-label={`${commentCount}개의 행 댓글`}
+              >
+                {commentCount > 9 ? '9+' : commentCount}
+              </span>
+            )}
           </div>
         );
       },
@@ -792,6 +845,7 @@ export default function SheetTable({ projectId, sheet }: SheetTableProps) {
     selectAllCells,
     setRowContextMenu,
     rowHeaderFontSize,
+    rowCommentCounts,
   ]);
 
   const table = useReactTable({
@@ -1977,6 +2031,20 @@ export default function SheetTable({ projectId, sheet }: SheetTableProps) {
               sheetId: sheet.id,
               rowId: rowContextMenu.row.id,
             });
+            setRowContextMenu(null);
+          }}
+          onAddRowComment={() => {
+            // Record-level (row-anchored) comment thread. Mirrors the
+            // cell "댓글" path: set the comment selection to this row,
+            // then flip the side panel open. selectRow (fired at
+            // context-menu-open) doesn't touch selectedCell, so the
+            // selectedCell effect won't clobber this sheet-row selection.
+            useCommentSelectionStore.getState().setSelection({
+              kind: 'sheet-row',
+              sheetId: sheet.id,
+              rowId: rowContextMenu.row.id,
+            });
+            useCommentSelectionStore.getState().setPanelOpen(true);
             setRowContextMenu(null);
           }}
           onToggleLock={() => {

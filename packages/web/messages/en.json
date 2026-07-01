@@ -532,6 +532,7 @@
   "contextMenu": {
     "openRecordDetail": "Open record detail",
     "showRowHistory": "Show change history",
+    "addRowComment": "Comment on this row",
     "addComment": "Add comment",
     "cut": "Cut",
     "copy": "Copy",

@@ -532,6 +532,7 @@
   "contextMenu": {
     "openRecordDetail": "레코드 상세 보기",
     "showRowHistory": "변경 이력 보기",
+    "addRowComment": "이 행에 댓글",
     "addComment": "코멘트 추가",
     "cut": "잘라내기",
     "copy": "복사",

@@ -89,6 +89,7 @@ export {
   setCommentResolved,
   deleteComment,
   listCommentsForCell,
+  listCommentsForRow,
   listCommentsForProject,
   listInbox,
 } from './comments';
@@ -97,6 +98,7 @@ export type {
   CommentScopeKind,
   CreateCommentInput,
   ListCommentsForCellInput,
+  ListCommentsForRowInput,
 } from './comments';
 
 export {

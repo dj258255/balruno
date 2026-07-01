@@ -25,9 +25,11 @@ import { toast } from 'sonner';
 
 import {
   type BackendComment,
+  type CommentScopeKind,
   createComment,
   deleteComment,
   listCommentsForCell,
+  listCommentsForRow,
   setCommentResolved,
 } from '@/lib/backend';
 import { useAuthStore } from '@/stores/authStore';
@@ -39,8 +41,15 @@ interface CellCommentPanelProps {
   projectId: string;
   sheetId: string;
   rowId: string;
-  columnId: string;
-  /** Cell label shown in the panel header (e.g. "Row 3 · HP"). */
+  /** Cell column — required for SHEET_CELL, omitted for SHEET_ROW. */
+  columnId?: string;
+  /**
+   * Comment anchor scope. 'SHEET_CELL' (default) keeps the original
+   * per-cell behavior; 'SHEET_ROW' serves the record-level thread
+   * (Airtable/Baserow model) — fetch/post drop columnId.
+   */
+  scopeKind?: CommentScopeKind;
+  /** Header label shown in the panel (e.g. "Row 3 · HP" or "Sheet · 행 3"). */
   cellLabel: string;
   onClose: () => void;
 }
@@ -50,6 +59,7 @@ export function CellCommentPanel({
   sheetId,
   rowId,
   columnId,
+  scopeKind = 'SHEET_CELL',
   cellLabel,
   onClose,
 }: CellCommentPanelProps) {
@@ -99,7 +109,10 @@ export function CellCommentPanel({
     let cancelled = false;
     const refetch = async () => {
       try {
-        const list = await listCommentsForCell({ projectId, sheetId, rowId, columnId });
+        const list =
+          scopeKind === 'SHEET_ROW'
+            ? await listCommentsForRow({ projectId, sheetId, rowId })
+            : await listCommentsForCell({ projectId, sheetId, rowId, columnId: columnId ?? '' });
         if (!cancelled) setComments(list);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : '코멘트 로드 실패');
@@ -116,7 +129,7 @@ export function CellCommentPanel({
       cancelled = true;
       window.removeEventListener('balruno:comment-event', onPeer);
     };
-  }, [projectId, sheetId, rowId, columnId]);
+  }, [projectId, sheetId, rowId, columnId, scopeKind]);
 
   const handlePost = async () => {
     if (posting) return;
@@ -126,10 +139,11 @@ export function CellCommentPanel({
     try {
       const created = await createComment({
         projectId,
-        scopeKind: 'SHEET_CELL',
+        scopeKind,
         sheetId,
         rowId,
-        columnId,
+        // SHEET_ROW threads carry no columnId (record-level anchor).
+        columnId: scopeKind === 'SHEET_ROW' ? undefined : columnId,
         // Reply if replyToId is set (Stage H), otherwise root comment.
         parentId: replyToId ?? undefined,
         // MentionEditor (Stage F) emits the real Tiptap doc shape with
@@ -276,7 +290,13 @@ export function CellCommentPanel({
           ref={editorRef}
           workspaceId={workspaceId}
           projectId={projectId}
-          placeholder={replyToId ? '답글... (@ 으로 멤버 · 이미지 drag-drop)' : '이 셀에 대한 의견... (@ 으로 멤버 · 이미지 drag-drop)'}
+          placeholder={
+            replyToId
+              ? '답글... (@ 으로 멤버 · 이미지 drag-drop)'
+              : scopeKind === 'SHEET_ROW'
+                ? '이 행에 대한 의견... (@ 으로 멤버 · 이미지 drag-drop)'
+                : '이 셀에 대한 의견... (@ 으로 멤버 · 이미지 drag-drop)'
+          }
           disabled={posting}
           onChange={setDraftJson}
           onSubmit={handlePost}
