@@ -21,7 +21,13 @@ interface MemberManagementModalProps {
   onClose: () => void;
 }
 
-export function MemberManagementModal({ workspaceId, onClose }: MemberManagementModalProps) {
+/**
+ * Member management content (invite form + member/pending lists) without
+ * any modal chrome. Self-manages fetching + role gating so it can mount
+ * either inside the standalone {@link MemberManagementModal} or embedded
+ * in the SettingsHub right pane.
+ */
+export function MemberManagementBody({ workspaceId }: { workspaceId: string }) {
   const t = useTranslations('members');
   const currentUserId = useBackendAuthStore((s) => s.user?.id);
 
@@ -60,6 +66,61 @@ export function MemberManagementModal({ workspaceId, onClose }: MemberManagement
     members.find((m) => m.userId === currentUserId)?.role ?? 'VIEWER';
   const canAdmin = viewerRole === 'OWNER' || viewerRole === 'ADMIN';
 
+  return (
+    <>
+      {canAdmin && (
+        <div className="p-4 border-b" style={{ borderColor: 'var(--border-primary)' }}>
+          <InviteMemberForm workspaceId={workspaceId} onInvited={reload} />
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto p-2">
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--text-tertiary)' }} />
+          </div>
+        )}
+        {error && (
+          <p className="px-3 py-2 text-sm" style={{ color: 'var(--danger)' }}>
+            {error}
+          </p>
+        )}
+        {!loading && !error && (
+          <>
+            <SectionLabel>{t('membersHeading', { count: members.length })}</SectionLabel>
+            {members.map((m) => (
+              <MemberRow
+                key={m.userId}
+                workspaceId={workspaceId}
+                member={m}
+                viewerRole={viewerRole}
+                onChanged={reload}
+              />
+            ))}
+
+            {pending.length > 0 && canAdmin && (
+              <>
+                <SectionLabel>{t('pendingHeading', { count: pending.length })}</SectionLabel>
+                {pending.map((inv) => (
+                  <PendingRow
+                    key={inv.id}
+                    workspaceId={workspaceId}
+                    invite={inv}
+                    onRevoked={reload}
+                  />
+                ))}
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+export function MemberManagementModal({ workspaceId, onClose }: MemberManagementModalProps) {
+  const t = useTranslations('members');
+
   // Portal to document.body so the sidebar's translateX-bearing
   // wrapper doesn't capture our fixed-position container as its
   // own containing block (CSS spec: transform creates a new
@@ -97,52 +158,7 @@ export function MemberManagementModal({ workspaceId, onClose }: MemberManagement
           </button>
         </div>
 
-        {canAdmin && (
-          <div className="p-4 border-b" style={{ borderColor: 'var(--border-primary)' }}>
-            <InviteMemberForm workspaceId={workspaceId} onInvited={reload} />
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto p-2">
-          {loading && (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--text-tertiary)' }} />
-            </div>
-          )}
-          {error && (
-            <p className="px-3 py-2 text-sm" style={{ color: 'var(--danger)' }}>
-              {error}
-            </p>
-          )}
-          {!loading && !error && (
-            <>
-              <SectionLabel>{t('membersHeading', { count: members.length })}</SectionLabel>
-              {members.map((m) => (
-                <MemberRow
-                  key={m.userId}
-                  workspaceId={workspaceId}
-                  member={m}
-                  viewerRole={viewerRole}
-                  onChanged={reload}
-                />
-              ))}
-
-              {pending.length > 0 && canAdmin && (
-                <>
-                  <SectionLabel>{t('pendingHeading', { count: pending.length })}</SectionLabel>
-                  {pending.map((inv) => (
-                    <PendingRow
-                      key={inv.id}
-                      workspaceId={workspaceId}
-                      invite={inv}
-                      onRevoked={reload}
-                    />
-                  ))}
-                </>
-              )}
-            </>
-          )}
-        </div>
+        <MemberManagementBody workspaceId={workspaceId} />
       </div>
     </div>,
     document.body,

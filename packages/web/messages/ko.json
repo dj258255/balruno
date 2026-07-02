@@ -218,6 +218,15 @@
     "probabilityTree": "확률 트리",
     "sheetDiff": "시트 Diff"
   },
+  "settingsHub": {
+    "open": "설정",
+    "groupAccount": "계정",
+    "groupWorkspace": "워크스페이스 · {name}",
+    "account": "계정",
+    "notifications": "알림",
+    "general": "일반",
+    "members": "멤버"
+  },
   "sheet": {
     "newSheet": "새 시트",
     "newSheetKindHint": "시트 용도 — 자동 감지 또는 직접 선택",

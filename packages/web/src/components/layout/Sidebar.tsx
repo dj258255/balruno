@@ -5,6 +5,7 @@ import { AllToolId } from '@/stores/toolLayoutStore';
 import { useSheetUIStore } from '@/stores/sheetUIStore';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 import type { ProjectVisibility } from '@/types';
+import type { SettingsSection } from '@/app/components/SettingsHub';
 import { getIncompatibleColumnTypes } from '@/lib/columnTypeMeta';
 import SheetTagsModal from '@/components/modals/SheetTagsModal';
 
@@ -40,9 +41,8 @@ interface SidebarProps {
   onShowEconomy?: () => void;
   onShowDpsVariance?: () => void;
   onShowCurveFitting?: () => void;
-  onShowSettings?: () => void;
-  onShowAccountSettings?: () => void;
-  onShowNotificationSettings?: () => void;
+  /** Opens the SettingsHub, optionally pre-selecting a section. */
+  onOpenSettings?: (section?: SettingsSection) => void;
   onShowCreateWorkspace?: () => void;
   onShowExportModal?: () => void;
   onShowImportModal?: () => void;
@@ -83,9 +83,7 @@ export default function Sidebar({
   onShowEconomy,
   onShowDpsVariance,
   onShowCurveFitting,
-  onShowSettings,
-  onShowAccountSettings,
-  onShowNotificationSettings,
+  onOpenSettings,
   onShowCreateWorkspace,
   onShowExportModal,
   onShowImportModal,
@@ -216,9 +214,7 @@ export default function Sidebar({
         {/* Notion / Linear 공통 패턴 — 별도 앱 로고 없음. WorkspaceSwitcher 가 최상단 앵커
             역할 + 테마 토글 인라인. (앱 브랜드는 브라우저 탭·파비콘·랜딩에서만) */}
         <WorkspaceSwitcher
-          onOpenSettings={onShowSettings}
-          onOpenAccountSettings={onShowAccountSettings}
-          onOpenNotificationSettings={onShowNotificationSettings}
+          onOpenSettings={onOpenSettings}
           onOpenCreateWorkspace={onShowCreateWorkspace}
         />
 
@@ -352,7 +348,7 @@ export default function Sidebar({
           onShowImportModal={onShowImportModal}
           onShowHelp={onShowHelp}
           onShowReferences={onShowReferences}
-          onShowSettings={onShowSettings}
+          onShowSettings={onOpenSettings ? () => onOpenSettings('workspace') : undefined}
           handleToolsResizeStart={handleToolsResizeStart}
         />
 
@@ -362,7 +358,7 @@ export default function Sidebar({
 
         <SaveStatus
           lastSaved={projectStore.lastSaved}
-          onShowSettings={onShowSettings}
+          onShowSettings={onOpenSettings ? () => onOpenSettings('workspace') : undefined}
         />
       </div>
 

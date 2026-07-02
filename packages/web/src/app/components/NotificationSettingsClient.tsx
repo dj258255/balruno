@@ -45,9 +45,18 @@ const DIGEST_KEYS: Array<{ value: DigestFrequency; key: string }> = [
 
 interface NotificationSettingsClientProps {
   onClose?: () => void;
+  /**
+   * When true, skip the shell entirely (no portal, no overlay, no
+   * page <main>, no header X) and render only the body content —
+   * used by SettingsHub which provides its own frame + close button.
+   */
+  embedded?: boolean;
 }
 
-export default function NotificationSettingsClient({ onClose }: NotificationSettingsClientProps = {}) {
+export default function NotificationSettingsClient({
+  onClose,
+  embedded = false,
+}: NotificationSettingsClientProps = {}) {
   const t = useTranslations('notificationSettings');
   const isModal = Boolean(onClose);
   const [pref, setPref] = useState<NotificationPreference | null>(null);
@@ -126,7 +135,7 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
       <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">
         {error}
       </p>,
-      { isModal, onClose },
+      { isModal, onClose, embedded },
     );
   }
 
@@ -135,7 +144,7 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
       <div className="flex min-h-[40vh] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--text-tertiary)' }} />
       </div>,
-      { isModal, onClose },
+      { isModal, onClose, embedded },
     );
   }
 
@@ -247,7 +256,7 @@ export default function NotificationSettingsClient({ onClose }: NotificationSett
         )}
       </section>
     </div>,
-    { isModal, onClose },
+    { isModal, onClose, embedded },
   );
 }
 
@@ -267,8 +276,10 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
 
 function wrapShell(
   body: ReactNode,
-  { isModal, onClose }: { isModal: boolean; onClose?: () => void },
+  { isModal, onClose, embedded }: { isModal: boolean; onClose?: () => void; embedded?: boolean },
 ): ReactNode {
+  // Embedded (SettingsHub pane) — the hub owns the frame; render bare body.
+  if (embedded) return body;
   if (!isModal) {
     return <main className="mx-auto max-w-2xl px-4 py-12 space-y-8">{body}</main>;
   }

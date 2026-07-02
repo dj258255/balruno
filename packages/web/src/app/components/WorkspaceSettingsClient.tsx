@@ -46,11 +46,18 @@ interface WorkspaceSettingsClientProps {
    * layout — same as the original `/w/{slug}/settings` route.
    */
   onClose?: () => void;
+  /**
+   * When true, skip the shell entirely (no portal, no overlay, no
+   * page <main>, no header X) and render only the body content —
+   * used by SettingsHub which provides its own frame + close button.
+   */
+  embedded?: boolean;
 }
 
 export default function WorkspaceSettingsClient({
   workspaceSlug,
   onClose,
+  embedded = false,
 }: WorkspaceSettingsClientProps = {}) {
   const params = useParams<{ slug?: string; wsSlug?: string }>();
   const router = useRouter();
@@ -153,14 +160,14 @@ export default function WorkspaceSettingsClient({
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--text-tertiary)' }} />
       </div>,
-      { isModal, onClose },
+      { isModal, onClose, embedded },
     );
   }
 
   if (error === 'not-found' || !workspace) {
     return wrapShell(
       <div>
-        {!isModal && (
+        {!isModal && !embedded && (
           <button
             onClick={() => router.push('/workspaces')}
             className="mb-4 inline-flex items-center gap-1 text-sm"
@@ -173,13 +180,13 @@ export default function WorkspaceSettingsClient({
           워크스페이스를 찾을 수 없습니다
         </h1>
       </div>,
-      { isModal, onClose },
+      { isModal, onClose, embedded },
     );
   }
 
   return wrapShell(
     <>
-      {!isModal && (
+      {!isModal && !embedded && (
         <button
           onClick={() => router.push(`/${workspace.slug}`)}
           className="mb-4 inline-flex items-center gap-1 text-sm"
@@ -294,7 +301,7 @@ export default function WorkspaceSettingsClient({
         onCancel={() => setConfirmOpen(false)}
       />
     </>,
-    { isModal, onClose },
+    { isModal, onClose, embedded },
   );
 }
 
@@ -307,8 +314,10 @@ export default function WorkspaceSettingsClient({
  */
 function wrapShell(
   body: ReactNode,
-  { isModal, onClose }: { isModal: boolean; onClose?: () => void },
+  { isModal, onClose, embedded }: { isModal: boolean; onClose?: () => void; embedded?: boolean },
 ): ReactNode {
+  // Embedded (SettingsHub pane) — the hub owns the frame; render bare body.
+  if (embedded) return body;
   if (!isModal) {
     return <main className="mx-auto max-w-2xl px-6 py-12">{body}</main>;
   }

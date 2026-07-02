@@ -218,6 +218,15 @@
     "probabilityTree": "Probability Tree",
     "sheetDiff": "Sheet Diff"
   },
+  "settingsHub": {
+    "open": "Settings",
+    "groupAccount": "Account",
+    "groupWorkspace": "Workspace · {name}",
+    "account": "Account",
+    "notifications": "Notifications",
+    "general": "General",
+    "members": "Members"
+  },
   "sheet": {
     "newSheet": "New Sheet",
     "newSheetKindHint": "Sheet kind — auto-detect or pick explicitly",

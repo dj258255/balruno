@@ -22,23 +22,23 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ui';
 import { useSidebarPrefs } from '@/stores/sidebarPrefsStore';
 import { useWorkspaceListStore } from '@/stores/workspaceListStore';
-import { MemberManagementModal } from '@/components/workspace/MemberManagementModal';
+import type { SettingsSection } from '@/app/components/SettingsHub';
 
 interface WorkspaceSwitcherProps {
-  onOpenSettings?: () => void;
-  onOpenAccountSettings?: () => void;
-  onOpenNotificationSettings?: () => void;
+  /**
+   * Opens the SettingsHub. The optional section pre-selects a hub
+   * pane ('members' from the member-management item); omitted means
+   * the hub's default ('workspace').
+   */
+  onOpenSettings?: (section?: SettingsSection) => void;
   onOpenCreateWorkspace?: () => void;
 }
 
 export function WorkspaceSwitcher({
   onOpenSettings,
-  onOpenAccountSettings,
-  onOpenNotificationSettings,
   onOpenCreateWorkspace,
 }: WorkspaceSwitcherProps) {
   const tMembers = useTranslations('members');
-  const [showMembers, setShowMembers] = useState(false);
   const t = useTranslations();
   const { theme } = useTheme();
   const router = useRouter();
@@ -192,21 +192,24 @@ export function WorkspaceSwitcher({
               </span>
             </button>
 
-            {/* 멤버 관리 */}
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                setShowMembers(true);
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              <Users className="w-4 h-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
-              <span>{tMembers('title')}</span>
-            </button>
+            {/* 멤버 관리 — SettingsHub 의 members 섹션으로 진입 */}
+            {onOpenSettings && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onOpenSettings('members');
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                <Users className="w-4 h-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
+                <span>{tMembers('title')}</span>
+              </button>
+            )}
 
-            {/* 워크스페이스 설정 */}
+            {/* 설정 — 워크스페이스/계정/알림/멤버가 모두 SettingsHub 로 통합됨.
+                섹션 미지정 → 허브 기본값(workspace) 으로 열림. */}
             {onOpenSettings && (
               <button
                 type="button"
@@ -218,51 +221,11 @@ export function WorkspaceSwitcher({
                 style={{ color: 'var(--text-primary)' }}
               >
                 <Settings className="w-4 h-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
-                <span>{t('sidebar.workspaceSwitcher.settings')}</span>
-              </button>
-            )}
-
-            {/* 계정 설정 (account / GDPR) — Notion / Linear 패턴.
-                워크스페이스 단위와 별개로 사용자 본인 계정 관련. */}
-            {onOpenAccountSettings && (
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  onOpenAccountSettings();
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <Settings className="w-4 h-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
-                <span>계정 설정</span>
-              </button>
-            )}
-
-            {/* 알림 설정 (per-user notification preferences) */}
-            {onOpenNotificationSettings && (
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  onOpenNotificationSettings();
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <Settings className="w-4 h-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
-                <span>알림 설정</span>
+                <span>{t('settingsHub.open')}</span>
               </button>
             )}
           </div>
         </div>
-      )}
-
-      {showMembers && activeWorkspaceId && (
-        <MemberManagementModal
-          workspaceId={activeWorkspaceId}
-          onClose={() => setShowMembers(false)}
-        />
       )}
 
       {ctxMenu && typeof document !== 'undefined' && onOpenSettings && createPortal(
@@ -284,7 +247,7 @@ export function WorkspaceSwitcher({
             type="button"
             onClick={() => {
               setCtxMenu(null);
-              onOpenSettings();
+              onOpenSettings('workspace');
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-hover)]"
             style={{ color: 'var(--text-primary)' }}

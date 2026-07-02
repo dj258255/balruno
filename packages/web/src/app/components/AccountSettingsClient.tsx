@@ -27,9 +27,18 @@ interface AccountSettingsClientProps {
    * layout the `/settings/account` route uses.
    */
   onClose?: () => void;
+  /**
+   * When true, skip the shell entirely (no portal, no overlay, no
+   * page <main>, no header X) and render only the body content —
+   * used by SettingsHub which provides its own frame + close button.
+   */
+  embedded?: boolean;
 }
 
-export default function AccountSettingsClient({ onClose }: AccountSettingsClientProps = {}) {
+export default function AccountSettingsClient({
+  onClose,
+  embedded = false,
+}: AccountSettingsClientProps = {}) {
   const t = useTranslations('accountSettings');
   const [deleting, setDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState('');
@@ -132,14 +141,16 @@ export default function AccountSettingsClient({ onClose }: AccountSettingsClient
         </button>
       </div>
     </div>,
-    { isModal, onClose },
+    { isModal, onClose, embedded },
   );
 }
 
 function wrapShell(
   body: ReactNode,
-  { isModal, onClose }: { isModal: boolean; onClose?: () => void },
+  { isModal, onClose, embedded }: { isModal: boolean; onClose?: () => void; embedded?: boolean },
 ): ReactNode {
+  // Embedded (SettingsHub pane) — the hub owns the frame; render bare body.
+  if (embedded) return body;
   if (!isModal) {
     return <main className="mx-auto max-w-2xl space-y-8 px-4 py-12">{body}</main>;
   }

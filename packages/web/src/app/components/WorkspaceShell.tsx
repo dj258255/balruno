@@ -45,9 +45,7 @@ import { useProjectHistory } from '@/hooks';
 import { usePanelStates } from '@/hooks/usePanelStates';
 import BottomDock from '@/components/BottomDock';
 import DockedToolbox from '@/components/DockedToolbox';
-import WorkspaceSettingsClient from '@/app/components/WorkspaceSettingsClient';
-import AccountSettingsClient from '@/app/components/AccountSettingsClient';
-import NotificationSettingsClient from '@/app/components/NotificationSettingsClient';
+import SettingsHub, { type SettingsSection } from '@/app/components/SettingsHub';
 import CreateWorkspaceModal from '@/app/components/CreateWorkspaceModal';
 import TemplateGalleryModal from '@/app/components/TemplateGalleryModal';
 import MobileNotice from '@/app/components/MobileNotice';
@@ -815,12 +813,10 @@ export default function WorkspaceShell({
   // bottom dock both control the same panels.
   const toggleTool = (id: keyof typeof toolPanels) => () =>
     toolPanels[id].setShow(!toolPanels[id].show);
-  // Settings modals — Notion/Linear-style centered overlays
-  // triggered from the workspace switcher menu. Replace the
-  // standalone /{wsSlug}/settings + /settings/account routes.
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  // Settings hub — one Notion-style modal (left nav rail + content
+  // pane) consolidating the former workspace / account / notification
+  // modals + member management. Non-null = open at that section.
+  const [settingsSection, setSettingsSection] = useState<SettingsSection | null>(null);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
 
   // Global keyboard-shortcuts cheatsheet. Opened by `?` (Shift+/) or
@@ -876,9 +872,7 @@ export default function WorkspaceShell({
     onShowCalculator: toggleTool('calculator'),
     onShowComparison: toggleTool('comparison'),
     onShowReferences: () => { /* ReferencesModal not yet rewired */ },
-    onShowSettings: () => setSettingsOpen(true),
-    onShowAccountSettings: () => setAccountOpen(true),
-    onShowNotificationSettings: () => setNotificationsOpen(true),
+    onOpenSettings: (section?: SettingsSection) => setSettingsSection(section ?? 'workspace'),
     onShowCreateWorkspace: () => setCreateWorkspaceOpen(true),
     onShowPresetComparison: toggleTool('preset'),
     onShowImbalanceDetector: toggleTool('imbalance'),
@@ -1141,20 +1135,16 @@ export default function WorkspaceShell({
           fight the body flex. */}
       <BottomDock panels={toolPanels} isModalOpen={templateModalOpen} />
 
-      {/* Settings modals (Notion/Linear pattern). Mounted at <main>
-          level so they portal to document.body regardless of where
-          the user triggered them from. */}
-      {settingsOpen && workspace && (
-        <WorkspaceSettingsClient
+      {/* Settings hub (Notion pattern) — mounted at <main> level so it
+          portals to document.body regardless of where the user
+          triggered it from. */}
+      {settingsSection && workspace && (
+        <SettingsHub
           workspaceSlug={workspace.slug}
-          onClose={() => setSettingsOpen(false)}
+          workspaceId={workspace.id}
+          initialSection={settingsSection}
+          onClose={() => setSettingsSection(null)}
         />
-      )}
-      {accountOpen && (
-        <AccountSettingsClient onClose={() => setAccountOpen(false)} />
-      )}
-      {notificationsOpen && (
-        <NotificationSettingsClient onClose={() => setNotificationsOpen(false)} />
       )}
       {createWorkspaceOpen && (
         <CreateWorkspaceModal onClose={() => setCreateWorkspaceOpen(false)} />
