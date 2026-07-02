@@ -134,6 +134,13 @@ class TreeOpService {
                 requireTreeAddBelowPlanLimit(projectId, treeKind, roots, add);
             }
             applyToTree(roots, op);
+        } catch (com.balruno.workspace.QuotaException | IllegalArgumentException e) {
+            // Deliberate rejections (plan limit, parent/node not found,
+            // malformed op) keep their identity so the WS handler can
+            // send the client a SPECIFIC rejection instead of a generic
+            // wrapper — a quota hit must read "sheet limit reached",
+            // not "IllegalStateException".
+            throw e;
         } catch (Exception e) {
             throw new IllegalStateException("failed to apply op to projects."
                   + columns.treeColumn, e);

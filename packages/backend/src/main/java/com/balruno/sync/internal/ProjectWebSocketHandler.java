@@ -122,11 +122,17 @@ class ProjectWebSocketHandler extends TextWebSocketHandler {
         // wipes every unacked optimistic change on the client.
         try {
             dispatchOp(projectId, session, userId, op);
+        } catch (com.balruno.workspace.QuotaException qe) {
+            log.info("ws_op_quota_rejected sessionId={} type={} key={} current={} limit={}",
+                    session.getId(), op.getClass().getSimpleName(),
+                    qe.quotaKey(), qe.current(), qe.limit());
+            broadcaster.rejectQuota(session, opClientMsgId(op), qe);
         } catch (Exception e) {
             log.warn("ws_op_rejected sessionId={} type={} cause={}",
                     session.getId(), op.getClass().getSimpleName(),
                     e.getClass().getSimpleName(), e);
-            broadcaster.rejectOp(session, opClientMsgId(op), e.getClass().getSimpleName());
+            broadcaster.rejectOp(session, opClientMsgId(op),
+                    e.getClass().getSimpleName(), e.getMessage());
         }
     }
 

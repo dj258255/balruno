@@ -33,12 +33,28 @@ const QUOTA_LABELS: Record<string, string> = {
 export function handleQuotaError(err: unknown, workspaceId?: string): boolean {
   if (!(err instanceof BackendError) || !err.isQuotaExceeded) return false;
   const info = err.quotaInfo();
-  const label = info?.key
-    ? (QUOTA_LABELS[info.key] ?? info.key)
-    : '한도';
-  const detail = info
-    ? `${label} 한도(${info.limit})에 도달했습니다 — 현재 ${info.current}, 플랜 ${info.plan}.`
-    : err.message;
+  if (info) {
+    showQuotaLimitToast(
+      { key: info.key, current: info.current, limit: info.limit, plan: info.plan },
+      workspaceId,
+    );
+  } else {
+    toast.error(err.message, { duration: 8000 });
+  }
+  return true;
+}
+
+/**
+ * Renders the quota toast from already-structured fields — shared by
+ * the REST path above and the WebSocket op-rejection path (a
+ * quota_exceeded `conflict` frame carries the same four fields).
+ */
+export function showQuotaLimitToast(
+  info: { key?: string; current?: number | string; limit?: number | string; plan?: string },
+  workspaceId?: string,
+): void {
+  const label = info.key ? (QUOTA_LABELS[info.key] ?? info.key) : '한도';
+  const detail = `${label} 한도(${info.limit})에 도달했습니다 — 현재 ${info.current}, 플랜 ${info.plan}.`;
   toast.error(detail, {
     duration: 8000,
     action: workspaceId
@@ -52,7 +68,6 @@ export function handleQuotaError(err: unknown, workspaceId?: string): boolean {
         }
       : { label: '요금제 보기', onClick: () => { window.location.href = '/pricing'; } },
   });
-  return true;
 }
 
 /**

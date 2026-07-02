@@ -101,11 +101,31 @@ class SyncBroadcaster {
      * retry will fail the same way and surface a toast instead of a
      * silent socket death + sync.full wipe.
      */
-    void rejectOp(WebSocketSession sender, UUID clientMsgId, String reason) {
+    void rejectOp(WebSocketSession sender, UUID clientMsgId, String reason, String detail) {
         var envelope = new LinkedHashMap<String, Object>();
         envelope.put("type", "conflict");
         envelope.put("clientMsgId", clientMsgId.toString());
         envelope.put("reason", reason);
+        if (detail != null) envelope.put("detail", detail);
+        sendQuietly(sender, writeOrFallback(envelope));
+    }
+
+    /**
+     * Plan-limit rejection — same envelope but with the structured
+     * quota fields the frontend's quota toast renders (mirrors the
+     * RFC 7807 extensions ApiExceptionHandler emits on the REST path,
+     * FR-LIMIT-002), including the upgrade nudge.
+     */
+    void rejectQuota(WebSocketSession sender, UUID clientMsgId,
+                     com.balruno.workspace.QuotaException qe) {
+        var envelope = new LinkedHashMap<String, Object>();
+        envelope.put("type", "conflict");
+        envelope.put("clientMsgId", clientMsgId.toString());
+        envelope.put("reason", "quota_exceeded");
+        envelope.put("quotaKey", qe.quotaKey());
+        envelope.put("current", qe.current());
+        envelope.put("limit", qe.limit());
+        envelope.put("plan", qe.plan().name());
         sendQuietly(sender, writeOrFallback(envelope));
     }
 

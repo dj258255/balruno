@@ -111,11 +111,23 @@ export interface OpAckedPayload {
 
 export interface ConflictPayload {
   type: 'conflict';
+  /** Present on a true version mismatch — heal the region and retry.
+   *  ABSENT on an op rejection (validation / quota), where retrying
+   *  is pointless and the reason fields below apply instead. */
   scope?: RegionScope;
   serverVersion: number;
   /** Which op was rejected — lets the bridge retry it once on the
    *  healed baseVersion. Optional: older servers omit it. */
   clientMsgId?: string;
+  /** Rejection cause — 'quota_exceeded' or an exception class name. */
+  reason?: string;
+  /** Human-readable server detail for non-quota rejections. */
+  detail?: string;
+  // quota_exceeded extensions (mirror the REST RFC 7807 fields)
+  quotaKey?: string;
+  current?: number;
+  limit?: number;
+  plan?: string;
 }
 
 export interface BroadcastPayload {

@@ -93,25 +93,46 @@ function handleServerMsg(msg: ServerMsg, projectId: string): void {
       ackOp(msg.clientMsgId);
       break;
     case 'conflict':
-      // Self-heal: adopt the server's authoritative version for the
-      // conflicting region so the next op rides the correct base
-      // instead of looping on the same stale value. setRegionVersion
-      // (not bumpVersion) because our local counter ran *ahead* and
-      // must be pulled back down.
       if (msg.scope) {
+        // True version mismatch. Self-heal: adopt the server's
+        // authoritative version (setRegionVersion, not bumpVersion —
+        // our counter ran ahead and must come DOWN), then retry the
+        // rejected op once on the healed base (ADR 0018 Stage E).
+        // Before this, a conflicted op was silently dropped — the
+        // optimistic state stayed on screen while the server never
+        // had it, and the next sync.full made it "vanish". Older
+        // servers omit clientMsgId; heal-only is the fallback there.
         setRegionVersion(msg.scope, msg.serverVersion);
-      }
-      // Retry-once (ADR 0018 Stage E): re-emit the rejected op on the
-      // healed baseVersion. Before this, a conflicted op was silently
-      // dropped — the optimistic state stayed on screen while the
-      // server never had it, and the next sync.full made it "vanish".
-      // Older servers don't send clientMsgId on conflict; heal-only
-      // is the compatible fallback there.
-      if (msg.clientMsgId) {
-        const retried = retryConflictedOp(msg.clientMsgId);
-        if (!retried) {
+        if (msg.clientMsgId) {
+          const retried = retryConflictedOp(msg.clientMsgId);
+          if (!retried) {
+            void import('sonner').then(({ toast }) => {
+              toast.error('변경사항이 서버와 충돌해 저장되지 않았습니다. 새로고침 후 다시 시도해주세요.');
+            }).catch(() => {});
+          }
+        }
+      } else {
+        // Op REJECTION (no scope): validation or plan-limit failure.
+        // Retrying is pointless — drop the pending entry and tell the
+        // user exactly why instead of a generic conflict message.
+        if (msg.clientMsgId) ackOp(msg.clientMsgId);
+        if (msg.reason === 'quota_exceeded') {
+          void import('@/lib/quotaToast').then(({ showQuotaLimitToast }) => {
+            showQuotaLimitToast({
+              key: msg.quotaKey,
+              current: msg.current,
+              limit: msg.limit,
+              plan: msg.plan,
+            });
+          }).catch(() => {});
+        } else {
           void import('sonner').then(({ toast }) => {
-            toast.error('변경사항이 서버와 충돌해 저장되지 않았습니다. 새로고침 후 다시 시도해주세요.');
+            toast.error(
+              msg.detail
+                ? `변경사항이 저장되지 않았습니다: ${msg.detail}`
+                : '변경사항이 저장되지 않았습니다. 새로고침 후 다시 시도해주세요.',
+              { duration: 8000 },
+            );
           }).catch(() => {});
         }
       }
