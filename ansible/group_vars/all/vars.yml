@@ -1,20 +1,17 @@
 # Balruno Ansible group variables (applied to every host).
 # Secrets live in group_vars/vault.yml (ansible-vault encrypted).
 
-# ─── OCI public IPs ──────────────────────────────────────────────────────
-# prod_app_public_ip / monitor_public_ip / backup_public_ip / status_public_ip
-# live in vault.yml (ansible-vault encrypted). Origin IPs out of the cleartext
-# tree so Cloudflare bypass attack surface is not handed out with the repo.
+# ─── OCI public IP ───────────────────────────────────────────────────────
+# prod_app_public_ip lives in vault.yml (ansible-vault encrypted). Origin IP
+# out of the cleartext tree so Cloudflare bypass attack surface is not
+# handed out with the repo. (Decommissioned hosts' *_public_ip keys may
+# linger in vault — harmless, clean up on next vault edit.)
 
-# ─── OCI private IPs (same VCN, 10.0.0.0/24) ─────────────────────────────
+# ─── OCI private IP (VCN 10.0.0.0/24) ────────────────────────────────────
 prod_app_private_ip: "10.0.0.11"
-monitor_private_ip:  "10.0.0.248"
-backup_private_ip:   "10.0.0.81"
-status_private_ip:   "10.0.0.182"
 
 # ─── SSH ─────────────────────────────────────────────────────────────────
 ssh_user_arm: "rocky"          # default user on OCI Rocky Linux 9 ARM image
-ssh_user_x86: "rocky"          # default user on OCI Rocky Linux 9 x86 image
 ssh_key_path: "~/.ssh/oci_key" # operator's combined OCI key
 
 # ─── Domains ─────────────────────────────────────────────────────────────

@@ -6,8 +6,7 @@
 # group names of the same shape.
 #
 # Usage:
-#   all:        ansible-playbook -i inventory.yml site.yml
-#   single:     ansible-playbook site.yml --limit prod_app
+#   apply:      ansible-playbook -i inventory.yml site.yml
 #   ping check: ansible -i inventory.yml all -m ping
 
 all:
@@ -20,18 +19,6 @@ all:
       arch: arm64
       memory_gb: 12
       ocpu: 2
-
-    # DECOMMISSION PENDING — no site.yml play targets this host anymore
-    # except the never-tagged decommission play. Delete this entry (and
-    # that play) once the wipe has run.
-    backup:
-      ansible_host: "{{ backup_public_ip }}"
-      private_ip: "{{ backup_private_ip }}"
-      ansible_user: "{{ ssh_user_x86 }}"
-      server_role: backup
-      arch: x86_64
-      memory_gb: 1
-      ocpu: 1
 
   vars:
     ansible_ssh_private_key_file: "{{ ssh_key_path }}"
