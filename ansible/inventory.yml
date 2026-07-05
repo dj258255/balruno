@@ -20,6 +20,15 @@ all:
       memory_gb: 12
       ocpu: 2
 
+    # TEMPORARY — re-added only so the factory-reset play can reach the
+    # decommissioned box for an in-place deep clean. No regular play
+    # targets it. Delete this entry after the reset run.
+    backup:
+      ansible_host: "{{ backup_public_ip }}"
+      ansible_user: rocky
+      arch: x86_64
+      memory_gb: 1
+
   vars:
     ansible_ssh_private_key_file: "{{ ssh_key_path }}"
     ansible_python_interpreter: /usr/bin/python3
