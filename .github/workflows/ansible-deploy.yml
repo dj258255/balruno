@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       limit:
-        description: 'Ansible --limit pattern (e.g. prod_app, monitor, arm)'
+        description: 'Ansible --limit pattern (e.g. prod_app)'
         required: false
         default: 'all'
       tags:

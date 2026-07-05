@@ -12,6 +12,10 @@
 # that decrypts it lives in $ANSIBLE_VAULT_PASSWORD_FILE locally and in the
 # ANSIBLE_VAULT_PASSWORD GitHub Secret in CI.
 
+# OCI origin IP — kept in the vault so the cleartext tree never reveals
+# the address behind the Cloudflare proxy.
+prod_app_public_ip: "REPLACE_WITH_PROD_APP_PUBLIC_IP"
+
 # PostgreSQL
 vault_postgres_password: "REPLACE_WITH_RANDOM_32_CHAR"
 vault_postgres_replication_password: "REPLACE_WITH_RANDOM_32_CHAR"
