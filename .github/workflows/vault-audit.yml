@@ -1,0 +1,41 @@
+# One-shot: list the vault's top-level KEY NAMES (never values) so the
+# contents can be reconciled against what the repo actually references.
+# Read-only — no commit. Delete this workflow after use.
+
+name: vault-audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Ansible
+        run: pip install --upgrade 'ansible-core>=2.20,<2.21'
+
+      - name: List vault key names
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$ANSIBLE_VAULT_PASSWORD" > /tmp/.vp
+          ansible-vault decrypt ansible/group_vars/all/vault.yml \
+            --vault-password-file /tmp/.vp --output /tmp/vault-plain.yml
+          python3 - << 'PY'
+          import re
+          keys = sorted(
+              m.group(1)
+              for line in open('/tmp/vault-plain.yml')
+              if (m := re.match(r'^([A-Za-z_]\w*):', line))
+          )
+          print('\n'.join(keys))
+          PY
+          rm -f /tmp/vault-plain.yml /tmp/.vp
