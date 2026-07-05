@@ -1,9 +1,9 @@
 # Dedicated system user for the upload daemon. Non-login shell, locked
 # password — only Ansible-installed cron entries or sudo can execute as it.
 #
-# `groups: rocky` is the post-2026-05-21 consolidation requirement: the
-# upload script now reads the local backup dir (owned by rocky:rocky,
-# mode 0750) so the daemon user needs to be in the rocky group to enter.
+# `groups: postgres` is the single-host (2026-07-06) requirement: the
+# upload script reads the local backup dir (owned by postgres:postgres,
+# mode 0750) so the daemon user needs to be in the postgres group to enter.
 
 - name: Create system user for backup uploader
   ansible.builtin.user:
@@ -12,7 +12,7 @@
     shell: /sbin/nologin
     home: "{{ osu_home }}"
     create_home: true
-    groups: rocky
+    groups: postgres
     append: true
     state: present
 
@@ -24,10 +24,12 @@
     group: "{{ osu_user }}"
     mode: '0700'
 
+# Shared log dir — same declaration as the backup role (see dump.yml) so
+# repeated applies don't flip ownership between the two roles.
 - name: Ensure log directory exists
   ansible.builtin.file:
     path: /var/log/balruno
     state: directory
-    owner: "{{ osu_user }}"
-    group: "{{ osu_user }}"
-    mode: '0750'
+    owner: root
+    group: postgres
+    mode: '0775'

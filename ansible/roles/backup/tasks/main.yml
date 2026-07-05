@@ -1,15 +1,14 @@
-# backup role — runs on both prod_app (source) and backup (target).
-# Branches by inventory_hostname so the two halves stay in one role + one
-# code path; the source/target ordering is controlled in site.yml.
+# backup role — pg_dump to prod_app's local disk.
 #
-# Pre-2026-05-21 the source side ran on monitor (where PG lived). After
-# the monitor→prod_app consolidation PG runs on prod_app, so the source
-# side moves with it. monitor host is being decommissioned (Phase 6).
+# Post-2026-07-06 single-host consolidation: the dedicated backup host is
+# decommissioned. The dump stays on prod_app (7-day rolling window) and the
+# object-storage-upload role ships the newest dump to Cloudflare R2 daily.
+# Chain: pg_dump 03:00 UTC → local dir → R2 upload 05:00 UTC.
 
-- import_tasks: source.yml
-  when: inventory_hostname == 'prod_app'
-  tags: [backup, source]
+- import_tasks: dump.yml
+  tags: [backup]
 
-- import_tasks: target.yml
-  when: inventory_hostname == 'backup'
-  tags: [backup, target]
+# On-demand end-to-end check — never runs on a normal apply. Trigger with:
+#   workflow_dispatch: tags=backup-verify, limit=prod_app
+- import_tasks: verify.yml
+  tags: [never, backup-verify]

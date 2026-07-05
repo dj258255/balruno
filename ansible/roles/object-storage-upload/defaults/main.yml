@@ -2,17 +2,15 @@
 # Reads daily pg_dumps from the backup role's local dir on the same host
 # and uploads them to Cloudflare R2 (3-2-1 offsite copy).
 #
-# Pre-2026-05-21 the upload daemon ran on a separate `status` x86 1GB
-# micro and pulled from `backup` host over SSH+rsync. Phase 5 of the
-# consolidation merged status's role into backup; the script now reads
-# the local backup dir directly (no SSH, no rsync), trimming the chain
-# from 4 hops (prod → backup → status → R2) to 3 (prod → backup → R2).
+# History: status host (pull over SSH) → merged into backup 2026-05-21 →
+# merged into prod_app 2026-07-06 (single-host layout). The chain is now
+# 2 hops: prod_app local dump → R2.
 
 # Local user that owns the upload script + cron entry. Created if absent.
 osu_user: balruno-backup
 osu_home: /var/lib/{{ osu_user }}
 
-# Where pg_dumps land — same dir as the backup role's target side.
+# Where pg_dumps land — same dir the backup role dumps into.
 osu_source_dir: "{{ backup_dir | default('/var/backups/postgres') }}"
 
 # Local staging dir — retained for compatibility with the legacy script
@@ -24,8 +22,8 @@ osu_r2_bucket: "{{ r2_bucket }}"
 osu_r2_endpoint: "{{ r2_endpoint }}"
 osu_r2_prefix: "daily"
 
-# Cron schedule (host TZ = UTC, ADR 0007 §3.7). Runs 2h after backup's
-# 03:00 push so the file is always settled by upload time.
+# Cron schedule (host TZ = UTC, ADR 0007 §3.7). Runs 2h after the backup
+# role's 03:00 dump so the file is always settled by upload time.
 osu_cron_minute: 0
 osu_cron_hour: "{{ object_storage_cron_hour }}"   # default 5 (UTC) — see all/vars.yml
 

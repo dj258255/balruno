@@ -1,5 +1,5 @@
-# cloudflared role — Cloudflare Tunnel daemon on the backup host.
-# Provides public access to monitor.balruno.com → Grafana on monitor:3000
+# cloudflared role — Cloudflare Tunnel daemon on prod_app.
+# Provides public access to monitor.balruno.com → Grafana on the same host
 # without opening any inbound port (tunnel is outbound-only).
 
 - name: Install Cloudflare yum repo

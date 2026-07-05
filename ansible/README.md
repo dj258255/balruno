@@ -1,18 +1,18 @@
 # Balruno Ansible
 
-> OCI Always Free 4대 (ARM 12GB ×2 + x86 1GB ×2) 자동 프로비저닝.
+> OCI Always Free 단일 호스트 (ARM 12GB) 자동 프로비저닝.
 > wikiEngine 패턴 차용 (vault_password_file, ssh ControlMaster, role 구조).
+> 히스토리: 4대 (2026-05 초) → 2대 (2026-05-21 consolidation) → 1대 (2026-07-06).
 
 ---
 
-## 머신 4대 (deploy matrix)
+## 머신 (deploy matrix)
 
 | Hostname | Public IP | 사양 | 역할 |
 |---|---|---|---|
-| **prod-app** | `{{ prod_app_public_ip }}` | ARM 12GB | Spring Boot 4.0.6 + Java 25 + Nginx |
-| **monitor** | `{{ monitor_public_ip }}` | ARM 12GB | PostgreSQL 18.3 + Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB |
-| **backup** | `{{ backup_public_ip }}` | x86 1GB | pg_dump rsync 수신 + cloudflared (monitor.balruno.com Tunnel) + node_exporter |
-| **status** | `{{ status_public_ip }}` | x86 1GB | Object Storage upload daemon (3-2-1 offsite) + node_exporter |
+| **prod-app** | `{{ prod_app_public_ip }}` | ARM 12GB | Spring Boot + Nginx + PostgreSQL 18 + 모니터링 스택 + pg_dump + R2 offsite upload + cloudflared Tunnel |
+
+백업은 로컬 pg_dump (7일 window) + Cloudflare R2 offsite (30일 lifecycle) 2단 구성.
 
 > 실제 IP 는 `group_vars/all/vault.yml` (ansible-vault 암호화) 에 보관 — 위 표는 변수 참조만 표기.
 
@@ -26,7 +26,7 @@
 ```
 ansible/
 ├── ansible.cfg                    Ansible 설정 (vault_password_file, ssh)
-├── inventory.yml                  4대 host 정의 + 그룹
+├── inventory.yml                  host 정의
 ├── group_vars/
 │   └── all/                       모든 호스트에 적용되는 변수 (Ansible 권장 패턴)
 │       ├── vars.yml               공통 변수 (도메인, 버전, JVM/PG 기본값)
@@ -39,9 +39,9 @@ ansible/
 │   ├── postgres                   PostgreSQL 18 + tuning + pg_hba
 │   ├── backend                Spring Boot 4.0.6 + Java 25 systemd unit
 │   ├── monitoring                 Docker Compose: Grafana + Loki + Alloy + Prometheus + alertmanager + InfluxDB + blackbox_exporter
-│   ├── cloudflared                Cloudflare Tunnel daemon (backup 머신)
-│   ├── backup                     pg_dump cron + rsync 수신
-│   └── object-storage-upload      OCI CLI + cron (status 머신)
+│   ├── cloudflared                Cloudflare Tunnel daemon (monitor.balruno.com → Grafana)
+│   ├── backup                     pg_dump cron (로컬 7일 window)
+│   └── object-storage-upload      AWS CLI + cron (R2 offsite upload)
 ├── site.yml                       전체 통합 playbook
 └── .gitignore                     vault.yml + .vault_pass 제외
 ```
@@ -114,7 +114,7 @@ cp group_vars/all/vault.yml.example group_vars/all/vault.yml
 ansible-vault encrypt group_vars/all/vault.yml --vault-password-file "$ANSIBLE_VAULT_PASSWORD_FILE"
 ```
 
-### 2. 4대 SSH 접속 검증 (Step 1 — 첫 작업)
+### 2. SSH 접속 검증 (Step 1 — 첫 작업)
 
 ```bash
 cd ansible
@@ -130,7 +130,6 @@ ansible-playbook -i inventory.yml site.yml
 
 # 특정 머신만
 ansible-playbook site.yml --limit prod_app
-ansible-playbook site.yml --limit monitor
 
 # 특정 role 만 (idempotent)
 ansible-playbook site.yml --tags nginx
@@ -151,13 +150,10 @@ ansible-vault edit group_vars/all/vault.yml --vault-password-file "$ANSIBLE_VAUL
 ## 작업 순서 (initial bootstrap)
 
 ```
-Step 1: ansible -i inventory.yml all -m ping             ← 4대 SSH 검증
-Step 2: ansible-playbook site.yml --tags common --limit all   ← swap/fail2ban/Docker
-Step 3: ansible-playbook site.yml --limit monitor        ← PG + Grafana stack 먼저
-Step 4: ansible-playbook site.yml --limit prod_app       ← Spring + Nginx
-Step 5: ansible-playbook site.yml --limit backup         ← pg_dump + cloudflared
-Step 6: ansible-playbook site.yml --limit status         ← Object Storage upload daemon + node_exporter
-Step 7: 검증 (도메인 hit / actuator / Grafana 대시보드 확인)
+Step 1: ansible -i inventory.yml all -m ping             ← SSH 검증
+Step 2: ansible-playbook site.yml --tags common          ← swap/fail2ban/Docker
+Step 3: ansible-playbook site.yml --limit prod_app       ← 전체 스택 (PG + Spring + Nginx + 모니터링 + 백업 + 터널)
+Step 4: 검증 (도메인 hit / actuator / Grafana 대시보드 / backup-verify tag 실행)
 ```
 
 ---

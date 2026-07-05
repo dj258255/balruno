@@ -2,7 +2,7 @@
 # {{ ansible_managed }}
 # Balruno offsite backup uploader.
 # Reads the newest pg_dump from {{ osu_source_dir }} (same host, written by
-# the backup role's target side), uploads it to Cloudflare R2.
+# the backup role's nightly dump cron), uploads it to Cloudflare R2.
 # Run by cron as the {{ osu_user }} user.
 
 set -euo pipefail
@@ -24,11 +24,8 @@ fail() { log "ERROR: $*"; exit 1; }
 log "starting daily upload run for $TODAY"
 
 # 1. Find the newest .sql.gz in the local backup dir. The backup role's
-#    target side (rsync receiver) deposits files here; we read them
-#    in-place — no copy, no SSH. Pre-2026-05-21 the source dir lived on
-#    a different host (status pulled via rsync from backup); the
-#    consolidation merged status into backup so both stages are now
-#    local file ops.
+#    dump cron deposits files here; we read them in-place — no copy,
+#    no SSH.
 LATEST="$(ls -1t "$SOURCE_DIR"/*.sql.gz 2>/dev/null | head -1 || true)"
 [ -n "$LATEST" ] || fail "no .sql.gz found in $SOURCE_DIR"
 

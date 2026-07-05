@@ -1,0 +1,30 @@
+# End-to-end backup verification — dump + R2 upload, on demand.
+# Both scripts are set -euo pipefail and fail non-zero on any step, and the
+# upload script head-object-verifies the R2 object, so a green run here means
+# the whole chain works. Output contains log lines only (no credentials).
+
+- name: Run dump script now
+  ansible.builtin.command: "{{ backup_script }}"
+  become: true
+  become_user: "{{ backup_user }}"
+  environment:
+    HOME: /var/lib/pgsql
+  register: verify_dump
+  changed_when: true
+
+- name: Show dump output
+  ansible.builtin.debug:
+    var: verify_dump.stdout_lines
+
+- name: Run R2 upload now
+  ansible.builtin.command: /usr/local/bin/balruno-upload.sh
+  become: true
+  become_user: "{{ osu_user | default('balruno-backup') }}"
+  environment:
+    HOME: "{{ osu_home | default('/var/lib/balruno-backup') }}"
+  register: verify_upload
+  changed_when: true
+
+- name: Show upload output
+  ansible.builtin.debug:
+    var: verify_upload.stdout_lines

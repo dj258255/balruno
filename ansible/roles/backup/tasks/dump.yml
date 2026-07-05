@@ -1,0 +1,56 @@
+# Nightly pg_dump into the local backup dir. Runs as the postgres OS user,
+# which already has peer auth into the DB.
+
+- name: Ensure dump dir exists
+  ansible.builtin.file:
+    path: "{{ backup_dir }}"
+    state: directory
+    owner: "{{ backup_user }}"
+    group: "{{ backup_user }}"
+    mode: '0750'
+
+# Shared log dir — written by postgres (backup.log) and balruno-backup
+# (upload.log, member of the postgres group). Same declaration as the
+# object-storage-upload role so the two stay idempotent, not fighting.
+- name: Ensure log directory exists
+  ansible.builtin.file:
+    path: /var/log/balruno
+    state: directory
+    owner: root
+    group: "{{ backup_user }}"
+    mode: '0775'
+
+- name: Render dump script
+  ansible.builtin.template:
+    src: balruno-backup.sh.j2
+    dest: "{{ backup_script }}"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Schedule daily pg_dump cron
+  ansible.builtin.cron:
+    name: balruno-pg-backup
+    user: "{{ backup_user }}"
+    minute: "{{ backup_cron_minute }}"
+    hour: "{{ backup_cron_hour }}"
+    job: "{{ backup_script }} >> /var/log/balruno/backup.log 2>&1"
+    cron_file: balruno-pg-backup
+    state: present
+
+# ── Legacy cleanup — artifacts of the rsync-push era (two-host layout). ──
+
+- name: Remove legacy push cron
+  ansible.builtin.file:
+    path: /etc/cron.d/balruno-pg-backup-push
+    state: absent
+
+- name: Remove legacy push script
+  ansible.builtin.file:
+    path: /usr/local/bin/balruno-backup-push.sh
+    state: absent
+
+- name: Remove pg_dump push SSH keypair (no cross-host push anymore)
+  ansible.builtin.file:
+    path: /var/lib/pgsql/.ssh
+    state: absent

@@ -1,7 +1,8 @@
 # Defaults for the cloudflared role.
-# Runs on the backup host. Cloudflare Tunnel daemon proxies the public
-# monitor.balruno.com URL through Cloudflare's network into our private
-# VCN, hitting the Grafana container on the monitor host.
+# Runs on prod_app (single-host layout, 2026-07-06). Cloudflare Tunnel
+# daemon proxies the public monitor.balruno.com URL through Cloudflare's
+# network to the Grafana container on the same host. The tunnel's ingress
+# upstream is dashboard-managed and must point at 10.0.0.11:3000.
 
 # Cloudflared is installed from Cloudflare's official yum repo.
 # (GitHub releases don't ship .rpm artifacts; the pkg.cloudflare.com repo is

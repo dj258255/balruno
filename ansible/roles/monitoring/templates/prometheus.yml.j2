@@ -1,8 +1,7 @@
 # {{ ansible_managed }}
-# Prometheus scrape config — pulls node_exporter from each of the four hosts
-# plus its own metrics. Targets that are unreachable (e.g. before node-exporter
-# is rolled out to other hosts) are reported as `up=0` rather than failing the
-# whole scrape.
+# Prometheus scrape config — single-host layout: every target lives on
+# prod_app. Unreachable targets are reported as `up=0` rather than failing
+# the whole scrape.
 
 global:
   scrape_interval: {{ monitoring_prometheus_scrape_interval }}
@@ -33,9 +32,7 @@ scrape_configs:
 
   - job_name: alloy
     static_configs:
-      # Alloy runs as part of monitoring-agent on each host with Docker.
-      # Post-2026-05-21 consolidation only prod_app needs it; backup
-      # skips alloy to save RAM.
+      # Alloy runs as part of monitoring-agent on prod_app.
       - targets:
           - "{{ prod_app_private_ip }}:12345"
 

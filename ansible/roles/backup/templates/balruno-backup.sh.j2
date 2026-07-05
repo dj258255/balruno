@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 # {{ ansible_managed }}
-# Balruno PostgreSQL backup — dump + push.
+# Balruno PostgreSQL backup — local dump.
 # Runs as the postgres user nightly via cron. Streams pg_dump | gzip into a
-# dated file under {{ backup_dir }}, then rsyncs it to the backup host.
+# dated file under {{ backup_dir }}; the object-storage-upload role's cron
+# ships the newest dump to Cloudflare R2 two hours later (offsite copy).
 
 set -euo pipefail
 
 # cron's spawned shell may have inherited a cwd the postgres user cannot read
 # (cron runs commands without changing dir to user $HOME). cd somewhere safe
-# so subprocesses (find, rsync) don't blow up on getcwd().
+# so subprocesses (find, gzip) don't blow up on getcwd().
 cd /var/lib/pgsql
 
 DUMP_DIR="{{ backup_dir }}"
 DB="{{ backup_db_name }}"
-TARGET="{{ backup_target_user }}@{{ backup_target_host }}:{{ backup_dir }}/"
 TODAY="$(date -u +%Y-%m-%d)"
 DUMP_FILE="$DUMP_DIR/balruno-$TODAY.sql.gz"
-LOG_PREFIX="[$(date -u +%FT%TZ) balruno-backup-push]"
+LOG_PREFIX="[$(date -u +%FT%TZ) balruno-backup]"
 
 log()  { echo "$LOG_PREFIX $*"; }
 fail() { log "ERROR: $*"; exit 1; }
@@ -38,20 +38,16 @@ mkdir -p "$DUMP_DIR"
 
 mv "$DUMP_FILE.tmp" "$DUMP_FILE"
 
+# Group-readable so the balruno-backup uploader (member of the postgres
+# group) can read it; nothing for world.
+chmod 640 "$DUMP_FILE"
+
 SIZE_HUMAN=$(du -h "$DUMP_FILE" | cut -f1)
 log "dump done: $(basename "$DUMP_FILE") ($SIZE_HUMAN)"
 
-# 2. rsync push. accept-new on first connect pins the host key; subsequent
-#    runs stay strict.
-rsync -az --partial \
-  -e 'ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /var/lib/pgsql/.ssh/id_ed25519' \
-  "$DUMP_FILE" "$TARGET" \
-  || fail "rsync push to backup host failed"
-
-log "pushed -> $TARGET"
-
-# 3. Local retention. We keep the last 2 days locally for ad-hoc psql restore;
-#    backup host owns the 7-day rolling window.
-find "$DUMP_DIR" -type f -name '*.sql.gz' -mtime +2 -delete
+# 2. Local retention — {{ backup_retention_days }}-day rolling window. R2
+#    offsite keeps 30 days via bucket lifecycle; the local window is for
+#    fast ad-hoc restore without an R2 round-trip.
+find "$DUMP_DIR" -type f -name '*.sql.gz' -mtime +{{ backup_retention_days }} -delete
 
 log "done"
