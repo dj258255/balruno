@@ -1,7 +1,20 @@
-# End-to-end backup verification — dump + R2 upload, on demand.
+# End-to-end backup verification — dump + R2 upload + cron wiring, on demand.
 # Both scripts are set -euo pipefail and fail non-zero on any step, and the
 # upload script head-object-verifies the R2 object, so a green run here means
 # the whole chain works. Output contains log lines only (no credentials).
+
+- name: Assert crond is active (cron files are useless without it)
+  ansible.builtin.command: systemctl is-active crond
+  changed_when: false
+
+- name: Read installed cron entries
+  ansible.builtin.command: cat /etc/cron.d/balruno-pg-backup /etc/cron.d/balruno-r2-upload
+  register: verify_crons
+  changed_when: false
+
+- name: Show cron entries
+  ansible.builtin.debug:
+    var: verify_crons.stdout_lines
 
 - name: Run dump script now
   ansible.builtin.command: "{{ backup_script }}"
