@@ -230,6 +230,23 @@ We welcome contributions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before 
 - **Cloud Pro** — quotas lifted, optional cloud-paid AI pool, undo retention same as Free (Baserow pattern: undo isn't tier-gated) (price TBD after beta validation)
 - **Team** — collaboration + members + SSO + 30-day audit log retention (row history viewer) + audit log export (price TBD)
 
+### Schedule & Process
+
+Development history is visible in the repository commit log. Of 785 total commits on `main`, 42 landed in January, 10 in February, 0 in March, 198 in April, 507 in May, 2 in June, and 25 in July, and the most recent commit is from August 9.
+
+| Period | Work | Output |
+|---|---|---|
+| 2026.01 (42 commits) | Opened the repo, added spreadsheet editing, calculator, and simulation UI | Initial release (인디밸런싱/IndieBalancing v1.0) |
+| 2026.02-03 (10 / 0 commits) | Mostly dormant | - |
+| 2026.04 (198 commits) | Renamed the project from PowerBalance to Balruno (4/18), started rewriting the sheet domain to be server-canonical | Rename, rewrite kickoff |
+| 2026.05 (507 commits) | Rewrote sheet/tree sync (ADR 0018/0020 stage commits, 5/6-5/7), shipped blue/green zero-downtime deploy (5/10) | New sync engine, zero-downtime deploy |
+| 2026.06-07 (2 / 25 commits) | Dormant, then mostly security cleanup | Security patches |
+| 2026.08 (last commit 8/9) | Wrap-up work | - |
+
+Work is tracked by area through local architecture decision records (ADRs), which live outside the public repo and are not published here. There is no GitHub Issues tracker or milestones in use for this project; ADR numbers and stage labels inside commit messages are the progress record instead.
+
+More on the background and trade-offs behind these decisions is in the [blog introduction post](https://dj258255.github.io/IT-Oasis/blog/project/balruno/balruno-retrospective/) (Korean).
+
 ### License
 
 This repository uses different licenses per directory. See [LICENSE](LICENSE) for the overview and [LICENSING.md](LICENSING.md) for a user-friendly FAQ.
@@ -378,6 +395,23 @@ cd packages/desktop && npm run dev
 #### 성장 곡선 및 난이도
 - [Davide Aversa — RPG Progression](https://www.davideaversa.it/blog/gamedesign-math-rpg-level-based-progression/) — 레벨 성장 수식
 - [Game Developer — Difficulty Curves](https://www.gamedeveloper.com/design/difficulty-curves) — 난이도 곡선
+
+### 일정과 작업 방식
+
+개발 기록은 저장소 커밋으로 확인됩니다. `main` 브랜치 전체 785커밋 중 1월 42건, 2월 10건, 3월 0건, 4월 198건, 5월 507건, 6월 2건, 7월 25건이 찍혀 있고 가장 최근 커밋은 8월 9일입니다.
+
+| 기간 | 한 일 | 산출물 |
+|---|---|---|
+| 2026.01 (42커밋) | 저장소를 열고 스프레드시트 편집, 계산기, 시뮬레이션 UI를 붙임 | 초기 버전(인디밸런싱 v1.0) |
+| 2026.02~03 (10 / 0커밋) | 커밋이 거의 없는 휴면기 | - |
+| 2026.04 (198커밋) | 프로젝트명을 PowerBalance에서 balruno로 통일(4/18), 시트 도메인을 서버 진실원으로 다시 짜는 작업 시작 | 리네이밍, 재작성 착수 |
+| 2026.05 (507커밋) | 시트/트리 동기화 재작성(ADR 0018·0020 등 Stage 커밋, 5/6~5/7), blue/green 무중단 배포 적용(5/10) | 새 동기화 엔진, 무중단 배포 |
+| 2026.06~07 (2 / 25커밋) | 휴면 후 보안 정리 위주 커밋 | 보안 패치 |
+| 2026.08 (최근 커밋 8/9) | 마무리 작업 | - |
+
+작업은 아키텍처 결정 문서(ADR)를 영역별로 나눠 관리합니다. 이 문서는 공개 저장소 밖에 두고 여기에는 올리지 않았습니다. GitHub Issue나 마일스톤은 쓰지 않고 커밋 메시지에 남긴 ADR 번호와 Stage 표기가 진행 기록을 대신합니다.
+
+프로젝트를 만든 배경과 트레이드오프 판단은 [블로그 소개 글](https://dj258255.github.io/IT-Oasis/blog/project/balruno/balruno-retrospective/)에 더 자세히 적었습니다.
 
 ### 라이선스
 
